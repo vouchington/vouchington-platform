@@ -67,6 +67,12 @@ importers:
         specifier: ^2.7.2
         version: 2.7.2
 
+  packages/queue-errors:
+    dependencies:
+      glide-mq:
+        specifier: ^0.15.3
+        version: 0.15.3(express@5.2.1(supports-color@7.2.0))
+
   packages/session-jwt:
     dependencies:
       jose:
@@ -109,6 +115,49 @@ packages:
 
   '@emnapi/wasi-threads@1.2.2':
     resolution: {integrity: sha512-c95qOXkHdydNKhscBTebqEC1CVAZpyqOfVfBzQ1qgzyl3gfeldUjIggDbIZgDKsHLgnsM+igH7TJ/eAasaVuMA==}
+
+  '@glidemq/speedkey-darwin-arm64@0.3.0':
+    resolution: {integrity: sha512-9SEAgLDCgfRT+dhO7k+F8QYNvW1IECXp7SC+B2jJap8v9ww8IciFS6Nuh9/K644XmtBCeRssd/hRGc5IZurcAw==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@glidemq/speedkey-darwin-x64@0.3.0':
+    resolution: {integrity: sha512-yZj1RfxlZ4Dtw1BdprYtilnEbaPnGrgL9Ew1DRg9c2+sp8R3PzjLm53ksCBDsaDVmOKJb/lgxavLuaAWjQk++A==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@glidemq/speedkey-linux-arm64-gnu@0.3.0':
+    resolution: {integrity: sha512-/KjI6ftoVl20+G7JOLn/w6B8ykk9/pJ5qbeLui0ZFeQDT4TmZ5S6BEzwDcqvsaXuYa4y68VG2OuSDO6SU1O/MQ==}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  '@glidemq/speedkey-linux-arm64-musl@0.3.0':
+    resolution: {integrity: sha512-HruzPerV2y5nyCrOap3wnKr4z8ck/CEiq5wuOaAuvmgpheE+N4ELCzDXi9XOmy/bEgP+0UHkD+78i114lt3vJg==}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
+  '@glidemq/speedkey-linux-x64-gnu@0.3.0':
+    resolution: {integrity: sha512-0oFZ5rgz1wwmFJyqLUeEvUn9/8sxiN2sUAf1PDNVqlxNZG+tsO/YheDeDJnKZTjBjoL7yrj7J9vi/OE05MOvDw==}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@glidemq/speedkey-linux-x64-musl@0.3.0':
+    resolution: {integrity: sha512-3kRd1Wz4+MxycFUDuEqoUPSVcNVcrmA/G1hb15kxHivb/0vd2tXUYOG/9rXoevDf46jyPSnHgjY+QID4UR2sxQ==}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
+
+  '@glidemq/speedkey-win32-x64-msvc@0.3.0':
+    resolution: {integrity: sha512-lGhlYtlWYS9pzavF1KvlQXtb87tVTWkyyIQdG43oQVjL1+FA+mMkm0XgqESciGJNBl5dE7B/RYPS4eLVK94xUQ==}
+    cpu: [x64]
+    os: [win32]
+
+  '@glidemq/speedkey@0.3.0':
+    resolution: {integrity: sha512-LK2zkUopFGxxsZxRcuRF4PzJbvTLn+5qePBrpnp5nyGE4PyVB0PNYlb02pv5462xvynIodtdARFNyadVSrf/Dg==}
+    engines: {node: '>=20'}
 
   '@hono/node-server@2.1.1':
     resolution: {integrity: sha512-ELuehkj5VCBdgEw9zs+ivkKwyzzUCSQuE96YmiPvn1ECBoZCczbFXJLeEGMTYjphP6gydh4pHMqEYPVMYUVgQg==}
@@ -658,6 +707,33 @@ packages:
   '@pgsql/types@18.0.0':
     resolution: {integrity: sha512-jtAY4JU7jdVYZ/Vv3zlZqVP+FRWZokyCLKPPCnAApiaJAElpyyiMC3HRiquBu29kSrVs+rkqZD50SUIb/zyEGw==}
 
+  '@protobufjs/aspromise@1.1.2':
+    resolution: {integrity: sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ==}
+
+  '@protobufjs/base64@1.1.2':
+    resolution: {integrity: sha512-AZkcAA5vnN/v4PDqKyMR5lx7hZttPDgClv83E//FMNhR2TMcLUhfRUBHCmSl0oi9zMgDDqRUJkSxO3wm85+XLg==}
+
+  '@protobufjs/codegen@2.0.5':
+    resolution: {integrity: sha512-zgXFLzW3Ap33e6d0Wlj4MGIm6Ce8O89n/apUaGNB/jx+hw+ruWEp7EwGUshdLKVRCxZW12fp9r40E1mQrf/34g==}
+
+  '@protobufjs/eventemitter@1.1.1':
+    resolution: {integrity: sha512-vW1GmwMZNnL+gMRaovlh9yZX74kc+TTU3FObkkurpMaRtBfLP3ldjS9KQWlwZgraRE0+dheEEoAxdzcJQ8eXZg==}
+
+  '@protobufjs/fetch@1.1.1':
+    resolution: {integrity: sha512-GpptLrs57adMSuHi3VNj0mAF8dwh36LMaYF6XyJ6JMWlVsc+t42tm1HSEDmOs3A8fC9yyeisgLhsTVQokOZ0zw==}
+
+  '@protobufjs/float@1.0.2':
+    resolution: {integrity: sha512-Ddb+kVXlXst9d+R9PfTIxh1EdNkgoRe5tOX6t01f1lYWOvJnSPDBlG241QLzcyPdoNTsblLUdujGSE4RzrTZGQ==}
+
+  '@protobufjs/path@1.1.2':
+    resolution: {integrity: sha512-6JOcJ5Tm08dOHAbdR3GrvP+yUUfkjG5ePsHYczMFLq3ZmMkAD98cDgcT2iA1lJ9NVwFd4tH/iSSoe44YWkltEA==}
+
+  '@protobufjs/pool@1.1.0':
+    resolution: {integrity: sha512-0kELaGSIDBKvcgS4zkjz1PeddatrjYcmMWOlAuAPwAeccUrPHdUqo/J6LiymHHEiJT5NrF1UVwxY14f+fy4WQw==}
+
+  '@protobufjs/utf8@1.1.2':
+    resolution: {integrity: sha512-b1UQwcEZ4yCnMCD8DAL1VlbvBJE9/IX4FTIp7BG1xYpf29SLazLSrqUkj4w7Y5y7cCVP6E5tcqqcI0xemPkHug==}
+
   '@rolldown/binding-android-arm-eabi@1.2.5':
     resolution: {integrity: sha512-DLe/i+l8ynIBY7XEQ191TeZvCoowIGa18R+dIV30GW7DiOtp74i/xX8hs8GUjW5ARV7VZuie3d6AumSmCwbeRA==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -1203,6 +1279,18 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
+  glide-mq@0.15.3:
+    resolution: {integrity: sha512-WU8rUUlBXp/xm4tQEWlCAbgEMVJWaSDSrbEhlP+OwDgcf+hRtnL3riVulIeKu/n4/qFEplH/auM8UKI9/9qMVg==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@opentelemetry/api': ^1.0.0
+      express: '>=4.18.0'
+    peerDependenciesMeta:
+      '@opentelemetry/api':
+        optional: true
+      express:
+        optional: true
+
   global-directory@4.0.1:
     resolution: {integrity: sha512-wHTUcDUoZ1H5/0iVqEudYW4/kAlN5cZ3j/bXn0Dpbizl9iaUVeWSHqiOjsgk6OW2bkLclbBjzewBz6weQ1zA2Q==}
     engines: {node: '>=18'}
@@ -1397,6 +1485,9 @@ packages:
   lightningcss@1.33.0:
     resolution: {integrity: sha512-WkUDrojuJs0xkgGf2udWxa3yGBRxPtxUkB79i6aCZLRgc7PM8fZe9TosfPDcvEpQZbuFASnHYmRLBLUbmLOIIA==}
     engines: {node: '>= 12.0.0'}
+
+  long@5.3.2:
+    resolution: {integrity: sha512-mNAgZ1GmyNhD7AuqnTG3/VQ26o760+ZYBPKjPvugO8+nLbYfX6TVpJPseBvopbdY+qpZ/lKUnmEc1LeZYS3QAA==}
 
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
@@ -1606,6 +1697,10 @@ packages:
   prompts@2.4.2:
     resolution: {integrity: sha512-NxNv/kLguCA7p3jE8oL2aEBsrJWgAakBpgmgK6lpPWV+WuOmY6r2/zbAVnP+T8bQlA0nzHXSJSJW0Hq7ylaD2Q==}
     engines: {node: '>= 6'}
+
+  protobufjs@7.6.5:
+    resolution: {integrity: sha512-/FPD0nUc9jH6rfFjji9IBqOz4pcSE3CsT1m7Ep6Mdb0LxSUMj8hgl6GomOvZzpNpAqqGaXA0P3VSrZLFzIhQrw==}
+    engines: {node: '>=12.0.0'}
 
   proxy-addr@2.0.7:
     resolution: {integrity: sha512-llQsMLSUDUPT44jdrU/O37qlnifitDP+ZwrmmZcoSKyLKvtZxpyV0n2/bD/N4tBAAZ/gJEdZU7KMraoK1+XYAg==}
@@ -1976,6 +2071,40 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
+  '@glidemq/speedkey-darwin-arm64@0.3.0':
+    optional: true
+
+  '@glidemq/speedkey-darwin-x64@0.3.0':
+    optional: true
+
+  '@glidemq/speedkey-linux-arm64-gnu@0.3.0':
+    optional: true
+
+  '@glidemq/speedkey-linux-arm64-musl@0.3.0':
+    optional: true
+
+  '@glidemq/speedkey-linux-x64-gnu@0.3.0':
+    optional: true
+
+  '@glidemq/speedkey-linux-x64-musl@0.3.0':
+    optional: true
+
+  '@glidemq/speedkey-win32-x64-msvc@0.3.0':
+    optional: true
+
+  '@glidemq/speedkey@0.3.0':
+    dependencies:
+      long: 5.3.2
+      protobufjs: 7.6.5
+    optionalDependencies:
+      '@glidemq/speedkey-darwin-arm64': 0.3.0
+      '@glidemq/speedkey-darwin-x64': 0.3.0
+      '@glidemq/speedkey-linux-arm64-gnu': 0.3.0
+      '@glidemq/speedkey-linux-arm64-musl': 0.3.0
+      '@glidemq/speedkey-linux-x64-gnu': 0.3.0
+      '@glidemq/speedkey-linux-x64-musl': 0.3.0
+      '@glidemq/speedkey-win32-x64-msvc': 0.3.0
+
   '@hono/node-server@2.1.1(hono@4.13.3)':
     dependencies:
       hono: 4.13.3
@@ -2281,6 +2410,26 @@ snapshots:
     optional: true
 
   '@pgsql/types@18.0.0': {}
+
+  '@protobufjs/aspromise@1.1.2': {}
+
+  '@protobufjs/base64@1.1.2': {}
+
+  '@protobufjs/codegen@2.0.5': {}
+
+  '@protobufjs/eventemitter@1.1.1': {}
+
+  '@protobufjs/fetch@1.1.1':
+    dependencies:
+      '@protobufjs/aspromise': 1.1.2
+
+  '@protobufjs/float@1.0.2': {}
+
+  '@protobufjs/path@1.1.2': {}
+
+  '@protobufjs/pool@1.1.0': {}
+
+  '@protobufjs/utf8@1.1.2': {}
 
   '@rolldown/binding-android-arm-eabi@1.2.5':
     optional: true
@@ -2763,6 +2912,12 @@ snapshots:
       adm-zip: 0.5.18
       tar: 7.5.22
 
+  glide-mq@0.15.3(express@5.2.1(supports-color@7.2.0)):
+    dependencies:
+      '@glidemq/speedkey': 0.3.0
+    optionalDependencies:
+      express: 5.2.1(supports-color@7.2.0)
+
   global-directory@4.0.1:
     dependencies:
       ini: 4.1.1
@@ -2913,6 +3068,8 @@ snapshots:
       lightningcss-linux-x64-musl: 1.33.0
       lightningcss-win32-arm64-msvc: 1.33.0
       lightningcss-win32-x64-msvc: 1.33.0
+
+  long@5.3.2: {}
 
   magic-string@0.30.21:
     dependencies:
@@ -3159,6 +3316,20 @@ snapshots:
     dependencies:
       kleur: 3.0.3
       sisteransi: 1.0.5
+
+  protobufjs@7.6.5:
+    dependencies:
+      '@protobufjs/aspromise': 1.1.2
+      '@protobufjs/base64': 1.1.2
+      '@protobufjs/codegen': 2.0.5
+      '@protobufjs/eventemitter': 1.1.1
+      '@protobufjs/fetch': 1.1.1
+      '@protobufjs/float': 1.0.2
+      '@protobufjs/path': 1.1.2
+      '@protobufjs/pool': 1.1.0
+      '@protobufjs/utf8': 1.1.2
+      '@types/node': 26.2.0
+      long: 5.3.2
 
   proxy-addr@2.0.7:
     dependencies:

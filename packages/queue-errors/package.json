@@ -1,0 +1,44 @@
+{
+  "name": "@vouchington/queue-errors",
+  "version": "0.0.0",
+  "description": "glide-mq retry classification and worker rate-limit helpers.",
+  "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/queue-errors#readme",
+  "bugs": {
+    "url": "https://github.com/vouchington/vouchington-platform/issues"
+  },
+  "license": "MIT",
+  "author": "Jonathan Ong",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vouchington/vouchington-platform.git",
+    "directory": "packages/queue-errors"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "glide-mq": "^0.15.3"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}
