@@ -48,15 +48,28 @@ describe('utils dependency boundary', () => {
     expect(manifest.optionalDependencies).toBeUndefined()
     expect(manifest.peerDependencies).toBeUndefined()
   })
+
+  it('surfaces native module import failures', () => {
+    expect(() => importBuiltModule('packages/utils/dist/does-not-exist.mjs')).toThrow(
+      /Failed to import packages\/utils\/dist\/does-not-exist\.mjs:[\s\S]*ERR_MODULE_NOT_FOUND/,
+    )
+  })
 })
 
 function importBuiltModule(file: string): void {
   const moduleUrl = pathToFileURL(resolve(file)).href
-  execFileSync(process.execPath, [
-    '--input-type=module',
-    '--eval',
-    `await import(${JSON.stringify(moduleUrl)})`,
-  ])
+  try {
+    execFileSync(
+      process.execPath,
+      ['--input-type=module', '--eval', `await import(${JSON.stringify(moduleUrl)})`],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    )
+  } catch (error) {
+    const stderr = (error as { stderr?: string }).stderr?.trim()
+    throw new Error(stderr ? `Failed to import ${file}:\n${stderr}` : `Failed to import ${file}`, {
+      cause: error,
+    })
+  }
 }
 
 function run(file: string): string {
