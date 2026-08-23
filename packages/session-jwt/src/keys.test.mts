@@ -118,9 +118,11 @@ describe('JWT key sets', () => {
       'complete RSA private',
     )
     expect(() => parseJwkSet([{ ...publicJwk, e: 'AA' }], 'keys')).toThrow('exponent 65537')
-    await expect(createJwtKeySet({ privateJwks: [{ ...privateJwk, p: 'AA' }] })).rejects.toThrow(
-      'Failed to import privateJwks',
-    )
+    await expect(
+      createJwtKeySet({
+        privateJwks: [{ ...privateJwk, oth: [{ d: 'AA', r: 'AA', t: 'AA' }] }],
+      }),
+    ).rejects.toThrow('Failed to import privateJwks')
   })
 
   it('accepts an explicitly public-only key set', async () => {
