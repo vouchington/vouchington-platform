@@ -86,7 +86,11 @@ export async function createPsql(options: CreatePsqlOptions): Promise<Psql> {
     ...cursorApi,
     runMigrations: createMigrationRunner(runtime, options.migrationExtensions),
     withMigrationSession: (handler, timeouts) =>
-      withMigrationRunnerSession(runtime, resolveMigrationTimeouts(timeouts ?? {}), handler),
+      withMigrationRunnerSession(
+        runtime,
+        resolveMigrationTimeouts(timeouts ?? {}, runtime.env),
+        handler,
+      ),
     close,
   }
 }

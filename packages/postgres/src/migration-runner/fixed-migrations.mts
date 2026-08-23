@@ -77,7 +77,11 @@ export function createMigrationRunner(
 
     if (options.client) await runWithClient(options.client)
     else {
-      await withMigrationRunnerSession(runtime, resolveMigrationTimeouts(options), runWithClient)
+      await withMigrationRunnerSession(
+        runtime,
+        resolveMigrationTimeouts(options, runtime.env),
+        runWithClient,
+      )
     }
 
     if (debugMigrations && !isTest) logger.log('DEBUG: All migrations complete')

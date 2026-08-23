@@ -22,6 +22,12 @@ describe('migration options', () => {
       lockTimeoutMs: 5_000,
       statementTimeoutMs: 900_000,
     })
+    expect(
+      resolveMigrationTimeouts(
+        {},
+        { PG_MIGRATION_LOCK_TIMEOUT_MS: '10', PG_MIGRATION_STATEMENT_TIMEOUT_MS: '20' },
+      ),
+    ).toEqual({ lockTimeoutMs: 10, statementTimeoutMs: 20 })
     expect(() => resolveMigrationTimeouts({ statementTimeoutMs: 0 })).toThrow(
       'statementTimeoutMs must be a positive integer',
     )

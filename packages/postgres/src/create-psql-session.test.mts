@@ -32,6 +32,19 @@ describe('createPsql session hooks', () => {
     })
   })
 
+  it('applies injected env migration timeouts to the session', async () => {
+    await withPsql(
+      async (psql) => {
+        await psql.withMigrationSession(async (client) => {
+          const lock = await client.query<{ lock_timeout: string }>(
+            '/* sessionLockTimeout */ SHOW lock_timeout',
+          )
+          expect(lock.rows[0]?.lock_timeout).toBe('2s')
+        })
+      },
+      { env: { PG_MIGRATION_LOCK_TIMEOUT_MS: '2000' } },
+    )
+  })
   it('captures query and pipeline inputs even when the hook throws', async () => {
     const captured: string[] = []
     await withPsql(
