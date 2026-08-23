@@ -26,6 +26,8 @@ docker run --rm -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:18
 - `@vouchington/postgres` — PostgreSQL runtime factory
 - `@vouchington/utils` — dependency-free explicit-subpath utilities
 - `@vouchington/session-jwt` — portable RS512 JWT primitives
+- `@vouchington/pagination` — cursor codecs, guards, and configurable query parsing
+- `@vouchington/queue-errors` — GlideMQ retry classification and rate-limit helpers
 
 Extracted APIs must be generalizable and parameterized; product identifiers, defaults, and policy
 belong in application adapters. Code with no third-party runtime dependencies belongs in an explicit
