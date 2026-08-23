@@ -59,6 +59,15 @@ builds use `-- migration-mode: online`. Extensions default to `pgcrypto`; pass
 `migrationExtensions` to `createPsql()` to change that. pgvector type parsers are opt-in via
 `vector: true`.
 
+To run product views or config-driven steps in the same advisory lock as SQL migrations:
+
+```ts
+await psql.withMigrationSession(async (client) => {
+  await psql.runMigrations('./migrations', { client, logger: console })
+  await psql.write('/* dropLegacy */ DROP TABLE IF EXISTS leftover', { client })
+})
+```
+
 ## Conventions
 
 - UUIDv7 primary keys

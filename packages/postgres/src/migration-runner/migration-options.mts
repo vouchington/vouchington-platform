@@ -30,8 +30,11 @@ export function getMigrationTimeouts(env: NodeJS.ProcessEnv = process.env): Migr
   }
 }
 
-export function resolveMigrationTimeouts(overrides: Partial<MigrationTimeouts>): MigrationTimeouts {
-  const defaults = getMigrationTimeouts()
+export function resolveMigrationTimeouts(
+  overrides: Partial<MigrationTimeouts>,
+  env: NodeJS.ProcessEnv = process.env,
+): MigrationTimeouts {
+  const defaults = getMigrationTimeouts(env)
   return {
     lockTimeoutMs: positiveValue(
       'lockTimeoutMs',

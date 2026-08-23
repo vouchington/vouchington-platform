@@ -11,6 +11,8 @@ import { installPgTypeParsers } from './type-parsers.mts'
 import type { CreatePsqlOptions, Psql } from './create-psql-types.mts'
 import { ignoreMissingVectorType, registerPgVectorTypes } from './vector.mts'
 import { createMigrationRunner } from './migration-runner/fixed-migrations.mts'
+import { resolveMigrationTimeouts } from './migration-runner/migration-options.mts'
+import { withMigrationRunnerSession } from './migration-runner/migration-session.mts'
 
 export type { CreatePsqlOptions, Psql } from './create-psql-types.mts'
 
@@ -44,6 +46,7 @@ export async function createPsql(options: CreatePsqlOptions): Promise<Psql> {
     env,
     errorHandler,
     onQueryTiming: options.onQueryTiming,
+    onBeforeQuery: options.onBeforeQuery,
     databaseName: options.databaseName,
   }
 
@@ -82,6 +85,12 @@ export async function createPsql(options: CreatePsqlOptions): Promise<Psql> {
     pipelineBatch: createPipelineBatch(runtime),
     ...cursorApi,
     runMigrations: createMigrationRunner(runtime, options.migrationExtensions),
+    withMigrationSession: (handler, timeouts) =>
+      withMigrationRunnerSession(
+        runtime,
+        resolveMigrationTimeouts(timeouts ?? {}, runtime.env),
+        handler,
+      ),
     close,
   }
 }

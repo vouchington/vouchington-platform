@@ -1,6 +1,8 @@
 import type pg from 'pg'
 import type { SQLStatement } from 'sql-template-strings'
 
+export type { PoolClient } from 'pg'
+
 export type QueryInput = string | SQLStatement
 export type QueryValues = ReadonlyArray<unknown> | undefined
 
@@ -35,6 +37,7 @@ export interface QueryTimingInput {
 }
 
 export type QueryTimingHandler = (input: QueryTimingInput) => void
+export type BeforeQueryHandler = (input: QueryInput, values?: QueryValues) => void
 export type ErrorHandler = (error: Error) => void
 
 export interface PsqlPools {
@@ -48,5 +51,6 @@ export interface PsqlRuntime {
   env: NodeJS.ProcessEnv
   errorHandler: ErrorHandler
   onQueryTiming?: QueryTimingHandler | undefined
+  onBeforeQuery?: BeforeQueryHandler | undefined
   databaseName?: string | undefined
 }
