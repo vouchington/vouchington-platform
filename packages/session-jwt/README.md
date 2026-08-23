@@ -43,7 +43,8 @@ values. Use `JwtKeySetCache` when a long-lived caller wants identity-based memoi
 
 Malformed tokens, unknown keys, invalid signatures, expiry, issuer, audience, and failed payload
 validators make `verifyJwt` return `null`. Invalid configuration throws. Without a payload validator,
-verification returns `JWTPayload`; a caller-supplied type predicate narrows the result safely.
+verification returns `JWTPayload`; a caller-supplied type predicate narrows the result safely. The
+caller may set `clockTolerance` in seconds when its deployment policy permits clock skew.
 
 `decodeJwt(token)` only parses untrusted claims. It does not verify the signature, expiry, issuer, or
 audience and its result must never be used to authorize access.

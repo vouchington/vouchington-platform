@@ -10,7 +10,9 @@ export type JwtSignOptions = JwtConfiguration & {
   expiresIn: string | number | Date
   issuedAt?: number
 }
-export type JwtVerifyOptions = JwtConfiguration
+export type JwtVerifyOptions = JwtConfiguration & {
+  clockTolerance?: number
+}
 export type ValidatedJwtVerifyOptions<TPayload extends jose.JWTPayload> = JwtVerifyOptions & {
   validatePayload: (payload: jose.JWTPayload) => payload is TPayload
 }
@@ -50,6 +52,7 @@ export async function verifyJwt(
   options: InternalJwtVerifyOptions,
 ): Promise<jose.JWTPayload | null> {
   const audience = validateConfiguration(options)
+  validateClockTolerance(options.clockTolerance)
   let kid: string | undefined
   try {
     kid = jose.decodeProtectedHeader(token).kid
@@ -68,6 +71,9 @@ export async function verifyJwt(
           issuer: options.issuer,
           audience,
           algorithms: [JWT_ALGORITHM],
+          ...(options.clockTolerance === undefined
+            ? {}
+            : { clockTolerance: options.clockTolerance }),
         })
         if (options.validatePayload && !options.validatePayload(payload))
           throw new Error('Invalid JWT payload')
@@ -77,6 +83,11 @@ export async function verifyJwt(
   } catch {
     return null
   }
+}
+
+function validateClockTolerance(clockTolerance: number | undefined): void {
+  if (clockTolerance !== undefined && (!Number.isFinite(clockTolerance) || clockTolerance < 0))
+    throw new Error('JWT clock tolerance must be a non-negative finite number of seconds')
 }
 
 function validateConfiguration(options: JwtConfiguration): string | string[] {

@@ -136,13 +136,22 @@ describe('generic JWTs', () => {
 
   it('rejects expired and tampered tokens', async () => {
     const keySet = await makeKeySet()
+    const expiredAt = Math.floor(Date.now() / 1000) - 30
     const expired = await signJwt(
       { ok: true },
-      { keySet, issuer: 'issuer', audience: 'client', expiresIn: 0 },
+      { keySet, issuer: 'issuer', audience: 'client', expiresIn: expiredAt },
     )
     await expect(
       verifyJwt(expired, { keySet, issuer: 'issuer', audience: 'client' }),
     ).resolves.toBeNull()
+    await expect(
+      verifyJwt(expired, {
+        keySet,
+        issuer: 'issuer',
+        audience: 'client',
+        clockTolerance: 60,
+      }),
+    ).resolves.toMatchObject({ ok: true })
 
     const valid = await signJwt(
       { ok: true },
@@ -181,5 +190,11 @@ describe('generic JWTs', () => {
     await expect(
       verifyJwt('not.a.jwt', { ...base, audience: 1 as unknown as string }),
     ).rejects.toThrow('audience')
+    await expect(verifyJwt('not.a.jwt', { ...base, clockTolerance: -1 })).rejects.toThrow(
+      'clock tolerance',
+    )
+    await expect(verifyJwt('not.a.jwt', { ...base, clockTolerance: Number.NaN })).rejects.toThrow(
+      'clock tolerance',
+    )
   })
 })
