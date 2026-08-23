@@ -13,6 +13,7 @@ on:
           - '@vouchington/utils'
           - '@vouchington/session-jwt'
           - '@vouchington/queue-errors'
+          - '@vouchington/pagination'
       bump:
         description: Semver bump type
         type: choice
@@ -100,7 +101,7 @@ jobs:
           PACKAGE: ${{ inputs.package }}
           BUMP: ${{ inputs.bump }}
         run: |
-          DIRECTORY=$(node -p "Object.entries({ postgres: '@vouchington/postgres', utils: '@vouchington/utils', 'session-jwt': '@vouchington/session-jwt', 'queue-errors': '@vouchington/queue-errors' }).find(([, name]) => name === process.env.PACKAGE)?.[0] ?? ''")
+          DIRECTORY=$(node -p "require('node:fs').readdirSync('packages', { withFileTypes: true }).filter(entry => entry.isDirectory()).find(entry => JSON.parse(require('node:fs').readFileSync('packages/' + entry.name + '/package.json', 'utf8')).name === process.env.PACKAGE)?.name ?? ''")
           if [ -z "$DIRECTORY" ]; then
             echo "::error::Unknown package $PACKAGE" >&2
             exit 1

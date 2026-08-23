@@ -29,5 +29,9 @@
       "entry": ["src/index.mts!"],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
     },
+    "packages/pagination": {
+      "entry": ["src/index.mts!"],
+      "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
+    },
   },
 }
