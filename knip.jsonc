@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/knip/schema.json",
+  // pr-shepherd: agent CLI, not imported from source.
+  "ignoreDependencies": ["pr-shepherd"],
+  "workspaces": {
+    "packages/postgres": {
+      "entry": ["src/index.mts!"],
+      "project": ["src/**/*.mts!", "!src/**/*.test.mts!", "!src/**/test-helpers.mts!"],
+    },
+  },
+}

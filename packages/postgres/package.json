@@ -1,0 +1,52 @@
+{
+  "name": "@vouchington/postgres",
+  "version": "0.0.0",
+  "description": "Opinionated PostgreSQL runtime: triple pools, annotated queries, transactions, cursors, and migrations.",
+  "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/postgres#readme",
+  "bugs": {
+    "url": "https://github.com/vouchington/vouchington-platform/issues"
+  },
+  "license": "MIT",
+  "author": "Jonathan Ong",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vouchington/vouchington-platform.git",
+    "directory": "packages/postgres"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "@libpg-query/parser": "^18.0.0",
+    "pg": "^8.23.0",
+    "pg-cursor": "^2.22.0",
+    "pgvector": "^0.3.0",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1",
+    "@types/pg-cursor": "^2.7.2"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}
