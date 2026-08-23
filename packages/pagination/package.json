@@ -1,0 +1,47 @@
+{
+  "name": "@vouchington/pagination",
+  "version": "0.0.0",
+  "description": "Portable cursor codecs, guards, and configurable pagination query parsing.",
+  "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/pagination#readme",
+  "bugs": {
+    "url": "https://github.com/vouchington/vouchington-platform/issues"
+  },
+  "license": "MIT",
+  "author": "Jonathan Ong",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vouchington/vouchington-platform.git",
+    "directory": "packages/pagination"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "http-errors": "^2.0.1"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

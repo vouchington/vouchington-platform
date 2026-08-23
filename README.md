@@ -14,6 +14,7 @@ SKU names.
 | [`@vouchington/utils`](packages/utils)               | Dependency-free explicit-subpath runtime utilities                |
 | [`@vouchington/session-jwt`](packages/session-jwt)   | Portable RS512 JWT primitives and UUIDv7 identifiers              |
 | [`@vouchington/queue-errors`](packages/queue-errors) | glide-mq retry classification and rate-limit helpers              |
+| [`@vouchington/pagination`](packages/pagination)     | Cursor codecs, guards, and configuration-owned query parsing      |
 
 ## Commands
 
