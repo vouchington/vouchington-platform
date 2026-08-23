@@ -10,6 +10,7 @@ on:
         default: '@vouchington/postgres'
         options:
           - '@vouchington/postgres'
+          - '@vouchington/utils'
       bump:
         description: Semver bump type
         type: choice
@@ -97,7 +98,7 @@ jobs:
           PACKAGE: ${{ inputs.package }}
           BUMP: ${{ inputs.bump }}
         run: |
-          DIRECTORY=$(node -p "require('./packages/postgres/package.json').name === process.env.PACKAGE ? 'postgres' : ''")
+          DIRECTORY=$(node -p "Object.entries({ postgres: '@vouchington/postgres', utils: '@vouchington/utils' }).find(([, name]) => name === process.env.PACKAGE)?.[0] ?? ''")
           if [ -z "$DIRECTORY" ]; then
             echo "::error::Unknown package $PACKAGE" >&2
             exit 1

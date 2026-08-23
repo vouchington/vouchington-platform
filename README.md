@@ -11,6 +11,7 @@ SKU names.
 | Package                                      | Description                                                       |
 | -------------------------------------------- | ----------------------------------------------------------------- |
 | [`@vouchington/postgres`](packages/postgres) | Triple-pool PostgreSQL runtime, transactions, cursors, migrations |
+| [`@vouchington/utils`](packages/utils)       | Dependency-free explicit-subpath runtime utilities                |
 
 ## Commands
 
@@ -28,5 +29,6 @@ Postgres 18 is required for tests (`DATABASE_URL`, default
 
 ## Publishing
 
-Do not publish from a laptop. The `Release` workflow is `workflow_dispatch` and uses npm trusted
-publishing (OIDC). There is no `NPM_TOKEN` on purpose.
+Normal releases use the `Release` workflow and npm trusted publishing (OIDC); there is no
+`NPM_TOKEN`. A maintainer performs the one-time initial `0.0.0` bootstrap before configuring trust:
+`npm publish ./packages/utils --access public`.

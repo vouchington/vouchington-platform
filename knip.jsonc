@@ -2,10 +2,23 @@
   "$schema": "https://unpkg.com/knip/schema.json",
   // pr-shepherd: agent CLI, not imported from source.
   "ignoreDependencies": ["pr-shepherd"],
+  // dependency-cruiser contract fixtures are invoked by test/dependency-cruiser.test.mts.
+  "ignore": ["test/fixtures/dependency-cruiser/**"],
   "workspaces": {
     "packages/postgres": {
       "entry": ["src/index.mts!"],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!", "!src/**/test-helpers.mts!"],
+    },
+    "packages/utils": {
+      "entry": [
+        "src/token-secrets.mts!",
+        "src/deploy-environment.mts!",
+        "src/url-signing.mts!",
+        "src/request-client-info.mts!",
+        "src/money.mts!",
+        "src/env-contract.mts!",
+      ],
+      "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
     },
   },
 }
