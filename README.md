@@ -8,10 +8,11 @@ SKU names.
 
 ## Packages
 
-| Package                                      | Description                                                       |
-| -------------------------------------------- | ----------------------------------------------------------------- |
-| [`@vouchington/postgres`](packages/postgres) | Triple-pool PostgreSQL runtime, transactions, cursors, migrations |
-| [`@vouchington/utils`](packages/utils)       | Dependency-free explicit-subpath runtime utilities                |
+| Package                                            | Description                                                       |
+| -------------------------------------------------- | ----------------------------------------------------------------- |
+| [`@vouchington/postgres`](packages/postgres)       | Triple-pool PostgreSQL runtime, transactions, cursors, migrations |
+| [`@vouchington/utils`](packages/utils)             | Dependency-free explicit-subpath runtime utilities                |
+| [`@vouchington/session-jwt`](packages/session-jwt) | Portable RS512 JWT primitives and UUIDv7 identifiers              |
 
 ## Commands
 
@@ -31,4 +32,4 @@ Postgres 18 is required for tests (`DATABASE_URL`, default
 
 Normal releases use the `Release` workflow and npm trusted publishing (OIDC); there is no
 `NPM_TOKEN`. A maintainer performs the one-time initial `0.0.0` bootstrap before configuring trust:
-`npm publish ./packages/utils --access public`.
+`npm publish ./packages/<directory> --access public`.

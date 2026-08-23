@@ -11,6 +11,7 @@ on:
         options:
           - '@vouchington/postgres'
           - '@vouchington/utils'
+          - '@vouchington/session-jwt'
       bump:
         description: Semver bump type
         type: choice
@@ -98,7 +99,7 @@ jobs:
           PACKAGE: ${{ inputs.package }}
           BUMP: ${{ inputs.bump }}
         run: |
-          DIRECTORY=$(node -p "Object.entries({ postgres: '@vouchington/postgres', utils: '@vouchington/utils' }).find(([, name]) => name === process.env.PACKAGE)?.[0] ?? ''")
+          DIRECTORY=$(node -p "Object.entries({ postgres: '@vouchington/postgres', utils: '@vouchington/utils', 'session-jwt': '@vouchington/session-jwt' }).find(([, name]) => name === process.env.PACKAGE)?.[0] ?? ''")
           if [ -z "$DIRECTORY" ]; then
             echo "::error::Unknown package $PACKAGE" >&2
             exit 1

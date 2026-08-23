@@ -17,7 +17,12 @@
         "src/request-client-info.mts!",
         "src/money.mts!",
         "src/env-contract.mts!",
+        "src/cookies.mts!",
       ],
+      "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
+    },
+    "packages/session-jwt": {
+      "entry": ["src/index.mts!"],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
     },
   },

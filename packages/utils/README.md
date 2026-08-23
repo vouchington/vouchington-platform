@@ -6,6 +6,7 @@ export: import the capability you use from an explicit subpath.
 ```ts
 import { createTokenSecrets } from '@vouchington/utils/token-secrets'
 import { createMoneyCatalog } from '@vouchington/utils/money'
+import { serializeCookie } from '@vouchington/utils/cookies'
 ```
 
 ## Subpaths
@@ -22,6 +23,8 @@ import { createMoneyCatalog } from '@vouchington/utils/money'
   the caller's catalog.
 - `env-contract`: `groupEnvContracts()` and `normalizeEnvContractGroups()` produce delimiter-safe
   metadata keys and surface/sensitivity lookups.
+- `cookies`: `serializeCookie(name, value, attributes)` validates cookie grammar and requires the
+  caller to supply every policy attribute. `SameSite=None` requires `Secure`.
 
 ```ts
 const money = createMoneyCatalog([{ code: 'credit', minorUnitExponent: 2 }] as const, 6)
