@@ -14,6 +14,12 @@ describe('token secrets', () => {
     expect(ciphertext).toMatch(/^v1:new:/)
     expect(secrets.decryptSecret(ciphertext, 'purpose')).toBe('token')
     expect(() => secrets.decryptSecret(ciphertext, 'other')).toThrow()
+
+    const spaced = createTokenSecrets({
+      hashSecret: ' hash ',
+      encryptionKeys: parseEncryptionKeys(`new:raw32:${material}`),
+    })
+    expect(spaced.hashToken('one', 'token')).not.toBe(secrets.hashToken('one', 'token'))
   })
 
   it('supports key rotation and rejects malformed keys or ciphertext', () => {

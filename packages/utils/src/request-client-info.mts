@@ -33,6 +33,15 @@ export function createClientInfoParser<Client extends string, Platform extends s
 ) {
   const clients = new Set(configuration.clients)
   const platforms = new Set(configuration.platforms)
+  const compatiblePlatforms = new Map<Client, ReadonlySet<Platform>>()
+  for (const client of clients) {
+    const compatible = configuration.compatiblePlatforms[client]
+    if (!Array.isArray(compatible))
+      throw new TypeError(`Client ${client} requires compatible platforms`)
+    if (compatible.some((platform) => !platforms.has(platform)))
+      throw new TypeError(`Client ${client} has an unknown compatible platform`)
+    compatiblePlatforms.set(client, new Set(compatible))
+  }
   const versionPattern = configuration.versionPattern ?? /^[\x20-\x7e]{1,64}$/
   if (versionPattern.global || versionPattern.sticky)
     throw new TypeError('Version patterns cannot be global or sticky')
@@ -61,7 +70,7 @@ export function createClientInfoParser<Client extends string, Platform extends s
           versionPattern,
         )
       : undefined
-    if (!configuration.compatiblePlatforms[client].includes(platform))
+    if (!compatiblePlatforms.get(client)!.has(platform))
       throw new ClientInfoValidationError(`${client} and ${platform} are incompatible`)
     return { client, platform, appVersion, ...(sdkVersion === undefined ? {} : { sdkVersion }) }
   }

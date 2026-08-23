@@ -20,8 +20,8 @@ export function createTokenSecrets(options: {
   hashSecret: string
   encryptionKeys: readonly EncryptionKey[]
 }): TokenSecrets {
-  const hashSecret = options.hashSecret.trim()
-  if (!hashSecret) throw new Error('Hash secret must not be empty')
+  if (!options.hashSecret.trim()) throw new Error('Hash secret must not be empty')
+  const hashSecret = options.hashSecret
   if (options.encryptionKeys.length === 0)
     throw new Error('Encryption keys must contain at least one key')
   for (const key of options.encryptionKeys) {

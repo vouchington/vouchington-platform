@@ -38,7 +38,7 @@ describe('client info parser', () => {
       'invalid',
     )
     expect(() =>
-      createClientInfoParser({
+      createClientInfoParser<string, string>({
         headers: { client: 'client', platform: 'platform', appVersion: 'version' },
         clients: ['client'] as const,
         platforms: ['platform'] as const,
@@ -65,5 +65,34 @@ describe('client info parser', () => {
     expect(() =>
       parse({ 'x-client': 'browser', 'x-platform': 'unknown', 'x-version': '1' }),
     ).toThrow('invalid')
+  })
+
+  it('validates and copies client compatibility configuration', () => {
+    expect(() =>
+      createClientInfoParser<string, string>({
+        headers: { client: 'client', platform: 'platform', appVersion: 'version' },
+        clients: ['client'],
+        platforms: ['platform'],
+        compatiblePlatforms: {},
+      }),
+    ).toThrow('requires compatible platforms')
+    expect(() =>
+      createClientInfoParser({
+        headers: { client: 'client', platform: 'platform', appVersion: 'version' },
+        clients: ['client'],
+        platforms: ['platform'],
+        compatiblePlatforms: { client: ['unknown'] },
+      }),
+    ).toThrow('unknown compatible platform')
+
+    const compatible: string[] = ['platform']
+    const stable = createClientInfoParser({
+      headers: { client: 'client', platform: 'platform', appVersion: 'version' },
+      clients: ['client'],
+      platforms: ['platform'],
+      compatiblePlatforms: { client: compatible },
+    })
+    compatible.length = 0
+    expect(stable({ client: 'client', platform: 'platform', version: '1' })).toBeDefined()
   })
 })
