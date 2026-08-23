@@ -31,6 +31,12 @@ export function createQueryApi(runtime: PsqlRuntime) {
       finalOptions.client || (finalOptions.readOnly ? runtime.pools.read : runtime.pools.write)
 
     try {
+      runtime.onBeforeQuery?.(input, values)
+    } catch {
+      // capture is best-effort; never break real queries
+    }
+
+    try {
       if (finalOptions.query) {
         return await finalOptions.query<Row>(input, values)
       }

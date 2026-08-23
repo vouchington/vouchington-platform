@@ -1,9 +1,6 @@
 import type pg from 'pg'
 
-import type { ErrorHandler, QueryTimingHandler, TransactionQuery } from './types.mts'
 import type { BoundedTransactionOptions } from './bounded-transaction.mts'
-import type { PipelineBatchOptions } from './pipeline-batch.mts'
-import type { QueryInput, QueryOptions, QueryValues } from './types.mts'
 import type {
   CursorGeneratorOptions,
   CursorHandlerOptions,
@@ -12,6 +9,17 @@ import type {
 } from './cursor-types.mts'
 import type { RunMigrationsOptions } from './migration-runner/fixed-migrations.mts'
 import type { MigrationLogger } from './migration-runner/migration-logger.mts'
+import type { MigrationTimeouts } from './migration-runner/migration-options.mts'
+import type { PipelineBatchOptions } from './pipeline-batch.mts'
+import type {
+  BeforeQueryHandler,
+  ErrorHandler,
+  QueryInput,
+  QueryOptions,
+  QueryTimingHandler,
+  QueryValues,
+  TransactionQuery,
+} from './types.mts'
 
 export interface CreatePsqlOptions {
   connectionString: string
@@ -19,6 +27,7 @@ export interface CreatePsqlOptions {
   env?: NodeJS.ProcessEnv
   errorHandler?: ErrorHandler
   onQueryTiming?: QueryTimingHandler
+  onBeforeQuery?: BeforeQueryHandler
   vector?: boolean
   databaseName?: string
   migrationExtensions?: readonly string[]
@@ -61,6 +70,10 @@ export interface Psql {
     folder: string,
     loggerOrOptions?: RunMigrationsOptions | MigrationLogger,
   ) => Promise<void>
+  withMigrationSession: <Result>(
+    handler: (client: pg.PoolClient) => Promise<Result>,
+    timeouts?: Partial<MigrationTimeouts>,
+  ) => Promise<Result>
   close: () => Promise<void>
 }
 

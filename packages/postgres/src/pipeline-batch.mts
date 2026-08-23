@@ -32,6 +32,13 @@ export function createPipelineBatch(runtime: PsqlRuntime) {
     if (queries.length === 0) return []
 
     const validated = queries.map((query) => snapshotPipelineQuery(query, runtime.env))
+    for (const query of validated) {
+      try {
+        runtime.onBeforeQuery?.(query.text, query.values)
+      } catch {
+        // capture is best-effort; never break real queries
+      }
+    }
     const readOnly = options.readOnly !== false
     const pool = readOnly ? runtime.pools.read : runtime.pools.write
     const poolLabel = readOnly ? 'read' : 'write'
