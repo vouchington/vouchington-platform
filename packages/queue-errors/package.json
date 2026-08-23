@@ -35,7 +35,10 @@
     "build": "tsc --project tsconfig.build.json",
     "prepack": "pnpm run build"
   },
-  "dependencies": {
+  "devDependencies": {
+    "glide-mq": "^0.15.3"
+  },
+  "peerDependencies": {
     "glide-mq": "^0.15.3"
   },
   "engines": {

@@ -7,8 +7,11 @@ extraction, rate-limit detection, and cooldown policy.
 ## Install
 
 ```sh
-pnpm add @vouchington/queue-errors
+pnpm add @vouchington/queue-errors glide-mq
 ```
+
+GlideMQ is a peer dependency so workers and these helpers share the same control-flow error
+classes.
 
 ## HTTP retry classification
 
