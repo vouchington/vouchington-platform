@@ -1,0 +1,64 @@
+{
+  "name": "@vouchington/utils",
+  "version": "0.0.0",
+  "description": "Dependency-free runtime utilities for Vouchington-style applications.",
+  "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/utils#readme",
+  "bugs": {
+    "url": "https://github.com/vouchington/vouchington-platform/issues"
+  },
+  "license": "MIT",
+  "author": "Jonathan Ong",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vouchington/vouchington-platform.git",
+    "directory": "packages/utils"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "exports": {
+    "./token-secrets": {
+      "types": "./dist/token-secrets.d.mts",
+      "import": "./dist/token-secrets.mjs",
+      "default": "./dist/token-secrets.mjs"
+    },
+    "./deploy-environment": {
+      "types": "./dist/deploy-environment.d.mts",
+      "import": "./dist/deploy-environment.mjs",
+      "default": "./dist/deploy-environment.mjs"
+    },
+    "./url-signing": {
+      "types": "./dist/url-signing.d.mts",
+      "import": "./dist/url-signing.mjs",
+      "default": "./dist/url-signing.mjs"
+    },
+    "./request-client-info": {
+      "types": "./dist/request-client-info.d.mts",
+      "import": "./dist/request-client-info.mjs",
+      "default": "./dist/request-client-info.mjs"
+    },
+    "./money": {
+      "types": "./dist/money.d.mts",
+      "import": "./dist/money.mjs",
+      "default": "./dist/money.mjs"
+    },
+    "./env-contract": {
+      "types": "./dist/env-contract.d.mts",
+      "import": "./dist/env-contract.mjs",
+      "default": "./dist/env-contract.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "prepack": "pnpm run build"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

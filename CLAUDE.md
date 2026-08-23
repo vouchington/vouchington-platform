@@ -24,8 +24,13 @@ docker run --rm -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:18
 ## Packages
 
 - `@vouchington/postgres` — PostgreSQL runtime factory
+- `@vouchington/utils` — dependency-free explicit-subpath utilities
 
-Extracted code must contain no product identifiers. Repo-specific values are parameters or env vars.
+Extracted APIs must be generalizable and parameterized; product identifiers, defaults, and policy
+belong in application adapters. Code with no third-party runtime dependencies belongs in an explicit
+`@vouchington/utils/<subpath>` export. Code requiring any third-party runtime dependency must be its
+own `@vouchington/<name>` package and declare that dependency there. Node built-ins do not count as
+third-party dependencies.
 
 Record the source SHA and path list in the commit body when copying from the product monorepo.
 
@@ -33,6 +38,7 @@ Use `pr-shepherd` (not `gh pr checks`) to iterate pull requests.
 
 ## Publishing
 
-Do not publish from a laptop. The `Release` workflow is `workflow_dispatch` and publishes with npm
-trusted publishing (OIDC). `RELEASE_TOKEN` needs Contents Read & Write on this repository for the
-version-bump push and GitHub release. There is no `NPM_TOKEN` on purpose.
+Normal releases are workflow-only: `Release` publishes with npm trusted publishing (OIDC).
+For a new package only, a maintainer may bootstrap `0.0.0` before trust configuration with
+`npm publish ./packages/<directory> --access public`; all later releases remain OIDC-only.
+`RELEASE_TOKEN` needs Contents Read & Write for the version-bump push and GitHub release.

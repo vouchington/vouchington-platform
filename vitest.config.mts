@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     fileParallelism: false,
-    include: ['packages/*/src/**/*.test.mts'],
+    include: ['packages/*/src/**/*.test.mts', 'test/**/*.test.mts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
