@@ -48,6 +48,7 @@ describe('cursor envelopes', () => {
   it('round-trips opaque base64url JSON and rejects malformed payloads', () => {
     expect(encodeCursor({ id })).not.toContain('=')
     expect(decodeCursor(encodeCursor({ id }))).toEqual({ id })
+    expect(decodeCursor('eyJpZCI6IsK-In0')).toEqual({ id: '¾' })
     expect(decodeCursor(Buffer.from(JSON.stringify({ id })).toString('base64'))).toEqual({ id })
     expect(
       decodeCursor(Buffer.from(JSON.stringify({ id })).toString('base64').replace(/=+$/, '')),
@@ -60,10 +61,13 @@ describe('cursor envelopes', () => {
       'a-_+',
       'a-=',
       'a-bcd',
+      'eyJpZCI6IsK-In1',
       'aa=',
       'aaa==',
       'eyJpZCI6IjEifQ=',
       'eyJpZCI6IjEifQ===',
+      'eyJpZCI6IjEifR',
+      'eyJpZCI6IjEifR==',
       '=eyJpZCI6IjEifQ',
       Buffer.from('no json').toString('base64'),
       Buffer.from('null').toString('base64'),
