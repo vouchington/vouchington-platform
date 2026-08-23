@@ -19,6 +19,7 @@ describe('utils dependency boundary', () => {
       'request-client-info',
       'money',
       'env-contract',
+      'cookies',
     ]) {
       expect(existsSync(`packages/utils/dist/${entry}.mjs`)).toBe(true)
       expect(existsSync(`packages/utils/dist/${entry}.d.mts`)).toBe(true)

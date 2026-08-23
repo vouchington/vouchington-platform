@@ -49,6 +49,11 @@
       "types": "./dist/env-contract.d.mts",
       "import": "./dist/env-contract.mjs",
       "default": "./dist/env-contract.mjs"
+    },
+    "./cookies": {
+      "types": "./dist/cookies.d.mts",
+      "import": "./dist/cookies.mjs",
+      "default": "./dist/cookies.mjs"
     }
   },
   "publishConfig": {
