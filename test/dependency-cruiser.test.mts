@@ -1,5 +1,7 @@
 import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, rmSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 import { beforeAll, describe, expect, it } from 'vitest'
 
@@ -8,10 +10,11 @@ const fixture = 'test/fixtures/dependency-cruiser'
 
 describe('utils dependency boundary', () => {
   beforeAll(() => {
+    rmSync('packages/utils/dist', { recursive: true, force: true })
     execFileSync(cruise, ['run', 'build'], { encoding: 'utf8' })
   })
 
-  it('publishes every explicit subpath and no root export', async () => {
+  it('publishes every explicit subpath and no root export', () => {
     for (const entry of [
       'token-secrets',
       'deploy-environment',
@@ -23,7 +26,7 @@ describe('utils dependency boundary', () => {
     ]) {
       expect(existsSync(`packages/utils/dist/${entry}.mjs`)).toBe(true)
       expect(existsSync(`packages/utils/dist/${entry}.d.mts`)).toBe(true)
-      await expect(import(`../packages/utils/dist/${entry}.mjs`)).resolves.toBeDefined()
+      importBuiltModule(`packages/utils/dist/${entry}.mjs`)
     }
     expect(existsSync('packages/utils/dist/index.mjs')).toBe(false)
   })
@@ -45,7 +48,29 @@ describe('utils dependency boundary', () => {
     expect(manifest.optionalDependencies).toBeUndefined()
     expect(manifest.peerDependencies).toBeUndefined()
   })
+
+  it('surfaces native module import failures', () => {
+    expect(() => importBuiltModule('packages/utils/dist/does-not-exist.mjs')).toThrow(
+      /Failed to import packages\/utils\/dist\/does-not-exist\.mjs:[\s\S]*ERR_MODULE_NOT_FOUND/,
+    )
+  })
 })
+
+function importBuiltModule(file: string): void {
+  const moduleUrl = pathToFileURL(resolve(file)).href
+  try {
+    execFileSync(
+      process.execPath,
+      ['--input-type=module', '--eval', `await import(${JSON.stringify(moduleUrl)})`],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    )
+  } catch (error) {
+    const stderr = (error as { stderr?: string }).stderr?.trim()
+    throw new Error(stderr ? `Failed to import ${file}:\n${stderr}` : `Failed to import ${file}`, {
+      cause: error,
+    })
+  }
+}
 
 function run(file: string): string {
   try {
