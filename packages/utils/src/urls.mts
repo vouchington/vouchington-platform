@@ -37,6 +37,7 @@ export function normalizeAsciiHostname(value: string): string | null {
   try {
     const candidate = /^[a-z][a-z0-9+.-]*:\/\//i.test(input) ? input : `https://${input}`
     const authority = candidate.match(/^[a-z][a-z0-9+.-]*:\/\/([^/?#]*)/i)?.[1]
+    // oxlint-disable-next-line no-control-regex -- validate the authority before URL punycode conversion.
     if (!authority || /[^\x00-\x7F]/.test(authority)) return null
     const url = new URL(candidate)
     const hostname = url.hostname.toLowerCase().replace(/\.$/, '')
