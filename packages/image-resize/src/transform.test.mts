@@ -42,6 +42,7 @@ describe('image transforms', () => {
   })
 
   it('validates options and wraps sharp failures', async () => {
+    await expect(transformImage(await source(), {} as never)).rejects.toThrow('width')
     await expect(transformImage(await source(), { width: 0, format: 'png' })).rejects.toThrow(
       'width',
     )
@@ -51,6 +52,17 @@ describe('image transforms', () => {
     await expect(
       transformImage(await source(), { width: 1, format: 'png', quality: 101 }),
     ).rejects.toThrow('quality')
+    await expect(
+      transformImage(await source(), { width: 1, format: 'gif' as never }),
+    ).rejects.toThrow('format')
+    await expect(
+      transformImage(await source(), { width: 1, format: 'png', maxInputPixels: 0 }),
+    ).rejects.toThrow('maxInputPixels')
+    for (const maxInputPixels of [true, false, 1000] as const) {
+      await expect(
+        transformImage(await source(), { width: 1, format: 'png', maxInputPixels }),
+      ).resolves.toBeInstanceOf(Buffer)
+    }
     await expect(
       transformImage(Buffer.from('not an image'), { width: 1, format: 'png' }),
     ).rejects.toBeInstanceOf(ImageTransformError)

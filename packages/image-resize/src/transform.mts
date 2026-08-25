@@ -1,5 +1,5 @@
 import sharp from 'sharp'
-import type { ImageOutputFormat } from './formats.mts'
+import { IMAGE_OUTPUT_FORMATS, type ImageOutputFormat } from './formats.mts'
 
 export interface TransformImageOptions {
   width: number
@@ -60,13 +60,11 @@ export async function transformImage(
 }
 
 function validateOptions(options: TransformImageOptions): void {
-  for (const [name, value] of [
-    ['width', options.width],
-    ['height', options.height],
-  ] as const) {
-    if (value !== undefined && (!Number.isSafeInteger(value) || value <= 0)) {
-      throw new RangeError(`${name} must be a positive safe integer`)
-    }
+  if (!isPositiveSafeInteger(options.width)) {
+    throw new RangeError('width must be a positive safe integer')
+  }
+  if (options.height !== undefined && !isPositiveSafeInteger(options.height)) {
+    throw new RangeError('height must be a positive safe integer')
   }
   if (
     options.quality !== undefined &&
@@ -74,4 +72,18 @@ function validateOptions(options: TransformImageOptions): void {
   ) {
     throw new RangeError('quality must be an integer from 1 through 100')
   }
+  if (!IMAGE_OUTPUT_FORMATS.includes(options.format)) {
+    throw new RangeError('format must be a supported image output format')
+  }
+  if (
+    options.maxInputPixels !== undefined &&
+    typeof options.maxInputPixels !== 'boolean' &&
+    !isPositiveSafeInteger(options.maxInputPixels)
+  ) {
+    throw new RangeError('maxInputPixels must be a boolean or a positive safe integer')
+  }
+}
+
+function isPositiveSafeInteger(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0
 }

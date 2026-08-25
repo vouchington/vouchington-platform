@@ -3,7 +3,7 @@ export type UndiciFetchInit = RequestInit
 export type UndiciCompatibleFetch = (url: URL, init?: UndiciFetchInit) => Promise<Response>
 
 export interface ResolvedHttpDestination {
-  dispatcher?: RequestInit['dispatcher']
+  dispatcher: NonNullable<RequestInit['dispatcher']>
 }
 
 export type ResolveHttpDestination = (
@@ -35,24 +35,43 @@ export function createRedirectingFetch(options: RedirectingFetchOptions) {
   return async function redirectingFetch(input: URL | string, init: UndiciFetchInit = {}) {
     rejectUnsafeRequestInit(init)
     let url = parseHttpUrl(input)
+    let credentials = init.credentials
+    const headers = new Headers(init.headers)
 
     for (let redirects = 0; ; redirects += 1) {
       const destination = await options.resolveDestination(url, init.signal)
       const response = await options.fetch(url, {
         ...init,
-        ...(destination.dispatcher === undefined ? {} : { dispatcher: destination.dispatcher }),
+        headers: new Headers(headers),
+        ...(credentials === undefined ? {} : { credentials }),
+        dispatcher: destination.dispatcher,
         redirect: 'manual',
       })
       if (!REDIRECT_STATUSES.has(response.status)) return response
 
       const location = response.headers.get('location')
-      void response.body?.cancel()
+      await cancelResponseBody(response)
       if (location === null)
         throw new RedirectFetchError('Redirect response has no Location header')
       if (redirects >= maxRedirects)
         throw new RedirectFetchError(`Exceeded ${maxRedirects} redirects`)
-      url = parseHttpUrl(new URL(location, url))
+      const nextUrl = parseHttpUrl(new URL(location, url))
+      if (nextUrl.origin !== url.origin) {
+        headers.delete('authorization')
+        headers.delete('cookie')
+        headers.delete('proxy-authorization')
+        credentials = 'omit'
+      }
+      url = nextUrl
     }
+  }
+}
+
+async function cancelResponseBody(response: Response): Promise<void> {
+  try {
+    await response.body?.cancel()
+  } catch {
+    // The redirect is still rejected or followed after a best-effort cleanup.
   }
 }
 
