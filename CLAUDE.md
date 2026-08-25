@@ -28,6 +28,8 @@ docker run --rm -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:18
 - `@vouchington/session-jwt` — portable RS512 JWT primitives
 - `@vouchington/pagination` — cursor codecs, guards, and configurable query parsing
 - `@vouchington/queue-errors` — GlideMQ retry classification and rate-limit helpers
+- `@vouchington/browser-crawl` — injected Playwright rendered-page collection
+- `@vouchington/domain-verification` — DNS TXT and secure-transport verification primitives
 
 Extracted APIs must be generalizable and parameterized; product identifiers, defaults, and policy
 belong in application adapters. Code with no third-party runtime dependencies belongs in an explicit

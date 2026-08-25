@@ -8,13 +8,15 @@ SKU names.
 
 ## Packages
 
-| Package                                              | Description                                                       |
-| ---------------------------------------------------- | ----------------------------------------------------------------- |
-| [`@vouchington/postgres`](packages/postgres)         | Triple-pool PostgreSQL runtime, transactions, cursors, migrations |
-| [`@vouchington/utils`](packages/utils)               | Dependency-free explicit-subpath runtime utilities                |
-| [`@vouchington/session-jwt`](packages/session-jwt)   | Portable RS512 JWT primitives and UUIDv7 identifiers              |
-| [`@vouchington/queue-errors`](packages/queue-errors) | glide-mq retry classification and rate-limit helpers              |
-| [`@vouchington/pagination`](packages/pagination)     | Cursor codecs, guards, and configuration-owned query parsing      |
+| Package                                                            | Description                                                       |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| [`@vouchington/postgres`](packages/postgres)                       | Triple-pool PostgreSQL runtime, transactions, cursors, migrations |
+| [`@vouchington/utils`](packages/utils)                             | Dependency-free explicit-subpath runtime utilities                |
+| [`@vouchington/session-jwt`](packages/session-jwt)                 | Portable RS512 JWT primitives and UUIDv7 identifiers              |
+| [`@vouchington/queue-errors`](packages/queue-errors)               | glide-mq retry classification and rate-limit helpers              |
+| [`@vouchington/pagination`](packages/pagination)                   | Cursor codecs, guards, and configuration-owned query parsing      |
+| [`@vouchington/browser-crawl`](packages/browser-crawl)             | Injected Playwright rendered-page collection                      |
+| [`@vouchington/domain-verification`](packages/domain-verification) | DNS TXT and secure-transport well-known verification              |
 
 ## Commands
 
