@@ -37,6 +37,7 @@ describe('observability scrubbing', () => {
     expect(
       scrubHeaders({ Referrer: ['https://a.test/?secret=1', 'https://b.test/#secret', 3] }, []),
     ).toEqual({ Referrer: ['https://a.test/', 'https://b.test/', 3] })
+    expect(scrubHeaders({ Referer: 3 }, [])).toEqual({ Referer: 3 })
   })
   it('scrubs lowercase configured span keys plus referer and referrer attributes', () => {
     expect(
