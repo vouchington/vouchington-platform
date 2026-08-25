@@ -26,7 +26,11 @@ export function streamCsvRows(
   columns: readonly string[],
 ): NodeJS.ReadableStream {
   const stream = createStringifier({ columns: [...columns], header: true })
-  for (const row of normalizeRows(rows, columns)) stream.write(row)
+  for (const row of rows) {
+    stream.write(
+      Object.fromEntries(columns.map((column) => [column, protectCsvFormula(row[column] ?? '')])),
+    )
+  }
   stream.end()
   return stream
 }
