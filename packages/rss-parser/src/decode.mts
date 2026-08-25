@@ -1,6 +1,8 @@
 const prescanBytes = 1024
 const xmlEncoding = /^\uFEFF?<\?xml\s+[^>]*\bencoding\s*=\s*["']([^"']+)["']/i
 const contentTypeCharset = /(?:^|;)\s*charset\s*=\s*("?)([^";\s]+)\1/i
+const utf16leDeclaration = Buffer.from([0x3c, 0x00, 0x3f, 0x00])
+const utf16beDeclaration = Buffer.from([0x00, 0x3c, 0x00, 0x3f])
 
 export function decodeFeed(body: Uint8Array, contentType?: string | null): string {
   const buffer = Buffer.from(body)
@@ -28,6 +30,8 @@ function contentCharset(contentType?: string | null): string | null {
 }
 
 function xmlCharset(body: Buffer): string | null {
+  if (body.subarray(0, 4).equals(utf16leDeclaration)) return 'utf-16le'
+  if (body.subarray(0, 4).equals(utf16beDeclaration)) return 'utf-16be'
   const prefix = body.subarray(0, prescanBytes).toString('latin1')
   return prefix.match(xmlEncoding)?.[1]?.trim() ?? null
 }

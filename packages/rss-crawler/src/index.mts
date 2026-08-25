@@ -52,25 +52,35 @@ async function handleResponse(
     etag: response.headers.get('etag'),
     lastModified: response.headers.get('last-modified'),
   }
-  if (response.status === 304)
+  if (response.status === 304) {
+    await cancelResponseBody(response)
     return { responseCode: 304, feed: null, contentSha256: null, headers }
+  }
   if ([301, 302, 303, 307, 308].includes(response.status)) {
     const location = response.headers.get('location')
+    await cancelResponseBody(response)
     if (!location) throw new Error(`Redirect response for ${url} has no Location header`)
     return {
       responseCode: response.status,
       feed: null,
       contentSha256: null,
       headers,
-      redirect: { location, isPermanent: response.status === 301 || response.status === 308 },
+      redirect: {
+        location: new URL(location, url).toString(),
+        isPermanent: response.status === 301 || response.status === 308,
+      },
     }
   }
-  if (!response.ok) throw new Error(`Feed request for ${url} failed with HTTP ${response.status}`)
+  if (!response.ok) {
+    await cancelResponseBody(response)
+    throw new Error(`Feed request for ${url} failed with HTTP ${response.status}`)
+  }
   const contentType = response.headers.get('content-type')
-  if (contentType && !isFeedContentType(contentType))
+  if (contentType && !isFeedContentType(contentType)) {
+    await cancelResponseBody(response)
     throw new TypeError(`Expected a feed content type, received ${contentType}`)
-  const body = new Uint8Array(await response.arrayBuffer())
-  if (body.byteLength > maxBytes) throw new RangeError(`Feed response exceeds ${maxBytes} bytes`)
+  }
+  const body = await readResponseBody(response, maxBytes)
   const parsed = parseFeedDocument(body, { contentType })
   return {
     responseCode: response.status,
@@ -78,6 +88,42 @@ async function handleResponse(
     contentSha256: parsed.contentSha256,
     headers,
   }
+}
+
+async function cancelResponseBody(response: Response): Promise<void> {
+  try {
+    await response.body?.cancel()
+  } catch {
+    // Cleanup must not replace the crawl outcome.
+  }
+}
+
+async function readResponseBody(response: Response, maxBytes: number): Promise<Uint8Array> {
+  const reader = response.body?.getReader()
+  if (!reader) return new Uint8Array()
+  const chunks: Uint8Array[] = []
+  let length = 0
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      length += value.byteLength
+      if (length > maxBytes) {
+        await reader.cancel()
+        throw new RangeError(`Feed response exceeds ${maxBytes} bytes`)
+      }
+      chunks.push(value)
+    }
+  } finally {
+    reader.releaseLock()
+  }
+  const body = new Uint8Array(length)
+  let offset = 0
+  for (const chunk of chunks) {
+    body.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return body
 }
 
 function assertPositive(value: number, name: string): void {

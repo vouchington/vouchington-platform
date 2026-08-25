@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { getCrawlDelayMs, isUrlAllowed, type RobotsCache, type RobotsTransport } from './index.mts'
+import {
+  getCrawlDelayMilliseconds,
+  getCrawlDelayMs,
+  isUrlAllowed,
+  type RobotsCache,
+  type RobotsTransport,
+} from './index.mts'
 
 function transport(body: string, status = 200): RobotsTransport {
   return { fetch: async () => new Response(body, { status }) }
@@ -68,5 +74,83 @@ describe('robots', () => {
         maxResponseSizeBytes: 0,
       }),
     ).rejects.toThrow('maxResponse')
+    await expect(
+      isUrlAllowed('https://example.test/', 'bot', {
+        transport: transport(''),
+        maxResponseSizeBytes: 0.5,
+      }),
+    ).rejects.toThrow('maxResponse')
+  })
+
+  it('bounds streams, cancels unavailable responses, and coalesces matching options', async () => {
+    const overflow = responseWithBody(['ab', 'cd'])
+    await expect(
+      isUrlAllowed('https://example.test/', 'bot', {
+        transport: transportResponse(overflow.response),
+        maxResponseSizeBytes: 3,
+      }),
+    ).resolves.toBe(true)
+    expect(overflow.wasCanceled()).toBe(true)
+    const unavailable = responseWithBody(['x'], 503)
+    await expect(
+      isUrlAllowed('https://example.test/', 'bot', {
+        transport: transportResponse(unavailable.response),
+      }),
+    ).resolves.toBe(true)
+    expect(unavailable.wasCanceled()).toBe(true)
+
+    let calls = 0
+    let releaseFetch: () => void = () => undefined
+    const waitForFetch = new Promise<void>((resolve) => {
+      releaseFetch = resolve
+    })
+    const options = {
+      transport: {
+        fetch: async () => {
+          calls += 1
+          await waitForFetch
+          return new Response('User-agent: *\nAllow: /')
+        },
+      },
+    }
+    const first = isUrlAllowed('https://example.test/one', 'bot', options)
+    const second = isUrlAllowed('https://example.test/two', 'bot', options)
+    releaseFetch()
+    await expect(Promise.all([first, second])).resolves.toEqual([true, true])
+    expect(calls).toBe(1)
+  })
+
+  it('normalizes unusable crawl delays and accepts empty bodies', async () => {
+    expect(getCrawlDelayMilliseconds(undefined)).toBeNull()
+    expect(getCrawlDelayMilliseconds(Number.NaN)).toBeNull()
+    expect(getCrawlDelayMilliseconds(Number.POSITIVE_INFINITY)).toBeNull()
+    expect(getCrawlDelayMilliseconds(-1)).toBeNull()
+    expect(getCrawlDelayMilliseconds(1.2)).toBe(1200)
+    await expect(
+      isUrlAllowed('https://example.test/', 'bot', {
+        transport: { fetch: async () => new Response(null) },
+      }),
+    ).resolves.toBe(true)
   })
 })
+
+function transportResponse(response: Response): RobotsTransport {
+  return { fetch: async () => response }
+}
+
+function responseWithBody(
+  chunks: string[],
+  status = 200,
+): { response: Response; wasCanceled: () => boolean } {
+  let canceled = false
+  const stream = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      const chunk = chunks.shift()
+      if (chunk) controller.enqueue(Buffer.from(chunk))
+    },
+    cancel() {
+      canceled = true
+    },
+  })
+  return { response: new Response(stream, { status }), wasCanceled: () => canceled }
+}

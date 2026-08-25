@@ -1,4 +1,5 @@
 import { Buffer } from 'node:buffer'
+import { MIMEType } from 'node:util'
 import {
   decodeHtml,
   getContentFromHtml,
@@ -13,8 +14,11 @@ export type { CrawlerHtmlToMarkdownOptions, CrawlerHtmlToMarkdownResult }
 /** Returns whether an HTTP content type is an HTML representation. */
 export function isHtmlContentType(contentType: string | null | undefined): boolean {
   if (!contentType) return false
-  const normalized = contentType.toLowerCase()
-  return HTML_CONTENT_TYPES.some((type) => normalized.includes(type))
+  try {
+    return HTML_CONTENT_TYPES.includes(new MIMEType(contentType).essence)
+  } catch {
+    return false
+  }
 }
 
 /** Decodes raw response bytes and extracts the content using Vurst's HTML parser. */

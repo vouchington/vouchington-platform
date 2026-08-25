@@ -37,9 +37,21 @@ describe('rss parser', () => {
     expect(decodeFeed(Buffer.from([0xff]), 'charset=made-up')).toBe('ÿ')
     expect(decodeFeed(Buffer.from([0xff, 0xfe, 0x61, 0x00]))).toBe('a')
     expect(decodeFeed(Buffer.from([0xfe, 0xff, 0x00, 0x61]))).toBe('a')
+    expect(decodeFeed(Buffer.from('<?xml version="1.0"?><rss/>', 'utf16le'))).toContain('<rss')
+    expect(decodeFeed(toUtf16Be('<?xml version="1.0"?><rss/>'))).toContain('<rss')
     expect(decodeFeed(Buffer.from([0xef, 0xbb, 0xbf, 0x61]))).toContain('a')
     expect(decodeFeed(Buffer.from('<?xml version="1.0" encoding="utf-8"?><rss/>'))).toContain(
       '<rss',
     )
   })
 })
+
+function toUtf16Be(value: string): Uint8Array {
+  const littleEndian = Buffer.from(value, 'utf16le')
+  for (let index = 0; index < littleEndian.length; index += 2) {
+    const first = littleEndian[index]
+    littleEndian[index] = littleEndian[index + 1] ?? 0
+    littleEndian[index + 1] = first ?? 0
+  }
+  return littleEndian
+}

@@ -36,7 +36,7 @@
     "prepack": "pnpm run build"
   },
   "dependencies": {
-    "@vouchington/rss-parser": "workspace:^"
+    "@vouchington/rss-parser": "^0.0.0"
   },
   "engines": {
     "node": ">=24.0.0"

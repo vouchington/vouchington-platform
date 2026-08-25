@@ -98,7 +98,7 @@ importers:
   packages/rss-crawler:
     dependencies:
       '@vouchington/rss-parser':
-        specifier: workspace:^
+        specifier: ^0.0.0
         version: link:../rss-parser
 
   packages/rss-parser:

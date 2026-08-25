@@ -37,7 +37,9 @@ describe('crawlFeed', () => {
         transport: transport(new Response(null, { status: 301, headers: { location: '/next' } })),
         userAgent: 'a',
       }),
-    ).resolves.toMatchObject({ redirect: { location: '/next', isPermanent: true } })
+    ).resolves.toMatchObject({
+      redirect: { location: 'https://example.test/next', isPermanent: true },
+    })
     await expect(
       crawlFeed('https://example.test', {
         transport: transport(new Response(null, { status: 307, headers: { location: '/next' } })),
@@ -83,6 +85,62 @@ describe('crawlFeed', () => {
     ).rejects.toThrow('timeoutMs')
   })
 
+  it('bounds streams and cancels bodies that are not consumed', async () => {
+    const overflow = responseWithBody(['ab', 'cd'])
+    await expect(
+      crawlFeed('https://example.test', {
+        transport: transport(overflow.response),
+        userAgent: 'a',
+        maxResponseSizeBytes: 3,
+      }),
+    ).rejects.toThrow('exceeds')
+    expect(overflow.wasCanceled()).toBe(true)
+
+    const unavailable = responseWithBody(['x'], 500)
+    await expect(
+      crawlFeed('https://example.test', {
+        transport: transport(unavailable.response),
+        userAgent: 'a',
+      }),
+    ).rejects.toThrow('500')
+    expect(unavailable.wasCanceled()).toBe(true)
+
+    const invalid = responseWithBody(['x'], 200, { 'content-type': 'text/html' })
+    await expect(
+      crawlFeed('https://example.test', { transport: transport(invalid.response), userAgent: 'a' }),
+    ).rejects.toThrow('feed content')
+    expect(invalid.wasCanceled()).toBe(true)
+
+    await expect(
+      crawlFeed('https://example.test', {
+        transport: transport({
+          status: 304,
+          headers: new Headers(),
+          body: {
+            cancel: async () => {
+              throw new Error('ignored')
+            },
+          },
+        } as unknown as Response),
+        userAgent: 'a',
+      }),
+    ).resolves.toMatchObject({ responseCode: 304 })
+  })
+
+  it('handles a successful response without a body', async () => {
+    await expect(
+      crawlFeed('https://example.test', {
+        transport: transport({
+          status: 200,
+          ok: true,
+          headers: new Headers({ 'content-type': 'application/rss+xml' }),
+          body: null,
+        } as unknown as Response),
+        userAgent: 'a',
+      }),
+    ).rejects.toThrow('Unrecognized feed format')
+  })
+
   it('aborts a transport that exceeds its timeout', async () => {
     vi.useFakeTimers()
     try {
@@ -104,3 +162,21 @@ describe('crawlFeed', () => {
     }
   })
 })
+
+function responseWithBody(
+  chunks: string[],
+  status = 200,
+  headers: Record<string, string> = { 'content-type': 'application/rss+xml' },
+): { response: Response; wasCanceled: () => boolean } {
+  let canceled = false
+  const stream = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      const chunk = chunks.shift()
+      if (chunk) controller.enqueue(Buffer.from(chunk))
+    },
+    cancel() {
+      canceled = true
+    },
+  })
+  return { response: new Response(stream, { status, headers }), wasCanceled: () => canceled }
+}

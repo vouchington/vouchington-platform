@@ -5,6 +5,8 @@ describe('crawler html', () => {
   it('recognizes HTML content types', () => {
     expect(isHtmlContentType('text/html; charset=utf-8')).toBe(true)
     expect(isHtmlContentType('APPLICATION/XHTML+XML')).toBe(true)
+    expect(isHtmlContentType('text/htmlish')).toBe(false)
+    expect(isHtmlContentType('not a MIME type')).toBe(false)
     expect(isHtmlContentType('application/json')).toBe(false)
     expect(isHtmlContentType(null)).toBe(false)
   })
