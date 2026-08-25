@@ -54,9 +54,11 @@ describe('createRedirectingFetch', () => {
     await safeFetch('https://public.example/start', {
       credentials: 'include',
       headers: {
+        Accept: 'text/plain',
         Authorization: 'Bearer secret',
         Cookie: 'a=b',
         'Proxy-Authorization': 'proxy',
+        'X-Api-Key': 'custom-secret',
         X: '1',
       },
     })
@@ -70,7 +72,9 @@ describe('createRedirectingFetch', () => {
       expect(headers.get('authorization')).toBeNull()
       expect(headers.get('cookie')).toBeNull()
       expect(headers.get('proxy-authorization')).toBeNull()
-      expect(headers.get('x')).toBe('1')
+      expect(headers.get('x-api-key')).toBeNull()
+      expect(headers.get('x')).toBeNull()
+      expect(headers.get('accept')).toBe('text/plain')
       expect(request.credentials).toBe('omit')
     }
   })
@@ -132,6 +136,15 @@ describe('createRedirectingFetch', () => {
       resolveDestination: vi.fn().mockResolvedValue({ dispatcher }),
     })
     await expect(safeFetch('https://example.com')).rejects.toBeInstanceOf(RedirectFetchError)
+    const malformedFetch = createRedirectingFetch({
+      fetch: vi
+        .fn()
+        .mockResolvedValue(
+          new Response(null, { status: 302, headers: { location: 'http://[invalid' } }),
+        ),
+      resolveDestination: vi.fn().mockResolvedValue({ dispatcher }),
+    })
+    await expect(malformedFetch('https://example.com')).rejects.toBeInstanceOf(RedirectFetchError)
     expect(() =>
       createRedirectingFetch({ fetch, resolveDestination: vi.fn(), maxRedirects: -1 }),
     ).toThrow(RangeError)

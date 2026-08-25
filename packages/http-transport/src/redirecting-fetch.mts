@@ -55,11 +55,18 @@ export function createRedirectingFetch(options: RedirectingFetchOptions) {
         throw new RedirectFetchError('Redirect response has no Location header')
       if (redirects >= maxRedirects)
         throw new RedirectFetchError(`Exceeded ${maxRedirects} redirects`)
-      const nextUrl = parseHttpUrl(new URL(location, url))
+      const nextUrl = parseHttpUrl(location, url)
       if (nextUrl.origin !== url.origin) {
-        headers.delete('authorization')
-        headers.delete('cookie')
-        headers.delete('proxy-authorization')
+        const safeHeaders = new Set([
+          'accept',
+          'accept-language',
+          'cache-control',
+          'content-language',
+          'range',
+        ])
+        for (const name of Array.from(headers.keys())) {
+          if (!safeHeaders.has(name)) headers.delete(name)
+        }
         credentials = 'omit'
       }
       url = nextUrl
@@ -89,10 +96,10 @@ function rejectUnsafeRequestInit(init: UndiciFetchInit): void {
   }
 }
 
-function parseHttpUrl(input: URL | string): URL {
+function parseHttpUrl(input: URL | string, base?: URL): URL {
   let url: URL
   try {
-    url = new URL(input)
+    url = new URL(input, base)
   } catch {
     throw new RedirectFetchError('Invalid URL')
   }
