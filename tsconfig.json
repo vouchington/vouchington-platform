@@ -1,5 +1,8 @@
 {
   "compilerOptions": {
+    "paths": {
+      "@vouchington/rss-parser": ["./packages/rss-parser/src/index.mts"]
+    },
     "target": "ES2023",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",

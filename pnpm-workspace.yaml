@@ -1,6 +1,7 @@
 packages:
   - packages/*
 allowBuilds:
+  '@jongleberry/vurst-html': true
   protobufjs: false
 disallowWorkspaceCycles: true
 linkWorkspacePackages: true
