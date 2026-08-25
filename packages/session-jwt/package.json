@@ -43,7 +43,7 @@
     "prepack": "pnpm run build"
   },
   "dependencies": {
-    "@vouchington/uuid-v7": "^0.0.0",
+    "@vouchington/uuid-v7": "workspace:^0.0.0",
     "jose": "^6.2.10"
   },
   "engines": {

@@ -15,16 +15,12 @@ describe('utils dependency boundary', () => {
   })
 
   it('publishes every explicit subpath and no root export', () => {
-    for (const entry of [
-      'token-secrets',
-      'deploy-environment',
-      'url-signing',
-      'request-client-info',
-      'money',
-      'env-contract',
-      'cookies',
-      'observability',
-    ]) {
+    const manifest = JSON.parse(readFileSync('packages/utils/package.json', 'utf8')) as {
+      exports: Record<string, unknown>
+    }
+    for (const subpath of Object.keys(manifest.exports)) {
+      expect(subpath).not.toBe('.')
+      const entry = subpath.replace(/^\.\//, '')
       expect(existsSync(`packages/utils/dist/${entry}.mjs`)).toBe(true)
       expect(existsSync(`packages/utils/dist/${entry}.d.mts`)).toBe(true)
       importBuiltModule(`packages/utils/dist/${entry}.mjs`)
