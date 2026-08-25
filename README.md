@@ -15,6 +15,10 @@ SKU names.
 | [`@vouchington/session-jwt`](packages/session-jwt)   | Portable RS512 JWT primitives and UUIDv7 identifiers              |
 | [`@vouchington/queue-errors`](packages/queue-errors) | glide-mq retry classification and rate-limit helpers              |
 | [`@vouchington/pagination`](packages/pagination)     | Cursor codecs, guards, and configuration-owned query parsing      |
+| [`@vouchington/crawler-html`](packages/crawler-html) | HTML content decoding and extraction                              |
+| [`@vouchington/rss-parser`](packages/rss-parser)     | RSS, Atom, and JSON feed parsing                                  |
+| [`@vouchington/rss-crawler`](packages/rss-crawler)   | Transport-injected feed crawling                                  |
+| [`@vouchington/robots`](packages/robots)             | Transport- and cache-injected robots.txt evaluation               |
 
 ## Commands
 
