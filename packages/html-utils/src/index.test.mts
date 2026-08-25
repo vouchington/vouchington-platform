@@ -10,6 +10,9 @@ describe('HTML entity and text helpers', () => {
     expect(decodeHtmlEntities('NASA&#8217;s &amp; &#x2122;')).toBe('NASA’s & ™')
     expect(decodeHtmlEntities('&#65;')).toBe('A')
     expect(decodeHtmlEntities('&#xD800;')).toBe('&#xD800;')
+    expect(decodeHtmlEntities('\u0000html-entity-0\u0000 &#xD800;')).toBe(
+      '\u0000html-entity-0\u0000 &#xD800;',
+    )
   })
   it('recognizes positions within completed tags only', () => {
     expect(isInsideHtmlTag('<a href="x">', 5)).toBe(true)

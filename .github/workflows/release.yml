@@ -95,6 +95,24 @@ jobs:
       - run: pnpm run test:coverage
       - run: pnpm run actionlint
 
+      - name: Verify published runtime dependencies
+        env:
+          PACKAGE: ${{ inputs.package }}
+        run: |
+          node <<'NODE'
+          const { execFileSync } = require('node:child_process')
+          const { readFileSync, readdirSync } = require('node:fs')
+          const directory = readdirSync('packages', { withFileTypes: true })
+            .filter((entry) => entry.isDirectory())
+            .find((entry) => JSON.parse(readFileSync(`packages/${entry.name}/package.json`, 'utf8')).name === process.env.PACKAGE)
+          if (!directory) throw new Error(`Unknown package ${process.env.PACKAGE}`)
+          const manifest = JSON.parse(readFileSync(`packages/${directory.name}/package.json`, 'utf8'))
+          for (const [name, range] of Object.entries(manifest.dependencies ?? {})) {
+            if (!name.startsWith('@vouchington/')) continue
+            execFileSync('npm', ['view', `${name}@${range}`, 'version'], { stdio: 'inherit' })
+          }
+          NODE
+
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"

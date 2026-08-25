@@ -1,3 +1,4 @@
+import { runInNewContext } from 'node:vm'
 import { describe, expect, it } from 'vitest'
 import {
   SENSITIVE_VALUE,
@@ -61,6 +62,10 @@ describe('observability scrubbing', () => {
     expect(composeBeforeSend(() => null, options)({}, {})).toBeNull()
     await expect(composeBeforeSend(async () => null, options)({}, {})).resolves.toBeNull()
     await expect(composeBeforeSend(async (input) => input, options)({}, {})).resolves.toEqual({})
+    const foreignPromise = runInNewContext('Promise.resolve({})') as Promise<
+      Record<string, unknown>
+    >
+    await expect(composeBeforeSend(() => foreignPromise, options)({}, {})).resolves.toEqual({})
     expect(isAllowedEnvironment('production', ['production'])).toBe(true)
     expect(isAllowedEnvironment(undefined, ['production'])).toBe(false)
     expect(shouldReportSpike(2, 2)).toBe(true)

@@ -88,12 +88,15 @@ export function composeBeforeSend<T extends ObservableEvent, THint>(
 ): (event: T, hint: THint) => T | null | Promise<T | null> {
   return (event, hint) => {
     const result = beforeSend ? beforeSend(event, hint) : event
-    return result instanceof Promise
-      ? result.then((next) => (next === null ? null : scrubEvent(next, options)))
-      : result === null
-        ? null
-        : scrubEvent(result, options)
+    if (isPromiseLike(result))
+      return Promise.resolve(result).then((next) =>
+        next === null ? null : scrubEvent(next, options),
+      )
+    return result === null ? null : scrubEvent(result, options)
   }
+}
+function isPromiseLike<T>(value: T | PromiseLike<T>): value is PromiseLike<T> {
+  return value !== null && typeof (value as PromiseLike<T>).then === 'function'
 }
 export function isAllowedEnvironment(
   value: string | undefined,

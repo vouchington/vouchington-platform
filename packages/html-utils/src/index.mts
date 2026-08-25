@@ -1,10 +1,6 @@
 import { decodeHTMLStrict } from 'entities'
 
 const INVALID_NUMERIC_ENTITY = /&#(?:\d+|[xX][0-9a-fA-F]+);/g
-// NUL cannot occur in valid HTML text and avoids collisions with decoded values.
-// oxlint-disable-next-line no-control-regex -- NUL sentinel protects invalid entities.
-const SENTINEL = /\u0000html-entity-(\d+)\u0000/g
-
 export function escapeHtml(value: string): string {
   return value
     .replaceAll('&', '&amp;')
@@ -16,6 +12,8 @@ export function escapeHtml(value: string): string {
 export function decodeHtmlEntities(value: string): string {
   if (!value.includes('&')) return value
   const invalid: string[] = []
+  let sentinelPrefix = '\u0000html-entity-'
+  while (value.includes(sentinelPrefix)) sentinelPrefix += '-'
   const protectedValue = value.replace(INVALID_NUMERIC_ENTITY, (match) => {
     const hex = match[2] === 'x' || match[2] === 'X'
     const point = hex
@@ -23,12 +21,12 @@ export function decodeHtmlEntities(value: string): string {
       : Number.parseInt(match.slice(2, -1), 10)
     if (isValidCodePoint(point)) return match
     invalid.push(match)
-    return `\u0000html-entity-${invalid.length - 1}\u0000`
+    return `${sentinelPrefix}${invalid.length - 1}\u0000`
   })
-  return decodeHTMLStrict(protectedValue).replace(
-    SENTINEL,
-    (_, index: string) => invalid[Number(index)]!,
-  )
+  let decoded = decodeHTMLStrict(protectedValue)
+  for (const [index, entity] of invalid.entries())
+    decoded = decoded.replaceAll(`${sentinelPrefix}${index}\u0000`, entity)
+  return decoded
 }
 /** Performs a lightweight lexical check; it does not parse malformed HTML or literal angle brackets. */
 export function isInsideHtmlTag(value: string, position: number): boolean {

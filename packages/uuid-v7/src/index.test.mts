@@ -22,6 +22,7 @@ describe('UUIDv7', () => {
     expect(getDateFromUuidv7('invalid')).toBeNull()
     expect(() => validateUuidv7('invalid')).toThrow('Invalid UUIDv7')
     expect(uuidv7RandomToBase36(getMaxUuidv7ForDate(new Date(0)))).toMatch(/^[0-9a-z]+$/)
+    expect(getMaxUuidv7ForDate(new Date(0))).toBe('00000000-0000-7fff-bfff-ffffffffffff')
     expect(() => uuidv7RandomToBase36('invalid')).toThrow('Invalid UUIDv7')
     expect(() => getMinUuidv7ForDate(new Date(Number.NaN))).toThrow('unsigned 48-bit')
     expect(() => getMinUuidv7ForDate(new Date(-1))).toThrow('unsigned 48-bit')

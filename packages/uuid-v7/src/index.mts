@@ -15,17 +15,18 @@ export function getDateFromUuidv7(value: string): Date | null {
     : null
 }
 export function getMinUuidv7ForDate(date: Date): string {
-  return makeDateBound(date, 0, 0)
+  return makeDateBound(date, false)
 }
 export function getMaxUuidv7ForDate(date: Date): string {
-  return makeDateBound(date, 0x7fff_ffff, 0xff)
+  return makeDateBound(date, true)
 }
 export function uuidv7RandomToBase36(value: string): string {
   return BigInt(`0x${validateUuidv7(value).replaceAll('-', '').slice(-18)}`).toString(36)
 }
-function makeDateBound(date: Date, seq: number, byte: number): string {
+function makeDateBound(date: Date, maximum: boolean): string {
   const milliseconds = date.getTime()
   if (!Number.isInteger(milliseconds) || milliseconds < 0 || milliseconds > 0xffff_ffff_ffff)
     throw new Error('UUIDv7 date must be within the unsigned 48-bit timestamp range')
-  return v7({ msecs: milliseconds, random: new Uint8Array(16).fill(byte), seq })
+  const timestamp = milliseconds.toString(16).padStart(12, '0')
+  return `${timestamp.slice(0, 8)}-${timestamp.slice(8)}-7${maximum ? 'fff' : '000'}-${maximum ? 'bfff' : '8000'}-${maximum ? 'ffffffffffff' : '000000000000'}`
 }
