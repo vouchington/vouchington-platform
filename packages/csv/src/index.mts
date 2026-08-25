@@ -3,16 +3,22 @@ import { parse } from 'csv-parse/sync'
 import { stringify } from 'csv-stringify/sync'
 
 export type CsvRow = Record<string, string | null | undefined>
+export interface ParseCsvRowsOptions {
+  /** Trims whitespace from unquoted cells while preserving whitespace inside quoted cells. */
+  trim?: boolean
+}
+
 const FORMULA_PREFIX = /^[=+\-@\t\r]/u
 
 export function stripCsvBom(value: string): string {
   return value.replace(/^\uFEFF/, '')
 }
-export function parseCsvRows(value: string): string[][] {
+export function parseCsvRows(value: string, options: ParseCsvRowsOptions = {}): string[][] {
   return parse(stripCsvBom(value), {
     bom: true,
     relax_column_count: false,
     skip_empty_lines: true,
+    trim: options.trim ?? false,
   }) as string[][]
 }
 export function protectCsvFormula(value: string): string {
