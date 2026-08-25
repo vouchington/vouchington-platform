@@ -18,6 +18,27 @@ describe('CSV utilities', () => {
     expect(stripCsvBom('plain')).toBe('plain')
   })
 
+  it('optionally trims unquoted cells without changing quoted whitespace', () => {
+    const source = '\uFEFF name ," note "\n Ada ,raw value \n'
+
+    expect(parseCsvRows(source)).toEqual([
+      [' name ', ' note '],
+      [' Ada ', 'raw value '],
+    ])
+    expect(parseCsvRows(source, { trim: true })).toEqual([
+      ['name', ' note '],
+      ['Ada', 'raw value'],
+    ])
+  })
+
+  it('keeps trim behavior for headers, raw cells, and malformed input', () => {
+    expect(parseCsvRows('\uFEFF name , value \n Ada , raw \n', { trim: true })).toEqual([
+      ['name', 'value'],
+      ['Ada', 'raw'],
+    ])
+    expect(() => parseCsvRows('a,b\nonly-one\n', { trim: true })).toThrow()
+  })
+
   it('stringifies declared columns and protects formula cells', async () => {
     const rows = [{ name: '=1+1', ignored: 'not exported', note: null }]
     expect(protectCsvFormula('+SUM(A1)')).toBe("'+SUM(A1)")
