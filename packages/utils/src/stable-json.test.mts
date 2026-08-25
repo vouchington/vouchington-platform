@@ -21,13 +21,15 @@ describe('stable JSON', () => {
     expect(stableJsonStringify({})).toBe('{}\n')
   })
   it('omits unsupported object values and converts unsupported array values to null', () => {
+    const sparse: unknown[] = []
+    sparse.length = 1
     expect(stableJsonStringify({ fn() {}, symbol: Symbol('ignored'), value: 1 })).toBe(
       '{\n  "value": 1\n}\n',
     )
     expect(stableJsonStringify([undefined, () => undefined, Symbol('ignored')])).toBe(
       '[null, null, null]\n',
     )
-    expect(stableJsonStringify(new Array(1))).toBe('[null]\n')
+    expect(stableJsonStringify(sparse)).toBe('[null]\n')
     expect(stableJsonStringify(Symbol('root'))).toBe('null\n')
   })
 })
