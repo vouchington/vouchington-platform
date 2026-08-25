@@ -26,6 +26,17 @@ describe('fetchWellKnownText', () => {
     await expect(fetchWellKnownText('example.test', options(transport))).resolves.toBeNull()
     transport.get.mockResolvedValueOnce(response('not found', 404))
     await expect(fetchWellKnownText('example.test', options(transport))).resolves.toBeNull()
+    transport.get.mockResolvedValueOnce(
+      new Response(
+        new ReadableStream({
+          cancel() {
+            throw new Error('cleanup failed')
+          },
+        }),
+        { status: 404 },
+      ),
+    )
+    await expect(fetchWellKnownText('example.test', options(transport))).resolves.toBeNull()
     transport.get.mockResolvedValueOnce(response('  '))
     await expect(fetchWellKnownText('example.test', options(transport))).resolves.toBeNull()
     transport.get.mockResolvedValueOnce(response('abc'))

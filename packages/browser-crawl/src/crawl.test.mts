@@ -117,13 +117,18 @@ describe('crawlWithBrowser', () => {
 
   it('handles absent or oversized html and cleanup errors without changing a result', async () => {
     const noHtml = browserFixture()
-    noHtml.content.mockRejectedValue(new Error('unsupported'))
+    noHtml.evaluate.mockResolvedValueOnce(100).mockRejectedValueOnce(new Error('unsupported'))
     const result = await crawlWithBrowser(request(noHtml))
     expect(result.html).toBeUndefined()
     const oversized = browserFixture()
-    oversized.content.mockResolvedValue('x'.repeat(3))
+    oversized.setHtml('x'.repeat(3))
     expect(
       (await crawlWithBrowser({ ...request(oversized), maxHtmlBytes: 2 })).html,
+    ).toBeUndefined()
+    const multibyte = browserFixture()
+    multibyte.setHtml('é')
+    expect(
+      (await crawlWithBrowser({ ...request(multibyte), maxHtmlBytes: 1 })).html,
     ).toBeUndefined()
     const cleanup = browserFixture()
     cleanup.browser.close.mockRejectedValue(new Error('close'))
@@ -171,20 +176,23 @@ function request(fixture: ReturnType<typeof browserFixture>) {
 }
 
 function browserFixture() {
+  let html: string | undefined = '<main>Example</main>'
   const close = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
   const route = vi.fn()
   const routeWebSocket = vi.fn()
   const goto = vi.fn().mockResolvedValue({ status: () => 201 })
   const page = {
     close,
-    content: vi.fn().mockResolvedValue('<main>Example</main>'),
-    evaluate: vi.fn().mockImplementation((callback) => {
+    evaluate: vi.fn().mockImplementation((callback, argument) => {
       Object.defineProperty(globalThis, 'document', {
         configurable: true,
-        value: { body: { innerText: 'x'.repeat(100) } },
+        value: {
+          body: { innerText: 'x'.repeat(100) },
+          documentElement: html === undefined ? undefined : { outerHTML: html },
+        },
       })
       try {
-        return callback()
+        return callback(argument)
       } finally {
         delete (globalThis as { document?: unknown }).document
       }
@@ -203,11 +211,13 @@ function browserFixture() {
     browser,
     close,
     connect: vi.fn().mockResolvedValue(browser),
-    content: page.content,
     evaluate: page.evaluate,
     goto,
     newContext,
     setDefaultTimeout: page.setDefaultTimeout,
+    setHtml: (value: string | undefined) => {
+      html = value
+    },
     title: page.title,
     routeHandler: undefined as
       | ((route: ReturnType<typeof routeFixture>) => Promise<void>)

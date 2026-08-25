@@ -26,7 +26,11 @@ export async function fetchWellKnownText(
     return null
   }
   if (!response.ok) {
-    await response.body?.cancel()
+    try {
+      await response.body?.cancel()
+    } catch {
+      // A failed transport cleanup must not mask the verification result.
+    }
     return null
   }
   try {

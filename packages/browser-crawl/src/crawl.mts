@@ -1,4 +1,4 @@
-import type { Browser, BrowserContext } from 'playwright-core'
+import type { Browser, BrowserContext, Page } from 'playwright-core'
 
 import {
   BrowserCrawlConnectError,
@@ -16,7 +16,7 @@ export async function crawlWithBrowser(request: BrowserCrawlRequest): Promise<Br
   const options = normalizeRequest(request)
   let browser: Browser | undefined
   let context: BrowserContext | undefined
-  let page: Awaited<ReturnType<BrowserContext['newPage']>> | undefined
+  let page: Page | undefined
   let navigationPolicyError: unknown
   try {
     try {
@@ -82,7 +82,7 @@ function normalizeRequest(request: BrowserCrawlRequest) {
 }
 
 async function installRequestPolicy(
-  page: Awaited<ReturnType<BrowserContext['newPage']>>,
+  page: Page,
   policy: BrowserCrawlRequest['requestPolicy'],
   setNavigationError: (error: unknown) => void,
 ): Promise<void> {
@@ -106,10 +106,18 @@ async function installRequestPolicy(
   })
 }
 
-async function getHtml(page: Awaited<ReturnType<BrowserContext['newPage']>>, maxBytes: number) {
+async function getHtml(page: Page, maxBytes: number) {
   try {
-    const html = await page.content()
-    return Buffer.byteLength(html, 'utf8') <= maxBytes ? html : undefined
+    return await page.evaluate((limit) => {
+      const document = (
+        globalThis as {
+          document?: { documentElement?: { outerHTML?: string } }
+        }
+      ).document
+      const html = document?.documentElement?.outerHTML
+      if (html === undefined || html.length > limit) return undefined
+      return new TextEncoder().encode(html).byteLength <= limit ? html : undefined
+    }, maxBytes)
   } catch {
     return undefined
   }
@@ -145,10 +153,7 @@ function nonNegativeInteger(value: number | undefined, fallback: number): number
 }
 
 function isTimeoutError(error: unknown): boolean {
-  return (
-    error instanceof Error &&
-    (error.name === 'TimeoutError' || error.constructor.name === 'TimeoutError')
-  )
+  return error instanceof Error && error.name === 'TimeoutError'
 }
 
 function delay(milliseconds: number): Promise<void> {
