@@ -6,7 +6,8 @@ export function extractUrlScheme(value: string): string | null {
 }
 function sanitize(value: string | null | undefined, allowed: ReadonlySet<string>): string | null {
   const normalized = typeof value === 'string' ? value.trim() : ''
-  if (!normalized) return null
+  // oxlint-disable-next-line no-control-regex -- reject URL-parser-normalized C0/DEL bypasses.
+  if (!normalized || /[\u0000-\u001F\u007F]/.test(normalized)) return null
   const scheme = extractUrlScheme(normalized)
   return !scheme || allowed.has(scheme) ? normalized : null
 }

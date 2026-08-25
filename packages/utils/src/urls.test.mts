@@ -16,6 +16,8 @@ describe('URLs', () => {
     expect(extractUrlScheme('HTTPS://example.test')).toBe('https')
     expect(extractUrlScheme('example.test')).toBeNull()
     expect(sanitizeLinkUrl(' javascript:alert(1) ')).toBeNull()
+    expect(sanitizeLinkUrl('java\nscript:alert(1)')).toBeNull()
+    expect(sanitizeLinkUrl('\u0000javascript:alert(1)')).toBeNull()
     expect(sanitizeLinkUrl('/relative')).toBe('/relative')
     expect(sanitizeImageUrl('mailto:a@example.test')).toBeNull()
     expect(isExternalHttpUrl('https://example.test')).toBe(true)

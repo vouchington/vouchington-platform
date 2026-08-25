@@ -26,5 +26,16 @@ export function mergeRecords<T, V>(
   pages: readonly T[],
   getRecord: (page: T) => Record<string, V>,
 ): Record<string, V> {
-  return Object.assign({}, ...pages.map(getRecord).toReversed())
+  const merged: Record<string, V> = {}
+  for (const page of pages.toReversed()) {
+    for (const [key, value] of Object.entries(getRecord(page))) {
+      Object.defineProperty(merged, key, {
+        configurable: true,
+        enumerable: true,
+        value,
+        writable: true,
+      })
+    }
+  }
+  return merged
 }

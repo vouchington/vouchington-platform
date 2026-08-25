@@ -30,4 +30,12 @@ describe('collections', () => {
     expect(mergePageResultsById()).toEqual([])
     expect(mergeRecords([{ a: 1 }, { a: 2, b: 3 }], (page) => page)).toEqual({ a: 1, b: 3 })
   })
+
+  it('merges __proto__ as an own property without changing the result prototype', () => {
+    const record = JSON.parse('{"__proto__":{"polluted":true}}') as Record<string, unknown>
+    const merged = mergeRecords([record], (page) => page)
+    expect(Object.getPrototypeOf(merged)).toBe(Object.prototype)
+    expect(Object.hasOwn(merged, '__proto__')).toBe(true)
+    expect((merged as { polluted?: boolean }).polluted).toBeUndefined()
+  })
 })

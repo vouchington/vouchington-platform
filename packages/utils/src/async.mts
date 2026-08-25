@@ -9,19 +9,19 @@ export async function mapWithConcurrency<T, R>(
   )
   const results: R[] = []
   let next = 0
-  let failure: unknown
+  let failure: { reason: unknown } | undefined
   async function worker(): Promise<void> {
     const index = next++
     if (index >= items.length) return
     try {
       results[index] = await mapper(items[index]!)
     } catch (error) {
-      failure ??= error
+      failure ??= { reason: error }
     }
     return worker()
   }
   await Promise.allSettled(Array.from({ length: count }, worker))
-  if (failure !== undefined) throw failure
+  if (failure !== undefined) throw failure.reason
   return results
 }
 export function mapSerially<T, R>(

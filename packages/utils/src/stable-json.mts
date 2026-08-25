@@ -3,12 +3,21 @@ export function stableJsonStringify(value: unknown): string {
 }
 function sort(value: unknown): unknown {
   if (hasToJson(value)) return sort(value.toJSON())
-  if (Array.isArray(value)) return value.map((item) => (item === undefined ? null : sort(item)))
-  if (value === undefined) return null
+  if (Array.isArray(value)) {
+    return value.map((item) =>
+      item === undefined || typeof item === 'function' || typeof item === 'symbol'
+        ? null
+        : sort(item),
+    )
+  }
+  if (value === undefined || typeof value === 'function' || typeof value === 'symbol') return null
   if (value == null || typeof value !== 'object') return value
   return Object.fromEntries(
     Object.entries(value)
-      .filter(([, nested]) => nested !== undefined)
+      .filter(
+        ([, nested]) =>
+          nested !== undefined && typeof nested !== 'function' && typeof nested !== 'symbol',
+      )
       .toSorted(([left], [right]) => left.localeCompare(right))
       .map(([key, nested]) => [key, sort(nested)]),
   )

@@ -28,5 +28,8 @@ describe('bounded async mapping', () => {
         return value
       }),
     ).rejects.toThrow('failed')
+    await expect(mapWithConcurrency([1], 1, async () => Promise.reject(undefined))).rejects.toBe(
+      undefined,
+    )
   })
 })

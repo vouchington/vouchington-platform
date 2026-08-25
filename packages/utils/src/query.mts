@@ -33,7 +33,9 @@ export function parseBoundedInteger(
     !Number.isSafeInteger(bounds.default) ||
     !Number.isSafeInteger(bounds.minimum) ||
     !Number.isSafeInteger(bounds.maximum) ||
-    bounds.minimum > bounds.maximum
+    bounds.minimum > bounds.maximum ||
+    bounds.default < bounds.minimum ||
+    bounds.default > bounds.maximum
   )
     throw new RangeError('Invalid integer bounds')
   if (value === undefined || value === null || value === '') return bounds.default
