@@ -14,6 +14,8 @@ on:
           - '@vouchington/session-jwt'
           - '@vouchington/queue-errors'
           - '@vouchington/pagination'
+          - '@vouchington/http-transport'
+          - '@vouchington/image-resize'
       bump:
         description: Semver bump type
         type: choice

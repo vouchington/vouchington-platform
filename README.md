@@ -8,13 +8,15 @@ SKU names.
 
 ## Packages
 
-| Package                                              | Description                                                       |
-| ---------------------------------------------------- | ----------------------------------------------------------------- |
-| [`@vouchington/postgres`](packages/postgres)         | Triple-pool PostgreSQL runtime, transactions, cursors, migrations |
-| [`@vouchington/utils`](packages/utils)               | Dependency-free explicit-subpath runtime utilities                |
-| [`@vouchington/session-jwt`](packages/session-jwt)   | Portable RS512 JWT primitives and UUIDv7 identifiers              |
-| [`@vouchington/queue-errors`](packages/queue-errors) | glide-mq retry classification and rate-limit helpers              |
-| [`@vouchington/pagination`](packages/pagination)     | Cursor codecs, guards, and configuration-owned query parsing      |
+| Package                                                  | Description                                                       |
+| -------------------------------------------------------- | ----------------------------------------------------------------- |
+| [`@vouchington/postgres`](packages/postgres)             | Triple-pool PostgreSQL runtime, transactions, cursors, migrations |
+| [`@vouchington/utils`](packages/utils)                   | Dependency-free explicit-subpath runtime utilities                |
+| [`@vouchington/session-jwt`](packages/session-jwt)       | Portable RS512 JWT primitives and UUIDv7 identifiers              |
+| [`@vouchington/queue-errors`](packages/queue-errors)     | glide-mq retry classification and rate-limit helpers              |
+| [`@vouchington/pagination`](packages/pagination)         | Cursor codecs, guards, and configuration-owned query parsing      |
+| [`@vouchington/http-transport`](packages/http-transport) | Redirect-safe transport with injected fetch/address pinning       |
+| [`@vouchington/image-resize`](packages/image-resize)     | Sharp byte transforms, metadata, and image format negotiation     |
 
 ## Commands
 
