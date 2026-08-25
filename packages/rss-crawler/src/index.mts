@@ -34,13 +34,23 @@ export async function crawlFeed(url: string, options: CrawlFeedOptions): Promise
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? 10_000)
   try {
     const response = await options.transport.fetch(url, {
-      headers: { ...options.headers, 'User-Agent': options.userAgent, Accept: accept },
+      headers: requestHeaders(options.headers, options.userAgent),
       signal: controller.signal,
     })
     return await handleResponse(url, response, options.maxResponseSizeBytes ?? 10 * 1024 * 1024)
   } finally {
     clearTimeout(timeout)
   }
+}
+
+function requestHeaders(
+  callerHeaders: Record<string, string> | undefined,
+  userAgent: string,
+): Record<string, string> {
+  const headers = new Headers(callerHeaders)
+  headers.set('accept', accept)
+  headers.set('user-agent', userAgent)
+  return Object.fromEntries(headers)
 }
 
 async function handleResponse(

@@ -18,9 +18,10 @@ describe('crawlFeed', () => {
         },
       },
       userAgent: 'test-bot',
-      headers: { Authorization: 'Bearer x' },
+      headers: { Authorization: 'Bearer x', accept: 'text/html', 'USER-AGENT': 'other' },
     })
-    expect(headers).toMatchObject({ 'User-Agent': 'test-bot', Authorization: 'Bearer x' })
+    expect(headers).toMatchObject({ 'user-agent': 'test-bot', authorization: 'Bearer x' })
+    expect(headers?.accept).not.toContain('text/html')
     expect(result.feed?.title).toBe('x')
     expect(result.headers.etag).toBe('tag')
   })

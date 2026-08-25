@@ -26,6 +26,10 @@ export interface RobotsOptions {
   cache?: RobotsCache
   ttlMs?: number
   maxResponseSizeBytes?: number
+  /** Overrides RFC 9309 status fallback rules and whether the result enters the caller cache. */
+  statusFallback?: (
+    status: number,
+  ) => { rules: string; cache?: boolean } | Promise<{ rules: string; cache?: boolean }>
 }
 
 /** Reads robots.txt, with an optional caller-owned cache, and applies the selected user-agent rules. */
@@ -78,10 +82,13 @@ async function getRobots(robotsUrl: string, options: RobotsOptions): Promise<str
 async function fetchRobots(robotsUrl: string, options: RobotsOptions): Promise<string> {
   const response = await options.transport.fetch(robotsUrl)
   const maxBytes = options.maxResponseSizeBytes ?? 512 * 1024
-  const content = response.ok ? await responseText(response, maxBytes) : await statusRules(response)
-  if (content === null) return allowAll
-  await options.cache?.set(robotsUrl, content, options.ttlMs ?? 86_400_000)
-  return content
+  const result = response.ok
+    ? { rules: await responseText(response, maxBytes), cache: true }
+    : await statusRules(response, options)
+  if (result.rules === null) return allowAll
+  if (result.cache !== false)
+    await options.cache?.set(robotsUrl, result.rules, options.ttlMs ?? 86_400_000)
+  return result.rules
 }
 
 async function responseText(response: Response, maxBytes: number): Promise<string | null> {
@@ -92,13 +99,18 @@ async function responseText(response: Response, maxBytes: number): Promise<strin
   return new TextDecoder().decode(body)
 }
 
-async function statusRules(response: Response): Promise<string> {
+async function statusRules(
+  response: Response,
+  options: RobotsOptions,
+): Promise<{ rules: string; cache?: boolean }> {
   try {
     await response.body?.cancel()
   } catch {
     // Cleanup must not replace the status-derived result.
   }
-  return response.status >= 500 && response.status <= 599 ? disallowAll : allowAll
+  return options.statusFallback
+    ? await options.statusFallback(response.status)
+    : { rules: response.status >= 500 && response.status <= 599 ? disallowAll : allowAll }
 }
 
 async function readResponseBody(response: Response, maxBytes: number): Promise<Uint8Array | null> {

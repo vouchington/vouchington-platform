@@ -47,6 +47,23 @@ describe('robots', () => {
     await expect(
       isUrlAllowed('https://example.test/', 'bot', { transport: transport('', 503) }),
     ).resolves.toBe(false)
+    const statusWrites: unknown[] = []
+    await expect(
+      isUrlAllowed('https://example.test/', 'bot', {
+        transport: transport('', 429),
+        cache: {
+          get: async () => undefined,
+          set: async (...args) => {
+            statusWrites.push(args)
+          },
+        },
+        statusFallback: async (status) => ({
+          rules: status === 429 ? 'User-agent: *\nDisallow: /' : '',
+          cache: false,
+        }),
+      }),
+    ).resolves.toBe(false)
+    expect(statusWrites).toEqual([])
     const overflowWrites: unknown[] = []
     await expect(
       isUrlAllowed('https://example.test/', 'bot', {
