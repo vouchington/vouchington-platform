@@ -23,6 +23,13 @@ describe('focused runtime package manifests', () => {
       importBuiltModule(`packages/${directory}/${entry.import.replace('./', '')}`),
     ).not.toThrow()
   })
+
+  it('declares a publishable UUIDv7 dependency from session-jwt', () => {
+    const manifest = JSON.parse(readFileSync('packages/session-jwt/package.json', 'utf8')) as {
+      dependencies: Record<string, string>
+    }
+    expect(manifest.dependencies['@vouchington/uuid-v7']).toBe('^0.0.0')
+  })
 })
 
 function importBuiltModule(file: string): void {

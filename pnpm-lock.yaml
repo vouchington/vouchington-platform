@@ -113,7 +113,7 @@ importers:
   packages/session-jwt:
     dependencies:
       '@vouchington/uuid-v7':
-        specifier: workspace:^0.0.0
+        specifier: ^0.0.0
         version: link:../uuid-v7
       jose:
         specifier: ^6.2.10
