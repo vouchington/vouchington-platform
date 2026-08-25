@@ -19,6 +19,8 @@ on:
           - '@vouchington/phone-validation'
           - '@vouchington/uuid-v7'
           - '@vouchington/frontmatter'
+          - '@vouchington/http-transport'
+          - '@vouchington/image-resize'
       bump:
         description: Semver bump type
         type: choice
