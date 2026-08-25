@@ -45,10 +45,10 @@ importers:
   packages/csv:
     dependencies:
       csv-parse:
-        specifier: ^6.1.0
-        version: 6.2.1
+        specifier: ^7.0.2
+        version: 7.0.2
       csv-stringify:
-        specifier: ^6.6.0
+        specifier: ^6.8.3
         version: 6.8.3
 
   packages/frontmatter:
@@ -62,8 +62,6 @@ importers:
       entities:
         specifier: ^8.0.0
         version: 8.0.0
-
-  packages/observability: {}
 
   packages/pagination:
     dependencies:
@@ -115,7 +113,7 @@ importers:
   packages/session-jwt:
     dependencies:
       '@vouchington/uuid-v7':
-        specifier: workspace:*
+        specifier: workspace:^0.0.0
         version: link:../uuid-v7
       jose:
         specifier: ^6.2.10
@@ -1184,8 +1182,8 @@ packages:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
 
-  csv-parse@6.2.1:
-    resolution: {integrity: sha512-LRLMV+UCyfMokp8Wb411duBf1gaBKJfOfBWU9eHMJ+b+cJYZsNu3AFmjJf3+yPGd59Exz1TsMjaSFyxnYB9+IQ==}
+  csv-parse@7.0.2:
+    resolution: {integrity: sha512-uKZghv9UmPkMVLYy//KZ9HFAIJsl7wkhoEdIL0+rhuSY9pZQlhaeGEDPIe+/w7eh81MOql8Q/9+inAGWG6ZHYA==}
 
   csv-stringify@6.8.3:
     resolution: {integrity: sha512-gIeSCvq5F4VtXV3naV3VAewLhBkiZBz+PPhTOA8H3Y8h/ELa+R1ml0GZck/4/Nzo9ep2lvOluilJ6MJlbZsKMA==}
@@ -2800,7 +2798,7 @@ snapshots:
       shebang-command: 2.0.0
       which: 2.0.2
 
-  csv-parse@6.2.1: {}
+  csv-parse@7.0.2: {}
 
   csv-stringify@6.8.3: {}
 
