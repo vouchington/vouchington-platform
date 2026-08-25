@@ -42,6 +42,27 @@ importers:
         specifier: ^4.1.11
         version: 4.1.11(@types/node@26.2.0)(@vitest/coverage-v8@4.1.11)(vite@8.2.2(@types/node@26.2.0)(jiti@2.7.0)(yaml@2.9.0))
 
+  packages/csv:
+    dependencies:
+      csv-parse:
+        specifier: ^7.0.2
+        version: 7.0.2
+      csv-stringify:
+        specifier: ^6.8.3
+        version: 6.8.3
+
+  packages/frontmatter:
+    dependencies:
+      yaml:
+        specifier: ^2.9.0
+        version: 2.9.0
+
+  packages/html-utils:
+    dependencies:
+      entities:
+        specifier: ^8.0.0
+        version: 8.0.0
+
   packages/http-transport: {}
 
   packages/image-resize:
@@ -66,6 +87,12 @@ importers:
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
+
+  packages/phone-validation:
+    dependencies:
+      phone:
+        specifier: ^3.1.71
+        version: 3.1.72
 
   packages/postgres:
     dependencies:
@@ -100,14 +127,20 @@ importers:
 
   packages/session-jwt:
     dependencies:
+      '@vouchington/uuid-v7':
+        specifier: ^0.0.0
+        version: link:../uuid-v7
       jose:
         specifier: ^6.2.10
         version: 6.2.10
+
+  packages/utils: {}
+
+  packages/uuid-v7:
+    dependencies:
       uuid:
         specifier: ^14.0.2
         version: 14.0.2
-
-  packages/utils: {}
 
 packages:
 
@@ -1329,6 +1362,12 @@ packages:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
 
+  csv-parse@7.0.2:
+    resolution: {integrity: sha512-uKZghv9UmPkMVLYy//KZ9HFAIJsl7wkhoEdIL0+rhuSY9pZQlhaeGEDPIe+/w7eh81MOql8Q/9+inAGWG6ZHYA==}
+
+  csv-stringify@6.8.3:
+    resolution: {integrity: sha512-gIeSCvq5F4VtXV3naV3VAewLhBkiZBz+PPhTOA8H3Y8h/ELa+R1ml0GZck/4/Nzo9ep2lvOluilJ6MJlbZsKMA==}
+
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
     engines: {node: '>=6.0'}
@@ -1365,6 +1404,10 @@ packages:
   enhanced-resolve@5.24.5:
     resolution: {integrity: sha512-L1l8TNvomm6UVW5B253AGxQagSQr+vGwhMlrrfRS2qmhx46AMpMVJKQYLvWYbysTMY8VoicOvzHzoHMbyzB+4A==}
     engines: {node: '>=10.13.0'}
+
+  entities@8.0.0:
+    resolution: {integrity: sha512-zwfzJecQ/Uej6tusMqwAqU/6KL2XaB2VZ2Jg54Je6ahNBGNH6Ek6g3jjNCF0fG9EWQKGZNddNjU5F1ZQn/sBnA==}
+    engines: {node: '>=20.19.0'}
 
   es-define-property@1.0.1:
     resolution: {integrity: sha512-e3nRfgfUZ4rNGL232gUgX06QNyyez04KdjFrF+LTRoOXmrOgFKDg4BCdsjW8EnT69eqdYGmRpJwiPVYNrCaW3g==}
@@ -1850,6 +1893,10 @@ packages:
   pgvector@0.3.0:
     resolution: {integrity: sha512-+t7qcQD2us8fO8YIq/3lA0gUrD+bVO70MG1MhcDcxJz/OlRGGIIHzFq/4x57Vn/LpzX5wFdfOTLQp9QMPd4ljQ==}
     engines: {node: '>=22'}
+
+  phone@3.1.72:
+    resolution: {integrity: sha512-QU5ulC2318AgUnw/kF69BOgbWNjhVqqYMs6ochGTK3dBPwMAzfMrBS49YOC84eS5Xb3qYKTpmr1dlByFFy+BJQ==}
+    engines: {node: '>=12'}
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -3048,6 +3095,10 @@ snapshots:
       shebang-command: 2.0.0
       which: 2.0.2
 
+  csv-parse@7.0.2: {}
+
+  csv-stringify@6.8.3: {}
+
   debug@4.4.3(supports-color@7.2.0):
     dependencies:
       ms: 2.1.3
@@ -3093,6 +3144,8 @@ snapshots:
     dependencies:
       graceful-fs: 4.2.11
       tapable: 2.3.3
+
+  entities@8.0.0: {}
 
   es-define-property@1.0.1: {}
 
@@ -3591,6 +3644,8 @@ snapshots:
       split2: 4.2.0
 
   pgvector@0.3.0: {}
+
+  phone@3.1.72: {}
 
   picocolors@1.1.1: {}
 

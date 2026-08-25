@@ -3,6 +3,7 @@ packages:
 allowBuilds:
   protobufjs: false
 disallowWorkspaceCycles: true
+linkWorkspacePackages: true
 # Dependabot already holds updates for a week. Do not also fail CI when the
 # lockfile pins a toolchain release younger than pnpm's default 1-day cutoff.
 minimumReleaseAge: 0

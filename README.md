@@ -18,6 +18,12 @@ SKU names.
 | [`@vouchington/http-transport`](packages/http-transport) | Redirect-safe transport with injected fetch/address pinning       |
 | [`@vouchington/image-resize`](packages/image-resize)     | Sharp byte transforms, metadata, and image format negotiation     |
 
+| [`@vouchington/csv`](packages/csv) | BOM-safe parsing and spreadsheet-safe CSV serialization |
+| [`@vouchington/html-utils`](packages/html-utils) | HTML entity decoding and text helpers |
+| [`@vouchington/phone-validation`](packages/phone-validation) | Phone normalization and predicates |
+| [`@vouchington/uuid-v7`](packages/uuid-v7) | UUIDv7 generation, validation, and date bounds |
+| [`@vouchington/frontmatter`](packages/frontmatter) | Deterministic YAML frontmatter serialization |
+
 ## Commands
 
 ```sh

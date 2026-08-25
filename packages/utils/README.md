@@ -35,6 +35,8 @@ import { serializeCookie } from '@vouchington/utils/cookies'
   query-string serialization. Cursor parsing intentionally belongs to `@vouchington/pagination`.
 - `slugs` and `urls`: ASCII-only slugification and URL/hostname primitives. URL hostname helpers
   return `null` for invalid input; `normalizeAsciiHostname` names its ASCII-only contract directly.
+- `observability`: SDK-free URL, request, event, and span scrubbing. Callers provide credential
+  headers and environment or spike policy; this package has no product defaults.
 
 ```ts
 const money = createMoneyCatalog([{ code: 'credit', minorUnitExponent: 2 }] as const, 6)

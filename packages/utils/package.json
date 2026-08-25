@@ -124,6 +124,11 @@
       "types": "./dist/stable-json.d.mts",
       "import": "./dist/stable-json.mjs",
       "default": "./dist/stable-json.mjs"
+    },
+    "./observability": {
+      "types": "./dist/observability.d.mts",
+      "import": "./dist/observability.mjs",
+      "default": "./dist/observability.mjs"
     }
   },
   "publishConfig": {
