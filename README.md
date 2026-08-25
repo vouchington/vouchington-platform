@@ -15,6 +15,13 @@ SKU names.
 | [`@vouchington/session-jwt`](packages/session-jwt)                 | Portable RS512 JWT primitives and UUIDv7 identifiers              |
 | [`@vouchington/queue-errors`](packages/queue-errors)               | glide-mq retry classification and rate-limit helpers              |
 | [`@vouchington/pagination`](packages/pagination)                   | Cursor codecs, guards, and configuration-owned query parsing      |
+| [`@vouchington/csv`](packages/csv)                                 | BOM-safe parsing and spreadsheet-safe CSV serialization           |
+| [`@vouchington/html-utils`](packages/html-utils)                   | HTML entity decoding and text helpers                             |
+| [`@vouchington/phone-validation`](packages/phone-validation)       | Phone normalization and predicates                                |
+| [`@vouchington/uuid-v7`](packages/uuid-v7)                         | UUIDv7 generation, validation, and date bounds                    |
+| [`@vouchington/frontmatter`](packages/frontmatter)                 | Deterministic YAML frontmatter serialization                      |
+| [`@vouchington/http-transport`](packages/http-transport)           | Redirect-safe transport with injected fetch/address pinning       |
+| [`@vouchington/image-resize`](packages/image-resize)               | Sharp byte transforms, metadata, and image format negotiation     |
 | [`@vouchington/browser-crawl`](packages/browser-crawl)             | Injected Playwright rendered-page collection                      |
 | [`@vouchington/domain-verification`](packages/domain-verification) | DNS TXT and secure-transport well-known verification              |
 
