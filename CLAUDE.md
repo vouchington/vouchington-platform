@@ -32,6 +32,8 @@ docker run --rm -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:18
 - `@vouchington/rss-parser` — RSS, Atom, and JSON feed parsing
 - `@vouchington/rss-crawler` — transport-injected feed crawling
 - `@vouchington/robots` — transport- and cache-injected robots.txt evaluation
+- `@vouchington/browser-crawl` — injected Playwright rendered-page collection
+- `@vouchington/domain-verification` — DNS TXT and secure-transport verification primitives
 
 - `@vouchington/csv` — BOM-safe CSV parsing and spreadsheet-safe serialization
 - `@vouchington/html-utils` — HTML entity and text helpers

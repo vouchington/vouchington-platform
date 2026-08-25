@@ -18,6 +18,8 @@ on:
           - '@vouchington/rss-parser'
           - '@vouchington/rss-crawler'
           - '@vouchington/robots'
+          - '@vouchington/browser-crawl'
+          - '@vouchington/domain-verification'
           - '@vouchington/csv'
           - '@vouchington/html-utils'
           - '@vouchington/phone-validation'

@@ -2,12 +2,23 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
+
 import { beforeAll, describe, expect, it } from 'vitest'
 
 const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-const packages = ['csv', 'html-utils', 'phone-validation', 'uuid-v7', 'frontmatter']
-describe('focused runtime package manifests', () => {
+const packages = [
+  'csv',
+  'html-utils',
+  'phone-validation',
+  'uuid-v7',
+  'frontmatter',
+  'browser-crawl',
+  'domain-verification',
+]
+
+describe('runtime package manifests', () => {
   beforeAll(() => execFileSync(pnpm, ['run', 'build'], { encoding: 'utf8' }))
+
   it.each(packages)('publishes a single explicit public API for %s', (directory) => {
     const manifest = JSON.parse(readFileSync(`packages/${directory}/package.json`, 'utf8')) as {
       exports: Record<string, { import: string; types: string }>
