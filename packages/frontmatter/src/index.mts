@@ -14,24 +14,25 @@ export function toFrontmatter(fields: Record<string, unknown>): string {
 function normalizeFields(fields: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(fields).flatMap(([key, value]) => {
-      if (value == null) return []
-      if (Array.isArray(value)) {
-        const items = value.flatMap((item) => {
-          const normalized = normalizeItem(item)
-          return normalized == null ? [] : [normalized]
-        })
-        return items.length ? [[key, items]] : []
-      }
-      return [[key, normalizeScalar(value)]]
+      const normalized = normalizeItem(value)
+      return normalized === undefined ? [] : [[key, normalized]]
     }),
   )
 }
 function normalizeItem(value: unknown): unknown {
   if (value == null) return undefined
+  if (Array.isArray(value)) {
+    const items = value.flatMap((item) => {
+      const normalized = normalizeItem(item)
+      return normalized === undefined ? [] : [normalized]
+    })
+    return items.length ? items : undefined
+  }
   if (typeof value === 'object' && !(value instanceof Date)) {
-    const entries = Object.entries(value as Record<string, unknown>).flatMap(([key, item]) =>
-      item == null ? [] : [[key, normalizeScalar(item)]],
-    )
+    const entries = Object.entries(value as Record<string, unknown>).flatMap(([key, item]) => {
+      const normalized = normalizeItem(item)
+      return normalized === undefined ? [] : [[key, normalized]]
+    })
     return entries.length ? Object.fromEntries(entries) : undefined
   }
   return normalizeScalar(value)

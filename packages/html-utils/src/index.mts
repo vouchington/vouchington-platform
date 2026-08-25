@@ -30,6 +30,7 @@ export function decodeHtmlEntities(value: string): string {
     (_, index: string) => invalid[Number(index)]!,
   )
 }
+/** Performs a lightweight lexical check; it does not parse malformed HTML or literal angle brackets. */
 export function isInsideHtmlTag(value: string, position: number): boolean {
   const open = value.lastIndexOf('<', position)
   return open >= 0 && value.lastIndexOf('>', position) < open && value.indexOf('>', open) > position

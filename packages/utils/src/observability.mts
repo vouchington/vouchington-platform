@@ -31,8 +31,8 @@ export function scrubHeaders(
       name,
       credentials.has(name.toLowerCase())
         ? SENSITIVE_VALUE
-        : isUrlHeader(name) && typeof value === 'string'
-          ? stripUrlQueryAndFragment(value)
+        : isUrlHeader(name)
+          ? scrubUrlHeaderValue(value)
           : value,
     ]),
   )
@@ -139,6 +139,12 @@ function scrubRequest<T extends object>(
 }
 function isUrlHeader(name: string): boolean {
   return ['referer', 'referrer'].includes(name.toLowerCase())
+}
+function scrubUrlHeaderValue(value: unknown): unknown {
+  if (typeof value === 'string') return stripUrlQueryAndFragment(value)
+  return Array.isArray(value)
+    ? value.map((item) => (typeof item === 'string' ? stripUrlQueryAndFragment(item) : item))
+    : value
 }
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
