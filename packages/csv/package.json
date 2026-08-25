@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/csv",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "CSV parsing and safe serialization primitives.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/csv#readme",
   "license": "MIT",
