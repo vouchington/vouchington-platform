@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/rss-crawler",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Transport-injected RSS, Atom, and JSON feed crawler.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/rss-crawler#readme",
   "bugs": {
