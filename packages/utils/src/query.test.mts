@@ -45,5 +45,8 @@ describe('query primitives', () => {
     expect(() => parseBoundedInteger(undefined, { default: 0, minimum: 1, maximum: 20 })).toThrow(
       'bounds',
     )
+    expect(() => parseBoundedInteger(undefined, { default: 21, minimum: 1, maximum: 20 })).toThrow(
+      'bounds',
+    )
   })
 })

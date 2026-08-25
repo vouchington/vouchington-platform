@@ -4,7 +4,7 @@ export function stableJsonStringify(value: unknown): string {
 function sort(value: unknown): unknown {
   if (hasToJson(value)) return sort(value.toJSON())
   if (Array.isArray(value)) {
-    return value.map((item) =>
+    return Array.from(value, (item) =>
       item === undefined || typeof item === 'function' || typeof item === 'symbol'
         ? null
         : sort(item),

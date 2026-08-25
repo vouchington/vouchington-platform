@@ -27,6 +27,7 @@ describe('stable JSON', () => {
     expect(stableJsonStringify([undefined, () => undefined, Symbol('ignored')])).toBe(
       '[null, null, null]\n',
     )
+    expect(stableJsonStringify(new Array(1))).toBe('[null]\n')
     expect(stableJsonStringify(Symbol('root'))).toBe('null\n')
   })
 })
