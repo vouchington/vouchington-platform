@@ -32,14 +32,13 @@ function hasToJson(value: unknown): value is { toJSON(): unknown } {
 function format(value: unknown, indent = 0, prefix = 0): string {
   if (Array.isArray(value)) {
     if (value.length === 0) return '[]'
-    const inline = `[${value.map((item) => JSON.stringify(item)).join(', ')}]`
-    if (
-      value.every(
-        (item) => item == null || ['boolean', 'number', 'string'].includes(typeof item),
-      ) &&
-      inline.length <= 100 - indent - prefix
+    const canInline = value.every(
+      (item) => item == null || ['boolean', 'number', 'string'].includes(typeof item),
     )
-      return inline
+    if (canInline) {
+      const inline = `[${value.map((item) => JSON.stringify(item)).join(', ')}]`
+      if (inline.length <= 100 - indent - prefix) return inline
+    }
     const child = ' '.repeat(indent + 2)
     return `[\n${value.map((item) => `${child}${format(item, indent + 2)}`).join(',\n')}\n${' '.repeat(indent)}]`
   }

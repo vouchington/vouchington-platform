@@ -9,7 +9,7 @@ import {
 
 describe('query primitives', () => {
   it('parses arrays, booleans, and numbers without cursor semantics', () => {
-    expect(parseStringArray([' a ', 2])).toEqual([' a ', '2'])
+    expect(parseStringArray([' a ', 2, ' '])).toEqual(['a', '2'])
     expect(parseStringArray('a, , b')).toEqual(['a', 'b'])
     expect(parseStringArray(null)).toEqual([])
     expect(parseBooleanish(true)).toBe(true)
@@ -18,6 +18,9 @@ describe('query primitives', () => {
     expect(parseBooleanish('false')).toBe(false)
     expect(parseNumberParam({ a: '2' }, 'a')).toBe(2)
     expect(parseNumberParam({}, 'a')).toBeUndefined()
+    expect(parseNumberParam({ a: null }, 'a')).toBeUndefined()
+    expect(parseNumberParam({ a: '' }, 'a')).toBeUndefined()
+    expect(parseNumberParam({ a: '  ' }, 'a')).toBeUndefined()
     expect(parseNumberParam({ a: 'no' }, 'a')).toBeUndefined()
     expect(parseNumberParams({ a: '2', b: 'no' }, ['a', 'b'])).toEqual({ a: 2 })
   })

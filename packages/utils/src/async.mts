@@ -4,7 +4,7 @@ export async function mapWithConcurrency<T, R>(
   mapper: (item: T) => Promise<R>,
 ): Promise<R[]> {
   const count = Math.min(
-    Math.max(1, Number.isFinite(concurrency) ? Math.floor(concurrency) : 1),
+    Math.max(1, Number.isFinite(concurrency) ? Math.floor(concurrency) : items.length),
     items.length,
   )
   const results: R[] = []

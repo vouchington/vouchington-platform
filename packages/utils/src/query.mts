@@ -1,8 +1,9 @@
 export function parseStringArray(value: unknown): string[] {
-  if (Array.isArray(value)) return value.map(String)
-  return typeof value === 'string'
-    ? value.split(',').flatMap((item) => (item.trim() ? [item.trim()] : []))
-    : []
+  const values = Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : []
+  return values.flatMap((item) => {
+    const normalized = String(item).trim()
+    return normalized ? [normalized] : []
+  })
 }
 export function parseBooleanish(value: unknown): boolean {
   if (typeof value === 'boolean') return value
@@ -10,8 +11,11 @@ export function parseBooleanish(value: unknown): boolean {
   return typeof value === 'string' && ['1', 'true'].includes(value.toLowerCase())
 }
 export function parseNumberParam(query: Record<string, unknown>, key: string): number | undefined {
-  if (query[key] === undefined) return undefined
-  const value = Number(query[key])
+  const input = query[key]
+  if (input === undefined || input === null || (typeof input === 'string' && input.trim() === '')) {
+    return undefined
+  }
+  const value = Number(input)
   return Number.isNaN(value) ? undefined : value
 }
 export function parseNumberParams(

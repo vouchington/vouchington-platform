@@ -16,9 +16,18 @@ describe('bounded async mapping', () => {
     expect(maximum).toBeLessThanOrEqual(2)
     expect(await mapWithConcurrency([], 0, async (value) => value)).toEqual([])
     expect(await mapWithConcurrency([1, 2], 0, async (value) => value)).toEqual([1, 2])
-    expect(await mapWithConcurrency([1], Number.POSITIVE_INFINITY, async (value) => value)).toEqual(
-      [1],
-    )
+    active = 0
+    maximum = 0
+    expect(
+      await mapWithConcurrency([1, 2], Number.POSITIVE_INFINITY, async (value) => {
+        active += 1
+        maximum = Math.max(maximum, active)
+        await Promise.resolve()
+        active -= 1
+        return value
+      }),
+    ).toEqual([1, 2])
+    expect(maximum).toBe(2)
     expect(await mapSerially([1, 2], async (value) => value)).toEqual([1, 2])
   })
   it('rejects with the first observed failure after workers settle', async () => {
