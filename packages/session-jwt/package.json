@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/session-jwt",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Portable RS512 JWT key rotation, signing, verification, and UUIDv7 identifiers.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/session-jwt#readme",
   "bugs": {
