@@ -15,9 +15,25 @@ export interface FeedResponseBodyReaderContext {
 export type FeedResponseBodyReader = (context: FeedResponseBodyReaderContext) => Promise<Uint8Array>
 
 export type FeedResponseErrorContext =
-  | { type: 'http'; response: Response; url: string; status: number }
-  | { type: 'content-type'; response: Response; url: string; contentType: string }
-  | { type: 'redirect'; response: Response; url: string; status: number; location: string | null }
+  | {
+      readonly type: 'http'
+      readonly response: Response
+      readonly url: string
+      readonly status: number
+    }
+  | {
+      readonly type: 'content-type'
+      readonly response: Response
+      readonly url: string
+      readonly contentType: string
+    }
+  | {
+      readonly type: 'redirect'
+      readonly response: Response
+      readonly url: string
+      readonly status: number
+      readonly location: string | null
+    }
 
 export type FeedResponseErrorHandler = (context: FeedResponseErrorContext) => Error | undefined
 
