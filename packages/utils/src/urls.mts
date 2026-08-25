@@ -24,7 +24,11 @@ export function isExternalHttpUrl(value: string | null | undefined): boolean {
   return scheme === 'http' || scheme === 'https'
 }
 export function isAsciiHostname(value: string): boolean {
-  return Boolean(value) && /^[a-z0-9.-]+$/i.test(value)
+  return (
+    Boolean(value) &&
+    value.length <= 255 &&
+    value.split('.').every((label) => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(label))
+  )
 }
 export function normalizeAsciiHostname(value: string): string | null {
   const input = value

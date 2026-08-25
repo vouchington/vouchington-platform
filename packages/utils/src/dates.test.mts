@@ -46,6 +46,7 @@ describe('dates', () => {
     [-1, null],
     ['one', null],
     ['1:2:3:4', null],
+    ['9'.repeat(400), null],
     [Number.NaN, null],
   ])('parses duration %#', (input, expected) => {
     expect(parseDuration(input)).toBe(expected)

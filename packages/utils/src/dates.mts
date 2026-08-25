@@ -42,11 +42,13 @@ export function parseDuration(value: unknown): number | null {
   const parts = value.trim().split(':')
   if (!parts.every((part) => /^\d+$/.test(part)) || parts.length > 3) return null
   const values = parts.map(Number)
-  return values.length === 1
-    ? values[0]!
-    : values.length === 2
-      ? values[0]! * 60 + values[1]!
-      : values[0]! * 3600 + values[1]! * 60 + values[2]!
+  const duration =
+    values.length === 1
+      ? values[0]!
+      : values.length === 2
+        ? values[0]! * 60 + values[1]!
+        : values[0]! * 3600 + values[1]! * 60 + values[2]!
+  return Number.isFinite(duration) ? duration : null
 }
 function getDayStart(day: string): Date {
   const date = new Date(`${day}T00:00:00.000Z`)
