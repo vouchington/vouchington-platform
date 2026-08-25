@@ -54,6 +54,76 @@
       "types": "./dist/cookies.d.mts",
       "import": "./dist/cookies.mjs",
       "default": "./dist/cookies.mjs"
+    },
+    "./collections": {
+      "types": "./dist/collections.d.mts",
+      "import": "./dist/collections.mjs",
+      "default": "./dist/collections.mjs"
+    },
+    "./dates": {
+      "types": "./dist/dates.d.mts",
+      "import": "./dist/dates.mjs",
+      "default": "./dist/dates.mjs"
+    },
+    "./format": {
+      "types": "./dist/format.d.mts",
+      "import": "./dist/format.mjs",
+      "default": "./dist/format.mjs"
+    },
+    "./gtin": {
+      "types": "./dist/gtin.d.mts",
+      "import": "./dist/gtin.mjs",
+      "default": "./dist/gtin.mjs"
+    },
+    "./bigint-ids": {
+      "types": "./dist/bigint-ids.d.mts",
+      "import": "./dist/bigint-ids.mjs",
+      "default": "./dist/bigint-ids.mjs"
+    },
+    "./query": {
+      "types": "./dist/query.d.mts",
+      "import": "./dist/query.mjs",
+      "default": "./dist/query.mjs"
+    },
+    "./query-string": {
+      "types": "./dist/query-string.d.mts",
+      "import": "./dist/query-string.mjs",
+      "default": "./dist/query-string.mjs"
+    },
+    "./slugs": {
+      "types": "./dist/slugs.d.mts",
+      "import": "./dist/slugs.mjs",
+      "default": "./dist/slugs.mjs"
+    },
+    "./strings": {
+      "types": "./dist/strings.d.mts",
+      "import": "./dist/strings.mjs",
+      "default": "./dist/strings.mjs"
+    },
+    "./text-metrics": {
+      "types": "./dist/text-metrics.d.mts",
+      "import": "./dist/text-metrics.mjs",
+      "default": "./dist/text-metrics.mjs"
+    },
+    "./urls": {
+      "types": "./dist/urls.d.mts",
+      "import": "./dist/urls.mjs",
+      "default": "./dist/urls.mjs"
+    },
+    "./validation": {
+      "types": "./dist/validation.d.mts",
+      "import": "./dist/validation.mjs",
+      "default": "./dist/validation.mjs"
+    },
+    "./async": {
+      "types": "./dist/async.d.mts",
+      "import": "./dist/async.mjs",
+      "default": "./dist/async.mjs"
+    },
+    "./stable-json": {
+      "types": "./dist/stable-json.d.mts",
+      "import": "./dist/stable-json.mjs",
+      "default": "./dist/stable-json.mjs"
     }
   },
   "publishConfig": {
