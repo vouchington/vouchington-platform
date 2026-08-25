@@ -32,7 +32,6 @@ docker run --rm -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:18
 - `@vouchington/csv` — BOM-safe CSV parsing and spreadsheet-safe serialization
 - `@vouchington/html-utils` — HTML entity and text helpers
 - `@vouchington/phone-validation` — E.164 normalization and predicates
-- `@vouchington/observability` — SDK-free event, request, and span scrubbing
 - `@vouchington/uuid-v7` — UUIDv7 creation, validation, date bounds, and base36 suffixes
 - `@vouchington/frontmatter` — Deterministic YAML frontmatter serialization
 

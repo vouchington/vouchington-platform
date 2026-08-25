@@ -17,7 +17,6 @@ on:
           - '@vouchington/csv'
           - '@vouchington/html-utils'
           - '@vouchington/phone-validation'
-          - '@vouchington/observability'
           - '@vouchington/uuid-v7'
           - '@vouchington/frontmatter'
       bump:

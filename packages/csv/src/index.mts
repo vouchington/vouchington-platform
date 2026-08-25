@@ -3,7 +3,7 @@ import { parse } from 'csv-parse/sync'
 import { stringify } from 'csv-stringify/sync'
 
 export type CsvRow = Record<string, string | null | undefined>
-const FORMULA_PREFIX = /^[=+\-@]/
+const FORMULA_PREFIX = /^[=+\-@\t\r]/u
 
 export function stripCsvBom(value: string): string {
   return value.replace(/^\uFEFF/, '')

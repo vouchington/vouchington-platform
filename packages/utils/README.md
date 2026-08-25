@@ -25,6 +25,8 @@ import { serializeCookie } from '@vouchington/utils/cookies'
   metadata keys and surface/sensitivity lookups.
 - `cookies`: `serializeCookie(name, value, attributes)` validates cookie grammar and requires the
   caller to supply every policy attribute. `SameSite=None` requires `Secure`.
+- `observability`: SDK-free URL, request, event, and span scrubbing. Callers provide credential
+  headers and environment or spike policy; this package has no product defaults.
 
 ```ts
 const money = createMoneyCatalog([{ code: 'credit', minorUnitExponent: 2 }] as const, 6)

@@ -4,7 +4,6 @@ const packages = [
   'csv',
   'html-utils',
   'phone-validation',
-  'observability',
   'uuid-v7',
   'frontmatter',
 ]

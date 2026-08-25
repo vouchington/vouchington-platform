@@ -24,6 +24,8 @@ export function uuidv7RandomToBase36(value: string): string {
   return BigInt(`0x${validateUuidv7(value).replaceAll('-', '').slice(-18)}`).toString(36)
 }
 function makeDateBound(date: Date, seq: number, byte: number): string {
-  if (!Number.isFinite(date.getTime())) throw new Error('Invalid date')
-  return v7({ msecs: date.getTime(), random: new Uint8Array(16).fill(byte), seq })
+  const milliseconds = date.getTime()
+  if (!Number.isInteger(milliseconds) || milliseconds < 0 || milliseconds > 0xffff_ffff_ffff)
+    throw new Error('UUIDv7 date must be within the unsigned 48-bit timestamp range')
+  return v7({ msecs: milliseconds, random: new Uint8Array(16).fill(byte), seq })
 }
