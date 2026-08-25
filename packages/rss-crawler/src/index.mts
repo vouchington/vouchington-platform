@@ -109,7 +109,11 @@ async function readResponseBody(response: Response, maxBytes: number): Promise<U
       if (done) break
       length += value.byteLength
       if (length > maxBytes) {
-        await reader.cancel()
+        try {
+          await reader.cancel()
+        } catch {
+          // Cleanup must not replace the size-limit error.
+        }
         throw new RangeError(`Feed response exceeds ${maxBytes} bytes`)
       }
       chunks.push(value)

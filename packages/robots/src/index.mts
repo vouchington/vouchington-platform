@@ -1,6 +1,7 @@
 import robotsParser from 'robots-parser'
 
 const allowAll = 'User-agent: *\nAllow: /'
+const disallowAll = 'User-agent: *\nDisallow: /'
 type RobotsParser = (
   url: string,
   rules: string,
@@ -77,28 +78,27 @@ async function getRobots(robotsUrl: string, options: RobotsOptions): Promise<str
 async function fetchRobots(robotsUrl: string, options: RobotsOptions): Promise<string> {
   const response = await options.transport.fetch(robotsUrl)
   const maxBytes = options.maxResponseSizeBytes ?? 512 * 1024
-  const content = response.ok
-    ? await responseText(response, maxBytes)
-    : await unavailableResponse(response)
+  const content = response.ok ? await responseText(response, maxBytes) : await statusRules(response)
+  if (content === null) return allowAll
   await options.cache?.set(robotsUrl, content, options.ttlMs ?? 86_400_000)
   return content
 }
 
-async function responseText(response: Response, maxBytes: number): Promise<string> {
+async function responseText(response: Response, maxBytes: number): Promise<string | null> {
   if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0)
     throw new TypeError('maxResponseSizeBytes must be a positive safe integer')
   const body = await readResponseBody(response, maxBytes)
-  if (body === null) return allowAll
+  if (body === null) return null
   return new TextDecoder().decode(body)
 }
 
-async function unavailableResponse(response: Response): Promise<string> {
+async function statusRules(response: Response): Promise<string> {
   try {
     await response.body?.cancel()
   } catch {
-    // Cleanup must not replace the fail-open result.
+    // Cleanup must not replace the status-derived result.
   }
-  return allowAll
+  return response.status >= 500 && response.status <= 599 ? disallowAll : allowAll
 }
 
 async function readResponseBody(response: Response, maxBytes: number): Promise<Uint8Array | null> {
@@ -112,7 +112,11 @@ async function readResponseBody(response: Response, maxBytes: number): Promise<U
       if (done) break
       length += value.byteLength
       if (length > maxBytes) {
-        await reader.cancel()
+        try {
+          await reader.cancel()
+        } catch {
+          // Cleanup must not replace the bounded fail-open result.
+        }
         return null
       }
       chunks.push(value)

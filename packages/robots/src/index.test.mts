@@ -23,7 +23,7 @@ describe('robots', () => {
     await expect(isUrlAllowed('https://example.test/', 'other', options)).resolves.toBe(true)
   })
 
-  it('uses caller cache and fails open on unavailable or oversized files', async () => {
+  it('uses caller cache and applies status or size fallbacks', async () => {
     const calls: string[] = []
     const cache: RobotsCache = {
       get: async (key) => {
@@ -42,11 +42,25 @@ describe('robots', () => {
       isUrlAllowed('https://example.test/', 'bot', { transport: transport('', 404) }),
     ).resolves.toBe(true)
     await expect(
+      isUrlAllowed('https://example.test/', 'bot', { transport: transport('', 401) }),
+    ).resolves.toBe(true)
+    await expect(
+      isUrlAllowed('https://example.test/', 'bot', { transport: transport('', 503) }),
+    ).resolves.toBe(false)
+    const overflowWrites: unknown[] = []
+    await expect(
       isUrlAllowed('https://example.test/', 'bot', {
         transport: transport('abcdef'),
         maxResponseSizeBytes: 1,
+        cache: {
+          get: async () => undefined,
+          set: async (...args) => {
+            overflowWrites.push(args)
+          },
+        },
       }),
     ).resolves.toBe(true)
+    expect(overflowWrites).toEqual([])
   })
 
   it('writes cache and rejects invalid limits', async () => {
@@ -91,12 +105,19 @@ describe('robots', () => {
       }),
     ).resolves.toBe(true)
     expect(overflow.wasCanceled()).toBe(true)
+    const failedCancellation = responseWithBody(['ab', 'cd'], 200, true)
+    await expect(
+      isUrlAllowed('https://example.test/', 'bot', {
+        transport: transportResponse(failedCancellation.response),
+        maxResponseSizeBytes: 3,
+      }),
+    ).resolves.toBe(true)
     const unavailable = responseWithBody(['x'], 503)
     await expect(
       isUrlAllowed('https://example.test/', 'bot', {
         transport: transportResponse(unavailable.response),
       }),
-    ).resolves.toBe(true)
+    ).resolves.toBe(false)
     expect(unavailable.wasCanceled()).toBe(true)
 
     let calls = 0
@@ -141,6 +162,7 @@ function transportResponse(response: Response): RobotsTransport {
 function responseWithBody(
   chunks: string[],
   status = 200,
+  cancelFails = false,
 ): { response: Response; wasCanceled: () => boolean } {
   let canceled = false
   const stream = new ReadableStream<Uint8Array>({
@@ -150,6 +172,7 @@ function responseWithBody(
     },
     cancel() {
       canceled = true
+      if (cancelFails) throw new Error('cancel failed')
     },
   })
   return { response: new Response(stream, { status }), wasCanceled: () => canceled }

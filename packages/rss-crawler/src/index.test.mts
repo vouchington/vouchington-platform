@@ -95,6 +95,14 @@ describe('crawlFeed', () => {
       }),
     ).rejects.toThrow('exceeds')
     expect(overflow.wasCanceled()).toBe(true)
+    const failedCancellation = responseWithBody(['ab', 'cd'], 200, undefined, true)
+    await expect(
+      crawlFeed('https://example.test', {
+        transport: transport(failedCancellation.response),
+        userAgent: 'a',
+        maxResponseSizeBytes: 3,
+      }),
+    ).rejects.toThrow('exceeds')
 
     const unavailable = responseWithBody(['x'], 500)
     await expect(
@@ -166,7 +174,8 @@ describe('crawlFeed', () => {
 function responseWithBody(
   chunks: string[],
   status = 200,
-  headers: Record<string, string> = { 'content-type': 'application/rss+xml' },
+  headers: Record<string, string> | undefined = { 'content-type': 'application/rss+xml' },
+  cancelFails = false,
 ): { response: Response; wasCanceled: () => boolean } {
   let canceled = false
   const stream = new ReadableStream<Uint8Array>({
@@ -176,6 +185,7 @@ function responseWithBody(
     },
     cancel() {
       canceled = true
+      if (cancelFails) throw new Error('cancel failed')
     },
   })
   return { response: new Response(stream, { status, headers }), wasCanceled: () => canceled }
