@@ -41,4 +41,15 @@ describe('bounded async mapping', () => {
       undefined,
     )
   })
+  it('handles large synchronously rejecting inputs without recursive stack growth', async () => {
+    await expect(
+      mapWithConcurrency(
+        Array.from({ length: 20_000 }, (_, index) => index),
+        1,
+        async () => {
+          throw new Error('failed')
+        },
+      ),
+    ).rejects.toThrow('failed')
+  })
 })

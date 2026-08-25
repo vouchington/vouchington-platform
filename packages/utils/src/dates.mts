@@ -31,9 +31,7 @@ export function getDayBounds(day: string): { startMs: number; endMs: number } {
   return { startMs, endMs: startMs + DAY }
 }
 export function parseUtcDay(day: string): { year: string; month: string; day: string } {
-  const date = getDayStart(day)
-  if (!UTC_DAY.test(day) || getUtcDayFromDate(date) !== day)
-    throw new Error(`Invalid UTC day: ${day}`)
+  getDayStart(day)
   const [year, month, dayOfMonth] = day.split('-')
   return { year: year!, month: month!, day: dayOfMonth! }
 }
@@ -52,6 +50,7 @@ export function parseDuration(value: unknown): number | null {
 }
 function getDayStart(day: string): Date {
   const date = new Date(`${day}T00:00:00.000Z`)
-  if (Number.isNaN(date.getTime())) throw new Error(`Invalid UTC day: ${day}`)
+  if (!UTC_DAY.test(day) || Number.isNaN(date.getTime()) || getUtcDayFromDate(date) !== day)
+    throw new Error(`Invalid UTC day: ${day}`)
   return date
 }

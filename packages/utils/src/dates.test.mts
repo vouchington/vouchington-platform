@@ -33,6 +33,8 @@ describe('dates', () => {
     })
     expect(parseUtcDay('2026-02-03')).toEqual({ year: '2026', month: '02', day: '03' })
     expect(() => parseUtcDay('2026-02-30')).toThrow('Invalid UTC day')
+    expect(() => getDayBounds('2026-02-30')).toThrow('Invalid UTC day')
+    expect(() => enumerateUtcDaysInclusive('2026-02-30', '2026-03-01')).toThrow('Invalid UTC day')
   })
 
   it.each([

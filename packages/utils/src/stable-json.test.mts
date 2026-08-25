@@ -12,6 +12,7 @@ describe('stable JSON', () => {
     ).toBe(
       '{\n  "a": {\n    "x": 1,\n    "y": 2\n  },\n  "array": [\n    null,\n    {\n      "a": 1,\n      "b": 2\n    }\n  ]\n}\n',
     )
+    expect(stableJsonStringify({ é: 1, a: 2, Z: 3 })).toBe('{\n  "Z": 3,\n  "a": 2,\n  "é": 1\n}\n')
   })
   it('keeps short scalar arrays inline and wraps long arrays', () => {
     expect(stableJsonStringify([1, 'two', null])).toBe('[1, "two", null]\n')

@@ -11,14 +11,14 @@ export async function mapWithConcurrency<T, R>(
   let next = 0
   let failure: { reason: unknown } | undefined
   async function worker(): Promise<void> {
-    const index = next++
-    if (index >= items.length) return
-    try {
-      results[index] = await mapper(items[index]!)
-    } catch (error) {
-      failure ??= { reason: error }
+    while (next < items.length) {
+      const index = next++
+      try {
+        results[index] = await mapper(items[index]!)
+      } catch (error) {
+        failure ??= { reason: error }
+      }
     }
-    return worker()
   }
   await Promise.allSettled(Array.from({ length: count }, worker))
   if (failure !== undefined) throw failure.reason

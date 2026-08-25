@@ -18,7 +18,7 @@ function sort(value: unknown): unknown {
         ([, nested]) =>
           nested !== undefined && typeof nested !== 'function' && typeof nested !== 'symbol',
       )
-      .toSorted(([left], [right]) => left.localeCompare(right))
+      .toSorted(([left], [right]) => (left < right ? -1 : 1))
       .map(([key, nested]) => [key, sort(nested)]),
   )
 }

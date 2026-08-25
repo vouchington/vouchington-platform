@@ -9,6 +9,7 @@ function sanitize(value: string | null | undefined, allowed: ReadonlySet<string>
   // oxlint-disable-next-line no-control-regex -- reject URL-parser-normalized C0/DEL bypasses.
   if (!normalized || /[\u0000-\u001F\u007F]/.test(normalized)) return null
   const scheme = extractUrlScheme(normalized)
+  if (!scheme && normalized.startsWith('//')) return null
   return !scheme || allowed.has(scheme) ? normalized : null
 }
 export function sanitizeLinkUrl(value: string | null | undefined): string | null {
@@ -34,7 +35,10 @@ export function normalizeAsciiHostname(value: string): string | null {
     )
   if (!input) return null
   try {
-    const url = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(input) ? input : `https://${input}`)
+    const candidate = /^[a-z][a-z0-9+.-]*:\/\//i.test(input) ? input : `https://${input}`
+    const authority = candidate.match(/^[a-z][a-z0-9+.-]*:\/\/([^/?#]*)/i)?.[1]
+    if (!authority || /[^\x00-\x7F]/.test(authority)) return null
+    const url = new URL(candidate)
     const hostname = url.hostname.toLowerCase().replace(/\.$/, '')
     return !url.username && !url.password && hostname.length <= 255 && isAsciiHostname(hostname)
       ? hostname
