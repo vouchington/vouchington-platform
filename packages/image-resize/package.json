@@ -1,0 +1,48 @@
+{
+  "name": "@vouchington/image-resize",
+  "version": "0.0.0",
+  "description": "Image byte transformation, metadata, and content negotiation primitives.",
+  "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/image-resize#readme",
+  "bugs": {
+    "url": "https://github.com/vouchington/vouchington-platform/issues"
+  },
+  "license": "MIT",
+  "author": "Jonathan Ong",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vouchington/vouchington-platform.git",
+    "directory": "packages/image-resize"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "negotiator": "^1.1.0",
+    "sharp": "^0.35.3"
+  },
+  "devDependencies": {
+    "@types/negotiator": "^0.6.4"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

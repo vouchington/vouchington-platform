@@ -33,6 +33,12 @@ docker run --rm -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:18
 - `@vouchington/rss-crawler` — transport-injected feed crawling
 - `@vouchington/robots` — transport- and cache-injected robots.txt evaluation
 
+- `@vouchington/csv` — BOM-safe CSV parsing and spreadsheet-safe serialization
+- `@vouchington/html-utils` — HTML entity and text helpers
+- `@vouchington/phone-validation` — E.164 normalization and predicates
+- `@vouchington/uuid-v7` — UUIDv7 creation, validation, date bounds, and base36 suffixes
+- `@vouchington/frontmatter` — Deterministic YAML frontmatter serialization
+
 Extracted APIs must be generalizable and parameterized; product identifiers, defaults, and policy
 belong in application adapters. Code with no third-party runtime dependencies belongs in an explicit
 `@vouchington/utils/<subpath>` export. Code requiring any third-party runtime dependency must be its

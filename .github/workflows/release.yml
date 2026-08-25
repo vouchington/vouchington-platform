@@ -18,6 +18,13 @@ on:
           - '@vouchington/rss-parser'
           - '@vouchington/rss-crawler'
           - '@vouchington/robots'
+          - '@vouchington/csv'
+          - '@vouchington/html-utils'
+          - '@vouchington/phone-validation'
+          - '@vouchington/uuid-v7'
+          - '@vouchington/frontmatter'
+          - '@vouchington/http-transport'
+          - '@vouchington/image-resize'
       bump:
         description: Semver bump type
         type: choice
@@ -93,6 +100,24 @@ jobs:
       - run: pnpm run lint
       - run: pnpm run test:coverage
       - run: pnpm run actionlint
+
+      - name: Verify published runtime dependencies
+        env:
+          PACKAGE: ${{ inputs.package }}
+        run: |
+          node <<'NODE'
+          const { execFileSync } = require('node:child_process')
+          const { readFileSync, readdirSync } = require('node:fs')
+          const directory = readdirSync('packages', { withFileTypes: true })
+            .filter((entry) => entry.isDirectory())
+            .find((entry) => JSON.parse(readFileSync(`packages/${entry.name}/package.json`, 'utf8')).name === process.env.PACKAGE)
+          if (!directory) throw new Error(`Unknown package ${process.env.PACKAGE}`)
+          const manifest = JSON.parse(readFileSync(`packages/${directory.name}/package.json`, 'utf8'))
+          for (const [name, range] of Object.entries(manifest.dependencies ?? {})) {
+            if (!name.startsWith('@vouchington/')) continue
+            execFileSync('npm', ['view', `${name}@${range}`, 'version'], { stdio: 'inherit' })
+          }
+          NODE
 
       - name: Configure git
         run: |

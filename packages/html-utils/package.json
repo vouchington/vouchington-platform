@@ -1,0 +1,41 @@
+{
+  "name": "@vouchington/html-utils",
+  "version": "0.0.0",
+  "description": "HTML entity decoding and text-safe escaping.",
+  "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/html-utils#readme",
+  "license": "MIT",
+  "author": "Jonathan Ong",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vouchington/vouchington-platform.git",
+    "directory": "packages/html-utils"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "entities": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

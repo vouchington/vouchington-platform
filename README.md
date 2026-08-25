@@ -8,17 +8,25 @@ SKU names.
 
 ## Packages
 
-| Package                                              | Description                                                       |
-| ---------------------------------------------------- | ----------------------------------------------------------------- |
-| [`@vouchington/postgres`](packages/postgres)         | Triple-pool PostgreSQL runtime, transactions, cursors, migrations |
-| [`@vouchington/utils`](packages/utils)               | Dependency-free explicit-subpath runtime utilities                |
-| [`@vouchington/session-jwt`](packages/session-jwt)   | Portable RS512 JWT primitives and UUIDv7 identifiers              |
-| [`@vouchington/queue-errors`](packages/queue-errors) | glide-mq retry classification and rate-limit helpers              |
-| [`@vouchington/pagination`](packages/pagination)     | Cursor codecs, guards, and configuration-owned query parsing      |
-| [`@vouchington/crawler-html`](packages/crawler-html) | HTML content decoding and extraction                              |
-| [`@vouchington/rss-parser`](packages/rss-parser)     | RSS, Atom, and JSON feed parsing                                  |
-| [`@vouchington/rss-crawler`](packages/rss-crawler)   | Transport-injected feed crawling                                  |
-| [`@vouchington/robots`](packages/robots)             | Transport- and cache-injected robots.txt evaluation               |
+| Package                                                  | Description                                                       |
+| -------------------------------------------------------- | ----------------------------------------------------------------- |
+| [`@vouchington/postgres`](packages/postgres)             | Triple-pool PostgreSQL runtime, transactions, cursors, migrations |
+| [`@vouchington/utils`](packages/utils)                   | Dependency-free explicit-subpath runtime utilities                |
+| [`@vouchington/session-jwt`](packages/session-jwt)       | Portable RS512 JWT primitives and UUIDv7 identifiers              |
+| [`@vouchington/queue-errors`](packages/queue-errors)     | glide-mq retry classification and rate-limit helpers              |
+| [`@vouchington/pagination`](packages/pagination)         | Cursor codecs, guards, and configuration-owned query parsing      |
+| [`@vouchington/http-transport`](packages/http-transport) | Redirect-safe transport with injected fetch/address pinning       |
+| [`@vouchington/image-resize`](packages/image-resize)     | Sharp byte transforms, metadata, and image format negotiation     |
+| [`@vouchington/crawler-html`](packages/crawler-html)     | HTML content decoding and extraction                              |
+| [`@vouchington/rss-parser`](packages/rss-parser)         | RSS, Atom, and JSON feed parsing                                  |
+| [`@vouchington/rss-crawler`](packages/rss-crawler)       | Transport-injected feed crawling                                  |
+| [`@vouchington/robots`](packages/robots)                 | Transport- and cache-injected robots.txt evaluation               |
+
+| [`@vouchington/csv`](packages/csv) | BOM-safe parsing and spreadsheet-safe CSV serialization |
+| [`@vouchington/html-utils`](packages/html-utils) | HTML entity decoding and text helpers |
+| [`@vouchington/phone-validation`](packages/phone-validation) | Phone normalization and predicates |
+| [`@vouchington/uuid-v7`](packages/uuid-v7) | UUIDv7 generation, validation, and date bounds |
+| [`@vouchington/frontmatter`](packages/frontmatter) | Deterministic YAML frontmatter serialization |
 
 ## Commands
 

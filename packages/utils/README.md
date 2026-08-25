@@ -25,6 +25,18 @@ import { serializeCookie } from '@vouchington/utils/cookies'
   metadata keys and surface/sensitivity lookups.
 - `cookies`: `serializeCookie(name, value, attributes)` validates cookie grammar and requires the
   caller to supply every policy attribute. `SameSite=None` requires `Secure`.
+- `collections`, `async`, and `stable-json`: collection deduplication/merging, bounded async mapping,
+  and deterministic JSON serialization.
+- `dates`, `format`, `strings`, and `text-metrics`: UTC-day, duration, formatting, text normalization,
+  title casing, and word/sentence helpers.
+- `gtin`, `bigint-ids`, and `validation`: GTIN predicates, canonical positive PostgreSQL bigint IDs,
+  and basic email/UUID predicates.
+- `query` and `query-string`: generic array/boolean/number parsing, bounded integer parsing, and
+  query-string serialization. Cursor parsing intentionally belongs to `@vouchington/pagination`.
+- `slugs` and `urls`: ASCII-only slugification and URL/hostname primitives. URL hostname helpers
+  return `null` for invalid input; `normalizeAsciiHostname` names its ASCII-only contract directly.
+- `observability`: SDK-free URL, request, event, and span scrubbing. Callers provide credential
+  headers and environment or spike policy; this package has no product defaults.
 
 ```ts
 const money = createMoneyCatalog([{ code: 'credit', minorUnitExponent: 2 }] as const, 6)

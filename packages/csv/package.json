@@ -1,0 +1,42 @@
+{
+  "name": "@vouchington/csv",
+  "version": "0.0.0",
+  "description": "CSV parsing and safe serialization primitives.",
+  "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/csv#readme",
+  "license": "MIT",
+  "author": "Jonathan Ong",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vouchington/vouchington-platform.git",
+    "directory": "packages/csv"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "csv-parse": "^7.0.2",
+    "csv-stringify": "^6.8.3"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}
