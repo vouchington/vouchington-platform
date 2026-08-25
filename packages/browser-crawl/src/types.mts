@@ -17,6 +17,7 @@ export interface BrowserCrawlRequest {
   hydrationWaitMs?: number
   minContentLength?: number
   maxHtmlBytes?: number
+  /** Runs for every routable page request, regardless of URL scheme, and every WebSocket dial. */
   requestPolicy?: (url: string, kind: 'request' | 'websocket') => void | Promise<void>
   onCleanupError?: (error: unknown) => void
 }

@@ -38,11 +38,11 @@ describe('crawlWithBrowser', () => {
       connect: fixture.connect,
       requestPolicy: policy,
     })
-    const route = routeFixture('https://asset.example.test', false)
+    const route = routeFixture('data:text/plain,example', false)
     await fixture.routeHandler?.(route)
     const websocket = websocketFixture('wss://socket.example.test')
     await fixture.websocketHandler?.(websocket)
-    expect(policy).toHaveBeenCalledWith('https://asset.example.test', 'request')
+    expect(policy).toHaveBeenCalledWith('data:text/plain,example', 'request')
     expect(route.fallback).toHaveBeenCalledOnce()
     expect(policy).toHaveBeenCalledWith('wss://socket.example.test', 'websocket')
     expect(websocket.connectToServer).toHaveBeenCalledOnce()
@@ -104,9 +104,15 @@ describe('crawlWithBrowser', () => {
     )
     const navigation = browserFixture()
     navigation.goto.mockRejectedValue(new Error('network'))
-    await expect(crawlWithBrowser(request(navigation))).rejects.toBeInstanceOf(
-      BrowserCrawlNavigationError,
-    )
+    navigation.browser.close.mockRejectedValue(new Error('close'))
+    await expect(
+      crawlWithBrowser({
+        ...request(navigation),
+        onCleanupError: () => {
+          throw new Error('reporter failed')
+        },
+      }),
+    ).rejects.toBeInstanceOf(BrowserCrawlNavigationError)
   })
 
   it('handles absent or oversized html and cleanup errors without changing a result', async () => {
@@ -124,6 +130,16 @@ describe('crawlWithBrowser', () => {
     const onCleanupError = vi.fn()
     await crawlWithBrowser({ ...request(cleanup), onCleanupError })
     expect(onCleanupError).toHaveBeenCalledTimes(3)
+    const throwingReporter = browserFixture()
+    throwingReporter.browser.close.mockRejectedValue(new Error('close'))
+    await expect(
+      crawlWithBrowser({
+        ...request(throwingReporter),
+        onCleanupError: () => {
+          throw new Error('reporter failed')
+        },
+      }),
+    ).resolves.toMatchObject({ statusCode: 201 })
   })
 
   it('validates caller options and allows an empty rendered page', async () => {

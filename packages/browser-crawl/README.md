@@ -26,7 +26,8 @@ const page = await crawlWithBrowser({
 })
 ```
 
-The optional `requestPolicy` runs for every HTTP request and WebSocket connection. It is the
+The optional `requestPolicy` runs for every routable page request, regardless of URL scheme, and
+every WebSocket connection. It is the
 application's responsibility to perform SSRF protection, URL allow-listing, and any provider
 specific filtering. A rejected policy aborts that request; a rejected navigation policy error is
 returned to the caller unchanged.

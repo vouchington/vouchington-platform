@@ -37,7 +37,9 @@ export async function resolveTxtRecords(
   let failure: Error = new DnsTxtLookupError()
   for (let attempt = 0; attempt <= retries; attempt += 1) {
     try {
-      return (await withTimeout(lookup(hostname), timeoutMs, clock)).flat()
+      return (await withTimeout(lookup(hostname), timeoutMs, clock)).map((chunks) =>
+        chunks.join(''),
+      )
     } catch (error) {
       failure = toError(error)
       if (!(failure instanceof DnsTimeoutError)) throw failure

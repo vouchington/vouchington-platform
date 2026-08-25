@@ -30,3 +30,6 @@ const verified = await verifyWellKnownText('example.test', 'token', {
 `transport` is intentionally injected: it must enforce SSRF protection, DNS resolution and
 connection pinning appropriate to the host application. The package requests only plain text,
 caps the body size, and returns `null`/`false` for transport, status, or body failures.
+
+Hostnames are ASCII DNS names only. Convert internationalized names to their ASCII (punycode) form
+before calling this package; userinfo, ports, paths, query strings, and fragments are rejected.

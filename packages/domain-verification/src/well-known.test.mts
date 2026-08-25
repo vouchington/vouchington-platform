@@ -48,6 +48,34 @@ describe('fetchWellKnownText', () => {
         fetchWellKnownText('example.test', { ...options(transport), ...invalid }),
       ).rejects.toThrow()
     }
+    for (const hostname of [
+      'example.test@127.0.0.1',
+      'example.test:443',
+      'example.test/path',
+      'café.test',
+    ]) {
+      await expect(fetchWellKnownText(hostname, options(transport))).rejects.toThrow(
+        'ASCII DNS hostname',
+      )
+    }
+  })
+
+  it('cancels a response reader after an oversized body', async () => {
+    const cancel = vi.fn(async () => {
+      throw new Error('cleanup failed')
+    })
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        controller.enqueue(new TextEncoder().encode('abc'))
+      },
+      cancel,
+    })
+    const transport = transportFixture()
+    transport.get.mockResolvedValue(new Response(stream))
+    await expect(
+      fetchWellKnownText('example.test', { ...options(transport), maxBytes: 2 }),
+    ).resolves.toBeNull()
+    expect(cancel).toHaveBeenCalledOnce()
   })
 })
 

@@ -122,7 +122,11 @@ async function closeQuietly(
   try {
     await resource?.close()
   } catch (error) {
-    onError?.(error)
+    try {
+      onError?.(error)
+    } catch {
+      // Cleanup reporting must not replace a crawl result or failure.
+    }
   }
 }
 

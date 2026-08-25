@@ -3,14 +3,18 @@ import { describe, expect, it, vi } from 'vitest'
 import { DnsTimeoutError, hasDnsTxtRecord, resolveTxtRecords, type DnsClock } from './dns.mts'
 
 describe('resolveTxtRecords', () => {
-  it('flattens records and checks for an exact verification record', async () => {
-    const lookup = vi.fn().mockResolvedValue([['one', 'two'], ['three']])
+  it('joins split TXT chunks while preserving individual records', async () => {
+    const lookup = vi
+      .fn()
+      .mockResolvedValue([['one', 'two'], ['three'], ['verification=', 'token']])
     await expect(resolveTxtRecords('example.test', { lookup })).resolves.toEqual([
-      'one',
-      'two',
+      'onetwo',
       'three',
+      'verification=token',
     ])
-    await expect(hasDnsTxtRecord('example.test', 'two', { lookup })).resolves.toBe(true)
+    await expect(hasDnsTxtRecord('example.test', 'verification=token', { lookup })).resolves.toBe(
+      true,
+    )
     await expect(hasDnsTxtRecord('example.test', 'missing', { lookup })).resolves.toBe(false)
   })
 
