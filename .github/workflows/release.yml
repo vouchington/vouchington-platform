@@ -14,6 +14,8 @@ on:
           - '@vouchington/session-jwt'
           - '@vouchington/queue-errors'
           - '@vouchington/pagination'
+          - '@vouchington/browser-crawl'
+          - '@vouchington/domain-verification'
           - '@vouchington/csv'
           - '@vouchington/html-utils'
           - '@vouchington/phone-validation'
