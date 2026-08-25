@@ -80,9 +80,7 @@ async function fetchRobots(robotsUrl: string, options: RobotsOptions): Promise<s
   const content = response.ok
     ? await responseText(response, maxBytes)
     : await unavailableResponse(response)
-  const cache = options.cache
-  if (cache === undefined) return content
-  await cache.set(robotsUrl, content, options.ttlMs ?? 86_400_000)
+  await options.cache?.set(robotsUrl, content, options.ttlMs ?? 86_400_000)
   return content
 }
 
