@@ -1,27 +1,17 @@
 {
-  "name": "@vouchington/session-jwt",
+  "name": "@vouchington/observability",
   "version": "0.0.0",
-  "description": "Portable RS512 JWT key rotation, signing, verification, and UUIDv7 identifiers.",
-  "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/session-jwt#readme",
-  "bugs": {
-    "url": "https://github.com/vouchington/vouchington-platform/issues"
-  },
+  "description": "SDK-free observability data-scrubbing primitives.",
+  "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/observability#readme",
   "license": "MIT",
   "author": "Jonathan Ong",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/vouchington/vouchington-platform.git",
-    "directory": "packages/session-jwt"
+    "directory": "packages/observability"
   },
   "files": [
-    "dist/index.d.mts",
-    "dist/index.mjs",
-    "dist/jwt.d.mts",
-    "dist/jwt.mjs",
-    "dist/keys.d.mts",
-    "dist/keys.mjs",
-    "dist/uuidv7.d.mts",
-    "dist/uuidv7.mjs",
+    "dist",
     "README.md",
     "LICENSE"
   ],
@@ -41,10 +31,6 @@
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
     "prepack": "pnpm run build"
-  },
-  "dependencies": {
-    "@vouchington/uuid-v7": "workspace:*",
-    "jose": "^6.2.10"
   },
   "engines": {
     "node": ">=24.0.0"

@@ -14,6 +14,12 @@ on:
           - '@vouchington/session-jwt'
           - '@vouchington/queue-errors'
           - '@vouchington/pagination'
+          - '@vouchington/csv'
+          - '@vouchington/html-utils'
+          - '@vouchington/phone-validation'
+          - '@vouchington/observability'
+          - '@vouchington/uuid-v7'
+          - '@vouchington/frontmatter'
       bump:
         description: Semver bump type
         type: choice

@@ -16,6 +16,13 @@ SKU names.
 | [`@vouchington/queue-errors`](packages/queue-errors) | glide-mq retry classification and rate-limit helpers              |
 | [`@vouchington/pagination`](packages/pagination)     | Cursor codecs, guards, and configuration-owned query parsing      |
 
+| [`@vouchington/csv`](packages/csv) | BOM-safe parsing and spreadsheet-safe CSV serialization |
+| [`@vouchington/html-utils`](packages/html-utils) | HTML entity decoding and text helpers |
+| [`@vouchington/phone-validation`](packages/phone-validation) | Phone normalization and predicates |
+| [`@vouchington/observability`](packages/observability) | SDK-free observability data scrubbing |
+| [`@vouchington/uuid-v7`](packages/uuid-v7) | UUIDv7 generation, validation, and date bounds |
+| [`@vouchington/frontmatter`](packages/frontmatter) | Deterministic YAML frontmatter serialization |
+
 ## Commands
 
 ```sh
