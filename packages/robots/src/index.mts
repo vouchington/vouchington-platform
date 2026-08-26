@@ -8,7 +8,8 @@ export interface ParsedRobots {
   getCrawlDelay(userAgent?: string): number | undefined
 }
 
-type RobotsParserFactory = (url: string, rules: string) => unknown
+type RobotsParserFactory = (url: string, rules: string) => ParsedRobots
+const parseRobots = robotsParser as unknown as RobotsParserFactory
 const inFlight = new WeakMap<RobotsOptions, Map<string, Promise<string>>>()
 
 export interface RobotsTransport {
@@ -57,20 +58,7 @@ export async function getCrawlDelayMs(
 
 /** Parses robots.txt rules while preserving the parser's raw allow/deny result. */
 export function parseRobotsTxt(url: string, rules: string | null): ParsedRobots {
-  if (typeof robotsParser !== 'function') {
-    throw new TypeError('robots-parser module must export a callable parser')
-  }
-  const parser = (robotsParser as unknown as RobotsParserFactory)(url, rules ?? '')
-  if (typeof parser !== 'object' || parser === null) {
-    throw new TypeError('robots-parser must return an object')
-  }
-  if (typeof Reflect.get(parser, 'isAllowed') !== 'function') {
-    throw new TypeError('robots-parser result must provide isAllowed()')
-  }
-  if (typeof Reflect.get(parser, 'getCrawlDelay') !== 'function') {
-    throw new TypeError('robots-parser result must provide getCrawlDelay()')
-  }
-  return parser as ParsedRobots
+  return parseRobots(url, rules ?? '')
 }
 
 /** Converts a robots Crawl-delay (seconds) to milliseconds when it is usable. */
