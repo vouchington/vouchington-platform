@@ -27,6 +27,16 @@ describe('rss parser', () => {
     expect(parseFeedDocument(body).feed.title).toBe('Feed')
   })
 
+  it('replaces malformed bytes in explicitly UTF-8 feeds without corrupting valid text', () => {
+    const prefix = Buffer.from('<?xml version="1.0" encoding="utf-8"?><rss><channel><title>Résumé ')
+    const suffix = Buffer.from('</title></channel></rss>')
+    const body = Buffer.concat([prefix, Buffer.from([0x93]), suffix])
+
+    expect(decodeFeed(body, 'application/rss+xml; charset=utf-8')).toContain(
+      '<title>Résumé �</title>',
+    )
+  })
+
   it('parses JSON Feed and rejects an empty parser result', () => {
     const body = Buffer.from(
       '{"version":"https://jsonfeed.org/version/1.1","title":"Feed","items":[]}',
