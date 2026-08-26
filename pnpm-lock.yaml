@@ -147,7 +147,7 @@ importers:
   packages/rss-crawler:
     dependencies:
       '@vouchington/rss-parser':
-        specifier: ^0.0.0
+        specifier: ^0.0.1
         version: link:../rss-parser
 
   packages/rss-parser:
