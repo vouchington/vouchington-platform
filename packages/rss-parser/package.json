@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/rss-parser",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "RSS, Atom, and JSON feed decoding and parsing.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/rss-parser#readme",
   "bugs": {
