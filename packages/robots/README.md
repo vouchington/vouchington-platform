@@ -5,8 +5,12 @@ Evaluates `robots.txt` through caller-provided transport and optional cache impl
 cacheability for each HTTP status.
 
 ```ts
-import { isUrlAllowed } from '@vouchington/robots'
+import { isUrlAllowed, parseRobotsTxt } from '@vouchington/robots'
 ```
+
+`parseRobotsTxt(url, rules)` exposes parsing independently for applications that already own their
+fetch and cache policy. Unlike `isUrlAllowed`, it preserves the parser's `undefined` result when the
+requested URL does not match the robots.txt origin.
 
 ## Provenance
 

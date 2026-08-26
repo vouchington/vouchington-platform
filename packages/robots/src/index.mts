@@ -2,14 +2,14 @@ import robotsParser from 'robots-parser'
 
 const allowAll = 'User-agent: *\nAllow: /'
 const disallowAll = 'User-agent: *\nDisallow: /'
-type RobotsParser = (
-  url: string,
-  rules: string,
-) => {
-  isAllowed(url: string, userAgent: string): boolean | undefined
-  getCrawlDelay(userAgent: string): number | undefined
+
+export interface ParsedRobots {
+  isAllowed(url: string, userAgent?: string): boolean | undefined
+  getCrawlDelay(userAgent?: string): number | undefined
 }
-const parseRobots = robotsParser as unknown as RobotsParser
+
+type RobotsParserFactory = (url: string, rules: string) => ParsedRobots
+const parseRobots = robotsParser as unknown as RobotsParserFactory
 const inFlight = new WeakMap<RobotsOptions, Map<string, Promise<string>>>()
 
 export interface RobotsTransport {
@@ -40,7 +40,7 @@ export async function isUrlAllowed(
 ): Promise<boolean> {
   const robotsUrl = new URL('/robots.txt', url).toString()
   const rules = await getRobots(robotsUrl, options)
-  return parseRobots(robotsUrl, rules).isAllowed(url, userAgent) !== false
+  return parseRobotsTxt(robotsUrl, rules).isAllowed(url, userAgent) !== false
 }
 
 /** Returns the crawl delay in milliseconds, or null when none applies. */
@@ -50,8 +50,15 @@ export async function getCrawlDelayMs(
   options: RobotsOptions,
 ): Promise<number | null> {
   const robotsUrl = new URL('/robots.txt', url).toString()
-  const delay = parseRobots(robotsUrl, await getRobots(robotsUrl, options)).getCrawlDelay(userAgent)
+  const delay = parseRobotsTxt(robotsUrl, await getRobots(robotsUrl, options)).getCrawlDelay(
+    userAgent,
+  )
   return getCrawlDelayMilliseconds(delay)
+}
+
+/** Parses robots.txt rules while preserving the parser's raw allow/deny result. */
+export function parseRobotsTxt(url: string, rules: string | null): ParsedRobots {
+  return parseRobots(url, rules ?? '')
 }
 
 /** Converts a robots Crawl-delay (seconds) to milliseconds when it is usable. */

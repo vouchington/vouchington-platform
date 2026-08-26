@@ -3,6 +3,7 @@ import {
   getCrawlDelayMilliseconds,
   getCrawlDelayMs,
   isUrlAllowed,
+  parseRobotsTxt,
   type RobotsCache,
   type RobotsTransport,
 } from './index.mts'
@@ -111,6 +112,24 @@ describe('robots', () => {
         maxResponseSizeBytes: 0.5,
       }),
     ).rejects.toThrow('maxResponse')
+  })
+
+  it('exposes raw parser results and normalizes null rules', () => {
+    const parser = parseRobotsTxt(
+      'https://example.test/robots.txt',
+      'User-agent: bot\nDisallow: /private\nCrawl-delay: 1.5',
+    )
+
+    expect(parser.isAllowed('https://example.test/public', 'bot')).toBe(true)
+    expect(parser.isAllowed('https://example.test/private', 'bot')).toBe(false)
+    expect(parser.isAllowed('http://example.test/public', 'bot')).toBeUndefined()
+    expect(parser.getCrawlDelay('bot')).toBe(1.5)
+    expect(
+      parseRobotsTxt('https://example.test/robots.txt', null).isAllowed(
+        'https://example.test/path',
+        'bot',
+      ),
+    ).toBe(true)
   })
 
   it('bounds streams, cancels unavailable responses, and coalesces matching options', async () => {
