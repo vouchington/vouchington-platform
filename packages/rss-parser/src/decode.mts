@@ -6,7 +6,8 @@ const utf16beDeclaration = Buffer.from([0x00, 0x3c, 0x00, 0x3f])
 
 export function decodeFeed(body: Uint8Array, contentType?: string | null): string {
   const buffer = Buffer.from(body)
-  const labels = [bomCharset(buffer), contentCharset(contentType), xmlCharset(buffer), 'utf-8']
+  const declaredLabels = [bomCharset(buffer), contentCharset(contentType), xmlCharset(buffer)]
+  const labels = [...declaredLabels, 'utf-8']
   for (const label of labels) {
     if (!label) continue
     try {
@@ -15,7 +16,17 @@ export function decodeFeed(body: Uint8Array, contentType?: string | null): strin
       // Try the next declared or fallback encoding.
     }
   }
+  if (declaredLabels.some(isUtf8Label)) return new TextDecoder('utf-8').decode(buffer)
   return new TextDecoder('windows-1252').decode(buffer)
+}
+
+function isUtf8Label(label: string | null): boolean {
+  if (!label) return false
+  try {
+    return new TextDecoder(label).encoding === 'utf-8'
+  } catch {
+    return false
+  }
 }
 
 function bomCharset(body: Buffer): string | null {
