@@ -214,10 +214,10 @@ jobs:
           [ "$current" = "$SELECTED_HEAD_SHA" ] || { echo '::error::PR head changed during final review.'; exit 1; }
           provider_warning() {
             [ "$1" = true ] || return 0
-            [ "$2" = success ] && [ "$3" = success ] || {
+            if [ "$2" != success ] || [ "$3" != success ]; then
               echo "::warning::$4 review did not complete successfully; this is advisory."
               return 0
-            }
+            fi
             if [ -n "$5" ] && [ "$5" != success ]; then
               echo "::warning::$4 review poster did not complete successfully; this is advisory."
             fi
