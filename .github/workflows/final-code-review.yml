@@ -1,0 +1,234 @@
+name: Final Code Review
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review, labeled]
+
+permissions:
+  actions: read
+  checks: read
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: final-code-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  code-reviewed:
+    # This native job, rather than an API-created check run, is the merge gate.
+    name: >-
+      ${{ github.event.action == 'labeled' && github.event.label.name != 'final-code-review:requested' &&
+      'Ignored final-review label' || 'Code Reviewed' }}
+    if: >-
+      github.event.action != 'labeled' ||
+      github.event.label.name == 'final-code-review:requested'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Select the exact PR head and wait for required CI
+        id: select
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          output() { printf '%s=%s\n' "$1" "$2" >> "$GITHUB_OUTPUT"; }
+          pr="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" \
+            --json headRefOid,baseRefOid,isDraft,isCrossRepository,author)"
+          head_sha="$(jq -r '.headRefOid' <<<"$pr")"
+          base_sha="$(jq -r '.baseRefOid' <<<"$pr")"
+          author="$(jq -r '.author.login' <<<"$pr")"
+          is_draft="$(jq -r '.isDraft' <<<"$pr")"
+          is_cross_repository="$(jq -r '.isCrossRepository' <<<"$pr")"
+          [[ "$head_sha" =~ ^[0-9a-f]{40}$ ]] || { echo '::error::Missing PR head SHA.'; exit 1; }
+          [[ "$base_sha" =~ ^[0-9a-f]{40}$ ]] || { echo '::error::Missing PR base SHA.'; exit 1; }
+          [ "$EVENT_HEAD_SHA" = "$head_sha" ] || {
+            echo "::error::Event head $EVENT_HEAD_SHA is stale; current head is $head_sha."
+            exit 1
+          }
+          output head_sha "$head_sha"
+          output base_sha "$base_sha"
+          output pr_number "$PR_NUMBER"
+
+          check_state() {
+            gh api "repos/$GITHUB_REPOSITORY/commits/$head_sha/check-runs?per_page=100&filter=latest" | \
+              jq -r --arg name "$1" '
+                [.check_runs[] | select(.name == $name and .app.slug == "github-actions") | .conclusion] |
+                if any(.[]; . == "failure" or . == "cancelled" or . == "timed_out" or . == "action_required")
+                then "failed"
+                elif any(.[]; . == "success") then "success"
+                else "pending" end'
+          }
+          for attempt in $(seq 1 120); do
+            test_state="$(check_state test)"
+            actionlint_state="$(check_state actionlint)"
+            if [ "$test_state" = success ] && [ "$actionlint_state" = success ]; then break; fi
+            if [ "$test_state" = failed ] || [ "$actionlint_state" = failed ]; then
+              echo "::error::Required CI failed for $head_sha (test=$test_state, actionlint=$actionlint_state)."
+              exit 1
+            fi
+            if [ "$attempt" = 120 ]; then
+              echo "::error::Timed out waiting for exact-head CI (test=$test_state, actionlint=$actionlint_state)."
+              exit 1
+            fi
+            sleep 15
+          done
+
+          dependency_bot=false
+          case "$author" in
+            dependabot|'dependabot[bot]'|app/dependabot|renovate|'renovate[bot]'|app/renovate) dependency_bot=true ;;
+          esac
+          if [ "$is_cross_repository" = true ] || [ "$dependency_bot" = true ]; then
+            output mode pass-through
+          elif [ "$is_draft" = true ]; then
+            output mode deferred
+          else
+            output mode trusted
+          fi
+
+      - name: Clear stale completion state
+        if: steps.select.outputs.mode == 'trusted'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.select.outputs.pr_number }}
+          COMPLETE_LABEL: final-code-review:complete
+        run: |
+          set -euo pipefail
+          has_complete="$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" \
+            | jq -r --arg label "$COMPLETE_LABEL" 'any(.[]?.name; . == $label)')"
+          if [ "$has_complete" = true ]; then
+            encoded="$(jq -rn --arg value "$COMPLETE_LABEL" "\$value | @uri")"
+            gh api --method DELETE "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels/$encoded" --silent
+          fi
+
+      - name: Validate code review settings
+        id: settings
+        if: steps.select.outputs.mode == 'trusted'
+        env:
+          OPENROUTER_ENABLED: ${{ vars.OPENCODE_CODE_REVIEW_ENABLED }}
+          OPENROUTER_MODEL: ${{ vars.OPENCODE_CODE_REVIEW_MODEL }}
+          ZEN_ENABLED: ${{ vars.OPENCODE_ZEN_CODE_REVIEW_ENABLED }}
+          ZEN_MODEL: ${{ vars.OPENCODE_ZEN_CODE_REVIEW_MODEL }}
+        run: |
+          set -euo pipefail
+          boolean() { case "$2" in true|false) ;; *) echo "::error::$1 must be exactly true or false"; exit 1;; esac; }
+          boolean OPENCODE_CODE_REVIEW_ENABLED "$OPENROUTER_ENABLED"
+          boolean OPENCODE_ZEN_CODE_REVIEW_ENABLED "$ZEN_ENABLED"
+          if [ "$OPENROUTER_ENABLED" = true ]; then
+            [ -n "$OPENROUTER_MODEL" ] || { echo '::error::OPENCODE_CODE_REVIEW_MODEL is required'; exit 1; }
+          fi
+          if [ "$ZEN_ENABLED" = true ]; then
+            [ -n "$ZEN_MODEL" ] || { echo '::error::OPENCODE_ZEN_CODE_REVIEW_MODEL is required'; exit 1; }
+          fi
+
+      - name: Run OpenCode OpenRouter review
+        id: openrouter
+        if: >-
+          steps.select.outputs.mode == 'trusted' &&
+          vars.OPENCODE_CODE_REVIEW_ENABLED == 'true'
+        continue-on-error: true
+        uses: vouchington/vouchington-tooling/.github/actions/opencode-code-review@e7754cff844fe3e053b4650314374d4bdebd99ba
+        with:
+          pr_number: ${{ steps.select.outputs.pr_number }}
+          provider_name: OpenCode OpenRouter
+          trusted_prompt_ref: ${{ steps.select.outputs.base_sha }}
+          prompt_path: docs/prompts/code-review.md
+          inline_prompt_path: docs/prompts/code-review-inline-comments.md
+          model: ${{ vars.OPENCODE_CODE_REVIEW_MODEL }}
+          payload_artifact_name: opencode-openrouter
+          openrouter_api_key: ${{ secrets.OPENROUTER_FREE_API_KEY }}
+
+      - name: Post OpenCode OpenRouter review
+        id: openrouter-poster
+        if: >-
+          always() && steps.openrouter.outputs.payload_artifact_id != '' &&
+          steps.select.outputs.mode == 'trusted'
+        continue-on-error: true
+        uses: vouchington/vouchington-tooling/.github/actions/code-review-poster@e7754cff844fe3e053b4650314374d4bdebd99ba
+        with:
+          pr_number: ${{ steps.select.outputs.pr_number }}
+          artifact_id: ${{ steps.openrouter.outputs.payload_artifact_id }}
+          provider_name: OpenCode OpenRouter
+          token_source: github-token
+
+      - name: Run OpenCode Zen review
+        id: zen
+        if: >-
+          always() && steps.select.outputs.mode == 'trusted' &&
+          vars.OPENCODE_ZEN_CODE_REVIEW_ENABLED == 'true'
+        continue-on-error: true
+        uses: vouchington/vouchington-tooling/.github/actions/opencode-code-review@e7754cff844fe3e053b4650314374d4bdebd99ba
+        with:
+          pr_number: ${{ steps.select.outputs.pr_number }}
+          provider_name: OpenCode Zen
+          trusted_prompt_ref: ${{ steps.select.outputs.base_sha }}
+          prompt_path: docs/prompts/code-review.md
+          inline_prompt_path: docs/prompts/code-review-inline-comments.md
+          model: ${{ vars.OPENCODE_ZEN_CODE_REVIEW_MODEL }}
+          payload_artifact_name: opencode-zen
+          opencode_api_key: ${{ secrets.OPENCODE_FREE_API_KEY }}
+
+      - name: Post OpenCode Zen review
+        id: zen-poster
+        if: >-
+          always() && steps.zen.outputs.payload_artifact_id != '' &&
+          steps.select.outputs.mode == 'trusted'
+        continue-on-error: true
+        uses: vouchington/vouchington-tooling/.github/actions/code-review-poster@e7754cff844fe3e053b4650314374d4bdebd99ba
+        with:
+          pr_number: ${{ steps.select.outputs.pr_number }}
+          artifact_id: ${{ steps.zen.outputs.payload_artifact_id }}
+          provider_name: OpenCode Zen
+          token_source: github-token
+
+      - name: Finish the exact-head final review
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MODE: ${{ steps.select.outputs.mode }}
+          PR_NUMBER: ${{ steps.select.outputs.pr_number }}
+          SELECTED_HEAD_SHA: ${{ steps.select.outputs.head_sha }}
+          SETTINGS_OUTCOME: ${{ steps.settings.outcome }}
+          OPENROUTER_ENABLED: ${{ vars.OPENCODE_CODE_REVIEW_ENABLED }}
+          OPENROUTER_OUTCOME: ${{ steps.openrouter.outcome }}
+          OPENROUTER_AGENT: ${{ steps.openrouter.outputs.agent_outcome }}
+          OPENROUTER_POSTER: ${{ steps.openrouter-poster.outcome }}
+          ZEN_ENABLED: ${{ vars.OPENCODE_ZEN_CODE_REVIEW_ENABLED }}
+          ZEN_OUTCOME: ${{ steps.zen.outcome }}
+          ZEN_AGENT: ${{ steps.zen.outputs.agent_outcome }}
+          ZEN_POSTER: ${{ steps.zen-poster.outcome }}
+          REQUESTED_LABEL: final-code-review:requested
+          COMPLETE_LABEL: final-code-review:complete
+        run: |
+          set -euo pipefail
+          case "$MODE" in
+            pass-through|deferred) exit 0 ;;
+            trusted) ;;
+            *) echo '::error::Review selection did not complete.'; exit 1 ;;
+          esac
+          [ "$SETTINGS_OUTCOME" = success ] || { echo '::error::Code review settings are invalid.'; exit 1; }
+          current="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json headRefOid --jq .headRefOid)"
+          [ "$current" = "$SELECTED_HEAD_SHA" ] || { echo '::error::PR head changed during final review.'; exit 1; }
+          provider_warning() {
+            [ "$1" = true ] || return 0
+            [ "$2" = success ] && [ "$3" = success ] || {
+              echo "::warning::$4 review did not complete successfully; this is advisory."
+              return 0
+            }
+            if [ -n "$5" ] && [ "$5" != success ]; then
+              echo "::warning::$4 review poster did not complete successfully; this is advisory."
+            fi
+          }
+          provider_warning "$OPENROUTER_ENABLED" "$OPENROUTER_OUTCOME" "$OPENROUTER_AGENT" 'OpenCode OpenRouter' "$OPENROUTER_POSTER"
+          provider_warning "$ZEN_ENABLED" "$ZEN_OUTCOME" "$ZEN_AGENT" 'OpenCode Zen' "$ZEN_POSTER"
+          gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" \
+            -f "labels[]=$COMPLETE_LABEL" --silent
+          has_requested="$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" \
+            | jq -r --arg label "$REQUESTED_LABEL" 'any(.[]?.name; . == $label)')"
+          if [ "$has_requested" = true ]; then
+            encoded="$(jq -rn --arg value "$REQUESTED_LABEL" "\$value | @uri")"
+            gh api --method DELETE "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels/$encoded" --silent
+          fi

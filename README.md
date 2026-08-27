@@ -43,6 +43,14 @@ pnpm run test:coverage
 Postgres 18 is required for tests (`DATABASE_URL`, default
 `postgres://postgres:postgres@127.0.0.1:5432/postgres`).
 
+## Final code review
+
+`Final Code Review / Code Reviewed` is a native, exact-PR-head gate. It waits for the current
+head's `test` and `actionlint` checks, keeps forks and dependency bots secretless, and runs trusted
+same-repository review providers only from the default-branch workflow definition. Provider and
+review-posting failures are advisory; selection, settings, exact-head verification, required CI,
+and label updates fail closed. `CODE_REVIEW_REQUIRED` is intentionally unsupported.
+
 ## Publishing
 
 Normal releases use the `Release` workflow and npm trusted publishing (OIDC); there is no
