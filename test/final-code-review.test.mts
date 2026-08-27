@@ -30,4 +30,12 @@ describe('Final Code Review gate', () => {
     expect(workflow).toContain('PR head changed while marking final review complete')
     expect(workflow).toContain('PR head changed while finishing final review labels')
   })
+
+  it('invalidates completion before CI and isolates unrelated label cancellation', () => {
+    expect(workflow.indexOf('Clear stale completion state before waiting for CI')).toBeLessThan(
+      workflow.indexOf('Select the exact PR head and wait for required CI'),
+    )
+    expect(workflow).toContain("'ignored-label' || 'review'")
+    expect(workflow).toContain("steps.settings.outcome == 'success'")
+  })
 })
