@@ -21,7 +21,8 @@ jobs:
     steps:
       - name: Request final code review for the tested ready head
         env:
-          GH_TOKEN: ${{ secrets.CODE_REVIEW_TRIGGER_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          CODE_REVIEW_TRIGGER_TOKEN: ${{ secrets.CODE_REVIEW_TRIGGER_TOKEN }}
           PR_NUMBER: ''
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           SOURCE_HEAD_REPOSITORY: ${{ github.event.workflow_run.head_repository.full_name }}
@@ -32,7 +33,7 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$TESTED_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo '::error::Invalid CI head SHA'; exit 1; }
-          [ -n "${GH_TOKEN:-}" ] || { echo '::error::CODE_REVIEW_TRIGGER_TOKEN is required'; exit 1; }
+          [ -n "${CODE_REVIEW_TRIGGER_TOKEN:-}" ] || { echo '::error::CODE_REVIEW_TRIGGER_TOKEN is required'; exit 1; }
           gh_retry() {
             local accepted="$1"; shift
             local attempt=1 status output
@@ -48,6 +49,9 @@ jobs:
               fi
               sleep "$((attempt * 5))"; attempt=$((attempt + 1))
             done
+          }
+          gh_label_retry() {
+            GH_TOKEN="$CODE_REVIEW_TRIGGER_TOKEN" gh_retry "$@"
           }
           if [ -z "$PR_NUMBER" ]; then
             gh_retry none gh api "repos/$GITHUB_REPOSITORY/commits/$TESTED_HEAD_SHA/pulls"
@@ -66,7 +70,7 @@ jobs:
           if [ "$(jq -r '.draft' <<< "$pr_json")" = true ]; then
             for label in "$REQUESTED_LABEL" "$COMPLETE_LABEL"; do
               encoded="$(jq -rn --arg value "$label" '$value | @uri')"
-              gh_retry 404 gh api --method DELETE \
+              gh_label_retry 404 gh api --method DELETE \
                 "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels/$encoded" --silent
             done
             echo "Skipping final code review because PR #$PR_NUMBER is a draft."
@@ -106,16 +110,16 @@ jobs:
             <<< "$checks_json")
           case "$review_state" in active|success) echo "Skipping duplicate final review ($review_state)."; exit 0;; esac
           encoded_complete="$(jq -rn --arg value "$COMPLETE_LABEL" '$value | @uri')"
-          gh_retry 404 gh api --method DELETE \
+          gh_label_retry 404 gh api --method DELETE \
             "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels/$encoded_complete" --silent
           encoded="$(jq -rn --arg value "$REQUESTED_LABEL" '$value | @uri')"
-          gh_retry 404 gh api --method DELETE \
+          gh_label_retry 404 gh api --method DELETE \
             "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels/$encoded" --silent
           gh_retry none gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER"
           final_state="$GH_OUTPUT"
           [ "$(jq -r '.state' <<< "$final_state")" = open ] || exit 0
           [ "$(jq -r '.draft' <<< "$final_state")" = false ] || exit 0
           [ "$(jq -r '.head.sha' <<< "$final_state")" = "$TESTED_HEAD_SHA" ] || exit 0
-          gh_retry none gh api --method POST \
+          gh_label_retry none gh api --method POST \
             "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" \
             -f "labels[]=$REQUESTED_LABEL" --silent
