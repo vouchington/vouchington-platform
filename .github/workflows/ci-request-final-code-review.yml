@@ -17,7 +17,11 @@ jobs:
     if: github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: {}
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+      pull-requests: read
     steps:
       - name: Request final code review for the tested ready head
         env:
@@ -33,6 +37,7 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$TESTED_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo '::error::Invalid CI head SHA'; exit 1; }
+          [ -n "${GH_TOKEN:-}" ] || { echo '::error::github.token is required for router reads'; exit 1; }
           [ -n "${CODE_REVIEW_TRIGGER_TOKEN:-}" ] || { echo '::error::CODE_REVIEW_TRIGGER_TOKEN is required'; exit 1; }
           gh_retry() {
             local accepted="$1"; shift
