@@ -5,7 +5,7 @@ on:
   # pull_request_target is intentional: the workflow definition and action references are
   # trusted, while the PR checkout is restricted to the trusted same-repository path below.
   pull_request_target:
-    types: [opened, reopened, synchronize, ready_for_review]
+    types: [labeled, ready_for_review]
 
 permissions:
   actions: read
@@ -16,12 +16,16 @@ permissions:
 concurrency:
   # Never cancel an older SHA's gate. Each PR head gets its own native check, and the gate
   # itself rejects a stale head before it can report success for the current PR.
-  group: final-code-review-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+  group: final-code-review-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}-${{ github.event.action }}-${{ github.event.label.name || 'none' }}
   cancel-in-progress: false
 
 jobs:
   await-required-tests:
     name: Await required tests
+    if: >-
+      (github.event.action == 'ready_for_review' ||
+      github.event.label.name == 'final-code-review:requested') &&
+      github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -33,8 +37,12 @@ jobs:
       - name: Wait for required checks on this exact PR head
         env:
           GH_TOKEN: ${{ github.token }}
+          EVENT_ACTION: ${{ github.event.action }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          READY_AT: ${{ github.event.pull_request.updated_at }}
           REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
@@ -74,12 +82,18 @@ jobs:
               if jq -e \
                 --argjson workflow_id "$ci_workflow_id" \
                 --arg sha "$HEAD_SHA" \
+                --arg head_ref "$HEAD_REF" \
+                --arg head_repo "$HEAD_REPOSITORY" \
+                --arg action "$EVENT_ACTION" \
+                --arg ready_at "$READY_AT" \
                 --argjson pr "$PR_NUMBER" \
                 '.workflow_id == $workflow_id and
                  .path == ".github/workflows/ci.yml" and
                  .event == "pull_request" and
                  .head_sha == $sha and
-                 any(.pull_requests[]?; .number == $pr)' \
+                 (any(.pull_requests[]?; .number == $pr) or
+                  ((.pull_requests | length) == 0 and .head_repository.full_name == $head_repo and .head_branch == $head_ref)) and
+                 ($action != "ready_for_review" or .created_at >= $ready_at)' \
                 <<< "$run_json" >/dev/null; then
                 jq -c --argjson id "$check_id" '.check_runs[] | select(.id == $id)' <<< "$checks"
                 return 0
@@ -327,7 +341,8 @@ jobs:
   code-reviewed:
     # This job name is a branch-protection invariant. Together with the workflow name above,
     # GitHub exposes the required native check as exactly: Final Code Review / Code Reviewed.
-    name: Code Reviewed
+    name: >-
+      ${{ (github.event.action == 'ready_for_review' || github.event.label.name == 'final-code-review:requested') && github.event.pull_request.draft == false && 'Code Reviewed' || 'Ignore final review request' }}
     needs:
       - await-required-tests
       - validate-review-settings
@@ -335,7 +350,10 @@ jobs:
       - opencode-openrouter-poster
       - opencode-zen-review
       - opencode-zen-poster
-    if: always()
+    if: >-
+      always() && (github.event.action == 'ready_for_review' ||
+      github.event.label.name == 'final-code-review:requested') &&
+      github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

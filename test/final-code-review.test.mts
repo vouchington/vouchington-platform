@@ -3,13 +3,15 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 const workflow = readFileSync('.github/workflows/final-code-review.yml', 'utf8')
+const router = readFileSync('.github/workflows/ci-request-final-code-review.yml', 'utf8')
 
 describe('Final Code Review gate', () => {
   it('uses one native Code Reviewed job for every PR-head update', () => {
     expect(workflow).toContain('name: Final Code Review')
     expect(workflow).toContain('pull_request_target:')
-    expect(workflow).toContain('types: [opened, reopened, synchronize, ready_for_review]')
-    expect(workflow).toContain('name: Code Reviewed')
+    expect(workflow).toContain('types: [labeled, ready_for_review]')
+    expect(workflow).toContain("&& 'Code Reviewed' || 'Ignore final review request'")
+    expect(workflow).toContain("github.event.label.name == 'final-code-review:requested'")
     expect(workflow).not.toContain('checks: write')
     expect(workflow).not.toContain('--method POST "repos/$REPOSITORY/check-runs"')
   })
@@ -33,6 +35,11 @@ describe('Final Code Review gate', () => {
     expect(workflow).toContain('opencode-zen-review:')
     expect(workflow).toContain('needs: [await-required-tests, validate-review-settings]')
     expect(workflow).toContain('cancel-in-progress: false')
-    expect(workflow).not.toContain('final-code-review:requested')
+    expect(router).toContain('.name == "test"')
+    expect(router).toContain('.name == "actionlint"')
+    expect(router).toContain('sort_by(.run_attempt, .id)')
+    expect(router).toContain('commits/$TESTED_HEAD_SHA/pulls')
+    expect(router).toContain('.head.repo.full_name == $head_repo')
+    expect(router).toContain('.path == ".github/workflows/final-code-review.yml"')
   })
 })
