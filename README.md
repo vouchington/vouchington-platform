@@ -51,6 +51,9 @@ same-repository review providers only from the default-branch workflow definitio
 review-posting failures are advisory; selection, settings, exact-head verification, required CI,
 and label updates fail closed. `CODE_REVIEW_REQUIRED` is intentionally unsupported.
 
+After changing this workflow, use a same-repository canary pull request to verify that the native
+gate is attached to the exact current head before adding it to a ruleset.
+
 ## Publishing
 
 Normal releases use the `Release` workflow and npm trusted publishing (OIDC); there is no
