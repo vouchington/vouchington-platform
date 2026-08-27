@@ -42,4 +42,17 @@ describe('Final Code Review gate', () => {
     expect(router).toContain('.head.repo.full_name == $head_repo')
     expect(router).toContain('.path == ".github/workflows/final-code-review.yml"')
   })
+
+  it('uses the read token for lookups and the trigger token only for label mutations', () => {
+    expect(router).toContain('GH_TOKEN: ${{ github.token }}')
+    expect(router).toContain('CODE_REVIEW_TRIGGER_TOKEN: ${{ secrets.CODE_REVIEW_TRIGGER_TOKEN }}')
+    expect(router).toContain('gh_label_retry()')
+    expect(router).toContain('GH_TOKEN="$CODE_REVIEW_TRIGGER_TOKEN" gh_retry')
+    expect(router).not.toContain('GH_TOKEN: ${{ secrets.CODE_REVIEW_TRIGGER_TOKEN }}')
+
+    const reads = router.match(/gh_retry (?:none|404) gh api/g) ?? []
+    const mutations = router.match(/gh_label_retry (?:none|404) gh api --method (?:DELETE|POST)/g) ?? []
+    expect(reads.length).toBeGreaterThan(0)
+    expect(mutations).toHaveLength(4)
+  })
 })
