@@ -49,8 +49,13 @@ describe('Final Code Review gate', () => {
     expect(router).toContain('gh_label_retry()')
     expect(router).toContain('GH_TOKEN="$CODE_REVIEW_TRIGGER_TOKEN" gh_retry')
     expect(router).not.toContain('GH_TOKEN: ${{ secrets.CODE_REVIEW_TRIGGER_TOKEN }}')
+    expect(router).toContain(
+      'actions: read\n      checks: read\n      contents: read\n      pull-requests: read',
+    )
+    expect(router).toContain('github.token is required for router reads')
+    expect(router).toContain('CODE_REVIEW_TRIGGER_TOKEN is required')
 
-    const reads = router.match(/gh_retry (?:none|404) gh api/g) ?? []
+    const reads = router.match(/\bgh_retry (?:none|404) gh api/g) ?? []
     const mutations =
       router.match(/gh_label_retry (?:none|404) gh api --method (?:DELETE|POST)/g) ?? []
     expect(reads.length).toBeGreaterThan(0)
