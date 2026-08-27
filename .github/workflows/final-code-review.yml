@@ -12,15 +12,16 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: final-code-review-${{ github.event.pull_request.number }}
+  group: >-
+    final-code-review-${{ github.event.pull_request.number }}-${{
+    github.event.action == 'labeled' && github.event.label.name != 'final-code-review:requested' &&
+    'ignored-label' || 'review' }}
   cancel-in-progress: true
 
 jobs:
   code-reviewed:
     # This native job, rather than an API-created check run, is the merge gate.
-    name: >-
-      ${{ github.event.action == 'labeled' && github.event.label.name != 'final-code-review:requested' &&
-      'Ignored final-review label' || 'Code Reviewed' }}
+    name: Code Reviewed
     if: >-
       github.event.action != 'labeled' ||
       github.event.label.name == 'final-code-review:requested'
@@ -53,25 +54,40 @@ jobs:
           output base_sha "$base_sha"
           output pr_number "$PR_NUMBER"
 
-          check_state() {
-            gh api "repos/$GITHUB_REPOSITORY/commits/$head_sha/check-runs?per_page=100&filter=latest" | \
-              jq -r --arg name "$1" '
-                [.check_runs[] | select(.name == $name and .app.slug == "github-actions") | .conclusion] |
-                if any(.[]; . == "failure" or . == "cancelled" or . == "timed_out" or . == "action_required")
-                then "failed"
-                elif any(.[]; . == "success") then "success"
-                else "pending" end'
+          ci_state() {
+            local run_id run jobs test actionlint
+            mapfile -t run_ids < <(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$head_sha&event=pull_request&per_page=20" |
+              jq -r --argjson pr "$PR_NUMBER" '
+                .workflow_runs[] |
+                select(any(.pull_requests[]?; .number == $pr)) |
+                .id')
+            for run_id in "${run_ids[@]}"; do
+              run="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id")"
+              [ "$(jq -r '.event' <<<"$run")" = pull_request ] || continue
+              [ "$(jq -r '.head_sha' <<<"$run")" = "$head_sha" ] || continue
+              [ "$(jq -r '.path' <<<"$run")" = .github/workflows/ci.yml ] || continue
+              jobs="$(gh run view "$run_id" --repo "$GITHUB_REPOSITORY" --json jobs)"
+              test="$(jq -r '[.jobs[] | select(.name == "test") | .conclusion] | last // "pending"' <<<"$jobs")"
+              actionlint="$(jq -r '[.jobs[] | select(.name == "actionlint") | .conclusion] | last // "pending"' <<<"$jobs")"
+              if [ "$test" = success ] && [ "$actionlint" = success ]; then
+                echo success
+                return
+              fi
+              case "$test,$actionlint" in
+                *failure*|*cancelled*|*timed_out*|*action_required*) echo failed; return ;;
+              esac
+            done
+            echo pending
           }
           for attempt in $(seq 1 120); do
-            test_state="$(check_state test)"
-            actionlint_state="$(check_state actionlint)"
-            if [ "$test_state" = success ] && [ "$actionlint_state" = success ]; then break; fi
-            if [ "$test_state" = failed ] || [ "$actionlint_state" = failed ]; then
-              echo "::error::Required CI failed for $head_sha (test=$test_state, actionlint=$actionlint_state)."
+            current_ci_state="$(ci_state)"
+            if [ "$current_ci_state" = success ]; then break; fi
+            if [ "$current_ci_state" = failed ]; then
+              echo "::error::The exact-head CI run failed for $head_sha."
               exit 1
             fi
             if [ "$attempt" = 120 ]; then
-              echo "::error::Timed out waiting for exact-head CI (test=$test_state, actionlint=$actionlint_state)."
+              echo "::error::Timed out waiting for an exact-head CI run for $head_sha."
               exit 1
             fi
             sleep 15
@@ -130,7 +146,7 @@ jobs:
           steps.select.outputs.mode == 'trusted' &&
           vars.OPENCODE_CODE_REVIEW_ENABLED == 'true'
         continue-on-error: true
-        uses: vouchington/vouchington-tooling/.github/actions/opencode-code-review@e7754cff844fe3e053b4650314374d4bdebd99ba
+        uses: vouchington/vouchington-tooling/.github/actions/opencode-code-review@7226e68cfefeb5d60034a76186609387a82387d0
         with:
           pr_number: ${{ steps.select.outputs.pr_number }}
           provider_name: OpenCode OpenRouter
@@ -147,7 +163,7 @@ jobs:
           always() && steps.openrouter.outputs.payload_artifact_id != '' &&
           steps.select.outputs.mode == 'trusted'
         continue-on-error: true
-        uses: vouchington/vouchington-tooling/.github/actions/code-review-poster@e7754cff844fe3e053b4650314374d4bdebd99ba
+        uses: vouchington/vouchington-tooling/.github/actions/code-review-poster@7226e68cfefeb5d60034a76186609387a82387d0
         with:
           pr_number: ${{ steps.select.outputs.pr_number }}
           artifact_id: ${{ steps.openrouter.outputs.payload_artifact_id }}
@@ -160,7 +176,7 @@ jobs:
           always() && steps.select.outputs.mode == 'trusted' &&
           vars.OPENCODE_ZEN_CODE_REVIEW_ENABLED == 'true'
         continue-on-error: true
-        uses: vouchington/vouchington-tooling/.github/actions/opencode-code-review@e7754cff844fe3e053b4650314374d4bdebd99ba
+        uses: vouchington/vouchington-tooling/.github/actions/opencode-code-review@7226e68cfefeb5d60034a76186609387a82387d0
         with:
           pr_number: ${{ steps.select.outputs.pr_number }}
           provider_name: OpenCode Zen
@@ -177,7 +193,7 @@ jobs:
           always() && steps.zen.outputs.payload_artifact_id != '' &&
           steps.select.outputs.mode == 'trusted'
         continue-on-error: true
-        uses: vouchington/vouchington-tooling/.github/actions/code-review-poster@e7754cff844fe3e053b4650314374d4bdebd99ba
+        uses: vouchington/vouchington-tooling/.github/actions/code-review-poster@7226e68cfefeb5d60034a76186609387a82387d0
         with:
           pr_number: ${{ steps.select.outputs.pr_number }}
           artifact_id: ${{ steps.zen.outputs.payload_artifact_id }}
@@ -210,8 +226,19 @@ jobs:
             *) echo '::error::Review selection did not complete.'; exit 1 ;;
           esac
           [ "$SETTINGS_OUTCOME" = success ] || { echo '::error::Code review settings are invalid.'; exit 1; }
-          current="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json headRefOid --jq .headRefOid)"
-          [ "$current" = "$SELECTED_HEAD_SHA" ] || { echo '::error::PR head changed during final review.'; exit 1; }
+          selected_head() {
+            current="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json headRefOid --jq .headRefOid)"
+            [ "$current" = "$SELECTED_HEAD_SHA" ]
+          }
+          clear_complete() {
+            has_complete="$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" \
+              | jq -r --arg label "$COMPLETE_LABEL" 'any(.[]?.name; . == $label)')"
+            if [ "$has_complete" = true ]; then
+              encoded="$(jq -rn --arg value "$COMPLETE_LABEL" "\$value | @uri")"
+              gh api --method DELETE "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels/$encoded" --silent
+            fi
+          }
+          selected_head || { echo '::error::PR head changed during final review.'; exit 1; }
           provider_warning() {
             [ "$1" = true ] || return 0
             if [ "$2" != success ] || [ "$3" != success ]; then
@@ -226,9 +253,19 @@ jobs:
           provider_warning "$ZEN_ENABLED" "$ZEN_OUTCOME" "$ZEN_AGENT" 'OpenCode Zen' "$ZEN_POSTER"
           gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" \
             -f "labels[]=$COMPLETE_LABEL" --silent
+          if ! selected_head; then
+            clear_complete
+            echo '::error::PR head changed while marking final review complete.'
+            exit 1
+          fi
           has_requested="$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" \
             | jq -r --arg label "$REQUESTED_LABEL" 'any(.[]?.name; . == $label)')"
           if [ "$has_requested" = true ]; then
             encoded="$(jq -rn --arg value "$REQUESTED_LABEL" "\$value | @uri")"
             gh api --method DELETE "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels/$encoded" --silent
+          fi
+          if ! selected_head; then
+            clear_complete
+            echo '::error::PR head changed while finishing final review labels.'
+            exit 1
           fi
