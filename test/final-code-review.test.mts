@@ -51,7 +51,8 @@ describe('Final Code Review gate', () => {
     expect(router).not.toContain('GH_TOKEN: ${{ secrets.CODE_REVIEW_TRIGGER_TOKEN }}')
 
     const reads = router.match(/gh_retry (?:none|404) gh api/g) ?? []
-    const mutations = router.match(/gh_label_retry (?:none|404) gh api --method (?:DELETE|POST)/g) ?? []
+    const mutations =
+      router.match(/gh_label_retry (?:none|404) gh api --method (?:DELETE|POST)/g) ?? []
     expect(reads.length).toBeGreaterThan(0)
     expect(mutations).toHaveLength(4)
   })
