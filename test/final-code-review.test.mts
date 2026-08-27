@@ -8,34 +8,31 @@ describe('Final Code Review gate', () => {
   it('uses one native Code Reviewed job for every PR-head update', () => {
     expect(workflow).toContain('name: Final Code Review')
     expect(workflow).toContain('pull_request_target:')
-    expect(workflow).toContain('types: [opened, reopened, synchronize, ready_for_review, labeled]')
+    expect(workflow).toContain('types: [opened, reopened, synchronize, ready_for_review]')
     expect(workflow).toContain('name: Code Reviewed')
-    expect(workflow).not.toContain('check-runs')
+    expect(workflow).not.toContain('checks: write')
+    expect(workflow).not.toContain('--method POST "repos/$REPOSITORY/check-runs"')
   })
 
   it('requires provenance from the exact pull-request CI run', () => {
-    expect(workflow).toContain(
-      'actions/workflows/ci.yml/runs?head_sha=$head_sha&event=pull_request',
-    )
-    expect(workflow).toContain('select(any(.pull_requests[]?; .number == $pr))')
-    expect(workflow).toContain('[ "$(jq -r \'.path\' <<<"$run")" = .github/workflows/ci.yml ]')
-    expect(workflow).toContain('select(.name == "test")')
-    expect(workflow).toContain('select(.name == "actionlint")')
+    expect(workflow).toContain('repos/$REPOSITORY/commits/$HEAD_SHA/check-runs?per_page=100')
+    expect(workflow).toContain('any(.pull_requests[]?; .number == $pr)')
+    expect(workflow).toContain('.path == ".github/workflows/ci.yml"')
+    expect(workflow).toContain('for check_name in test actionlint; do')
   })
 
-  it('keeps providers advisory and hardens label completion against stale heads', () => {
-    expect(workflow).toContain('continue-on-error: true')
-    expect(workflow).toContain('this is advisory')
-    expect(workflow).toContain('selected_head ||')
-    expect(workflow).toContain('PR head changed while marking final review complete')
-    expect(workflow).toContain('PR head changed while finishing final review labels')
+  it('keeps provider and poster failures advisory behind the native gate', () => {
+    expect(workflow.match(/continue-on-error: true/g)).toHaveLength(4)
+    expect(workflow).toContain('provider outcomes are advisory')
+    expect(workflow).toContain('if: always()')
+    expect(workflow).toContain('Refusing to pass a stale Final Code Review gate')
   })
 
-  it('invalidates completion before CI and isolates unrelated label cancellation', () => {
-    expect(workflow.indexOf('Clear stale completion state before waiting for CI')).toBeLessThan(
-      workflow.indexOf('Select the exact PR head and wait for required CI'),
-    )
-    expect(workflow).toContain("'ignored-label' || 'review'")
-    expect(workflow).toContain("steps.settings.outcome == 'success'")
+  it('runs providers in parallel and keeps each PR head in its own concurrency group', () => {
+    expect(workflow).toContain('opencode-openrouter-review:')
+    expect(workflow).toContain('opencode-zen-review:')
+    expect(workflow).toContain('needs: [await-required-tests, validate-review-settings]')
+    expect(workflow).toContain('cancel-in-progress: false')
+    expect(workflow).not.toContain('final-code-review:requested')
   })
 })
