@@ -1,6 +1,6 @@
 # vouchington-platform
 
-<!-- Temporary autonomous final-review lifecycle canary. -->
+<!-- Temporary autonomous final-review lifecycle canary, second ready head. -->
 
 Opinionated, open-source runtime packages for Vouchington-style websites.
 
