@@ -1,5 +1,7 @@
 # vouchington-platform
 
+<!-- Temporary trigger-token lifecycle canary. -->
+
 Opinionated, open-source runtime packages for Vouchington-style websites.
 
 This is a pnpm monorepo. Generic libraries (Valkey, SSRF, HTTP) live in other repos. Product schema
