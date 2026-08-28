@@ -60,6 +60,11 @@
       "import": "./dist/collections.mjs",
       "default": "./dist/collections.mjs"
     },
+    "./feature-flags": {
+      "types": "./dist/feature-flags.d.mts",
+      "import": "./dist/feature-flags.mjs",
+      "default": "./dist/feature-flags.mjs"
+    },
     "./dates": {
       "types": "./dist/dates.d.mts",
       "import": "./dist/dates.mjs",
