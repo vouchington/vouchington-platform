@@ -27,6 +27,8 @@ import { serializeCookie } from '@vouchington/utils/cookies'
   caller to supply every policy attribute. `SameSite=None` requires `Secure`.
 - `collections`, `async`, and `stable-json`: collection deduplication/merging, bounded async mapping,
   and deterministic JSON serialization.
+- `feature-flags`: base64 JSON feature-flag cookie parsing and serialization with caller-injected
+  codecs, cookie names, and size policy.
 - `dates`, `format`, `strings`, and `text-metrics`: UTC-day, duration, formatting, text normalization,
   title casing, and word/sentence helpers.
 - `gtin`, `bigint-ids`, and `validation`: GTIN predicates, canonical positive PostgreSQL bigint IDs,

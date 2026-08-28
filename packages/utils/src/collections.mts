@@ -16,6 +16,22 @@ export function dedupeById<T extends { id: string }>(items: readonly T[]): T[] {
   return dedupeBy(items, (item) => item.id)
 }
 
+export function indexById<T extends { id: string }>(
+  values: readonly (T | null | undefined)[],
+): Record<string, T> {
+  const indexed: Record<string, T> = {}
+  for (const value of values) {
+    if (value === null || value === undefined) continue
+    Object.defineProperty(indexed, value.id, {
+      configurable: true,
+      enumerable: true,
+      value,
+      writable: true,
+    })
+  }
+  return indexed
+}
+
 export function mergePageResultsById<T extends { id: string }>(
   pages?: readonly ({ results?: readonly T[] | null } | null | undefined)[] | null,
 ): T[] {

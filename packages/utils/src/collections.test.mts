@@ -3,6 +3,7 @@ import {
   dedupeBy,
   dedupeByLast,
   dedupeById,
+  indexById,
   mergePageResultsById,
   mergeRecords,
 } from './collections.mts'
@@ -37,5 +38,21 @@ describe('collections', () => {
     expect(Object.getPrototypeOf(merged)).toBe(Object.prototype)
     expect(Object.hasOwn(merged, '__proto__')).toBe(true)
     expect((merged as { polluted?: boolean }).polluted).toBeUndefined()
+  })
+
+  it('indexes non-null values by id with last-write-wins own properties', () => {
+    const first = { id: 'a', value: 1 }
+    const last = { id: 'a', value: 2 }
+    const proto = { id: '__proto__', value: 3 }
+    const indexed = indexById([first, null, proto, undefined, last])
+    expect(indexed.a).toBe(last)
+    expect(Object.getPrototypeOf(indexed)).toBe(Object.prototype)
+    expect(Object.hasOwn(indexed, '__proto__')).toBe(true)
+    expect(Object.getOwnPropertyDescriptor(indexed, '__proto__')).toMatchObject({
+      configurable: true,
+      enumerable: true,
+      value: proto,
+      writable: true,
+    })
   })
 })
