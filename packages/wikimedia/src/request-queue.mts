@@ -22,10 +22,6 @@ export function createRequestQueue(maximum: number): {
     while (active < maximum && waiting.length > 0) {
       const request = waiting.shift()!
       request.removeAbortListener()
-      if (request.signal?.aborted) {
-        request.reject(abortError(request.signal.reason))
-        continue
-      }
       active += 1
       void request
         .operation()
@@ -53,7 +49,7 @@ export function createRequestQueue(maximum: number): {
         }
         const rejectIfAborted = (): void => {
           const index = waiting.indexOf(request as WaitingRequest<unknown>)
-          if (index !== -1) waiting.splice(index, 1)
+          waiting.splice(index, 1)
           reject(abortError(signal?.reason))
         }
         if (signal) {

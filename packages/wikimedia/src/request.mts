@@ -36,7 +36,6 @@ function raceWithAbort<T>(
   disposeLateValue?: (value: T) => Promise<void>,
 ): Promise<T> {
   if (callerSignal?.aborted) return Promise.reject(abortError(callerSignal.reason))
-  if (timeoutSignal.aborted) return Promise.reject(new InternalTimeoutError())
   return new Promise((resolve, reject) => {
     let settled = false
     const cleanup = (): void => {
@@ -74,7 +73,6 @@ function raceWithAbort<T>(
 }
 
 function abortableDelay(milliseconds: number, signal: AbortSignal | undefined): Promise<void> {
-  if (signal?.aborted) return Promise.reject(abortError(signal.reason))
   if (milliseconds === 0) return Promise.resolve()
   return new Promise((resolve, reject) => {
     const timer = setTimeout(done, milliseconds)
