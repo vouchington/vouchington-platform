@@ -84,3 +84,20 @@ export function matchesPathnamePattern(pathname: string, pattern: string): boole
   while (pattern[patternIndex] === '%') patternIndex++
   return patternIndex === pattern.length
 }
+/** Matches an ASCII hostname against exact patterns or an inclusive `*.` suffix pattern. */
+export function matchesHostnamePattern(
+  hostname: string,
+  patterns: string | readonly string[],
+): boolean {
+  const candidate = hostname.toLowerCase()
+  for (const configuredPattern of typeof patterns === 'string' ? [patterns] : patterns) {
+    const pattern = configuredPattern.toLowerCase()
+    if (pattern === candidate) return true
+    if (
+      pattern.startsWith('*.') &&
+      (candidate === pattern.slice(2) || candidate.endsWith(pattern.slice(1)))
+    )
+      return true
+  }
+  return false
+}

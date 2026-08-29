@@ -5,6 +5,7 @@ import {
   getFirstPathSegment,
   isAsciiHostname,
   isExternalHttpUrl,
+  matchesHostnamePattern,
   matchesPathnamePattern,
   normalizeAsciiHostname,
   sanitizeImageUrl,
@@ -54,5 +55,16 @@ describe('URLs', () => {
     expect(matchesPathnamePattern('', '%')).toBe(true)
     expect(matchesPathnamePattern('/blog/a', '/blog/_')).toBe(true)
     expect(matchesPathnamePattern('/blog/ab', '/blog/_')).toBe(false)
+  })
+  it('matches exact and inclusive wildcard hostname patterns', () => {
+    expect(matchesHostnamePattern('example.com', 'example.com')).toBe(true)
+    expect(matchesHostnamePattern('example.com', '*.example.com')).toBe(true)
+    expect(matchesHostnamePattern('deep.api.example.com', ['other.test', '*.example.com'])).toBe(
+      true,
+    )
+    expect(matchesHostnamePattern('badexample.com', '*.example.com')).toBe(false)
+    expect(matchesHostnamePattern('example.net', 'example.com')).toBe(false)
+    expect(matchesHostnamePattern('EXAMPLE.COM', 'example.com')).toBe(true)
+    expect(matchesHostnamePattern('API.Example.Com', '*.EXAMPLE.COM')).toBe(true)
   })
 })
