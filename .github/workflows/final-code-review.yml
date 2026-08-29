@@ -1,171 +1,79 @@
 name: Final Code Review
 
 on:
-  # This workflow is defined on the default branch and runs for every PR head commit.
-  # pull_request_target is intentional: the workflow definition and action references are
-  # trusted, while the PR checkout is restricted to the trusted same-repository path below.
   pull_request_target:
-    types: [labeled, ready_for_review]
+    types: [opened, reopened, synchronize, ready_for_review, converted_to_draft, closed]
 
 permissions:
   actions: read
-  checks: read
   contents: read
   pull-requests: read
 
 concurrency:
-  # Never cancel an older SHA's gate. Each PR head gets its own native check, and the gate
-  # itself rejects a stale head before it can report success for the current PR.
-  group: final-code-review-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}-${{ github.event.action }}-${{ github.event.label.name || 'none' }}
-  cancel-in-progress: false
+  group: final-code-review-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
 
 jobs:
-  await-required-tests:
-    name: Await required tests
+  select-final-review:
+    name: Select final review
     if: >-
-      (github.event.action == 'ready_for_review' ||
-      github.event.label.name == 'final-code-review:requested') &&
-      github.event.pull_request.draft == false
+      github.event.pull_request.base.ref == github.event.repository.default_branch
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     permissions:
       actions: read
       checks: read
       contents: read
-      pull-requests: read
+      issues: write
+      pull-requests: write
+    outputs:
+      should_review: ${{ steps.select.outputs.should_review }}
+      gate_status: ${{ steps.select.outputs.gate_status }}
+      pr_number: ${{ steps.select.outputs.pr_number }}
+      head_sha: ${{ steps.select.outputs.head_sha }}
+      base_sha: ${{ steps.select.outputs.base_sha }}
     steps:
-      - name: Wait for required checks on this exact PR head
+      - name: Select final review
+        id: select
         env:
           GH_TOKEN: ${{ github.token }}
-          EVENT_ACTION: ${{ github.event.action }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          HEAD_REF: ${{ github.event.pull_request.head.ref }}
-          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          EVENT_ACTION: ${{ github.event.action }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           READY_AT: ${{ github.event.pull_request.updated_at }}
-          REPOSITORY: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-
-          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || {
-            echo '::error::The pull request head is not a full commit SHA.'
-            exit 1
-          }
-
-          current_head="$(gh pr view "$PR_NUMBER" --repo "$REPOSITORY" --json headRefOid --jq .headRefOid)"
-          [ "$current_head" = "$HEAD_SHA" ] || {
-            echo "::error::PR #$PR_NUMBER moved from $HEAD_SHA to $current_head before test polling began."
-            exit 1
-          }
-
-          # Check-runs are read from the commit endpoint and filtered by both exact head SHA and
-          # the GitHub Actions app. A check from another commit or integration cannot satisfy this
-          # gate. Polling is necessary because pull_request_target starts alongside CI.
-          ci_workflow_id="$(gh api "repos/$REPOSITORY/actions/workflows" --jq '
-            [.workflows[] | select(.path == ".github/workflows/ci.yml")] | first | .id // empty
-          ')"
-          [ -n "$ci_workflow_id" ] || {
-            echo '::error::The trusted CI workflow could not be identified.'
-            exit 1
-          }
-
-          find_check() {
-            local check_name="$1"
-            local check_id details_url run_id run_json
-            while IFS= read -r check_id; do
-              [ -n "$check_id" ] || continue
-              details_url="$(jq -r --argjson id "$check_id" \
-                '.check_runs[] | select(.id == $id) | .details_url' <<< "$checks")"
-              run_id="$(sed -nE 's#^.*/actions/runs/([0-9]+)/job/[0-9]+$#\1#p' <<< "$details_url")"
-              [ -n "$run_id" ] || continue
-              run_json="$(gh api "repos/$REPOSITORY/actions/runs/$run_id")" || continue
-              if jq -e \
-                --argjson workflow_id "$ci_workflow_id" \
-                --arg sha "$HEAD_SHA" \
-                --arg head_ref "$HEAD_REF" \
-                --arg head_repo "$HEAD_REPOSITORY" \
-                --arg action "$EVENT_ACTION" \
-                --arg ready_at "$READY_AT" \
-                --argjson pr "$PR_NUMBER" \
-                '.workflow_id == $workflow_id and
-                 .path == ".github/workflows/ci.yml" and
-                 .event == "pull_request" and
-                 .head_sha == $sha and
-                 (any(.pull_requests[]?; .number == $pr) or
-                  ((.pull_requests | length) == 0 and .head_repository.full_name == $head_repo and .head_branch == $head_ref)) and
-                 ($action != "ready_for_review" or .created_at >= $ready_at)' \
-                <<< "$run_json" >/dev/null; then
-                jq -c --argjson id "$check_id" '.check_runs[] | select(.id == $id)' <<< "$checks"
-                return 0
-              fi
-            done < <(jq -r --arg name "$check_name" --arg sha "$HEAD_SHA" '
-              [.check_runs[] | select(.name == $name and .head_sha == $sha and .app.slug == "github-actions")]
-              | sort_by(.id) | reverse | .[].id
-            ' <<< "$checks")
-            return 1
-          }
-
-          deadline=$((SECONDS + 2400))
-          while [ "$SECONDS" -lt "$deadline" ]; do
-            current_head="$(gh pr view "$PR_NUMBER" --repo "$REPOSITORY" --json headRefOid --jq .headRefOid)"
-            [ "$current_head" = "$HEAD_SHA" ] || {
-              echo "::error::PR #$PR_NUMBER moved from $HEAD_SHA to $current_head while tests were running."
-              exit 1
-            }
-
-            checks="$(gh api --paginate "repos/$REPOSITORY/commits/$HEAD_SHA/check-runs?per_page=100" \
-              --jq '.check_runs[]' | jq -s '{check_runs: .}')"
-            pending=false
-            failed=false
-            for check_name in test actionlint; do
-              check="$(find_check "$check_name")" || check=''
-              if [ -z "$check" ]; then
-                pending=true
-                echo "$check_name: not reported yet"
-                continue
-              fi
-              status="$(jq -r .status <<< "$check")"
-              conclusion="$(jq -r '.conclusion // ""' <<< "$check")"
-              echo "$check_name: status=$status conclusion=${conclusion:-pending}"
-              if [ "$status" != completed ]; then
-                pending=true
-              elif [ "$conclusion" != success ]; then
-                failed=true
-                echo "::error::$check_name for $HEAD_SHA concluded $conclusion."
-              fi
-            done
-
-            if [ "$failed" = true ]; then
-              exit 1
-            fi
-            if [ "$pending" = false ]; then
-              echo "All required checks passed for PR #$PR_NUMBER at $HEAD_SHA."
-              exit 0
-            fi
-            sleep 15
-          done
-
-          echo "::error::Timed out waiting for test and actionlint on $HEAD_SHA."
-          exit 1
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          COMPLETE_LABEL: final-code-review:complete
+          GH_RETRY_ATTEMPTS: '3'
+          GH_RETRY_BACKOFF_SECONDS: '5'
+          GH_RETRY_TRANSPORT_MARKERS: |
+            net/http: TLS handshake timeout
+            net/http: timeout awaiting response headers
+            connection reset by peer
+            unexpected EOF
+            i/o timeout
+          TESTS_WAIT_ATTEMPTS: '160'
+          TESTS_WAIT_SECONDS: '30'
+          CI_WORKFLOW: ci.yml
+          TESTS_JOB_NAME: test
+        uses: vouchington/vouchington-tooling/.github/actions/final-review-select@f5f41caba5aef0b31e507a67123c76f1c9a53d02 # v0.3.0
 
   validate-review-settings:
-    name: Validate review settings
-    needs: [await-required-tests]
+    name: Validate code review settings
+    needs: [select-final-review]
     if: >-
-      needs.await-required-tests.result == 'success' &&
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.user.login != 'dependabot' &&
-      github.event.pull_request.user.login != 'dependabot[bot]' &&
-      github.event.pull_request.user.login != 'app/dependabot' &&
-      github.event.pull_request.user.login != 'renovate' &&
-      github.event.pull_request.user.login != 'renovate[bot]' &&
-      github.event.pull_request.user.login != 'app/renovate'
+      always() && needs.select-final-review.result == 'success' &&
+      needs.select-final-review.outputs.gate_status != 'ignore' &&
+      needs.select-final-review.outputs.gate_status != 'untrusted' &&
+      needs.select-final-review.outputs.gate_status != 'stale' &&
+      needs.select-final-review.outputs.gate_status != 'closed' &&
+      needs.select-final-review.outputs.gate_status != 'deferred' &&
+      needs.select-final-review.outputs.gate_status != 'base-stale'
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 2
     permissions: {}
     steps:
-      - name: Validate provider configuration
+      - name: Validate required organization variables
         env:
           OPENROUTER_ENABLED: ${{ vars.OPENCODE_CODE_REVIEW_ENABLED }}
           OPENROUTER_MODEL: ${{ vars.OPENCODE_CODE_REVIEW_MODEL }}
@@ -173,37 +81,21 @@ jobs:
           ZEN_MODEL: ${{ vars.OPENCODE_ZEN_CODE_REVIEW_MODEL }}
         run: |
           set -euo pipefail
-          boolean() {
-            case "$2" in
-              true|false) ;;
-              *) echo "::error::$1 must be exactly true or false."; exit 1 ;;
-            esac
-          }
+          boolean() { case "$2" in true|false) ;; *) echo "::error::$1 must be exactly true or false"; exit 1;; esac; }
           boolean OPENCODE_CODE_REVIEW_ENABLED "$OPENROUTER_ENABLED"
           boolean OPENCODE_ZEN_CODE_REVIEW_ENABLED "$ZEN_ENABLED"
-          if [ "$OPENROUTER_ENABLED" = true ] && [ -z "$OPENROUTER_MODEL" ]; then
-            echo '::error::OPENCODE_CODE_REVIEW_MODEL is required when OpenRouter review is enabled.'
-            exit 1
+          if [ "$OPENROUTER_ENABLED" = true ]; then
+            [ -n "$OPENROUTER_MODEL" ] || { echo '::error::OPENCODE_CODE_REVIEW_MODEL is required'; exit 1; }
           fi
-          if [ "$ZEN_ENABLED" = true ] && [ -z "$ZEN_MODEL" ]; then
-            echo '::error::OPENCODE_ZEN_CODE_REVIEW_MODEL is required when OpenCode Zen review is enabled.'
-            exit 1
+          if [ "$ZEN_ENABLED" = true ]; then
+            [ -n "$ZEN_MODEL" ] || { echo '::error::OPENCODE_ZEN_CODE_REVIEW_MODEL is required'; exit 1; }
           fi
 
-  opencode-openrouter-review:
-    name: OpenCode OpenRouter review
-    needs: [await-required-tests, validate-review-settings]
+  opencode-code-review:
+    name: OpenCode OpenRouter Review
+    needs: [select-final-review, validate-review-settings]
     if: >-
-      needs.await-required-tests.result == 'success' &&
-      needs.validate-review-settings.result == 'success' &&
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.user.login != 'dependabot' &&
-      github.event.pull_request.user.login != 'dependabot[bot]' &&
-      github.event.pull_request.user.login != 'app/dependabot' &&
-      github.event.pull_request.user.login != 'renovate' &&
-      github.event.pull_request.user.login != 'renovate[bot]' &&
-      github.event.pull_request.user.login != 'app/renovate' &&
+      needs.select-final-review.outputs.should_review == 'true' &&
       vars.OPENCODE_CODE_REVIEW_ENABLED == 'true'
     continue-on-error: true
     runs-on: ubuntu-latest
@@ -214,28 +106,54 @@ jobs:
       issues: read
       pull-requests: read
     outputs:
-      payload_artifact_id: ${{ steps.review.outputs.payload_artifact_id }}
+      action_outcome: ${{ steps.opencode-review-agent.outcome }}
+      agent_outcome: ${{ steps.opencode-review-agent.outputs.agent_outcome }}
+      payload_artifact_id: ${{ steps.opencode-review-agent.outputs.payload_artifact_id }}
     steps:
+      - name: Require a live ready default-branch PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ needs.select-final-review.outputs.pr_number }}
+          EXPECTED_HEAD_SHA: ${{ needs.select-final-review.outputs.head_sha }}
+          EXPECTED_BASE_SHA: ${{ needs.select-final-review.outputs.base_sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          pr_json="$(gh api --method GET "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER")"
+          [ "$(jq -r '.head.sha' <<< "$pr_json")" = "$EXPECTED_HEAD_SHA" ]
+          [ "$(jq -r '.base.sha' <<< "$pr_json")" = "$EXPECTED_BASE_SHA" ]
+          [ "$(jq -r '.base.ref' <<< "$pr_json")" = "$DEFAULT_BRANCH" ]
+          [ "$(jq -r '.base.repo.full_name' <<< "$pr_json")" = "$GITHUB_REPOSITORY" ]
+          [ "$(jq -r '.draft' <<< "$pr_json")" = false ]
+          [ "$(jq -r '.state' <<< "$pr_json")" = open ]
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ needs.select-final-review.outputs.head_sha }}
           fetch-depth: 1
+          clean: true
           persist-credentials: false
       - name: Run OpenCode OpenRouter review
-        id: review
-        uses: vouchington/vouchington-tooling/.github/actions/opencode-code-review@7226e68cfefeb5d60034a76186609387a82387d0 # vouchington-tooling-v0.1.4
+        id: opencode-review-agent
+        uses: vouchington/vouchington-tooling/.github/actions/opencode-code-review@1bcaf04b0ee3bf816c406d0239e7d7c54e44eb3f # v0.0.19
         with:
-          pr_number: ${{ github.event.pull_request.number }}
+          pr_number: ${{ needs.select-final-review.outputs.pr_number }}
           provider_name: OpenCode OpenRouter
-          trusted_prompt_ref: ${{ github.event.pull_request.base.sha }}
+          trusted_prompt_ref: ${{ needs.select-final-review.outputs.base_sha }}
           model: ${{ vars.OPENCODE_CODE_REVIEW_MODEL }}
-          payload_artifact_name: opencode-openrouter-${{ github.event.pull_request.head.sha }}
+          payload_artifact_name: opencode-openrouter
           openrouter_api_key: ${{ secrets.OPENROUTER_FREE_API_KEY }}
+      - name: Require agent success
+        if: >-
+          always() && (steps.opencode-review-agent.outcome != 'success' ||
+          steps.opencode-review-agent.outputs.agent_outcome != 'success')
+        run: |
+          echo '::error::OpenCode OpenRouter review did not complete successfully.'
+          exit 1
 
-  opencode-openrouter-poster:
-    name: OpenCode OpenRouter review poster
-    needs: [opencode-openrouter-review]
-    if: always() && needs.opencode-openrouter-review.outputs.payload_artifact_id != ''
+  opencode-code-review-poster:
+    name: OpenCode OpenRouter Review Poster
+    needs: [select-final-review, opencode-code-review]
+    if: always() && needs.opencode-code-review.outputs.payload_artifact_id != ''
     continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -243,41 +161,46 @@ jobs:
       actions: read
       contents: read
       pull-requests: write
+    outputs:
+      poster_outcome: ${{ steps.opencode-review-poster.outputs.poster_outcome }}
     steps:
       - name: Require the selected PR head before posting
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          SELECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ needs.select-final-review.outputs.pr_number }}
+          SELECTED_HEAD_SHA: ${{ needs.select-final-review.outputs.head_sha }}
+          SELECTED_BASE_SHA: ${{ needs.select-final-review.outputs.base_sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
-          current="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json headRefOid --jq .headRefOid)"
-          [ "$current" = "$SELECTED_HEAD_SHA" ] || {
-            echo '::error::PR head changed before the review poster ran.'
-            exit 1
-          }
+          pr_json="$(gh api --method GET "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER")"
+          [ "$(jq -r '.head.sha' <<< "$pr_json")" = "$SELECTED_HEAD_SHA" ]
+          [ "$(jq -r '.base.sha' <<< "$pr_json")" = "$SELECTED_BASE_SHA" ]
+          [ "$(jq -r '.base.ref' <<< "$pr_json")" = "$DEFAULT_BRANCH" ]
+          [ "$(jq -r '.base.repo.full_name' <<< "$pr_json")" = "$GITHUB_REPOSITORY" ]
+          [ "$(jq -r '.draft' <<< "$pr_json")" = false ]
+          [ "$(jq -r '.state' <<< "$pr_json")" = open ]
       - name: Post OpenCode OpenRouter review
-        uses: vouchington/vouchington-tooling/.github/actions/code-review-poster@7226e68cfefeb5d60034a76186609387a82387d0 # vouchington-tooling-v0.1.4
+        id: opencode-review-poster
+        uses: vouchington/vouchington-tooling/.github/actions/code-review-poster@1bcaf04b0ee3bf816c406d0239e7d7c54e44eb3f # v0.0.19
         with:
-          pr_number: ${{ github.event.pull_request.number }}
-          artifact_id: ${{ needs.opencode-openrouter-review.outputs.payload_artifact_id }}
+          pr_number: ${{ needs.select-final-review.outputs.pr_number }}
+          artifact_id: ${{ needs.opencode-code-review.outputs.payload_artifact_id }}
           provider_name: OpenCode OpenRouter
           token_source: github-token
+      - name: Require poster success
+        if: >-
+          always() && (steps.opencode-review-poster.outcome != 'success' ||
+          steps.opencode-review-poster.outputs.poster_outcome != 'success')
+        run: |
+          echo '::error::OpenCode OpenRouter review poster did not complete successfully.'
+          exit 1
 
-  opencode-zen-review:
-    name: OpenCode Zen review
-    needs: [await-required-tests, validate-review-settings]
+  opencode-zen-code-review:
+    name: OpenCode Zen Review
+    needs: [select-final-review, validate-review-settings]
     if: >-
-      needs.await-required-tests.result == 'success' &&
-      needs.validate-review-settings.result == 'success' &&
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.user.login != 'dependabot' &&
-      github.event.pull_request.user.login != 'dependabot[bot]' &&
-      github.event.pull_request.user.login != 'app/dependabot' &&
-      github.event.pull_request.user.login != 'renovate' &&
-      github.event.pull_request.user.login != 'renovate[bot]' &&
-      github.event.pull_request.user.login != 'app/renovate' &&
+      needs.select-final-review.outputs.should_review == 'true' &&
       vars.OPENCODE_ZEN_CODE_REVIEW_ENABLED == 'true'
     continue-on-error: true
     runs-on: ubuntu-latest
@@ -288,28 +211,54 @@ jobs:
       issues: read
       pull-requests: read
     outputs:
-      payload_artifact_id: ${{ steps.review.outputs.payload_artifact_id }}
+      action_outcome: ${{ steps.opencode-review-agent.outcome }}
+      agent_outcome: ${{ steps.opencode-review-agent.outputs.agent_outcome }}
+      payload_artifact_id: ${{ steps.opencode-review-agent.outputs.payload_artifact_id }}
     steps:
+      - name: Require a live ready default-branch PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ needs.select-final-review.outputs.pr_number }}
+          EXPECTED_HEAD_SHA: ${{ needs.select-final-review.outputs.head_sha }}
+          EXPECTED_BASE_SHA: ${{ needs.select-final-review.outputs.base_sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          pr_json="$(gh api --method GET "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER")"
+          [ "$(jq -r '.head.sha' <<< "$pr_json")" = "$EXPECTED_HEAD_SHA" ]
+          [ "$(jq -r '.base.sha' <<< "$pr_json")" = "$EXPECTED_BASE_SHA" ]
+          [ "$(jq -r '.base.ref' <<< "$pr_json")" = "$DEFAULT_BRANCH" ]
+          [ "$(jq -r '.base.repo.full_name' <<< "$pr_json")" = "$GITHUB_REPOSITORY" ]
+          [ "$(jq -r '.draft' <<< "$pr_json")" = false ]
+          [ "$(jq -r '.state' <<< "$pr_json")" = open ]
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ needs.select-final-review.outputs.head_sha }}
           fetch-depth: 1
+          clean: true
           persist-credentials: false
       - name: Run OpenCode Zen review
-        id: review
-        uses: vouchington/vouchington-tooling/.github/actions/opencode-code-review@7226e68cfefeb5d60034a76186609387a82387d0 # vouchington-tooling-v0.1.4
+        id: opencode-review-agent
+        uses: vouchington/vouchington-tooling/.github/actions/opencode-code-review@1bcaf04b0ee3bf816c406d0239e7d7c54e44eb3f # v0.0.19
         with:
-          pr_number: ${{ github.event.pull_request.number }}
+          pr_number: ${{ needs.select-final-review.outputs.pr_number }}
           provider_name: OpenCode Zen
-          trusted_prompt_ref: ${{ github.event.pull_request.base.sha }}
+          trusted_prompt_ref: ${{ needs.select-final-review.outputs.base_sha }}
           model: ${{ vars.OPENCODE_ZEN_CODE_REVIEW_MODEL }}
-          payload_artifact_name: opencode-zen-${{ github.event.pull_request.head.sha }}
+          payload_artifact_name: opencode-zen
           opencode_api_key: ${{ secrets.OPENCODE_FREE_API_KEY }}
+      - name: Require agent success
+        if: >-
+          always() && (steps.opencode-review-agent.outcome != 'success' ||
+          steps.opencode-review-agent.outputs.agent_outcome != 'success')
+        run: |
+          echo '::error::OpenCode Zen review did not complete successfully.'
+          exit 1
 
-  opencode-zen-poster:
-    name: OpenCode Zen review poster
-    needs: [opencode-zen-review]
-    if: always() && needs.opencode-zen-review.outputs.payload_artifact_id != ''
+  opencode-zen-code-review-poster:
+    name: OpenCode Zen Review Poster
+    needs: [select-final-review, opencode-zen-code-review]
+    if: always() && needs.opencode-zen-code-review.outputs.payload_artifact_id != ''
     continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -317,90 +266,96 @@ jobs:
       actions: read
       contents: read
       pull-requests: write
+    outputs:
+      poster_outcome: ${{ steps.opencode-review-poster.outputs.poster_outcome }}
     steps:
       - name: Require the selected PR head before posting
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          SELECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ needs.select-final-review.outputs.pr_number }}
+          SELECTED_HEAD_SHA: ${{ needs.select-final-review.outputs.head_sha }}
+          SELECTED_BASE_SHA: ${{ needs.select-final-review.outputs.base_sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
-          current="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json headRefOid --jq .headRefOid)"
-          [ "$current" = "$SELECTED_HEAD_SHA" ] || {
-            echo '::error::PR head changed before the review poster ran.'
-            exit 1
-          }
+          pr_json="$(gh api --method GET "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER")"
+          [ "$(jq -r '.head.sha' <<< "$pr_json")" = "$SELECTED_HEAD_SHA" ]
+          [ "$(jq -r '.base.sha' <<< "$pr_json")" = "$SELECTED_BASE_SHA" ]
+          [ "$(jq -r '.base.ref' <<< "$pr_json")" = "$DEFAULT_BRANCH" ]
+          [ "$(jq -r '.base.repo.full_name' <<< "$pr_json")" = "$GITHUB_REPOSITORY" ]
+          [ "$(jq -r '.draft' <<< "$pr_json")" = false ]
+          [ "$(jq -r '.state' <<< "$pr_json")" = open ]
       - name: Post OpenCode Zen review
-        uses: vouchington/vouchington-tooling/.github/actions/code-review-poster@7226e68cfefeb5d60034a76186609387a82387d0 # vouchington-tooling-v0.1.4
+        id: opencode-review-poster
+        uses: vouchington/vouchington-tooling/.github/actions/code-review-poster@1bcaf04b0ee3bf816c406d0239e7d7c54e44eb3f # v0.0.19
         with:
-          pr_number: ${{ github.event.pull_request.number }}
-          artifact_id: ${{ needs.opencode-zen-review.outputs.payload_artifact_id }}
+          pr_number: ${{ needs.select-final-review.outputs.pr_number }}
+          artifact_id: ${{ needs.opencode-zen-code-review.outputs.payload_artifact_id }}
           provider_name: OpenCode Zen
           token_source: github-token
+      - name: Require poster success
+        if: >-
+          always() && (steps.opencode-review-poster.outcome != 'success' ||
+          steps.opencode-review-poster.outputs.poster_outcome != 'success')
+        run: |
+          echo '::error::OpenCode Zen review poster did not complete successfully.'
+          exit 1
 
   code-reviewed:
-    # This job name is a branch-protection invariant. Together with the workflow name above,
-    # GitHub exposes the required native check as exactly: Final Code Review / Code Reviewed.
     name: >-
-      ${{ (github.event.action == 'ready_for_review' || github.event.label.name == 'final-code-review:requested') && github.event.pull_request.draft == false && 'Code Reviewed' || 'Ignore final review request' }}
+      ${{ github.event.pull_request.draft == false &&
+      github.event.pull_request.state == 'open' &&
+      github.event.pull_request.base.ref == github.event.repository.default_branch &&
+      'Code Reviewed' || 'Ignore ineligible final review' }}
     needs:
-      - await-required-tests
+      - select-final-review
       - validate-review-settings
-      - opencode-openrouter-review
-      - opencode-openrouter-poster
-      - opencode-zen-review
-      - opencode-zen-poster
-    if: >-
-      always() && (github.event.action == 'ready_for_review' ||
-      github.event.label.name == 'final-code-review:requested') &&
-      github.event.pull_request.draft == false
+      - opencode-code-review
+      - opencode-code-review-poster
+      - opencode-zen-code-review
+      - opencode-zen-code-review-poster
+    if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
-      contents: read
-      pull-requests: read
+      issues: write
+      pull-requests: write
     steps:
-      - name: Validate the native gate
+      - name: Validate final review outcome
+        id: gate
         env:
-          TESTS_RESULT: ${{ needs.await-required-tests.result }}
+          SELECT_RESULT: ${{ needs.select-final-review.result }}
           SETTINGS_RESULT: ${{ needs.validate-review-settings.result }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
-          AUTHOR: ${{ github.event.pull_request.user.login }}
-          DRAFT: ${{ github.event.pull_request.draft }}
+          IS_DRAFT: ${{ github.event.pull_request.draft }}
+          EVENT_STATE: ${{ github.event.pull_request.state }}
+          EVENT_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GATE_STATUS: ${{ needs.select-final-review.outputs.gate_status }}
           GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || {
-            echo '::error::The PR head is not a full commit SHA.'
-            exit 1
-          }
-          current="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json headRefOid --jq .headRefOid)"
-          [ "$current" = "$HEAD_SHA" ] || {
-            echo "::error::Refusing to pass a stale Final Code Review gate: expected $HEAD_SHA, current $current."
-            exit 1
-          }
-          [ "$TESTS_RESULT" = success ] || {
-            echo '::error::The exact-head required test fan-in did not pass.'
-            exit 1
-          }
-
-          trusted=true
-          [ "$HEAD_REPOSITORY" = "$GITHUB_REPOSITORY" ] || trusted=false
-          case "$AUTHOR" in
-            dependabot|dependabot\[bot\]|app/dependabot|renovate|renovate\[bot\]|app/renovate)
-              trusted=false
-              ;;
-          esac
-          if [ "$trusted" = true ] && [ "$DRAFT" = true ]; then
-            echo '::notice::Draft PR: native gate is satisfied by exact-head CI; provider review waits until ready_for_review.'
-          elif [ "$trusted" = true ]; then
-            [ "$SETTINGS_RESULT" = success ] || {
-              echo '::error::Trusted review settings did not validate.'
-              exit 1
-            }
-            echo 'Trusted provider outcomes are advisory; exact-head CI and this native gate are authoritative.'
-          else
-            echo 'Fork and dependency-bot PR: no secrets or PR-controlled code were used; exact-head CI passed.'
-          fi
+          PR_NUMBER: ${{ needs.select-final-review.outputs.pr_number }}
+          SELECTED_HEAD_SHA: ${{ needs.select-final-review.outputs.head_sha }}
+          SELECTED_BASE_SHA: ${{ needs.select-final-review.outputs.base_sha }}
+          CLAUDE_ENABLED: 'false'
+          CLAUDE_RESULT: ''
+          OPENROUTER_ENABLED: ${{ vars.OPENCODE_CODE_REVIEW_ENABLED }}
+          OPENROUTER_ACTION: ${{ needs.opencode-code-review.outputs.action_outcome }}
+          OPENROUTER_AGENT: ${{ needs.opencode-code-review.outputs.agent_outcome }}
+          OPENROUTER_ARTIFACT: ${{ needs.opencode-code-review.outputs.payload_artifact_id }}
+          OPENROUTER_POSTER: ${{ needs.opencode-code-review-poster.outputs.poster_outcome }}
+          ZEN_ENABLED: ${{ vars.OPENCODE_ZEN_CODE_REVIEW_ENABLED }}
+          ZEN_ACTION: ${{ needs.opencode-zen-code-review.outputs.action_outcome }}
+          ZEN_AGENT: ${{ needs.opencode-zen-code-review.outputs.agent_outcome }}
+          ZEN_ARTIFACT: ${{ needs.opencode-zen-code-review.outputs.payload_artifact_id }}
+          ZEN_POSTER: ${{ needs.opencode-zen-code-review-poster.outputs.poster_outcome }}
+          COMPLETE_LABEL: final-code-review:complete
+          GH_RETRY_ATTEMPTS: '3'
+          GH_RETRY_BACKOFF_SECONDS: '5'
+          GH_RETRY_TRANSPORT_MARKERS: |
+            net/http: TLS handshake timeout
+            net/http: timeout awaiting response headers
+            connection reset by peer
+            unexpected EOF
+            i/o timeout
+        uses: vouchington/vouchington-tooling/.github/actions/final-review-gate@f5f41caba5aef0b31e507a67123c76f1c9a53d02 # v0.3.0
+        with:
+          gate_status: ${{ needs.select-final-review.outputs.gate_status }}
