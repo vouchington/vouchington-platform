@@ -115,6 +115,16 @@
       "import": "./dist/urls.mjs",
       "default": "./dist/urls.mjs"
     },
+    "./language-tags": {
+      "types": "./dist/language-tags.d.mts",
+      "import": "./dist/language-tags.mjs",
+      "default": "./dist/language-tags.mjs"
+    },
+    "./message-catalog": {
+      "types": "./dist/message-catalog.d.mts",
+      "import": "./dist/message-catalog.mjs",
+      "default": "./dist/message-catalog.mjs"
+    },
     "./validation": {
       "types": "./dist/validation.d.mts",
       "import": "./dist/validation.mjs",

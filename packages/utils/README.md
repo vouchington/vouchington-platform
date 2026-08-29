@@ -7,6 +7,8 @@ export: import the capability you use from an explicit subpath.
 import { createTokenSecrets } from '@vouchington/utils/token-secrets'
 import { createMoneyCatalog } from '@vouchington/utils/money'
 import { serializeCookie } from '@vouchington/utils/cookies'
+import { bestAcceptLanguageMatch } from '@vouchington/utils/language-tags'
+import { createMessageTranslator } from '@vouchington/utils/message-catalog'
 ```
 
 ## Subpaths
@@ -37,6 +39,20 @@ import { serializeCookie } from '@vouchington/utils/cookies'
   query-string serialization. Cursor parsing intentionally belongs to `@vouchington/pagination`.
 - `slugs` and `urls`: ASCII-only slugification and URL/hostname primitives. URL hostname helpers
   return `null` for invalid input; `normalizeAsciiHostname` names its ASCII-only contract directly.
+  `matchesHostnamePattern` supports exact and inclusive `*.` hostname patterns.
+- `language-tags`: caller-configured locale normalization and strict `Accept-Language` parsing and
+  best matching. HTTP ranges reject malformed syntax and quality parameters; explicit `q=0` ranges
+  exclude a candidate when they tie for that candidate's most-specific matching range, so `en;q=0`
+  overrides an equal `en;q=1`, while `en-US;q=1` overrides broader `en;q=0` for supported `en-US`.
+  A truncated fallback (`en-US` to supported `en`) instead uses the ranges that match `en`, so `en;q=0`
+  or `*;q=0` excludes it. Matching compares an exact supported tag,
+  then truncates the _request_ (`en-US` can match supported `en`); it never expands `en` to an
+  arbitrary regional supported tag. Invalid configured tags are ignored. This subpath has no default
+  locale or supported-tag policy.
+- `message-catalog`: typed nested catalog translation for string, plural, and select-plural JSON
+  descriptors. Catalog segments cannot contain dots because dots delimit nested keys. Plural values
+  and configured number parameters must be finite numbers; callers own catalog content, locale
+  choice, and number formatting.
 - `observability`: SDK-free URL, request, event, and span scrubbing. Callers provide credential
   headers and environment or spike policy; this package has no product defaults.
 
