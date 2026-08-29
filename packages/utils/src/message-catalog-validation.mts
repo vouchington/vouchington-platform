@@ -68,9 +68,9 @@ function assertCatalogValue(
     for (const [key, child] of Object.entries(value)) {
       if (key.includes('.')) fail(`segment "${key}" must not contain a dot`)
       if (typeof child === 'string' || isMessageDescriptor(child)) continue
-      if (isCatalogRecord(child) && child.kind === 'plural')
+      if (isCatalogRecord(child) && child.kind === 'plural' && hasDescriptorFields(child))
         fail(`Invalid plural message descriptor at "${key}"`)
-      if (isCatalogRecord(child) && child.kind === 'select-plural')
+      if (isCatalogRecord(child) && child.kind === 'select-plural' && hasDescriptorFields(child))
         fail(`Invalid select-plural message descriptor at "${key}"`)
       assertCatalogValue(child, `${path}.${key}`, ancestors)
     }
@@ -108,6 +108,12 @@ function hasOwnString(value: Record<string, unknown>, key: string): boolean {
 
 function hasOnlyKeys(value: Record<string, unknown>, allowed: readonly string[]): boolean {
   return Object.keys(value).every((key) => allowed.includes(key))
+}
+
+function hasDescriptorFields(value: Record<string, unknown>): boolean {
+  return ['valueParameter', 'numberParameters', 'forms', 'selectParameter', 'cases'].some((key) =>
+    Object.hasOwn(value, key),
+  )
 }
 
 function isStringArray(value: unknown): value is readonly string[] | undefined {

@@ -64,5 +64,7 @@ describe('URLs', () => {
     )
     expect(matchesHostnamePattern('badexample.com', '*.example.com')).toBe(false)
     expect(matchesHostnamePattern('example.net', 'example.com')).toBe(false)
+    expect(matchesHostnamePattern('EXAMPLE.COM', 'example.com')).toBe(true)
+    expect(matchesHostnamePattern('API.Example.Com', '*.EXAMPLE.COM')).toBe(true)
   })
 })

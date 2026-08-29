@@ -89,11 +89,13 @@ export function matchesHostnamePattern(
   hostname: string,
   patterns: string | readonly string[],
 ): boolean {
-  for (const pattern of typeof patterns === 'string' ? [patterns] : patterns) {
-    if (pattern === hostname) return true
+  const candidate = hostname.toLowerCase()
+  for (const configuredPattern of typeof patterns === 'string' ? [patterns] : patterns) {
+    const pattern = configuredPattern.toLowerCase()
+    if (pattern === candidate) return true
     if (
       pattern.startsWith('*.') &&
-      (hostname === pattern.slice(2) || hostname.endsWith(pattern.slice(1)))
+      (candidate === pattern.slice(2) || candidate.endsWith(pattern.slice(1)))
     )
       return true
   }

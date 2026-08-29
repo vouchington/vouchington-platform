@@ -85,6 +85,13 @@ describe('message catalogs', () => {
     )
     expect(() => (translate as (key: string) => string)('missing.path')).toThrow('Unresolvable')
     expect(() => (translate as (key: string) => string)('nav')).toThrow('non-leaf')
+    const undefinedCase = createMessageTranslator('en', {
+      item: selectPlural('count', 'kind', { undefined: { other: 'wrong' } }),
+    })
+    expect(() => undefinedCase('item', { count: 1 })).toThrow('"kind" must be present')
+    const inheritedSelector = Object.create({ kind: 'undefined' }) as Record<string, unknown>
+    inheritedSelector.count = 1
+    expect(() => undefinedCase('item', inheritedSelector)).toThrow('"kind" must be present')
   })
   it('only accepts serializable descriptors', () => {
     expect(isMessageDescriptor(plural('count', { other: '{count}' }))).toBe(true)
@@ -184,6 +191,10 @@ describe('message catalogs', () => {
     expect(() => createMessageTranslator('en', null as unknown as MessageCatalog)).toThrow(
       'serializable catalog',
     )
+    const nestedKind = createMessageTranslator('en', {
+      section: { kind: 'plural', title: 'Plural' },
+    })
+    expect(nestedKind('section.kind')).toBe('plural')
     const nonEnumerableCatalog = {} as Record<string, unknown>
     Object.defineProperty(nonEnumerableCatalog, 'title', { value: 'Title', enumerable: false })
     expect(() => createMessageTranslator('en', nonEnumerableCatalog as MessageCatalog)).toThrow(
@@ -196,6 +207,19 @@ describe('message catalogs', () => {
         count: 1,
       }),
     ).toBe('items')
+    const forms = { other: 'own fallback' }
+    const translate = createMessageTranslator('en', { item: plural('count', forms) })
+    const priorOne = Object.getOwnPropertyDescriptor(Object.prototype, 'one')
+    Object.defineProperty(Object.prototype, 'one', {
+      configurable: true,
+      value: 'inherited value',
+    })
+    try {
+      expect(translate('item', { count: 1 })).toBe('own fallback')
+    } finally {
+      if (priorOne) Object.defineProperty(Object.prototype, 'one', priorOne)
+      else Reflect.deleteProperty(Object.prototype, 'one')
+    }
   })
   it('rejects cycles and hostile proxies without rejecting shared acyclic catalog nodes', () => {
     const cyclic = {} as Record<string, unknown>

@@ -97,8 +97,8 @@ export function createMessageTranslator<Catalog extends MessageCatalog>(
       throw new Error(`Message key "${key}" resolves to a non-leaf value`)
     const numeric = readNumericParameters(leaf, parameters)
     const forms = leaf.kind === 'plural' ? leaf.forms : selectForms(leaf, parameters)
-    const template =
-      forms[getPluralRules(locale).select(numeric.get(leaf.valueParameter)!)] ?? forms.other
+    const category = getPluralRules(locale).select(numeric.get(leaf.valueParameter)!)
+    const template = Object.hasOwn(forms, category) ? forms[category]! : forms.other
     const formatted = { ...parameters }
     for (const parameter of leaf.numberParameters ?? [])
       formatted[parameter] =
@@ -142,6 +142,8 @@ function selectForms(
   descriptor: SelectPluralMessageDescriptor,
   parameters: Readonly<Record<string, unknown>>,
 ): PluralForms {
+  if (!Object.hasOwn(parameters, descriptor.selectParameter))
+    throw new TypeError(`Message parameter "${descriptor.selectParameter}" must be present`)
   const selected = String(parameters[descriptor.selectParameter])
   if (!Object.hasOwn(descriptor.cases, selected))
     throw new Error(`Unknown select-plural case "${selected}" for "${descriptor.selectParameter}"`)
