@@ -149,7 +149,7 @@ function selectForms(
 }
 
 function interpolate(template: string, parameters: Readonly<Record<string, unknown>>): string {
-  return template.replace(/\{(\w+)\}/g, (match, name: string) =>
+  return template.replace(/\{([\w.-]+)\}/g, (match, name: string) =>
     Object.hasOwn(parameters, name) ? String(parameters[name]) : match,
   )
 }

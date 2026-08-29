@@ -3,6 +3,10 @@ export type ParsedLanguageRange = Readonly<{
   quality: number
   index: number
 }>
+type SupportedLanguage<Supported extends string> = Readonly<{
+  original: Supported
+  canonical: string
+}>
 
 const HTTP_LANGUAGE_RANGE = /^(?:\*|[A-Za-z]{1,8}(?:-[A-Za-z0-9]{1,8})*)$/
 const QUALITY = /^(?:0(?:\.\d{0,3})?|1(?:\.0{0,3})?)$/
@@ -31,7 +35,8 @@ export function bestAcceptLanguageMatch<Supported extends string>(
   const parsed = parseLanguageRanges(value)
   for (const range of parsed) {
     if (range.quality === 0) continue
-    if (range.range === '*') return available.find((tag) => !isExcluded(tag, parsed)) ?? null
+    if (range.range === '*')
+      return available.find((tag) => !isExcluded(tag.canonical, parsed))?.original ?? null
     const match = lookup(range.range, available, parsed)
     if (match !== null) return match
   }
@@ -72,13 +77,13 @@ function canonicalize(value: string): string | null {
 
 function lookup<Supported extends string>(
   range: string,
-  supported: readonly Supported[],
+  supported: readonly SupportedLanguage<Supported>[],
   parsed: readonly ParsedLanguageRange[] = [],
 ): Supported | null {
   let candidate = range
   while (candidate) {
     for (const tag of supported) {
-      if (canonicalize(tag) === candidate && !isExcluded(candidate, parsed)) return tag
+      if (tag.canonical === candidate && !isExcluded(candidate, parsed)) return tag.original
     }
     const separator = candidate.lastIndexOf('-')
     candidate = separator > 1 ? candidate.slice(0, separator) : ''
@@ -88,12 +93,14 @@ function lookup<Supported extends string>(
 
 function validSupported<Supported extends string>(
   supported: readonly Supported[],
-): readonly Supported[] {
-  return supported.filter((tag) => canonicalize(tag) !== null)
+): readonly SupportedLanguage<Supported>[] {
+  return supported.flatMap((original) => {
+    const canonical = canonicalize(original)
+    return canonical === null ? [] : [{ original, canonical }]
+  })
 }
 
-function isExcluded(tag: string, parsed: readonly ParsedLanguageRange[]): boolean {
-  const canonical = canonicalize(tag)!
+function isExcluded(canonical: string, parsed: readonly ParsedLanguageRange[]): boolean {
   const matching = parsed.filter((range) => matchesRange(range.range, canonical))
   const specificity = Math.max(...matching.map((range) => rangeSpecificity(range.range)))
   return matching.some(

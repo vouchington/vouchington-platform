@@ -32,6 +32,12 @@ describe('message catalogs', () => {
     const translate = createMessageTranslator('en', catalog)
     expect(translate('nav.greeting', { name: 'Ava' })).toBe('Hello, Ava!')
     expect(translate('nav.missing')).toBe('Value: {value}')
+    expect(
+      createMessageTranslator('en', { label: '{user-name} from {profile.name}' })('label', {
+        'user-name': 'Ava',
+        'profile.name': 'Operations',
+      }),
+    ).toBe('Ava from Operations')
     expectTypeOf(translate)
       .parameter(0)
       .toEqualTypeOf<'nav.greeting' | 'nav.missing' | 'counts.items' | 'counts.gendered'>()
