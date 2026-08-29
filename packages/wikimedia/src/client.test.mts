@@ -255,16 +255,18 @@ describe('createWikimediaClient', () => {
 
   it('normalizes an abort between fetch settlement and body consumption', async () => {
     const controller = new AbortController()
+    const stalled = deferred<unknown>()
     const cancel = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
-    const fetch: WikimediaFetch = vi.fn(() => {
-      const settled = Promise.resolve({
-        status: 200,
-        json: vi.fn().mockResolvedValue(searchBody),
+    const fetch: WikimediaFetch = vi.fn(() =>
+      Promise.resolve({
+        get status(): number {
+          controller.abort('between phases')
+          return 200
+        },
+        json: vi.fn(() => stalled.promise),
         body: { cancel },
-      } as unknown as Response)
-      void settled.then(() => queueMicrotask(() => controller.abort('between phases')))
-      return settled
-    })
+      } as unknown as Response),
+    )
     await expect(
       client(fetch).searchByTitle('one', { signal: controller.signal }),
     ).rejects.toMatchObject({
@@ -277,7 +279,9 @@ describe('createWikimediaClient', () => {
     const cancel = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
     const badJson = {
       status: 200,
-      json: vi.fn().mockRejectedValue(new SyntaxError()),
+      json: vi.fn(() => {
+        throw new SyntaxError()
+      }),
       body: { cancel },
     } as unknown as Response
     await expect(
@@ -315,6 +319,7 @@ describe('createWikimediaClient', () => {
       { pageid: 1, title: 'One', content_urls: [] },
       { pageid: 1, title: 'One', content_urls: { desktop: { page: '' } } },
       { pageid: 1, title: 'One', thumbnail: {} },
+      { pageid: 1, title: 'One', extract: 1 },
     ]) {
       await expect(
         client(
@@ -329,20 +334,19 @@ describe('createWikimediaClient', () => {
     expect(() => client(fetch, { project: 'not.a-label' })).toThrow(/project/)
     expect(() => client(fetch, { timeoutMs: Number.POSITIVE_INFINITY })).toThrow(/timeoutMs/)
     expect(() => client(fetch, { maxRetryDelayMs: -1 })).toThrow(/maxRetryDelayMs/)
+    for (const invalid of [null, 1]) {
+      expect(() => client(fetch, { project: invalid } as never)).toThrow(/project/)
+      expect(() => client(fetch, { language: invalid } as never)).toThrow(/language/)
+      expect(() => client(fetch, { userAgent: invalid } as never)).toThrow(/userAgent/)
+    }
+    expect(() => client(fetch, { timeoutMs: null } as never)).toThrow(/timeoutMs/)
+    expect(() => client(fetch, { maxRetryDelayMs: '1' } as never)).toThrow(/maxRetryDelayMs/)
+    expect(() => client(fetch, { timeoutMs: 2_147_483_648 })).toThrow(/timeoutMs/)
+    expect(() => client(fetch, { maxRetryDelayMs: 2_147_483_648 })).toThrow(/maxRetryDelayMs/)
     const instance = client(fetch)
     await expect(instance.searchByTitle('one', { limit: 101 })).rejects.toThrow(/limit/)
     await expect(instance.getPageSummary('   ')).rejects.toThrow(/title/)
     expect(fetch).not.toHaveBeenCalled()
-  })
-
-  it('rejects non-string optional summary text fields', async () => {
-    await expect(
-      client(
-        vi
-          .fn<WikimediaFetch>()
-          .mockResolvedValue(response({ pageid: 1, title: 'One', extract: 1 })),
-      ).getPageSummary('one'),
-    ).rejects.toBeInstanceOf(WikimediaDecodeError)
   })
 
   it('accepts populated summary URLs and rejects malformed root payloads', async () => {
@@ -408,5 +412,69 @@ describe('createWikimediaClient', () => {
     expect(fetch).toHaveBeenCalledOnce()
     await vi.advanceTimersByTimeAsync(1)
     await expect(pending).resolves.toEqual([{ pageId: 1, title: 'One' }])
+  })
+
+  it('retains ignored fetches in physical slots until they settle', async () => {
+    vi.useFakeTimers()
+    const ignored = Array.from({ length: 3 }, () => deferred<Response>())
+    let call = 0
+    const fetch = vi.fn<WikimediaFetch>(() =>
+      call < 3 ? ignored[call++]!.promise : Promise.resolve(response(searchBody)),
+    )
+    const instance = client(fetch, { timeoutMs: 5, maxRetryDelayMs: 0 })
+    const pending = ['a', 'b', 'c'].map((query) => instance.searchByTitle(query))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(fetch).toHaveBeenCalledTimes(3)
+    await vi.advanceTimersByTimeAsync(5)
+    expect(fetch).toHaveBeenCalledTimes(3)
+    ignored[0]!.resolve(response(searchBody))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(fetch.mock.calls.length).toBeGreaterThanOrEqual(4)
+    ignored[1]!.resolve(response(searchBody))
+    ignored[2]!.resolve(response(searchBody))
+    await expect(Promise.all(pending)).resolves.toHaveLength(3)
+  })
+
+  it('bounds hanging cleanup and preserves final retryable status errors', async () => {
+    vi.useFakeTimers()
+    const hanging = deferred<void>()
+    let call = 0
+    const fetch: WikimediaFetch = vi.fn(() => {
+      call += 1
+      return Promise.resolve(
+        call <= 3
+          ? ({
+              status: 200,
+              json: vi.fn().mockResolvedValue(searchBody),
+              body: { cancel: () => hanging.promise },
+            } as unknown as Response)
+          : response(searchBody),
+      )
+    })
+    const instance = client(fetch, { timeoutMs: 5 })
+    const pending = ['a', 'b', 'c', 'd'].map((query) => instance.searchByTitle(query))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(fetch).toHaveBeenCalledTimes(3)
+    await vi.advanceTimersByTimeAsync(5)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(fetch).toHaveBeenCalledTimes(4)
+    await expect(Promise.all(pending)).resolves.toHaveLength(4)
+    const failing = vi.fn<WikimediaFetch>().mockResolvedValue(response({}, 503))
+    const failed = client(failing, { maxRetryDelayMs: 0 }).searchByTitle('one')
+    await expect(failed).rejects.toBeInstanceOf(WikimediaHttpError)
+    await expect(failed).rejects.toEqual(
+      expect.objectContaining({ status: 503, url: expect.stringContaining('/search/title') }),
+    )
+    expect(failing).toHaveBeenCalledTimes(3)
+    const bodyError = Object.assign(new Error('body reset'), { code: 'ECONNRESET' })
+    const bodyFailing = vi.fn<WikimediaFetch>().mockResolvedValue({
+      status: 200,
+      json: vi.fn().mockRejectedValue(bodyError),
+      body: null,
+    } as unknown as Response)
+    await expect(client(bodyFailing, { maxRetryDelayMs: 0 }).searchByTitle('one')).rejects.toBe(
+      bodyError,
+    )
+    expect(bodyFailing).toHaveBeenCalledTimes(3)
   })
 })

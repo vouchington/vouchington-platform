@@ -5,15 +5,20 @@ function abortError(reason: unknown): Error {
 }
 
 interface WaitingRequest<T> {
-  operation: () => Promise<T>
+  operation: () => QueueOperation<T>
   resolve: (value: T) => void
   reject: (reason: unknown) => void
   signal: AbortSignal | undefined
   removeAbortListener: () => void
 }
 
+interface QueueOperation<T> {
+  result: Promise<T>
+  release: Promise<void>
+}
+
 export function createRequestQueue(maximum: number): {
-  run<T>(signal: AbortSignal | undefined, operation: () => Promise<T>): Promise<T>
+  run<T>(signal: AbortSignal | undefined, operation: () => QueueOperation<T>): Promise<T>
 } {
   let active = 0
   let waiting: WaitingRequest<unknown>[] = []
@@ -23,21 +28,20 @@ export function createRequestQueue(maximum: number): {
       const request = waiting.shift()!
       request.removeAbortListener()
       active += 1
-      void request
-        .operation()
-        .then(
-          (value) => request.resolve(value),
-          (error: unknown) => request.reject(error),
-        )
-        .finally(() => {
-          active -= 1
-          drain()
-        })
+      const operation = request.operation()
+      void operation.result.then(
+        (value) => request.resolve(value),
+        (error: unknown) => request.reject(error),
+      )
+      void operation.release.finally(() => {
+        active -= 1
+        drain()
+      })
     }
   }
 
   return {
-    run<T>(signal: AbortSignal | undefined, operation: () => Promise<T>): Promise<T> {
+    run<T>(signal: AbortSignal | undefined, operation: () => QueueOperation<T>): Promise<T> {
       if (signal?.aborted) return Promise.reject(abortError(signal.reason))
       return new Promise<T>((resolve, reject) => {
         const request: WaitingRequest<T> = {

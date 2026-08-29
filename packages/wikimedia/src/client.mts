@@ -8,18 +8,23 @@ import type {
 } from './types.mts'
 
 const label = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/
+const maximumTimerMs = 2_147_483_647
 
-function requireLabel(name: string, value: string): void {
-  if (!label.test(value)) throw new TypeError(`${name} must be a DNS label.`)
+function requireLabel(name: string, value: unknown): void {
+  if (typeof value !== 'string' || !label.test(value)) {
+    throw new TypeError(`${name} must be a DNS label.`)
+  }
 }
 
-function requireMilliseconds(name: string, value: number): void {
-  if (!Number.isFinite(value) || value < 0)
+function requireMilliseconds(name: string, value: unknown): void {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > maximumTimerMs)
     throw new TypeError(`${name} must be a non-negative number.`)
 }
 
-function requireText(name: string, value: string): void {
-  if (value.trim() === '') throw new TypeError(`${name} must not be empty.`)
+function requireText(name: string, value: unknown): void {
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new TypeError(`${name} must not be empty.`)
+  }
 }
 
 function searchLimit(limit: number | undefined): number {
@@ -34,8 +39,8 @@ export function createWikimediaClient(options: WikimediaClientOptions): Wikimedi
   requireLabel('project', options.project)
   requireLabel('language', options.language)
   requireText('userAgent', options.userAgent)
-  const timeoutMs = options.timeoutMs ?? 10_000
-  const maxRetryDelayMs = options.maxRetryDelayMs ?? 10_000
+  const timeoutMs = options.timeoutMs === undefined ? 10_000 : options.timeoutMs
+  const maxRetryDelayMs = options.maxRetryDelayMs === undefined ? 10_000 : options.maxRetryDelayMs
   requireMilliseconds('timeoutMs', timeoutMs)
   requireMilliseconds('maxRetryDelayMs', maxRetryDelayMs)
   const requester = createWikimediaRequester({
