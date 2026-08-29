@@ -16,7 +16,7 @@ export function createRequestQueue(maximum: number): {
   run<T>(signal: AbortSignal | undefined, operation: () => Promise<T>): Promise<T>
 } {
   let active = 0
-  const waiting: WaitingRequest<unknown>[] = []
+  let waiting: WaitingRequest<unknown>[] = []
 
   const drain = (): void => {
     while (active < maximum && waiting.length > 0) {
@@ -48,8 +48,7 @@ export function createRequestQueue(maximum: number): {
           removeAbortListener: () => undefined,
         }
         const rejectIfAborted = (): void => {
-          const index = waiting.indexOf(request as WaitingRequest<unknown>)
-          waiting.splice(index, 1)
+          waiting = waiting.filter((pending) => pending !== request)
           reject(abortError(signal?.reason))
         }
         if (signal) {

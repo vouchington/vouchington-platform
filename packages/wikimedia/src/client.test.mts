@@ -125,7 +125,7 @@ describe('createWikimediaClient', () => {
   })
 
   it('rejects queued and active caller aborts without a retry', async () => {
-    const active = Array.from({ length: 4 }, () => deferred<Response>())
+    const active = Array.from({ length: 5 }, () => deferred<Response>())
     let call = 0
     const fetch: WikimediaFetch = vi.fn<WikimediaFetch>((_url, init) => {
       const pending = active[call++]!
@@ -139,22 +139,27 @@ describe('createWikimediaClient', () => {
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(3))
     const queued = new AbortController()
     const queuedRequest = instance.searchByTitle('queued', { signal: queued.signal })
+    const retainedRequest = instance.searchByTitle('retained')
+    const queuedText = new AbortController()
+    const queuedTextRequest = instance.searchByTitle('queued text', { signal: queuedText.signal })
     const queuedError = new Error('queued abort')
     queued.abort(queuedError)
     await expect(queuedRequest).rejects.toBe(queuedError)
-    const queuedText = new AbortController()
-    const queuedTextRequest = instance.searchByTitle('queued text', { signal: queuedText.signal })
     queuedText.abort('queued supplied text')
     await expect(queuedTextRequest).rejects.toMatchObject({ name: 'AbortError' })
+    active[0]!.resolve(response(searchBody))
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(4))
+    active[3]!.resolve(response(searchBody))
+    await expect(retainedRequest).resolves.toEqual([{ pageId: 1, title: 'One' }])
     const activeAbort = new AbortController()
     const activeRequest = instance.searchByTitle('active', { signal: activeAbort.signal })
-    for (const request of active.slice(0, 3)) request.resolve(response(searchBody))
-    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(4))
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(5))
     const activeError = new Error('active abort')
     activeAbort.abort(activeError)
     await expect(activeRequest).rejects.toBe(activeError)
+    for (const request of active.slice(1, 3)) request.resolve(response(searchBody))
     await expect(Promise.all(occupying)).resolves.toHaveLength(3)
-    expect(fetch).toHaveBeenCalledTimes(4)
+    expect(fetch).toHaveBeenCalledTimes(5)
   })
 
   it('retries internal timeouts but not caller aborts during backoff', async () => {

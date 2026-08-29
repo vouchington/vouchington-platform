@@ -173,7 +173,8 @@ export function createWikimediaRequester(options: {
     callerSignal: AbortSignal | undefined,
     missingIsNull = false,
   ): Promise<unknown> => {
-    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    let attempt = 1
+    while (true) {
       try {
         return await queue.run(callerSignal, () =>
           requestAttempt(url, callerSignal, missingIsNull, attempt),
@@ -190,9 +191,9 @@ export function createWikimediaRequester(options: {
             ? error.delay
             : retryDelay(undefined, attempt, options.maxRetryDelayMs)
         await abortableDelay(delay, callerSignal)
+        attempt += 1
       }
     }
-    throw new WikimediaHttpError(599, url)
   }
   return { getJson: request }
 }
