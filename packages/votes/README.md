@@ -35,6 +35,8 @@ CREATE INDEX ON article_votes (user_id, entity_id, id DESC);
 CREATE INDEX ON article_votes (entity_id, user_id, id DESC);
 ```
 
+The configured entity column must not reuse any fixed vote-event column shown above.
+
 IDs must sort in insertion order; PostgreSQL 18's `uuidv7()` satisfies that requirement. Foreign
 keys and audit-table relations remain application concerns.
 

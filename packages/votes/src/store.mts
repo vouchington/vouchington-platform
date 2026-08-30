@@ -14,9 +14,20 @@ import type {
   VoteStoreOptions,
 } from './types.mts'
 
+const FIXED_VOTE_COLUMNS = new Set([
+  'id',
+  'user_id',
+  'score',
+  'ip_address',
+  'device_id',
+  'session_id',
+  'user_agent_id',
+  'created_at',
+])
+
 export function createVoteStore(psql: Psql, options: VoteStoreOptions): VoteStore {
   const table = assertSqlIdentifier(options.table, 'table')
-  const entityIdColumn = assertSqlIdentifier(options.entityIdColumn, 'entityIdColumn')
+  const entityIdColumn = assertEntityIdColumn(options.entityIdColumn)
   const scope = options.cursorScope ?? `${table}:${entityIdColumn}`
   return {
     upsert: (userId, votes, audit = {}, queryOptions = {}) =>
@@ -87,15 +98,24 @@ async function upsert(
   if (values.length === 0) return []
   return psql.withTransactionOptions(queryOptions, async (query) => {
     if (queryOptions.query) await assertReadCommitted(query)
-    const userAgentId = audit.userAgent
-      ? ((await options.resolveUserAgentId?.(audit.userAgent, query)) ?? null)
-      : null
+    const userAgentId =
+      audit.userAgent !== undefined && audit.userAgent !== null
+        ? ((await options.resolveUserAgentId?.(audit.userAgent, query)) ?? null)
+        : null
     await query(lockQuery(table, safeUserId, values))
     const { rows } = await query<EventRow>(
       insertQuery(table, entityIdColumn, safeUserId, values, audit, userAgentId),
     )
     return rows.map(toEvent)
   })
+}
+
+function assertEntityIdColumn(value: string): string {
+  const column = assertSqlIdentifier(value, 'entityIdColumn')
+  if (FIXED_VOTE_COLUMNS.has(column)) {
+    throw new Error(`Invalid entityIdColumn: ${value} collides with a fixed vote column`)
+  }
+  return column
 }
 
 async function assertReadCommitted(query: QueryExecutor): Promise<void> {

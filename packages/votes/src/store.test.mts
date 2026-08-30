@@ -82,6 +82,14 @@ describe('vote store', () => {
     ).resolves.toMatchObject({
       rows: [{ value: 'test-agent' }],
     })
+    await expect(
+      votes.upsert(USER_A, [{ entityId: ENTITY_A, score: 1 }], { userAgent: '' }),
+    ).resolves.toHaveLength(1)
+    await expect(
+      psql.read(
+        sql`/* auditEmptyVoteTestAgent */ SELECT value FROM vote_store_test_agents WHERE value = ''`,
+      ),
+    ).resolves.toMatchObject({ rows: [{ value: '' }] })
   })
 
   it('uses a supplied transaction for audit resolution and projects current non-clear ballots', async () => {
@@ -172,6 +180,20 @@ describe('vote store', () => {
     expect(() =>
       createVoteStore(psql, { table: `a${'b'.repeat(63)}`, entityIdColumn: 'entity_id' }),
     ).toThrow('Invalid table')
+    for (const entityIdColumn of [
+      'id',
+      'user_id',
+      'score',
+      'ip_address',
+      'device_id',
+      'session_id',
+      'user_agent_id',
+      'created_at',
+    ]) {
+      expect(() => createVoteStore(psql, { table: 'votes', entityIdColumn })).toThrow(
+        'fixed vote column',
+      )
+    }
   })
 
   it('supports the default scope and an absent user-agent resolver', async () => {
