@@ -1,13 +1,11 @@
 export type TypedEntityErrorCode =
   | 'ALIAS_CLAIMED'
-  | 'ENTITY_NOT_FOUND'
   | 'ENTITY_MERGE_INVALID'
   | 'HIERARCHY_CYCLE'
   | 'HOSTNAME_CLAIMED'
+  | 'HOSTNAME_CLAIM_INVALID'
   | 'INVALID_ALIAS'
   | 'INVALID_HOSTNAME'
-  | 'POLICY_DENIED'
-  | 'UNKNOWN_ENTITY_TYPE'
 
 export class TypedEntityError extends Error {
   constructor(
@@ -19,24 +17,12 @@ export class TypedEntityError extends Error {
   }
 }
 
-export class EntityNotFoundError extends TypedEntityError {
-  constructor(readonly entityId: string) {
-    super('ENTITY_NOT_FOUND', `Entity not found: ${entityId}`)
-  }
-}
-
 export class InvalidEntityMergeError extends TypedEntityError {
   constructor(
     readonly sourceId: string,
     readonly targetId: string,
   ) {
     super('ENTITY_MERGE_INVALID', `Entity cannot be merged: ${sourceId} -> ${targetId}`)
-  }
-}
-
-export class UnknownEntityTypeError extends TypedEntityError {
-  constructor(readonly type: string) {
-    super('UNKNOWN_ENTITY_TYPE', `Unknown entity type: ${type}`)
   }
 }
 
@@ -70,20 +56,20 @@ export class InvalidHostnameError extends TypedEntityError {
   }
 }
 
+export class InvalidHostnameClaimError extends TypedEntityError {
+  constructor(
+    readonly hostname: string,
+    message: string,
+  ) {
+    super('HOSTNAME_CLAIM_INVALID', `Invalid hostname claim for ${hostname}: ${message}`)
+  }
+}
+
 export class HierarchyCycleError extends TypedEntityError {
   constructor(
     readonly entityId: string,
     readonly parentId: string,
   ) {
     super('HIERARCHY_CYCLE', `Parent would create a hierarchy cycle: ${entityId} -> ${parentId}`)
-  }
-}
-
-export class PolicyDeniedError extends TypedEntityError {
-  constructor(
-    readonly operation: string,
-    readonly type: string,
-  ) {
-    super('POLICY_DENIED', `Policy denied ${operation} for entity type: ${type}`)
   }
 }

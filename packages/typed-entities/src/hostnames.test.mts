@@ -1,186 +1,138 @@
 import { describe, expect, it } from 'vitest'
 
-import { HostnameClaimedError, InvalidHostnameError, PolicyDeniedError } from './index.mts'
-import { fixture } from './test-helpers.mts'
+import {
+  HostnameClaimedError,
+  InvalidHostnameClaimError,
+  InvalidHostnameError,
+  normalizeHostname,
+  planHostnameClaim,
+} from './index.mts'
 
-describe('exclusive hostname claims', () => {
-  it('sets one primary, many additional claims, and resolves their owner', async () => {
-    const subject = fixture()
-    await subject.engine.claimPrimaryHostname(subject.context, 'one', 'HTTPS://ONE.TEST/path')
-    await subject.engine.claimAdditionalHostname(subject.context, 'one', 'alt.one.test')
-    await subject.engine.claimAdditionalHostname(subject.context, 'one', 'alt.one.test')
-    await subject.engine.claimPrimaryHostname(subject.context, 'one', 'new.one.test')
-    expect(subject.locks).toContain('hostnames:new.one.test,one.test')
-    await expect(subject.engine.listHostnameClaims(subject.context, 'one')).resolves.toEqual([
-      { entityId: 'one', hostname: 'alt.one.test', primary: false },
-      { entityId: 'one', hostname: 'new.one.test', primary: true },
-    ])
-    await expect(
-      subject.engine.resolveHostnameClaim(subject.context, 'NEW.ONE.TEST'),
-    ).resolves.toEqual({
-      entity: subject.entities.get('one'),
-      hostname: 'new.one.test',
-      primary: true,
-    })
-    await expect(
-      subject.engine.resolveHostnameClaim(subject.context, 'absent.test'),
-    ).resolves.toBeNull()
-  })
-
-  it('prevents contests and allows policy-controlled stale-owner reclamation', async () => {
-    const denied = fixture()
-    await denied.engine.claimAdditionalHostname(denied.context, 'one', 'shared.test')
-    await expect(
-      denied.engine.claimAdditionalHostname(denied.context, 'two', 'shared.test'),
-    ).rejects.toEqual(new HostnameClaimedError('shared.test', 'one'))
-
-    const protectedOwner = fixture({
-      catalog: {
-        group: {
-          canRemoveHostname: ({ entity }) => entity.id !== 'one',
-          mayReclaimHostname: () => true,
-        },
-        place: {},
-      },
-    })
-    await protectedOwner.engine.claimAdditionalHostname(
-      protectedOwner.context,
-      'one',
-      'protected.test',
+describe('hostname rules', () => {
+  it('normalizes ASCII hostnames and rejects invalid values', () => {
+    expect(normalizeHostname('WWW.Example.TEST')).toBe('www.example.test')
+    expect(() => normalizeHostname('not a hostname')).toThrow(
+      new InvalidHostnameError('not a hostname'),
     )
-    await expect(
-      protectedOwner.engine.claimAdditionalHostname(
-        protectedOwner.context,
-        'two',
-        'protected.test',
-      ),
-    ).rejects.toEqual(new PolicyDeniedError('remove hostname claim', 'group'))
-
-    const allowed = fixture({
-      catalog: {
-        group: { mayReclaimHostname: ({ owner }) => owner === null || owner.id === 'one' },
-        place: {},
-      },
-    })
-    await allowed.engine.claimAdditionalHostname(allowed.context, 'one', 'shared.test')
-    await allowed.engine.claimAdditionalHostname(allowed.context, 'two', 'shared.test')
-    expect(allowed.state.claims.get('shared.test')?.entityId).toBe('two')
-    allowed.entities.delete('two')
-    await allowed.engine.claimAdditionalHostname(allowed.context, 'three', 'shared.test')
-    expect(allowed.state.claims.get('shared.test')?.entityId).toBe('three')
-  })
-
-  it('removes and clears claims idempotently', async () => {
-    const subject = fixture()
-    await subject.engine.claimPrimaryHostname(subject.context, 'one', 'one.test')
-    await subject.engine.claimAdditionalHostname(subject.context, 'one', 'a.one.test')
-    await subject.engine.claimAdditionalHostname(subject.context, 'one', 'b.one.test')
-    await subject.engine.claimAdditionalHostname(subject.context, 'one', 'c.one.test')
-    await subject.engine.claimAdditionalHostname(subject.context, 'one', 'd.one.test')
-    await subject.engine.claimPrimaryHostname(subject.context, 'one', 'b.one.test')
-    await subject.engine.claimAdditionalHostname(subject.context, 'one', 'b.one.test')
-    await subject.engine.removeAdditionalHostname(subject.context, 'one', 'a.one.test')
-    await subject.engine.removeAdditionalHostname(subject.context, 'one', 'absent.test')
-    await subject.engine.removePrimaryHostname(subject.context, 'two', 'one.test')
-    await subject.engine.clearAdditionalHostnames(subject.context, 'one')
-    await subject.engine.clearPrimaryHostname(subject.context, 'one')
-    await expect(subject.engine.listHostnameClaims(subject.context, 'one')).resolves.toEqual([])
-  })
-
-  it('normalizes before locking and applies application policy', async () => {
-    const subject = fixture({
-      catalog: { group: { canClaimHostname: () => false }, place: {} },
-    })
-    await expect(
-      subject.engine.claimPrimaryHostname(subject.context, 'one', 'café.test'),
-    ).rejects.toEqual(new InvalidHostnameError('café.test'))
-    await expect(
-      subject.engine.claimPrimaryHostname(subject.context, 'one', 'one.test'),
-    ).rejects.toEqual(new PolicyDeniedError('claim hostname', 'group'))
-  })
-
-  it('applies application policy to claim removal and clearing', async () => {
-    const subject = fixture({
-      catalog: { group: { canRemoveHostname: () => false }, place: {} },
-    })
-    await subject.engine.claimPrimaryHostname(subject.context, 'one', 'one.test')
-    await subject.engine.claimAdditionalHostname(subject.context, 'one', 'alt.one.test')
-    await expect(
-      subject.engine.removePrimaryHostname(subject.context, 'one', 'one.test'),
-    ).rejects.toEqual(new PolicyDeniedError('remove hostname claim', 'group'))
-    await expect(subject.engine.clearAdditionalHostnames(subject.context, 'one')).rejects.toEqual(
-      new PolicyDeniedError('remove hostname claim', 'group'),
+    expect(() => normalizeHostname('example.test', () => '')).toThrow(
+      new InvalidHostnameError('example.test'),
     )
-    await expect(
-      subject.engine.claimPrimaryHostname(subject.context, 'one', 'new.one.test'),
-    ).rejects.toEqual(new PolicyDeniedError('remove hostname claim', 'group'))
-    await expect(
-      subject.engine.claimPrimaryHostname(subject.context, 'one', 'alt.one.test'),
-    ).rejects.toEqual(new PolicyDeniedError('remove hostname claim', 'group'))
-    expect(subject.state.claims.get('one.test')?.entityId).toBe('one')
   })
 
-  it('revalidates claim ownership after acquiring clear locks', async () => {
-    const subject = fixture()
-    await subject.engine.claimPrimaryHostname(subject.context, 'one', 'one.test')
-    const auditCount = subject.audits.length
-    subject.onNextHostnameLock((_hostnames, claims) => {
-      claims.set('one.test', { entityId: 'two', hostname: 'one.test', primary: true })
+  it('plans an unclaimed additional hostname', () => {
+    expect(
+      planHostnameClaim({
+        requestedClaim: null,
+        currentPrimary: null,
+        entityId: 'one',
+        kind: 'additional',
+        value: 'one.test',
+      }),
+    ).toEqual({
+      claim: { entityId: 'one', hostname: 'one.test', kind: 'additional' },
+      hostname: 'one.test',
+      releases: [],
+      write: true,
     })
-    await subject.engine.clearPrimaryHostname(subject.context, 'one')
-    expect(subject.state.claims.get('one.test')?.entityId).toBe('two')
-    expect(subject.audits).toHaveLength(auditCount)
-  })
-})
-
-describe('non-exclusive hostname associations', () => {
-  it('associates the same hostname with several entities independently of claims', async () => {
-    const subject = fixture()
-    await subject.engine.claimPrimaryHostname(subject.context, 'one', 'shared.test')
-    await subject.engine.associateAdditionalHostname(subject.context, 'one', 'shared.test')
-    await subject.engine.associatePrimaryHostname(subject.context, 'one', 'shared.test')
-    await subject.engine.associateAdditionalHostname(subject.context, 'one', 'shared.test')
-    await subject.engine.associatePrimaryHostname(subject.context, 'two', 'shared.test')
-    await subject.engine.associatePrimaryHostname(subject.context, 'two', 'other.test')
-    await subject.engine.associateAdditionalHostname(subject.context, 'two', 'other.test')
-    await expect(
-      subject.engine.resolveHostnameAssociations(subject.context, 'SHARED.TEST'),
-    ).resolves.toEqual([
-      { entity: subject.entities.get('one'), hostname: 'shared.test', primary: true },
-    ])
-    await expect(subject.engine.listHostnameAssociations(subject.context, 'two')).resolves.toEqual([
-      { entityId: 'two', hostname: 'other.test', primary: true },
-    ])
   })
 
-  it('removes all matching association variants and applies policy', async () => {
-    const subject = fixture()
-    await subject.engine.associateAdditionalHostname(subject.context, 'one', 'one.test')
-    await subject.engine.removeHostnameAssociation(subject.context, 'one', 'ONE.TEST')
-    await subject.engine.removeHostnameAssociation(subject.context, 'one', 'one.test')
-    await expect(subject.engine.listHostnameAssociations(subject.context, 'one')).resolves.toEqual(
-      [],
-    )
+  it('preserves a same-owner claim with the same kind', () => {
+    const existing = { entityId: 'one', hostname: 'one.test', kind: 'primary' } as const
+    expect(
+      planHostnameClaim({
+        requestedClaim: existing,
+        currentPrimary: existing,
+        entityId: 'one',
+        kind: 'primary',
+        value: 'one.test',
+      }),
+    ).toEqual({ claim: existing, hostname: 'one.test', releases: [], write: false })
+  })
 
-    const denied = fixture({
-      catalog: { group: { canClaimHostname: () => false }, place: {} },
+  it('releases the old primary when setting a new primary', () => {
+    const primary = { entityId: 'one', hostname: 'old.test', kind: 'primary' } as const
+    expect(
+      planHostnameClaim({
+        requestedClaim: null,
+        currentPrimary: primary,
+        entityId: 'one',
+        kind: 'primary',
+        value: 'new.test',
+      }),
+    ).toEqual({
+      claim: { entityId: 'one', hostname: 'new.test', kind: 'primary' },
+      hostname: 'new.test',
+      releases: [primary],
+      write: true,
     })
-    await expect(
-      denied.engine.associateAdditionalHostname(denied.context, 'one', 'one.test'),
-    ).rejects.toEqual(new PolicyDeniedError('associate hostname', 'group'))
+  })
 
-    const removeDenied = fixture({
-      catalog: { group: { canRemoveHostname: () => false }, place: {} },
+  it('promotes an owned additional hostname by replacing its old claim', () => {
+    const additional = { entityId: 'one', hostname: 'one.test', kind: 'additional' } as const
+    expect(
+      planHostnameClaim({
+        requestedClaim: additional,
+        currentPrimary: null,
+        entityId: 'one',
+        kind: 'primary',
+        value: 'one.test',
+      }),
+    ).toEqual({
+      claim: { entityId: 'one', hostname: 'one.test', kind: 'primary' },
+      hostname: 'one.test',
+      releases: [additional],
+      write: true,
     })
-    await removeDenied.engine.associatePrimaryHostname(removeDenied.context, 'one', 'one.test')
-    await expect(
-      removeDenied.engine.removeHostnameAssociation(removeDenied.context, 'one', 'one.test'),
-    ).rejects.toEqual(new PolicyDeniedError('remove hostname association', 'group'))
-    await expect(
-      removeDenied.engine.associatePrimaryHostname(removeDenied.context, 'one', 'other.test'),
-    ).rejects.toEqual(new PolicyDeniedError('remove hostname association', 'group'))
-    await expect(
-      removeDenied.engine.listHostnameAssociations(removeDenied.context, 'one'),
-    ).resolves.toEqual([{ entityId: 'one', hostname: 'one.test', primary: true }])
+  })
+
+  it('rejects a foreign claim unless the application permits reclamation', () => {
+    const foreign = { entityId: 'two', hostname: 'shared.test', kind: 'additional' } as const
+    expect(() =>
+      planHostnameClaim({
+        requestedClaim: foreign,
+        currentPrimary: null,
+        entityId: 'one',
+        kind: 'additional',
+        value: 'shared.test',
+      }),
+    ).toThrow(new HostnameClaimedError('shared.test', 'two'))
+    expect(
+      planHostnameClaim({
+        requestedClaim: foreign,
+        currentPrimary: null,
+        entityId: 'one',
+        kind: 'additional',
+        mayReclaim: true,
+        value: 'shared.test',
+      }),
+    ).toMatchObject({ releases: [foreign], write: true })
+  })
+
+  it('sorts multiple releases for deterministic application writes', () => {
+    const foreign = { entityId: 'two', hostname: 'z.test', kind: 'additional' } as const
+    const primary = { entityId: 'one', hostname: 'a.test', kind: 'primary' } as const
+    expect(
+      planHostnameClaim({
+        currentPrimary: primary,
+        entityId: 'one',
+        kind: 'primary',
+        mayReclaim: true,
+        requestedClaim: foreign,
+        value: 'z.test',
+      }).releases,
+    ).toEqual([primary, foreign])
+  })
+
+  it('rejects changing an owned primary into an additional hostname', () => {
+    const primary = { entityId: 'one', hostname: 'one.test', kind: 'primary' } as const
+    expect(() =>
+      planHostnameClaim({
+        requestedClaim: primary,
+        currentPrimary: primary,
+        entityId: 'one',
+        kind: 'additional',
+        value: 'one.test',
+      }),
+    ).toThrow(new InvalidHostnameClaimError('one.test', 'a primary claim cannot become additional'))
   })
 })
