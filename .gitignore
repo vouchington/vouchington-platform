@@ -7,6 +7,12 @@ coverage/
 .env
 .env.*
 .DS_Store
-.codex/
+.codex/*
+!.codex/
+!.codex/README.md
+!.codex/config.toml
 .claude/*
+!.claude/
+!.claude/README.md
+!.claude/settings.json
 !.claude/skills
