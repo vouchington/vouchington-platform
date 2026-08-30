@@ -1,111 +1,62 @@
-import { AliasClaimedError, InvalidEntityMergeError } from './errors.mts'
-import type { Runtime } from './runtime.mts'
-import type { TypedEntity, TypedEntityTransaction } from './types.mts'
+import { normalizeKey } from '@vouchington/utils/strings'
 
-export function createAliasOperations<
-  TType extends string,
-  TEntity extends TypedEntity<TType>,
-  TContext,
->(runtime: Runtime<TType, TEntity, TContext>) {
-  return {
-    claimAlias(context: TContext, entityId: string, value: string) {
-      return runtime.run(context, async (transaction, change) => {
-        const alias = runtime.alias(value)
-        await transaction.lockEntities([entityId])
-        await transaction.lockAliases([alias])
-        const entity = await runtime.entity(transaction, entityId)
-        const policy = runtime.policy(entity)
-        await runtime.permit(
-          context,
-          entity,
-          'claim alias',
-          policy.canClaimAlias?.({ alias, context, entity }),
-        )
-        const owner = await transaction.getAliasOwner(alias)
-        if (owner !== null && owner !== entityId) throw new AliasClaimedError(alias, owner)
-        if (owner === null) {
-          await transaction.putAlias(entityId, alias)
-          await change({ alias, entityId, kind: 'alias.claimed' })
-        }
-        return alias
-      })
-    },
-    merge(context: TContext, sourceId: string, targetId: string) {
-      return runtime.run(context, async (transaction, change) => {
-        if (sourceId === targetId) throw new InvalidEntityMergeError(sourceId, targetId)
-        await transaction.lockEntities([sourceId, targetId].toSorted())
-        const source = await runtime.entity(transaction, sourceId)
-        const target = await runtime.entity(transaction, targetId)
-        await assertMergePolicy(runtime, context, source, target)
-        const aliases = await normalizedAliases(runtime, transaction, source)
-        await transaction.lockAliases(aliases)
-        for (const alias of aliases) {
-          const owner = await transaction.getAliasOwner(alias)
-          if (owner !== null && owner !== sourceId && owner !== targetId) {
-            throw new AliasClaimedError(alias, owner)
-          }
-        }
-        for (const alias of aliases) await transaction.putAlias(targetId, alias)
-        const lifecycle = await runtime
-          .policy(source)
-          .projectLifecycle?.({ context, entity: source })
-        const input = {
-          aliases,
-          lifecycle,
-          sourceId,
-          sourceSlug: source.slug,
-          targetId,
-        }
-        await transaction.mergeEntities(input)
-        await change({ kind: 'entity.merged', ...input })
-      })
-    },
-  }
+import { AliasClaimedError, InvalidAliasError, InvalidEntityMergeError } from './errors.mts'
+import type { AliasOwner, EntityMergePlan, Normalizer } from './types.mts'
+
+export function normalizeAlias(value: string, normalize: Normalizer = defaultNormalizer): string {
+  const alias = normalize(value)
+  if (!alias) throw new InvalidAliasError(value)
+  return alias
 }
 
-async function normalizedAliases<
-  TType extends string,
-  TEntity extends TypedEntity<TType>,
-  TContext,
->(
-  runtime: Runtime<TType, TEntity, TContext>,
-  transaction: TypedEntityTransaction<TType, TEntity>,
-  source: TEntity,
-): Promise<readonly string[]> {
-  return [
-    ...new Set([source.slug, ...(await transaction.listAliases(source.id))].map(runtime.alias)),
+export function planAliasClaim(input: {
+  readonly entityId: string
+  readonly value: string
+  readonly ownerId: string | null
+  readonly normalize?: Normalizer
+}): { readonly alias: string; readonly write: boolean } {
+  const alias = normalizeAlias(input.value, input.normalize)
+  if (input.ownerId !== null && input.ownerId !== input.entityId) {
+    throw new AliasClaimedError(alias, input.ownerId)
+  }
+  return { alias, write: input.ownerId === null }
+}
+
+export function planAliasMerge(input: {
+  readonly sourceId: string
+  readonly destinationId: string
+  readonly sourceSlug: string
+  readonly sourceAliases: readonly string[]
+  /** Ownership rows for candidate source aliases only. */
+  readonly owners: readonly AliasOwner[]
+  readonly normalize?: Normalizer
+}): EntityMergePlan {
+  if (input.sourceId === input.destinationId) {
+    throw new InvalidEntityMergeError(input.sourceId, input.destinationId)
+  }
+  const aliases = [
+    ...new Set(
+      [input.sourceSlug, ...input.sourceAliases].map((value) =>
+        normalizeAlias(value, input.normalize),
+      ),
+    ),
   ].toSorted()
+  const candidates = new Set(aliases)
+  for (const owner of input.owners) {
+    const alias = normalizeAlias(owner.alias, input.normalize)
+    const ownerId = owner.entityId
+    if (
+      candidates.has(alias) &&
+      ownerId !== null &&
+      ownerId !== input.sourceId &&
+      ownerId !== input.destinationId
+    ) {
+      throw new AliasClaimedError(alias, ownerId)
+    }
+  }
+  return { aliases }
 }
 
-async function assertMergePolicy<
-  TType extends string,
-  TEntity extends TypedEntity<TType>,
-  TContext,
->(runtime: Runtime<TType, TEntity, TContext>, context: TContext, source: TEntity, target: TEntity) {
-  const sourcePolicy = runtime.policy(source)
-  const targetPolicy = runtime.policy(target)
-  if (
-    source.type !== target.type &&
-    (sourcePolicy.isCompatible === undefined || targetPolicy.isCompatible === undefined)
-  ) {
-    throw new InvalidEntityMergeError(source.id, target.id)
-  }
-  await runtime.permit(
-    context,
-    source,
-    'merge',
-    sourcePolicy.canMerge?.({ context, entity: source, target }),
-  )
-  await runtime.permit(
-    context,
-    source,
-    'merge incompatible entity',
-    sourcePolicy.isCompatible?.({ context, entity: source, other: target }),
-  )
-  await runtime.permit(
-    context,
-    target,
-    'merge incompatible entity',
-    targetPolicy.isCompatible?.({ context, entity: target, other: source }),
-  )
+function defaultNormalizer(value: string): string | null {
+  return normalizeKey(value) || null
 }

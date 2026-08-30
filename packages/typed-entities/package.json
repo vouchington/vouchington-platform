@@ -1,7 +1,7 @@
 {
   "name": "@vouchington/typed-entities",
   "version": "0.0.0",
-  "description": "Transaction-scoped, policy-owned semantics for typed entity aliases, hierarchies, and hostnames.",
+  "description": "Pure rules for generic entity aliases, hierarchy cycles, and hostname claims.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/typed-entities#readme",
   "bugs": {
     "url": "https://github.com/vouchington/vouchington-platform/issues"

@@ -1,31 +1,22 @@
-export { createTypedEntityEngine } from './engine.mts'
+export { normalizeAlias, planAliasClaim, planAliasMerge } from './aliases.mts'
 export {
   AliasClaimedError,
-  EntityNotFoundError,
   HierarchyCycleError,
   HostnameClaimedError,
   InvalidAliasError,
   InvalidEntityMergeError,
+  InvalidHostnameClaimError,
   InvalidHostnameError,
-  PolicyDeniedError,
   TypedEntityError,
-  UnknownEntityTypeError,
 } from './errors.mts'
+export { assertAcyclicParent } from './hierarchy.mts'
+export { normalizeHostname, planHostnameClaim } from './hostnames.mts'
 export type { TypedEntityErrorCode } from './errors.mts'
 export type {
-  EntityPolicyInput,
-  HostnameAssociation,
+  AliasOwner,
+  EntityMergePlan,
   HostnameClaim,
-  HostnameResolution,
-  HostnameValue,
-  MergeInput,
-  ParentInput,
-  TypedEntity,
-  TypedEntityCatalog,
-  TypedEntityChange,
-  TypedEntityEngineOptions,
-  TypedEntityHooks,
-  TypedEntityPolicy,
-  TypedEntityStore,
-  TypedEntityTransaction,
+  HostnameClaimPlan,
+  HostnameKind,
+  Normalizer,
 } from './types.mts'
