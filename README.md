@@ -10,6 +10,7 @@ SKU names.
 
 | Package                                                            | Description                                                        |
 | ------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| [`@vouchington/auth`](packages/auth)                               | Injected OTP, passkey, MFA/TOTP, and OAuth authentication engines  |
 | [`@vouchington/postgres`](packages/postgres)                       | PostgreSQL runtime, migrations, and structural schema snapshots    |
 | [`@vouchington/utils`](packages/utils)                             | Dependency-free explicit-subpath utilities, including i18n helpers |
 | [`@vouchington/session-jwt`](packages/session-jwt)                 | Portable RS512 JWT primitives and UUIDv7 identifiers               |

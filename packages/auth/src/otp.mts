@@ -1,0 +1,84 @@
+import { AuthError } from './errors.mts'
+import type { AttemptLimiter } from './types.mts'
+
+export type EmailOtpAttempt<Context> = {
+  email: string
+  context: Context
+}
+
+export interface EmailOtpStore {
+  put(input: { email: string; digest: string; expiresAt: Date }): Promise<void>
+  consume(input: { email: string; digest: string; now: Date }): Promise<boolean>
+}
+
+export interface EmailOtpOptions<DeliveryContext = undefined> {
+  normalizeEmail(email: string): Promise<string> | string
+  generateToken(): Promise<string> | string
+  normalizeToken(token: string): string
+  digest(token: string): Promise<string> | string
+  store: EmailOtpStore
+  deliver(input: { email: string; token: string; context: DeliveryContext }): Promise<void>
+  ttlSeconds: number
+  now?: () => Date
+  requestLimiter: AttemptLimiter<EmailOtpAttempt<DeliveryContext>>
+  verificationLimiter: AttemptLimiter<EmailOtpAttempt<DeliveryContext>>
+}
+
+export function createEmailOtp<DeliveryContext = undefined>(
+  options: EmailOtpOptions<DeliveryContext>,
+) {
+  assertPositiveInteger(options.ttlSeconds, 'ttlSeconds')
+  if (typeof options.requestLimiter?.reserve !== 'function')
+    throw new TypeError('requestLimiter must be explicitly configured')
+  if (typeof options.verificationLimiter?.reserve !== 'function')
+    throw new TypeError('verificationLimiter must be explicitly configured')
+  const now = options.now ?? (() => new Date())
+
+  return {
+    async request(email: string, context: DeliveryContext): Promise<{ email: string }> {
+      const normalized = await options.normalizeEmail(email)
+      await reserveAttempt(options.requestLimiter, { email: normalized, context })
+      const token = await options.generateToken()
+      if (!token) throw new TypeError('generateToken must return a non-empty token')
+      const issuedAt = now()
+      await options.store.put({
+        email: normalized,
+        digest: await options.digest(options.normalizeToken(token)),
+        expiresAt: new Date(issuedAt.getTime() + options.ttlSeconds * 1_000),
+      })
+      await options.deliver({ email: normalized, token, context })
+      return { email: normalized }
+    },
+
+    async verify(
+      email: string,
+      token: string,
+      context: DeliveryContext,
+    ): Promise<{ email: string }> {
+      const normalized = await options.normalizeEmail(email)
+      await reserveAttempt(options.verificationLimiter, { email: normalized, context })
+      const consumed = await options.store.consume({
+        email: normalized,
+        digest: await options.digest(options.normalizeToken(token)),
+        now: now(),
+      })
+      if (!consumed)
+        throw new AuthError(
+          'invalid_credentials',
+          401,
+          'Invalid email address or one-time password',
+        )
+      return { email: normalized }
+    },
+  }
+}
+
+async function reserveAttempt<Input>(limiter: AttemptLimiter<Input>, input: Input) {
+  if (!(await limiter.reserve(input)))
+    throw new AuthError('rate_limited', 429, 'Too many authentication attempts')
+}
+
+function assertPositiveInteger(value: number, name: string): void {
+  if (!Number.isSafeInteger(value) || value <= 0)
+    throw new TypeError(`${name} must be a positive safe integer`)
+}

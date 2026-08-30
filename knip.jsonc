@@ -5,6 +5,12 @@
   // dependency-cruiser contract fixtures are invoked by test/dependency-cruiser.test.mts.
   "ignore": ["test/fixtures/dependency-cruiser/**"],
   "workspaces": {
+    "packages/auth": {
+      "entry": ["src/index.mts!", "src/api-server.mts!"],
+      "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
+      // The explicit adapter subpath intentionally imports this optional peer.
+      "ignoreDependencies": ["@jongleberry/api-server"],
+    },
     "packages/postgres": {
       "entry": ["src/index.mts!", "src/pg-schema-snapshot/index.mts!"],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!", "!src/**/test-helpers.mts!"],

@@ -9,6 +9,7 @@ on:
         required: true
         default: '@vouchington/postgres'
         options:
+          - '@vouchington/auth'
           - '@vouchington/postgres'
           - '@vouchington/utils'
           - '@vouchington/session-jwt'
