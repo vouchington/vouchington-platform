@@ -24,4 +24,5 @@ export type {
   ReviewLifecycleRepository,
   ReviewsPolicy,
   ReviewsRepository,
+  UpdateReviewRatingInput,
 } from './types.mts'

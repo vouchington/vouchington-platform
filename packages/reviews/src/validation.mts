@@ -2,6 +2,7 @@ import { ReviewsError } from './errors.mts'
 import type { EngineOptions } from './internal-types.mts'
 import type {
   CreateReviewRatingInput,
+  ReviewAction,
   ReviewRating,
   ReviewRatingScale,
   ReviewTarget,
@@ -32,7 +33,7 @@ export async function assertEligible<
   >,
   actor: TActor,
   reviewId: TReviewId,
-  action: 'add-rating' | 'delete-rating' | 'update-rating',
+  action: ReviewAction,
   target: ReviewTarget<TTargetType>,
   targetTypes: ReadonlySet<string>,
   transaction: TTransaction,

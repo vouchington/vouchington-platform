@@ -30,10 +30,12 @@ describe('createReviewsEngine', () => {
 
     expect(fixture.order).toEqual([
       'lock',
+      'final-state',
       'add',
       'final-state',
       'commit:add-rating',
       'lock',
+      'final-state',
       'add',
       'final-state',
       'commit:add-rating',
@@ -182,9 +184,12 @@ describe('createReviewsEngine', () => {
       }),
     ).rejects.toMatchObject({ code: 'rating-not-found' })
     await fixture.engine.addRating('alice', 'review-1', rating(targetValue, 3, 0))
-    await fixture.engine.addRating('alice', 'review-1', rating(target('provider', 'two'), 4, 1))
     await expect(
       fixture.engine.deleteRating('alice', 'review-1', target('model', 'missing')),
+    ).rejects.toMatchObject({ code: 'rating-not-found' })
+    await fixture.engine.addRating('alice', 'review-1', rating(target('provider', 'two'), 4, 1))
+    await expect(
+      fixture.engine.deleteRating('alice', 'review-1', targetValue),
     ).rejects.toMatchObject({
       code: 'rating-not-found',
     })
@@ -195,6 +200,7 @@ describe('createReviewsEngine', () => {
     await expect(fixture.engine.listRatings('alice', '   ')).rejects.toMatchObject({
       code: 'invalid-review-id',
     })
+    expect(fixture.order).toEqual([])
     await expect(
       fixture.engine.addRating('alice', 'review-1', {
         target: { type: 'model', id: '' },
@@ -215,6 +221,12 @@ describe('createReviewsEngine', () => {
     await fixture.engine.addRating('alice', 'review-1', rating(target('model', 'one'), 3, 0))
     await expect(
       fixture.engine.addRating('alice', 'review-1', rating(target('model', 'one'), 4, 1)),
+    ).rejects.toMatchObject({ code: 'duplicate-target' })
+    await expect(
+      fixture.engine.createReview('alice', {
+        review: { title: 'Duplicate' },
+        ratings: [rating(target('model', 'new'), 3, 0), rating(target('model', 'new'), 4, 1)],
+      }),
     ).rejects.toMatchObject({ code: 'duplicate-target' })
     await expect(
       fixture.engine.createReview('alice', { review: { title: 'No ratings' }, ratings: [] }),

@@ -2,6 +2,7 @@ import { ReviewsError } from './errors.mts'
 import type { ReviewPostCommitEvent, ReviewsEngine } from './engine-types.mts'
 import type { EngineOptions } from './internal-types.mts'
 import { validatePolicy } from './policy.mts'
+import { assertTargetAbsent, assertTargetPresent } from './target-state.mts'
 import { assertChanges, assertEligible, assertRating, assertRatingSet } from './validation.mts'
 import type { ReviewAction, ReviewRating, ReviewTarget } from './types.mts'
 
@@ -63,11 +64,14 @@ export function createReviewsEngine<
     target: ReviewTarget<TTargetType>,
     work: (transaction: TTransaction) => Promise<ReviewRating<TTargetType>>,
   ): Promise<ReviewRating<TTargetType>> => {
+    assertReviewId(reviewId)
     const event = await options.repository.transaction(async (transaction) => {
       if (!(await options.repository.lockReview(reviewId, transaction)))
         throw new ReviewsError('review-not-found', 'The review was not found.')
       await authorize(actor, action, transaction, reviewId, target)
       await assertEligible(options, actor, reviewId, action, target, targetTypes, transaction)
+      if (action === 'add-rating')
+        assertTargetAbsent(await options.repository.listRatings(reviewId, transaction), target)
       const rating = await work(transaction)
       await assertRatingSet(
         await options.repository.listRatings(reviewId, transaction),
@@ -117,17 +121,25 @@ export function createReviewsEngine<
       return event.review
     },
     async updateReview(actor, reviewId, input) {
+      assertReviewId(reviewId)
       const review = await options.repository.transaction(async (transaction) => {
         if (!(await options.repository.lockReview(reviewId, transaction)))
           throw new ReviewsError('review-not-found', 'The review was not found.')
         await authorize(actor, 'update-review', transaction, reviewId)
         const result = await options.reviews.updateReview(actor, reviewId, input, transaction)
         if (result === null) throw new ReviewsError('review-not-found', 'The review was not found.')
-        await assertRatingSet(
-          await options.repository.listRatings(reviewId, transaction),
-          options,
-          targetTypes,
-        )
+        const ratings = await options.repository.listRatings(reviewId, transaction)
+        await assertRatingSet(ratings, options, targetTypes)
+        for (const rating of ratings)
+          await assertEligible(
+            options,
+            actor,
+            reviewId,
+            'update-review',
+            rating.target,
+            targetTypes,
+            transaction,
+          )
         return result
       })
       await options.onPostCommit({ action: 'update-review', review, reviewId })
@@ -140,6 +152,7 @@ export function createReviewsEngine<
       })
     },
     async listRatings(actor, reviewId) {
+      assertReviewId(reviewId)
       return await options.repository.transaction(async (transaction) => {
         if (!(await options.repository.lockReview(reviewId, transaction)))
           throw new ReviewsError('review-not-found', 'The review was not found.')
@@ -169,6 +182,7 @@ export function createReviewsEngine<
     async deleteRating(actor, reviewId, target) {
       return await mutation(actor, reviewId, 'delete-rating', target, async (transaction) => {
         const ratings = await options.repository.listRatings(reviewId, transaction)
+        assertTargetPresent(ratings, target)
         if (!(await options.policy.canDelete({ ratings, target })))
           throw new ReviewsError('final-deletion-rejected', 'The review rating cannot be deleted.')
         const rating = await options.repository.deleteRating(reviewId, target, transaction)
