@@ -36,7 +36,7 @@
     "prepack": "pnpm run build"
   },
   "dependencies": {
-    "@jongleberry/vurst-html": "^0.3.0"
+    "@jongleberry/vurst-html": "^0.4.0"
   },
   "engines": {
     "node": ">=24.0.0"
