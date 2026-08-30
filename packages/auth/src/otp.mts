@@ -58,7 +58,7 @@ export function createEmailOtp<DeliveryContext = undefined>(
       await recordAttempt(options.verificationLimiter, { email: normalized, context })
       const consumed = await options.store.consume({
         email: normalized,
-        digest: await options.digest(token.toUpperCase()),
+        digest: await options.digest(token.trim().toUpperCase()),
         now: now(),
       })
       if (!consumed)

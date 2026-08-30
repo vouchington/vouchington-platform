@@ -68,8 +68,13 @@ describe('email OTP', () => {
       token: 'ABCD',
       context: undefined,
     })
-    await expect(otp.verify('PERSON@EXAMPLE.TEST', 'abcd', undefined)).resolves.toEqual({
+    await expect(otp.verify('PERSON@EXAMPLE.TEST', ' abcd ', undefined)).resolves.toEqual({
       email: 'person@example.test',
+    })
+    expect(consume).toHaveBeenCalledWith({
+      email: 'person@example.test',
+      digest: 'digest:ABCD',
+      now,
     })
     consume.mockResolvedValueOnce(false)
     await expect(otp.verify('person@example.test', 'bad', undefined)).rejects.toMatchObject({
