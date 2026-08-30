@@ -107,6 +107,15 @@ describe('queue claim helpers', () => {
     expect(
       getQueueClaimDisposition(
         { ...active, claimedAt: new Date(now.getTime() - 10) },
+        'first',
+        now,
+        10,
+        sameActor,
+      ),
+    ).toBe('renew')
+    expect(
+      getQueueClaimDisposition(
+        { ...active, claimedAt: new Date(now.getTime() - 10) },
         'second',
         now,
         10,

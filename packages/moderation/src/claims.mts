@@ -21,8 +21,9 @@ export function getQueueClaimDisposition<TItem, TActor>(
   if (claim === null) return 'available'
   validateClaimTimestamps(claim)
   if (claim.releasedAt !== null) return 'available'
+  if (sameActor(claim.heldBy, actor)) return 'renew'
   if (isQueueClaimExpired(claim, now, ttlMs)) return 'takeover'
-  return sameActor(claim.heldBy, actor) ? 'renew' : 'held'
+  return 'held'
 }
 
 export function createQueueClaimAdvisor<TItem, TActor>(options: {
