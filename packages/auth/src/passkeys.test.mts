@@ -35,7 +35,7 @@ describe('passkeys', () => {
     const { options, put } = configured()
     const { namespace: _namespace, ...defaultOptions } = options
     const passkeys = createPasskeys(defaultOptions)
-    await passkeys.registration.createOptions({ id: 'user:1', name: 'name' }, 'device:1')
+    await passkeys.registration.createOptions(testUser({ id: 'user:1' }), 'device:1')
     expect(put).toHaveBeenLastCalledWith(
       'auth:passkey-registration:user%3A1:device%3A1',
       'registration-challenge',
@@ -46,16 +46,14 @@ describe('passkeys', () => {
   it('creates and verifies registration ceremonies through injected storage', async () => {
     const { options, repository, put } = configured()
     const passkeys = createPasskeys({ ...options, userIdsEqual: (left, right) => left === right })
-    await expect(
-      passkeys.registration.createOptions(
-        { id: 'user-1', name: 'person@example.test' },
-        'device-1',
-      ),
-    ).resolves.toEqual({ challenge: 'registration-challenge' })
+    await expect(passkeys.registration.createOptions(testUser(), 'device-1')).resolves.toEqual({
+      challenge: 'registration-challenge',
+    })
     expect(webauthn.generateRegistrationOptions).toHaveBeenCalledWith(
       expect.objectContaining({
         rpID: 'example.test',
         rpName: 'Example',
+        userID: new Uint8Array([7, 8, 9]),
         userDisplayName: 'person@example.test',
         excludeCredentials: [{ id: 'credential-1' }],
       }),
@@ -71,20 +69,23 @@ describe('passkeys', () => {
       code: 'invalid_credentials',
     })
     await passkeys.registration.createOptions(
-      { id: 'user-1', name: 'name', displayName: 'Display' },
+      testUser({ name: 'name', displayName: 'Display' }),
       'device-1',
     )
     webauthn.verifyRegistrationResponse.mockResolvedValueOnce({ verified: true })
     await expect(verifyRegistration(passkeys)).rejects.toMatchObject({
       code: 'invalid_credentials',
     })
-    await passkeys.registration.createOptions({ id: 'user-1', name: 'name' }, 'device-1')
+    await passkeys.registration.createOptions(testUser({ name: 'name' }), 'device-1')
     const registrationInfo = { credential: { id: 'credential-2' } }
     webauthn.verifyRegistrationResponse.mockResolvedValueOnce({
       verified: true,
       registrationInfo,
     })
     await expect(verifyRegistration(passkeys)).resolves.toBe('created-passkey')
+    expect(webauthn.verifyRegistrationResponse).toHaveBeenLastCalledWith(
+      expect.objectContaining({ requireUserVerification: false }),
+    )
     expect(repository.create).toHaveBeenCalledWith({
       userId: 'user-1',
       registration: registrationInfo,
@@ -96,13 +97,29 @@ describe('passkeys', () => {
   it('normalizes registration verifier failures', async () => {
     const { options } = configured()
     const passkeys = createPasskeys(options)
-    await passkeys.registration.createOptions({ id: 'user-1', name: 'name' }, 'device-1')
+    await passkeys.registration.createOptions(testUser({ name: 'name' }), 'device-1')
     webauthn.verifyRegistrationResponse.mockRejectedValueOnce(new Error('malformed response'))
     await expect(verifyRegistration(passkeys)).rejects.toMatchObject({
       code: 'invalid_credentials',
       status: 400,
       cause: expect.any(Error),
     })
+  })
+
+  it('requires a stable WebAuthn user handle', async () => {
+    const passkeys = createPasskeys(baseOptions())
+    await expect(
+      passkeys.registration.createOptions(
+        testUser({ webAuthnUserId: new Uint8Array() }),
+        'device-1',
+      ),
+    ).rejects.toThrow('webAuthnUserId')
+    await expect(
+      passkeys.registration.createOptions(
+        testUser({ webAuthnUserId: new Uint8Array(65) }),
+        'device-1',
+      ),
+    ).rejects.toThrow('webAuthnUserId')
   })
 
   it('creates user-bound and discoverable authentication options', async () => {
@@ -181,6 +198,7 @@ describe('passkeys', () => {
     expect(webauthn.verifyAuthenticationResponse).toHaveBeenCalledWith(
       expect.objectContaining({
         credential: expect.objectContaining({ id: 'credential-1', counter: 7 }),
+        requireUserVerification: false,
       }),
     )
     repository.findByCredentialId.mockResolvedValueOnce({
@@ -196,6 +214,79 @@ describe('passkeys', () => {
       }),
     ).resolves.toEqual({ userId: 'user-1', passkeyId: 'passkey-1' })
     expect(repository.updateCounter).toHaveBeenCalledTimes(2)
+    expect(repository.updateCounter).toHaveBeenCalledWith('passkey-1', 8)
+  })
+
+  it('keeps caller-owned user-verification policies consistent', async () => {
+    const { options } = configured()
+    const passkeys = createPasskeys({
+      ...options,
+      userVerification: {
+        registration: 'required',
+        authentication: 'required',
+        discoverableAuthentication: 'preferred',
+      },
+    })
+    await passkeys.registration.createOptions(testUser(), 'device-1')
+    webauthn.verifyRegistrationResponse.mockResolvedValueOnce({ verified: false })
+    await expect(verifyRegistration(passkeys)).rejects.toMatchObject({
+      code: 'invalid_credentials',
+    })
+    expect(webauthn.verifyRegistrationResponse).toHaveBeenLastCalledWith(
+      expect.objectContaining({ requireUserVerification: true }),
+    )
+
+    await passkeys.authentication.createOptions('user-1', 'device-1')
+    webauthn.verifyAuthenticationResponse.mockResolvedValueOnce({ verified: false })
+    await expect(verifyAuthentication(passkeys)).rejects.toMatchObject({
+      code: 'invalid_credentials',
+    })
+    expect(webauthn.verifyAuthenticationResponse).toHaveBeenLastCalledWith(
+      expect.objectContaining({ requireUserVerification: true }),
+    )
+
+    await passkeys.authentication.createDiscoverableOptions('device-2')
+    webauthn.verifyAuthenticationResponse.mockResolvedValueOnce({ verified: false })
+    await expect(
+      passkeys.authentication.verifyDiscoverable({
+        deviceId: 'device-2',
+        expectedOrigin: 'https://example.test',
+        response: { id: 'credential-1' },
+      }),
+    ).rejects.toMatchObject({ code: 'invalid_credentials' })
+    expect(webauthn.verifyAuthenticationResponse).toHaveBeenLastCalledWith(
+      expect.objectContaining({ requireUserVerification: false }),
+    )
+  })
+
+  it('rejects a verified assertion when an atomic counter update loses a race', async () => {
+    const { options, repository } = configured()
+    repository.updateCounter.mockResolvedValueOnce(false)
+    webauthn.verifyAuthenticationResponse.mockResolvedValueOnce({
+      verified: true,
+      authenticationInfo: { newCounter: 8 },
+    })
+    const passkeys = createPasskeys(options)
+    await createAuthenticationChallenge(passkeys)
+    await expect(verifyAuthentication(passkeys)).rejects.toMatchObject({
+      code: 'invalid_credentials',
+    })
+  })
+
+  it('accepts authenticators without counter support without a repository update', async () => {
+    const { options, repository } = configured()
+    repository.findByCredentialId.mockResolvedValueOnce({ ...storedPasskey(), counter: 0 })
+    webauthn.verifyAuthenticationResponse.mockResolvedValueOnce({
+      verified: true,
+      authenticationInfo: { newCounter: 0 },
+    })
+    const passkeys = createPasskeys(options)
+    await createAuthenticationChallenge(passkeys)
+    await expect(verifyAuthentication(passkeys)).resolves.toEqual({
+      userId: 'user-1',
+      passkeyId: 'passkey-1',
+    })
+    expect(repository.updateCounter).not.toHaveBeenCalled()
   })
 
   it('supports legacy state keys and caller-owned failed-attempt limiting', async () => {
@@ -209,7 +300,7 @@ describe('passkeys', () => {
       },
       failureLimiter: { record: async () => true },
     })
-    await passkeys.registration.createOptions({ id: 'user-1', name: 'name' }, 'device-1')
+    await passkeys.registration.createOptions(testUser({ name: 'name' }), 'device-1')
     expect(put).toHaveBeenLastCalledWith(
       'legacy-reg:user-1:device-1',
       'registration-challenge',
@@ -267,7 +358,7 @@ function configured() {
       async (_input: Parameters<PasskeyRepository<string, string, string, string>['create']>[0]) =>
         'created-passkey',
     ),
-    updateCounter: vi.fn(async () => undefined),
+    updateCounter: vi.fn(async () => true),
   } satisfies PasskeyRepository<string, string, string, string>
   return {
     state,
@@ -287,6 +378,17 @@ function configured() {
 function baseOptions() {
   const { options } = configured()
   return options
+}
+
+function testUser(
+  overrides: Partial<Parameters<TestPasskeys['registration']['createOptions']>[0]> = {},
+) {
+  return {
+    id: 'user-1',
+    webAuthnUserId: new Uint8Array([7, 8, 9]),
+    name: 'person@example.test',
+    ...overrides,
+  }
 }
 
 function storedPasskey(): StoredPasskey<string, string> {

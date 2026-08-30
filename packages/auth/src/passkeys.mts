@@ -8,6 +8,7 @@ export type {
   PasskeyRepository,
   PasskeyStateKeys,
   PasskeyUser,
+  PasskeyUserVerification,
   StoredPasskey,
 } from './passkey-types.mts'
 

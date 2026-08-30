@@ -27,7 +27,8 @@ export interface PasskeyRepository<
     registration: NonNullable<VerifiedRegistrationResponse['registrationInfo']>
     context: RegistrationContext
   }): Promise<Created>
-  updateCounter(passkeyId: PasskeyId, counter: number): Promise<void>
+  /** Atomically update only when the stored counter is lower; return whether it advanced. */
+  updateCounter(passkeyId: PasskeyId, counter: number): Promise<boolean>
 }
 
 export type PasskeyFailure<UserId> = {
@@ -58,10 +59,19 @@ export interface PasskeyOptions<
   keys?: PasskeyStateKeys<UserId>
   failureLimiter?: AttemptLimiter<PasskeyFailure<UserId>>
   userIdsEqual?: (left: UserId, right: UserId) => boolean
+  userVerification?: {
+    registration?: PasskeyUserVerification
+    authentication?: PasskeyUserVerification
+    discoverableAuthentication?: PasskeyUserVerification
+  }
 }
 
 export interface PasskeyUser<UserId = string> {
   id: UserId
+  /** Stable, non-PII WebAuthn user handle (1–64 bytes). */
+  webAuthnUserId: Uint8Array
   name: string
   displayName?: string
 }
+
+export type PasskeyUserVerification = 'discouraged' | 'preferred' | 'required'

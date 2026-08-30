@@ -14,16 +14,19 @@ export function createPasskeyRegistration<UserId, PasskeyId, Created, Registrati
 
   return {
     async createOptions(user: PasskeyUser<UserId>, deviceId: string) {
+      validateUserHandle(user.webAuthnUserId)
       const credentialIds = await options.repository.listCredentialIds(user.id)
+      const userVerification = options.userVerification?.registration ?? 'preferred'
       const generated = await generateRegistrationOptions({
         rpName: options.rpName,
         rpID: options.rpId,
         userName: user.name,
+        userID: Uint8Array.from(user.webAuthnUserId),
         userDisplayName: user.displayName ?? user.name,
         excludeCredentials: credentialIds.map((id) => ({ id })),
         authenticatorSelection: {
           residentKey: 'preferred',
-          userVerification: 'preferred',
+          userVerification,
         },
       })
       await options.state.put(
@@ -51,6 +54,8 @@ export function createPasskeyRegistration<UserId, PasskeyId, Created, Registrati
           expectedChallenge: challenge,
           expectedOrigin: input.expectedOrigin,
           expectedRPID: options.rpId,
+          requireUserVerification:
+            (options.userVerification?.registration ?? 'preferred') === 'required',
         })
       } catch (error) {
         throw new AuthError('invalid_credentials', 400, 'Registration verification failed', {
@@ -66,6 +71,11 @@ export function createPasskeyRegistration<UserId, PasskeyId, Created, Registrati
       })
     },
   }
+}
+
+function validateUserHandle(userId: Uint8Array) {
+  if (!(userId instanceof Uint8Array) || userId.byteLength === 0 || userId.byteLength > 64)
+    throw new TypeError('webAuthnUserId must contain between 1 and 64 bytes')
 }
 
 function defaultKeys<UserId>(namespace = 'auth') {

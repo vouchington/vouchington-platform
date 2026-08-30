@@ -20,10 +20,11 @@ export function createPasskeyAuthentication<UserId, PasskeyId, Created, Registra
     const credentialIds = await options.repository.listCredentialIds(userId)
     if (credentialIds.length === 0)
       throw new AuthError('invalid_request', 400, 'No passkeys are registered')
+    const userVerification = options.userVerification?.authentication ?? 'preferred'
     const generated = await generateAuthenticationOptions({
       rpID: options.rpId,
       allowCredentials: credentialIds.map((id) => ({ id })),
-      userVerification: 'preferred',
+      userVerification,
     })
     await options.state.put(
       userKey(userId, deviceId),
@@ -34,10 +35,11 @@ export function createPasskeyAuthentication<UserId, PasskeyId, Created, Registra
   }
 
   async function createDiscoverableOptions(deviceId: string) {
+    const userVerification = options.userVerification?.discoverableAuthentication ?? 'required'
     const generated = await generateAuthenticationOptions({
       rpID: options.rpId,
       allowCredentials: [],
-      userVerification: 'required',
+      userVerification,
     })
     await options.state.put(
       discoverableKey(deviceId),
@@ -101,12 +103,17 @@ export function createPasskeyAuthentication<UserId, PasskeyId, Created, Registra
         expectedOrigin,
         expectedRPID: options.rpId,
         credential: toWebAuthnCredential(passkey),
+        requireUserVerification: requiresUserVerification(options, failure.mode),
       })
     } catch (error) {
       return invalidPasskey(failureWithCredential, error)
     }
     if (!verification.verified) return invalidPasskey(failureWithCredential)
-    await options.repository.updateCounter(passkey.id, verification.authenticationInfo.newCounter)
+    const newCounter = verification.authenticationInfo.newCounter
+    if (newCounter !== passkey.counter) {
+      const updated = await options.repository.updateCounter(passkey.id, newCounter)
+      if (!updated) return invalidPasskey(failureWithCredential)
+    }
     return { userId: passkey.userId, passkeyId: passkey.id }
   }
 
@@ -121,6 +128,17 @@ export function createPasskeyAuthentication<UserId, PasskeyId, Created, Registra
   }
 
   return { createOptions, createDiscoverableOptions, verify, verifyDiscoverable }
+}
+
+function requiresUserVerification(
+  options: Pick<PasskeyOptions, 'userVerification'>,
+  mode: PasskeyFailure<unknown>['mode'],
+) {
+  const requirement =
+    mode === 'discoverable'
+      ? (options.userVerification?.discoverableAuthentication ?? 'required')
+      : (options.userVerification?.authentication ?? 'preferred')
+  return requirement === 'required'
 }
 
 function toWebAuthnCredential<UserId, PasskeyId>(passkey: StoredPasskey<UserId, PasskeyId>) {

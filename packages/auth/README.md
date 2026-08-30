@@ -27,6 +27,8 @@ Persistence and policy are ports rather than built-ins:
 - OTP delivery, hashing, storage, and request/verification limiters are injected.
 - Passkey storage accepts caller-owned registration context, such as a display name. State-key
   builders and failed-attempt limiters can preserve an application's existing deployment contract.
+  Callers also provide a stable, non-PII WebAuthn user handle and choose user-verification policy.
+  Counter updates must atomically advance only when the stored counter is lower.
 - MFA state supports caller-owned keys and identifier validation. `createMfaFlow` checks limits,
   verifies a factor, keeps failed attempts available, atomically consumes successful attempts, and
   delegates session completion.
