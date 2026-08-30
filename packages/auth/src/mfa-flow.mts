@@ -15,7 +15,7 @@ export type MfaVerification<Attempt, Factor, Context> = {
 
 export interface MfaFlowOptions<Attempt, Factor, Result, Context> {
   state: MfaAttemptState<Attempt>
-  limiter?: AttemptLimiter<MfaVerification<Attempt, Factor, Context>>
+  limiter: AttemptLimiter<MfaVerification<Attempt, Factor, Context>>
   verify(input: MfaVerification<Attempt, Factor, Context>): Promise<boolean>
   complete(input: { attempt: Attempt; context: Context }): Promise<Result>
 }
@@ -29,15 +29,15 @@ export function createMfaFlow<Attempt, Factor, Result, Context>(
     context: Context
   }): Promise<Result> {
     const attempt = await options.state.peekAttempt(input.attemptId)
-    if (!attempt) throw new AuthError('invalid_credentials', 401, 'Login attempt expired')
+    if (attempt === null) throw new AuthError('invalid_credentials', 401, 'Login attempt expired')
     const verification = { ...input, attempt }
-    if (await options.limiter?.isLimited?.(verification)) return rateLimited()
+    if (await options.limiter.isLimited?.(verification)) return rateLimited()
     if (!(await options.verify(verification))) {
-      if (await options.limiter?.record(verification)) return rateLimited()
+      if (await options.limiter.record(verification)) return rateLimited()
       throw new AuthError('invalid_credentials', 401, 'MFA verification failed')
     }
     const consumed = await options.state.consumeAttempt(input.attemptId)
-    if (!consumed) throw new AuthError('invalid_credentials', 401, 'Login attempt expired')
+    if (consumed === null) throw new AuthError('invalid_credentials', 401, 'Login attempt expired')
     return options.complete({ attempt: consumed, context: input.context })
   }
 }

@@ -55,11 +55,12 @@ export interface PasskeyOptions<
   challengeTtlSeconds: number
   state: ExpiringStateStore
   repository: PasskeyRepository<UserId, PasskeyId, Created, RegistrationContext>
+  attestationType: PasskeyAttestation
   residentKey: PasskeyResidentKey
   namespace?: string
   keys?: PasskeyStateKeys<UserId>
-  failureLimiter?: AttemptLimiter<PasskeyFailure<UserId>>
-  userIdsEqual?: (left: UserId, right: UserId) => boolean
+  failureLimiter: AttemptLimiter<PasskeyFailure<UserId>>
+  userIdsEqual: (left: UserId, right: UserId) => boolean
   userVerification: {
     registration: PasskeyUserVerification
     authentication: PasskeyUserVerification
@@ -77,3 +78,4 @@ export interface PasskeyUser<UserId = string> {
 
 export type PasskeyUserVerification = 'discouraged' | 'preferred' | 'required'
 export type PasskeyResidentKey = 'discouraged' | 'preferred' | 'required'
+export type PasskeyAttestation = 'none' | 'direct' | 'enterprise'

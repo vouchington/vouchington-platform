@@ -34,6 +34,15 @@ describe('passkeys', () => {
     expect(() => createPasskeys({ ...baseOptions(), residentKey: 'invalid' as never })).toThrow(
       'residentKey',
     )
+    const { attestationType: _attestationType, ...withoutAttestation } = baseOptions()
+    expect(() => createPasskeys(withoutAttestation as never)).toThrow('attestationType')
+    expect(() => createPasskeys({ ...baseOptions(), attestationType: 'invalid' as never })).toThrow(
+      'attestationType',
+    )
+    const { userIdsEqual: _userIdsEqual, ...withoutEquality } = baseOptions()
+    expect(() => createPasskeys(withoutEquality as never)).toThrow('userIdsEqual')
+    const { failureLimiter: _failureLimiter, ...withoutLimiter } = baseOptions()
+    expect(() => createPasskeys(withoutLimiter as never)).toThrow('failureLimiter')
     const { userVerification: _userVerification, ...withoutPolicy } = baseOptions()
     expect(() => createPasskeys(withoutPolicy as never)).toThrow('userVerification')
     expect(() =>
@@ -82,6 +91,7 @@ describe('passkeys', () => {
         rpID: 'example.test',
         rpName: 'Example',
         userID: new Uint8Array([7, 8, 9]),
+        attestationType: 'none',
         userDisplayName: 'person@example.test',
         excludeCredentials: [{ id: 'credential-1' }],
         authenticatorSelection: {
@@ -403,7 +413,10 @@ function configured() {
       state,
       repository,
       namespace: 'site',
+      attestationType: 'none' as const,
       residentKey: 'discouraged' as const,
+      userIdsEqual: (left: string, right: string) => left === right,
+      failureLimiter: { record: async () => false },
       userVerification: {
         registration: 'preferred' as const,
         authentication: 'preferred' as const,

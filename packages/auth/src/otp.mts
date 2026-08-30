@@ -20,14 +20,18 @@ export interface EmailOtpOptions<DeliveryContext = undefined> {
   deliver(input: { email: string; token: string; context: DeliveryContext }): Promise<void>
   ttlSeconds: number
   now?: () => Date
-  requestLimiter?: AttemptLimiter<EmailOtpAttempt<DeliveryContext>>
-  verificationLimiter?: AttemptLimiter<EmailOtpAttempt<DeliveryContext>>
+  requestLimiter: AttemptLimiter<EmailOtpAttempt<DeliveryContext>>
+  verificationLimiter: AttemptLimiter<EmailOtpAttempt<DeliveryContext>>
 }
 
 export function createEmailOtp<DeliveryContext = undefined>(
   options: EmailOtpOptions<DeliveryContext>,
 ) {
   assertPositiveInteger(options.ttlSeconds, 'ttlSeconds')
+  if (typeof options.requestLimiter?.record !== 'function')
+    throw new TypeError('requestLimiter must be explicitly configured')
+  if (typeof options.verificationLimiter?.record !== 'function')
+    throw new TypeError('verificationLimiter must be explicitly configured')
   const now = options.now ?? (() => new Date())
 
   return {

@@ -52,7 +52,7 @@ export function createMfaState<Attempt>(options: MfaStateOptions) {
     async requireAttempt(id: string): Promise<Attempt> {
       if (!valid(id)) throw new AuthError('invalid_credentials', 401, 'Login attempt expired')
       const attempt = await options.store.get<Attempt>(attemptKey(id))
-      if (!attempt) throw new AuthError('invalid_credentials', 401, 'Login attempt expired')
+      if (attempt === null) throw new AuthError('invalid_credentials', 401, 'Login attempt expired')
       return attempt
     },
     async createReauthentication(userId: string): Promise<string> {

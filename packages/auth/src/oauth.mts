@@ -6,7 +6,7 @@ export interface OAuthProvider<Input, Account> {
 
 export interface OAuthOptions<Input, Account, UserId, Context, Continued, Connected = Account> {
   getProvider(provider: string): OAuthProvider<Input, Account> | undefined
-  isKnownProvider?(provider: string): boolean
+  isKnownProvider(provider: string): boolean
   connect(input: {
     provider: string
     userId: UserId
@@ -22,7 +22,7 @@ export function createOAuth<Input, Account, UserId, Context, Continued, Connecte
   async function exchange(providerName: string, input: Input, expectedOrigin?: string) {
     const provider = options.getProvider(providerName)
     if (!provider) {
-      if (options.isKnownProvider?.(providerName) === false)
+      if (!options.isKnownProvider(providerName))
         throw new AuthError('invalid_request', 400, 'Unknown OAuth provider')
       throw new AuthError('provider_disabled', 404, 'OAuth provider is not enabled')
     }

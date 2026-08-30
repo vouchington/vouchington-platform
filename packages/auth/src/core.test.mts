@@ -53,6 +53,8 @@ describe('email OTP', () => {
       digest: (token) => `digest:${token}`,
       store: { put, consume },
       deliver,
+      requestLimiter: { record: async () => false },
+      verificationLimiter: { record: async () => false },
       ttlSeconds: 60,
       now: () => now,
     })
@@ -93,11 +95,19 @@ describe('email OTP', () => {
       digest: String,
       store: { put: async () => undefined, consume: async () => true },
       deliver: async ({ token }) => void delivered.push(token),
+      requestLimiter: { record: async () => false },
+      verificationLimiter: { record: async () => false },
       ttlSeconds: 1,
     })
     await otp.request('person@example.test', undefined)
     expect(delivered[0]).toBe('123456')
     expect(() => createEmailOtp({ ...baseOtpOptions(), ttlSeconds: 0 })).toThrow('ttlSeconds')
+    expect(() =>
+      createEmailOtp({ ...baseOtpOptions(), requestLimiter: undefined } as never),
+    ).toThrow('requestLimiter')
+    expect(() =>
+      createEmailOtp({ ...baseOtpOptions(), verificationLimiter: undefined } as never),
+    ).toThrow('verificationLimiter')
     const invalid = createEmailOtp({ ...baseOtpOptions(), generateToken: () => '' })
     await expect(invalid.request('person@example.test', undefined)).rejects.toThrow('generateToken')
   })
@@ -264,12 +274,21 @@ describe('MFA verification flow', () => {
 
     const disappeared = createMfaFlow({
       state: { peekAttempt: async () => ({ userId: 'user-5' }), consumeAttempt: async () => null },
+      limiter: { record: async () => false },
       verify: async () => true,
       complete: async () => 'unused',
     })
     await expect(
       disappeared({ attemptId: 'raced', factor: 'valid', context: undefined }),
     ).rejects.toMatchObject({ code: 'invalid_credentials' })
+
+    const falsy = createMfaFlow({
+      state: { peekAttempt: async () => 0, consumeAttempt: async () => 0 },
+      limiter: { record: async () => false },
+      verify: async () => true,
+      complete: async ({ attempt }) => attempt,
+    })
+    await expect(falsy({ attemptId: 'zero', factor: true, context: undefined })).resolves.toBe(0)
   })
 })
 
@@ -278,6 +297,7 @@ describe('OAuth orchestration', () => {
     const exchange = vi.fn(async (input: string) => ({ subject: input }))
     const oauth = createOAuth({
       getProvider: (provider) => (provider === 'example' ? { exchange } : undefined),
+      isKnownProvider: (provider) => provider === 'example' || provider === 'disabled',
       connect: async ({ provider, userId, account }) => ({ provider, userId, account }),
       continue: async ({ provider, account }) => ({ provider, account }),
     })
@@ -325,6 +345,8 @@ function baseOtpOptions() {
     digest: String,
     store: { put: async () => undefined, consume: async () => false },
     deliver: async () => undefined,
+    requestLimiter: { record: async () => false },
+    verificationLimiter: { record: async () => false },
     ttlSeconds: 1,
   }
 }

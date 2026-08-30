@@ -24,6 +24,7 @@ export function createPasskeyRegistration<UserId, PasskeyId, Created, Registrati
         userName: user.name,
         userID: Uint8Array.from(user.webAuthnUserId),
         userDisplayName: user.displayName ?? user.name,
+        attestationType: options.attestationType,
         excludeCredentials: credentialIds.map((id) => ({ id })),
         authenticatorSelection: {
           residentKey: options.residentKey,
@@ -89,6 +90,9 @@ function validateOptions(options: {
   rpId: string
   rpName: string
   challengeTtlSeconds: number
+  attestationType?: unknown
+  userIdsEqual?: unknown
+  failureLimiter?: { record?: unknown }
   residentKey?: unknown
   userVerification?: {
     registration?: unknown
@@ -102,6 +106,12 @@ function validateOptions(options: {
     throw new TypeError('challengeTtlSeconds must be a positive safe integer')
   if (!isPolicy(options.residentKey))
     throw new TypeError('residentKey policy must be explicitly configured')
+  if (!isAttestation(options.attestationType))
+    throw new TypeError('attestationType policy must be explicitly configured')
+  if (typeof options.userIdsEqual !== 'function')
+    throw new TypeError('userIdsEqual must be explicitly configured')
+  if (typeof options.failureLimiter?.record !== 'function')
+    throw new TypeError('failureLimiter must be explicitly configured')
   const policies = options.userVerification
   if (
     !policies ||
@@ -114,4 +124,8 @@ function validateOptions(options: {
 
 function isPolicy(value: unknown) {
   return value === 'discouraged' || value === 'preferred' || value === 'required'
+}
+
+function isAttestation(value: unknown) {
+  return value === 'none' || value === 'direct' || value === 'enterprise'
 }

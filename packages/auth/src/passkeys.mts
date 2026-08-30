@@ -4,6 +4,7 @@ import type { PasskeyOptions } from './passkey-types.mts'
 
 export type {
   PasskeyFailure,
+  PasskeyAttestation,
   PasskeyOptions,
   PasskeyRepository,
   PasskeyResidentKey,

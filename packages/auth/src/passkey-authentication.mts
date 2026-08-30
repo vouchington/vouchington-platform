@@ -89,12 +89,14 @@ export function createPasskeyAuthentication<UserId, PasskeyId, Created, Registra
       ...failure,
       ...(typeof credentialId === 'string' ? { credentialId } : {}),
     }
-    if (await options.failureLimiter?.isLimited?.(failureWithCredential)) return rateLimited()
+    if (await options.failureLimiter.isLimited?.(failureWithCredential)) return rateLimited()
     if (typeof credentialId !== 'string') return invalidPasskey(failureWithCredential)
     const passkey = await options.repository.findByCredentialId(credentialId)
     const expectedUserId = failure.userId
-    const userIdsEqual = options.userIdsEqual ?? Object.is
-    if (!passkey || (expectedUserId !== undefined && !userIdsEqual(passkey.userId, expectedUserId)))
+    if (
+      !passkey ||
+      (expectedUserId !== undefined && !options.userIdsEqual(passkey.userId, expectedUserId))
+    )
       return invalidPasskey(failureWithCredential)
     let verification: Awaited<ReturnType<typeof verifyAuthenticationResponse>>
     try {
@@ -119,7 +121,7 @@ export function createPasskeyAuthentication<UserId, PasskeyId, Created, Registra
   }
 
   async function invalidPasskey(failure: PasskeyFailure<UserId>, cause?: unknown): Promise<never> {
-    if (await options.failureLimiter?.record(failure)) return rateLimited()
+    if (await options.failureLimiter.record(failure)) return rateLimited()
     throw new AuthError(
       'invalid_credentials',
       401,
