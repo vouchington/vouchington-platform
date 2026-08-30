@@ -104,7 +104,7 @@ function validateOptions(options: {
   authenticatorAttachment?: unknown
   supportedAlgorithmIDs?: readonly unknown[]
   userIdsEqual?: unknown
-  failureLimiter?: { record?: unknown }
+  failureLimiter?: { reserve?: unknown }
   serializeUserId?: unknown
   residentKey?: unknown
   userVerification?: {
@@ -137,7 +137,7 @@ function validateOptions(options: {
     throw new TypeError('supportedAlgorithmIDs must be a non-empty integer array')
   if (typeof options.userIdsEqual !== 'function')
     throw new TypeError('userIdsEqual must be explicitly configured')
-  if (typeof options.failureLimiter?.record !== 'function')
+  if (typeof options.failureLimiter?.reserve !== 'function')
     throw new TypeError('failureLimiter must be explicitly configured')
   if (typeof options.serializeUserId !== 'function')
     throw new TypeError('serializeUserId must be explicitly configured')

@@ -31,9 +31,8 @@ export function createMfaFlow<Attempt, Factor, Result, Context>(
     const attempt = await options.state.peekAttempt(input.attemptId)
     if (attempt === null) throw new AuthError('invalid_credentials', 401, 'Login attempt expired')
     const verification = { ...input, attempt }
-    if (await options.limiter.isLimited(verification)) return rateLimited()
+    if (!(await options.limiter.reserve(verification))) return rateLimited()
     if (!(await options.verify(verification))) {
-      if (await options.limiter.record(verification)) return rateLimited()
       throw new AuthError('invalid_credentials', 401, 'MFA verification failed')
     }
     const consumed = await options.state.consumeAttempt(input.attemptId)

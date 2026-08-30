@@ -71,7 +71,7 @@ function baseOptions(): PasskeyOptions<string, string, undefined> {
     authenticatorAttachment: 'platform',
     supportedAlgorithmIDs: [-8, -7, -257],
     residentKey: 'discouraged',
-    failureLimiter: { isLimited: async () => false, record: async () => false },
+    failureLimiter: { reserve: async () => true },
     userIdsEqual: (left, right) => left === right,
     serializeUserId: String,
     userVerification: {

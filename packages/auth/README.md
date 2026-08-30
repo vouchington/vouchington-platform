@@ -24,8 +24,8 @@ session policy may inject their own issuer into `createAuthenticationFlow`.
 
 Persistence and policy are ports rather than built-ins:
 
-- OTP generation/normalization, delivery, hashing, storage, and required request/verification
-  limiters are injected.
+- OTP generation/normalization, delivery, hashing, storage, and required atomic request/verification
+  attempt reservations are injected.
 - Passkey storage accepts caller-owned registration context, such as a display name. State-key
   builders and failed-attempt limiters can preserve an application's existing deployment contract.
   Callers also provide a stable, non-PII WebAuthn user handle and explicitly choose every
@@ -35,8 +35,8 @@ Persistence and policy are ports rather than built-ins:
 - TOTP verification requires an explicit acceptance window and a caller-owned store that atomically
   advances the factor's last-used time-step counter, preventing a valid code from completing
   multiple login attempts.
-- MFA state supports caller-owned keys and identifier validation. `createMfaFlow` requires and
-  checks caller-owned limits,
+- MFA state supports caller-owned keys and identifier validation. `createMfaFlow` requires an
+  atomic caller-owned attempt reservation,
   verifies a factor, keeps failed attempts available, atomically consumes successful attempts, and
   delegates session completion.
 - OAuth provider availability, account persistence, user connection, and login continuation remain

@@ -33,12 +33,9 @@ export interface PasskeyRepository<
   updateCounter(passkeyId: PasskeyId, counter: number): Promise<boolean>
 }
 
-export type PasskeyFailure<UserId> = {
-  mode: 'user-bound' | 'discoverable'
-  deviceId: string
-  userId?: UserId
-  credentialId?: string
-}
+export type PasskeyFailure<UserId> =
+  | { mode: 'user-bound'; deviceId: string; userId: UserId; credentialId?: string }
+  | { mode: 'discoverable'; deviceId: string; credentialId?: string }
 
 export interface PasskeyStateKeys<UserId> {
   registration(userId: UserId, deviceId: string): string

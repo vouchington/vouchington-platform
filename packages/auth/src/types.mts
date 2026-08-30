@@ -6,8 +6,8 @@ export interface ExpiringStateStore {
 }
 
 export interface AttemptLimiter<Input> {
-  isLimited(input: Input): Promise<boolean>
-  record(input: Input): Promise<boolean>
+  /** Atomically reserve one permitted attempt; return false when the limit is exhausted. */
+  reserve(input: Input): Promise<boolean>
 }
 
 export type Authenticated<User, Session> = {

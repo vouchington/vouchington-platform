@@ -338,7 +338,7 @@ describe('passkeys', () => {
         authentication: (userId, deviceId) => `legacy-auth:${userId}:${deviceId}`,
         discoverableAuthentication: (deviceId) => `legacy-discoverable:${deviceId}`,
       },
-      failureLimiter: { isLimited: async () => false, record: async () => true },
+      failureLimiter: { reserve: async () => false },
     })
     await passkeys.registration.createOptions(testUser({ name: 'name' }), 'device-1')
     expect(put).toHaveBeenLastCalledWith(
@@ -367,7 +367,7 @@ describe('passkeys', () => {
     const { options } = configured()
     const passkeys = createPasskeys({
       ...options,
-      failureLimiter: { isLimited: async () => true, record: async () => false },
+      failureLimiter: { reserve: async () => false },
     })
     await passkeys.authentication.createOptions('user-1', 'device-1')
     await expect(verifyAuthentication(passkeys)).rejects.toMatchObject({
@@ -418,7 +418,7 @@ function configured() {
       residentKey: 'discouraged' as const,
       userIdsEqual: (left: string, right: string) => left === right,
       serializeUserId: String,
-      failureLimiter: { isLimited: async () => false, record: async () => false },
+      failureLimiter: { reserve: async () => true },
       userVerification: {
         registration: 'preferred' as const,
         authentication: 'preferred' as const,

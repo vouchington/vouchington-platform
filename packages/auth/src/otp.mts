@@ -28,16 +28,16 @@ export function createEmailOtp<DeliveryContext = undefined>(
   options: EmailOtpOptions<DeliveryContext>,
 ) {
   assertPositiveInteger(options.ttlSeconds, 'ttlSeconds')
-  if (typeof options.requestLimiter?.record !== 'function')
+  if (typeof options.requestLimiter?.reserve !== 'function')
     throw new TypeError('requestLimiter must be explicitly configured')
-  if (typeof options.verificationLimiter?.record !== 'function')
+  if (typeof options.verificationLimiter?.reserve !== 'function')
     throw new TypeError('verificationLimiter must be explicitly configured')
   const now = options.now ?? (() => new Date())
 
   return {
     async request(email: string, context: DeliveryContext): Promise<{ email: string }> {
       const normalized = await options.normalizeEmail(email)
-      await recordAttempt(options.requestLimiter, { email: normalized, context })
+      await reserveAttempt(options.requestLimiter, { email: normalized, context })
       const token = await options.generateToken()
       if (!token) throw new TypeError('generateToken must return a non-empty token')
       const issuedAt = now()
@@ -56,7 +56,7 @@ export function createEmailOtp<DeliveryContext = undefined>(
       context: DeliveryContext,
     ): Promise<{ email: string }> {
       const normalized = await options.normalizeEmail(email)
-      await recordAttempt(options.verificationLimiter, { email: normalized, context })
+      await reserveAttempt(options.verificationLimiter, { email: normalized, context })
       const consumed = await options.store.consume({
         email: normalized,
         digest: await options.digest(options.normalizeToken(token)),
@@ -73,8 +73,8 @@ export function createEmailOtp<DeliveryContext = undefined>(
   }
 }
 
-async function recordAttempt<Input>(limiter: AttemptLimiter<Input>, input: Input) {
-  if ((await limiter.isLimited(input)) || (await limiter.record(input)))
+async function reserveAttempt<Input>(limiter: AttemptLimiter<Input>, input: Input) {
+  if (!(await limiter.reserve(input)))
     throw new AuthError('rate_limited', 429, 'Too many authentication attempts')
 }
 
