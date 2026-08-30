@@ -31,7 +31,7 @@ jobs:
     steps:
       - name: Select final review
         id: select
-        uses: vouchington/vouchington-tooling/.github/actions/select-final-review@1e9bb3930a32ec4528ce140f856419ddbcf85d31 # v0.3.5
+        uses: vouchington/vouchington-tooling/.github/actions/select-final-review@60c61e6f929913e4e06e30a2b80d7bf3addc0b63 # v0.3.5
         with:
           read-token: ${{ github.token }}
           pr-number: ${{ github.event.client_payload.pr_number }}
@@ -121,7 +121,7 @@ jobs:
           persist-credentials: false
       - name: Run OpenCode OpenRouter review
         id: opencode-review-agent
-        uses: vouchington/vouchington-tooling/.github/actions/opencode-code-review@1e9bb3930a32ec4528ce140f856419ddbcf85d31 # v0.3.5
+        uses: vouchington/vouchington-tooling/.github/actions/opencode-code-review@60c61e6f929913e4e06e30a2b80d7bf3addc0b63 # v0.3.5
         with:
           pr_number: ${{ needs.select-final-review.outputs.pr_number }}
           provider_name: OpenCode OpenRouter
@@ -169,7 +169,7 @@ jobs:
           [ "$(jq -r '.state' <<< "$pr_json")" = open ]
       - name: Post OpenCode OpenRouter review
         id: opencode-review-poster
-        uses: vouchington/vouchington-tooling/.github/actions/code-review-poster@1e9bb3930a32ec4528ce140f856419ddbcf85d31 # v0.3.5
+        uses: vouchington/vouchington-tooling/.github/actions/code-review-poster@60c61e6f929913e4e06e30a2b80d7bf3addc0b63 # v0.3.5
         with:
           pr_number: ${{ needs.select-final-review.outputs.pr_number }}
           artifact_id: ${{ needs.opencode-code-review.outputs.payload_artifact_id }}
@@ -228,7 +228,7 @@ jobs:
           persist-credentials: false
       - name: Run OpenCode Zen review
         id: opencode-review-agent
-        uses: vouchington/vouchington-tooling/.github/actions/opencode-code-review@1e9bb3930a32ec4528ce140f856419ddbcf85d31 # v0.3.5
+        uses: vouchington/vouchington-tooling/.github/actions/opencode-code-review@60c61e6f929913e4e06e30a2b80d7bf3addc0b63 # v0.3.5
         with:
           pr_number: ${{ needs.select-final-review.outputs.pr_number }}
           provider_name: OpenCode Zen
@@ -276,7 +276,7 @@ jobs:
           [ "$(jq -r '.state' <<< "$pr_json")" = open ]
       - name: Post OpenCode Zen review
         id: opencode-review-poster
-        uses: vouchington/vouchington-tooling/.github/actions/code-review-poster@1e9bb3930a32ec4528ce140f856419ddbcf85d31 # v0.3.5
+        uses: vouchington/vouchington-tooling/.github/actions/code-review-poster@60c61e6f929913e4e06e30a2b80d7bf3addc0b63 # v0.3.5
         with:
           pr_number: ${{ needs.select-final-review.outputs.pr_number }}
           artifact_id: ${{ needs.opencode-zen-code-review.outputs.payload_artifact_id }}
@@ -346,7 +346,7 @@ jobs:
             connection reset by peer
             unexpected EOF
             i/o timeout
-        uses: vouchington/vouchington-tooling/.github/actions/final-review-gate@1e9bb3930a32ec4528ce140f856419ddbcf85d31 # v0.3.5
+        uses: vouchington/vouchington-tooling/.github/actions/final-review-gate@60c61e6f929913e4e06e30a2b80d7bf3addc0b63 # v0.3.5
         with:
           gate_status: ${{ needs.select-final-review.outputs.gate_status }}
           token: ${{ github.token }}
