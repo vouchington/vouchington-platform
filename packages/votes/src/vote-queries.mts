@@ -38,7 +38,7 @@ export function insertQuery(
     )
     .append(column)
     .append(
-      sql` AS entity_id, id, user_id, score, created_at) SELECT inserted.*, previous_votes.previous_score FROM inserted LEFT JOIN previous_votes USING (entity_id)`,
+      sql` AS entity_id, id, user_id, score, created_at) SELECT inserted.*, previous_votes.previous_score FROM inserted LEFT JOIN previous_votes USING (entity_id) ORDER BY entity_id`,
     )
   return query
 }

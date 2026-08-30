@@ -12,5 +12,5 @@ export function isUuid(value: string): boolean {
 
 export function assertUuid(value: string, name: string): string {
   if (!isUuid(value)) throw new Error(`Invalid ${name}: ${value}`)
-  return value
+  return value.toLowerCase()
 }

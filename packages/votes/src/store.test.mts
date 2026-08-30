@@ -64,10 +64,10 @@ describe('vote store', () => {
       'smallint',
     )
     const events = await votes.upsert(
-      USER_A,
+      USER_A.toUpperCase(),
       [
         { entityId: ENTITY_B, score: -1 },
-        { entityId: ENTITY_A, score: 1 },
+        { entityId: ENTITY_A.toUpperCase(), score: 1 },
         { entityId: ENTITY_A, score: 2 },
       ],
       { ipAddress: '127.0.0.1', deviceId: ENTITY_B, sessionId: ENTITY_C, userAgent: 'test-agent' },
@@ -100,6 +100,7 @@ describe('vote store', () => {
       userId: USER_B,
     })
     await expect(votes.getByUser(USER_B, [ENTITY_A])).resolves.toHaveLength(1)
+    await expect(votes.getByUser(USER_B, [])).resolves.toEqual([])
     await expect(votes.clear(USER_B, ENTITY_A)).resolves.toHaveLength(1)
     await expect(votes.getCurrent(USER_B, ENTITY_A)).resolves.toBeNull()
     await expect(votes.getByUser(USER_B)).resolves.toEqual([])
@@ -109,7 +110,7 @@ describe('vote store', () => {
   it('keyset-paginates current votes with scoped camel-case page info', async () => {
     const votes = store()
     await votes.upsert(USER_A, [{ entityId: ENTITY_C, score: 1 }])
-    const first = await votes.listByUser(USER_A, { limit: 1 })
+    const first = await votes.listByUser(USER_A.toUpperCase(), { limit: 1 })
     expect(first.results).toHaveLength(1)
     expect(first.pageInfo).toMatchObject({
       hasNextPage: true,

@@ -7,7 +7,7 @@ const ENTITY_ID = '00000000-0000-7000-8000-000000000002'
 
 function runtime(options: { unlock?: boolean; lockError?: Error; unlockError?: Error } = {}) {
   const release = vi.fn()
-  const query = vi.fn(async (statement: string) => {
+  const query = vi.fn(async (statement: string, _values?: unknown[]) => {
     if (statement.includes('lockVoteRequest') && options.lockError) throw options.lockError
     if (statement.includes('unlockVoteRequest')) {
       if (options.unlockError) throw options.unlockError
@@ -28,6 +28,16 @@ describe('vote request lock', () => {
     await expect(lock(USER_ID, ENTITY_ID, async () => 'done')).resolves.toBe('done')
     expect(query).toHaveBeenCalledTimes(2)
     expect(release).toHaveBeenCalledWith()
+  })
+
+  it('canonicalizes UUID spellings in the shared lock key', async () => {
+    const { psql, query } = runtime()
+    await createVoteRequestLock(psql, 'votes')(
+      USER_ID.toUpperCase(),
+      ENTITY_ID.toUpperCase(),
+      async () => undefined,
+    )
+    expect(query).toHaveBeenNthCalledWith(1, expect.any(String), [`votes:${USER_ID}:${ENTITY_ID}`])
   })
 
   it('validates configuration and lock identities', async () => {

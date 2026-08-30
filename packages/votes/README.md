@@ -71,6 +71,10 @@ When choices have a one-to-one score mapping, the default no-op check compares t
 Applications with semantic choices that share a score can return their own current-ballot type and
 inject `isNoop` to compare choices instead.
 
+`onVote` runs after persistence. When it performs retryable downstream work, pair it with `onNoop`:
+an idempotent request retry detects the durable ballot and invokes `onNoop` to reconcile work that
+did not complete after the original commit.
+
 The default store targets the common columns above. Applications with extra ballot-provenance or
 federation columns keep those persistence projections in an application adapter and inject its
 `upsert` and `getCurrent` functions into the same handler engine.

@@ -34,20 +34,41 @@ export function createVoteStore(psql: Psql, options: VoteStoreOptions): VoteStor
       ),
     getCurrent: (userId, entityId) => getCurrent(psql, table, entityIdColumn, userId, entityId),
     getByUser: (userId, entityIds) => getByUser(psql, table, entityIdColumn, userId, entityIds),
-    listByUser: (userId, page) =>
-      listByUser(psql, table, entityIdColumn, `${scope}:by-user:${userId}`, userId, page),
-    listByEntity: (entityId, page) =>
-      listByEntity(psql, table, entityIdColumn, `${scope}:by-entity:${entityId}`, entityId, page),
-    listByUserForEntity: (userId, entityId, page) =>
-      listByUser(
+    listByUser: (userId, page) => {
+      const safeUserId = assertUuid(userId, 'userId')
+      return listByUser(
         psql,
         table,
         entityIdColumn,
-        `${scope}:by-user-entity:${userId}:${entityId}`,
-        userId,
+        `${scope}:by-user:${safeUserId}`,
+        safeUserId,
         page,
-        [entityId],
-      ),
+      )
+    },
+    listByEntity: (entityId, page) => {
+      const safeEntityId = assertUuid(entityId, 'entityId')
+      return listByEntity(
+        psql,
+        table,
+        entityIdColumn,
+        `${scope}:by-entity:${safeEntityId}`,
+        safeEntityId,
+        page,
+      )
+    },
+    listByUserForEntity: (userId, entityId, page) => {
+      const safeUserId = assertUuid(userId, 'userId')
+      const safeEntityId = assertUuid(entityId, 'entityId')
+      return listByUser(
+        psql,
+        table,
+        entityIdColumn,
+        `${scope}:by-user-entity:${safeUserId}:${safeEntityId}`,
+        safeUserId,
+        page,
+        [safeEntityId],
+      )
+    },
   }
 }
 
@@ -61,16 +82,16 @@ async function upsert(
   audit: VoteAudit,
   queryOptions: QueryOptions,
 ): Promise<readonly VoteEvent[]> {
-  assertUuid(userId, 'userId')
+  const safeUserId = assertUuid(userId, 'userId')
   const values = normalizeVotes(votes)
   if (values.length === 0) return []
   return psql.withTransactionOptions(queryOptions, async (query) => {
     const userAgentId = audit.userAgent
       ? ((await options.resolveUserAgentId?.(audit.userAgent, query)) ?? null)
       : null
-    await query(lockQuery(table, userId, values))
+    await query(lockQuery(table, safeUserId, values))
     const { rows } = await query<EventRow>(
-      insertQuery(table, entityIdColumn, userId, values, audit, userAgentId),
+      insertQuery(table, entityIdColumn, safeUserId, values, audit, userAgentId),
     )
     return rows.map(toEvent)
   })
@@ -83,10 +104,10 @@ async function getCurrent(
   userId: string,
   entityId: string,
 ): Promise<CurrentVote | null> {
-  assertUuid(userId, 'userId')
-  assertUuid(entityId, 'entityId')
+  const safeUserId = assertUuid(userId, 'userId')
+  const safeEntityId = assertUuid(entityId, 'entityId')
   const { rows } = await psql.write<EventRow>(
-    userVotesQuery(table, entityIdColumn, userId, [entityId]),
+    userVotesQuery(table, entityIdColumn, safeUserId, [safeEntityId]),
   )
   return rows[0] ? toCurrent(rows[0]) : null
 }
@@ -98,10 +119,11 @@ async function getByUser(
   userId: string,
   entityIds?: readonly string[],
 ): Promise<readonly CurrentVote[]> {
-  assertUuid(userId, 'userId')
-  entityIds?.forEach((entityId) => assertUuid(entityId, 'entityId'))
+  const safeUserId = assertUuid(userId, 'userId')
+  if (entityIds?.length === 0) return []
+  const safeEntityIds = entityIds?.map((entityId) => assertUuid(entityId, 'entityId'))
   const { rows } = await psql.read<EventRow>(
-    userVotesQuery(table, entityIdColumn, userId, entityIds),
+    userVotesQuery(table, entityIdColumn, safeUserId, safeEntityIds),
   )
   return rows.map(toCurrent)
 }
@@ -109,9 +131,9 @@ async function getByUser(
 function normalizeVotes(votes: readonly VoteInput[]): VoteInput[] {
   const deduplicated = new Map<string, VoteInput>()
   for (const vote of votes) {
-    assertUuid(vote.entityId, 'entityId')
+    const entityId = assertUuid(vote.entityId, 'entityId')
     assertVoteScore(vote.score)
-    deduplicated.set(vote.entityId, vote)
+    deduplicated.set(entityId, { ...vote, entityId })
   }
   return [...deduplicated.values()].sort((left, right) =>
     left.entityId.localeCompare(right.entityId),
