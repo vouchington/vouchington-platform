@@ -20,6 +20,12 @@ describe('validateMediaUpload', () => {
         { ...policy, minBytes: 0 },
       ),
     ).toEqual({ contentType: 'image/png', contentLength: 0 })
+    expect(
+      validateMediaUpload(
+        { contentType: "application/x.foo~bar%25'`|", contentLength: 1 },
+        { acceptsContentType: () => true, maxBytes: 1 },
+      ),
+    ).toEqual({ contentType: "application/x.foo~bar%25'`|", contentLength: 1 })
   })
 
   it.each([undefined, null, '', 'invalid', 'text/plain'])('rejects content type %s', (value) => {
@@ -47,5 +53,21 @@ describe('validateMediaUpload', () => {
       cause,
     })
     expect(vi.isMockFunction(policy.acceptsContentType)).toBe(false)
+  })
+
+  it.each([
+    { maxBytes: Number.NaN },
+    { maxBytes: Number.POSITIVE_INFINITY },
+    { maxBytes: 1.5 },
+    { maxBytes: -1 },
+    { maxBytes: 1, minBytes: -1 },
+    { maxBytes: 1, minBytes: 2 },
+  ])('rejects invalid size policy %#', (invalidPolicy) => {
+    expect(() =>
+      validateMediaUpload(
+        { contentType: 'image/png', contentLength: 1 },
+        { acceptsContentType: () => true, ...invalidPolicy },
+      ),
+    ).toThrowError(expect.objectContaining<Partial<MediaError>>({ code: 'POLICY_INVALID' }))
   })
 })

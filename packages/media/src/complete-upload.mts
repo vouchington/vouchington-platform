@@ -20,6 +20,8 @@ export interface CompleteMediaUploadDependencies<Record> {
   onDuplicate(existing: Record, incoming: Record): DuplicateMediaDecision
   persistDigest(id: string, digest: string): Promise<PersistDigestResult<Record>>
   readObject(key: string): Promise<MediaBody>
+  /** Atomically makes the incoming record durable before retiring the existing media. */
+  replaceDuplicate(existing: Record, incoming: Record, digest: string): Promise<Record>
 }
 
 export async function completeMediaUpload<Record>(
@@ -43,14 +45,12 @@ export async function completeMediaUpload<Record>(
     const digest = await hashMediaBody(body)
     const duplicate = await dependencies.findByDigest(digest)
     if (duplicate !== null) {
-      const resolved = await resolveDuplicate(duplicate, incoming, dependencies)
-      if (resolved !== null) return resolved
+      return await resolveDuplicate(duplicate, incoming, digest, dependencies)
     }
 
     const result = await dependencies.persistDigest(id, digest)
     if (result.kind === 'conflict') {
-      await dependencies.deleteMedia(incoming)
-      return result.record
+      return await resolveDuplicate(result.record, incoming, digest, dependencies)
     }
     await dependencies.enqueueMetadata(result.record)
     return result.record
@@ -67,12 +67,14 @@ export async function completeMediaUpload<Record>(
 async function resolveDuplicate<Record>(
   existing: Record,
   incoming: Record,
+  digest: string,
   dependencies: CompleteMediaUploadDependencies<Record>,
-): Promise<Record | null> {
+): Promise<Record> {
   const decision = dependencies.onDuplicate(existing, incoming)
   if (decision === 'replace') {
-    await dependencies.deleteMedia(existing)
-    return null
+    const replacement = await dependencies.replaceDuplicate(existing, incoming, digest)
+    await dependencies.enqueueMetadata(replacement)
+    return replacement
   }
   await dependencies.deleteMedia(incoming)
   if (decision === 'reuse') return existing

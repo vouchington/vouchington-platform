@@ -5,6 +5,9 @@ object keys, persistence, authorization, lifecycle policy, queues, metadata extr
 failure reporting. The optional `@vouchington/media/s3` entrypoint supplies an S3 adapter with an
 injected client and bucket.
 
+Duplicate reuse/rejection is orchestrated directly. Replacement is an injected atomic operation so
+an application can make the incoming record durable before retiring valid existing media.
+
 This first release handles caller-uploaded objects only. Remote URL ingestion, HTTP fetching,
 image transformation, and video processing are deliberately outside its scope. Compose metadata
 processing with `@vouchington/image-resize` when Sharp-backed inspection is needed.
@@ -34,3 +37,7 @@ moderation decision, or queue policy is built in.
 The declared upload length is a request and signing input; it does not independently
 prove the stored object's final size. Applications that require that guarantee should verify object
 metadata during completion.
+
+The S3 adapter signs uploads with `If-None-Match: *` so an accepted object key cannot be
+overwritten by reusing its URL. Upload clients must send that header, and bucket CORS policy must
+allow it.

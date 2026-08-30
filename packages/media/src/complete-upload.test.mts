@@ -28,6 +28,7 @@ function dependencies(
     onDuplicate: () => 'reuse',
     deleteMedia: vi.fn(async () => undefined),
     persistDigest: async () => ({ kind: 'saved', record: incoming }),
+    replaceDuplicate: vi.fn(async () => incoming),
     enqueueMetadata: vi.fn(async () => undefined),
     markFailed: vi.fn(async () => undefined),
     ...overrides,
@@ -80,8 +81,10 @@ describe('completeMediaUpload', () => {
           decision === 'reuse' ? existing : incoming,
         )
       }
-      expect(deps.deleteMedia).toHaveBeenCalledWith(decision === 'replace' ? existing : incoming)
-      expect(persistDigest).toHaveBeenCalledTimes(decision === 'replace' ? 1 : 0)
+      if (decision === 'replace') expect(deps.deleteMedia).not.toHaveBeenCalled()
+      else expect(deps.deleteMedia).toHaveBeenCalledWith(incoming)
+      expect(deps.replaceDuplicate).toHaveBeenCalledTimes(decision === 'replace' ? 1 : 0)
+      expect(persistDigest).not.toHaveBeenCalled()
     },
   )
 
@@ -92,6 +95,20 @@ describe('completeMediaUpload', () => {
     await expect(completeMediaUpload('new', deps)).resolves.toBe(existing)
     expect(deps.deleteMedia).toHaveBeenCalledWith(incoming)
     expect(deps.enqueueMetadata).not.toHaveBeenCalled()
+  })
+
+  it('applies replacement policy to a persistence conflict', async () => {
+    const deps = dependencies({
+      onDuplicate: () => 'replace',
+      persistDigest: async () => ({ kind: 'conflict', record: existing }),
+    })
+    await expect(completeMediaUpload('new', deps)).resolves.toBe(incoming)
+    expect(deps.replaceDuplicate).toHaveBeenCalledWith(
+      existing,
+      incoming,
+      'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
+    )
+    expect(deps.enqueueMetadata).toHaveBeenCalledWith(incoming)
   })
 
   it('preserves failures when marking failed also fails', async () => {

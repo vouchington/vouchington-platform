@@ -68,6 +68,27 @@ describe('createMediaUpload', () => {
     expect(savePending).not.toHaveBeenCalled()
   })
 
+  it('anchors expiry before signing and persistence', async () => {
+    const now = vi
+      .fn<() => Date>()
+      .mockReturnValueOnce(new Date('2026-01-01T00:00:00Z'))
+      .mockReturnValueOnce(new Date('2026-01-01T01:00:00Z'))
+    const result = await createMediaUpload(
+      { contentType: 'x/y', contentLength: 1 },
+      {
+        policy: { acceptsContentType: () => true, maxBytes: 1 },
+        createId: () => 'id',
+        createObjectKey: () => 'key',
+        expiresInSeconds: 60,
+        now,
+        presignUpload: async () => 'signed',
+        savePending: async (record) => record,
+      },
+    )
+    expect(result.expiresAt).toEqual(new Date('2026-01-01T00:01:00Z'))
+    expect(now).toHaveBeenCalledOnce()
+  })
+
   it.each([0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1])(
     'rejects invalid expiry %s',
     async (expiry) => {

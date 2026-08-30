@@ -28,10 +28,10 @@ export async function createMediaUpload<Record>(
   if (!Number.isSafeInteger(expiresInSeconds) || expiresInSeconds <= 0) {
     throw new MediaError('EXPIRY_INVALID', 'The upload expiry must be a positive safe integer')
   }
+  const now = dependencies.now?.() ?? new Date()
   const pending = { ...validated, id, key }
   const uploadUrl = await dependencies.presignUpload({ ...pending, expiresInSeconds })
   const record = await dependencies.savePending(pending)
-  const now = dependencies.now?.() ?? new Date()
   const expiresAt = new Date(now.getTime() + expiresInSeconds * 1_000)
   return { ...pending, expiresAt, record, uploadUrl }
 }

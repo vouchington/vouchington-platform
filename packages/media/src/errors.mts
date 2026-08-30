@@ -5,6 +5,7 @@ export type MediaErrorCode =
   | 'EXPIRY_INVALID'
   | 'INVALID_STATE'
   | 'MEDIA_NOT_FOUND'
+  | 'POLICY_INVALID'
   | 'UNAUTHORIZED'
 
 export class MediaError extends Error {

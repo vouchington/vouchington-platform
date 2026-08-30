@@ -55,6 +55,7 @@ export function createS3MediaStorage(options: S3MediaStorageOptions): S3MediaSto
         Key: input.key,
         ContentLength: input.contentLength,
         ContentType: input.contentType,
+        IfNoneMatch: '*',
       })
       return sign(options.client, command, { expiresIn: input.expiresInSeconds })
     },

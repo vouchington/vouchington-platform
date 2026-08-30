@@ -13,7 +13,7 @@ export function validateMediaUpload(
   const contentType = input.contentType?.split(';', 1)[0]?.trim().toLowerCase()
   if (
     contentType === undefined ||
-    !/^[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+$/.test(contentType) ||
+    !/^[a-z0-9!#$%&'*+.^_`|~-]+\/[a-z0-9!#$%&'*+.^_`|~-]+$/.test(contentType) ||
     !policy.acceptsContentType(contentType)
   ) {
     throw new MediaError('CONTENT_TYPE_INVALID', 'The media content type is not accepted')
@@ -21,6 +21,14 @@ export function validateMediaUpload(
 
   const contentLength = input.contentLength
   const minimum = policy.minBytes ?? 1
+  if (
+    !Number.isSafeInteger(minimum) ||
+    minimum < 0 ||
+    !Number.isSafeInteger(policy.maxBytes) ||
+    policy.maxBytes < minimum
+  ) {
+    throw new MediaError('POLICY_INVALID', 'Media size policy bounds must be safe integers')
+  }
   if (
     contentLength === null ||
     contentLength === undefined ||

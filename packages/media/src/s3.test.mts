@@ -40,6 +40,7 @@ describe('S3 media storage', () => {
       Key: 'key',
       ContentLength: 4,
       ContentType: 'image/png',
+      IfNoneMatch: '*',
     })
     expect(signedOptions).toEqual({ expiresIn: 30 })
   })
