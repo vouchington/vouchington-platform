@@ -154,6 +154,16 @@
       "types": "./dist/fetch-ports.d.mts",
       "import": "./dist/fetch-ports.mjs",
       "default": "./dist/fetch-ports.mjs"
+    },
+    "./http-body": {
+      "types": "./dist/http-body.d.mts",
+      "import": "./dist/http-body.mjs",
+      "default": "./dist/http-body.mjs"
+    },
+    "./http-link-pagination": {
+      "types": "./dist/http-link-pagination.d.mts",
+      "import": "./dist/http-link-pagination.mjs",
+      "default": "./dist/http-link-pagination.mjs"
     }
   },
   "publishConfig": {
