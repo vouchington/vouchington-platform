@@ -31,17 +31,45 @@ updates:
         update-types:
           - minor
           - patch
-      npm-minor-and-patch:
+      typescript-toolchain-minor-and-patch:
         applies-to: version-updates
         patterns:
-          - '*'
+          - '@types/node'
+          - typescript
         update-types:
           - minor
           - patch
-      npm-security:
+      vitest-minor-and-patch:
+        applies-to: version-updates
+        patterns:
+          - '@vitest/coverage-v8'
+          - vitest
+        update-types:
+          - minor
+          - patch
+      vitest-security:
         applies-to: security-updates
         patterns:
-          - '*'
+          - '@vitest/coverage-v8'
+          - vitest
+        update-types:
+          - minor
+          - patch
+      oxc-toolchain-minor-and-patch:
+        applies-to: version-updates
+        patterns:
+          - oxfmt
+          - oxlint
+          - oxlint-tsgolint
+        update-types:
+          - minor
+          - patch
+      oxc-toolchain-security:
+        applies-to: security-updates
+        patterns:
+          - oxfmt
+          - oxlint
+          - oxlint-tsgolint
         update-types:
           - minor
           - patch
@@ -53,17 +81,17 @@ updates:
       default-days: 7
     open-pull-requests-limit: 5
     groups:
-      github-actions-minor-and-patch:
+      github-maintained-actions-minor-and-patch:
         applies-to: version-updates
         patterns:
-          - '*'
+          - actions/*
         update-types:
           - minor
           - patch
-      github-actions-security:
+      github-maintained-actions-security:
         applies-to: security-updates
         patterns:
-          - '*'
+          - actions/*
         update-types:
           - minor
           - patch
