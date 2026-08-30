@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/reviews",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Schema-less, policy-injected review ratings engine and API-server route registration.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/reviews#readme",
   "bugs": {
