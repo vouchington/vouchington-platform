@@ -17,6 +17,7 @@ const packages = [
   'wikimedia',
   'memberships',
   'worker-runtime',
+  'rate-limit',
 ]
 
 describe('runtime package manifests', () => {
@@ -56,13 +57,7 @@ describe('runtime package manifests', () => {
 })
 
 function importBuiltModule(file: string): void {
-  execFileSync(
-    process.execPath,
-    [
-      '--input-type=module',
-      '--eval',
-      `await import(${JSON.stringify(pathToFileURL(resolve(file)).href)})`,
-    ],
-    { stdio: 'pipe' },
-  )
+  const url = JSON.stringify(pathToFileURL(resolve(file)).href)
+  const script = `const api = await import(${url}); if (typeof api.closeManagedValkeyClients === 'function') await api.closeManagedValkeyClients()`
+  execFileSync(process.execPath, ['--input-type=module', '--eval', script], { stdio: 'pipe' })
 }

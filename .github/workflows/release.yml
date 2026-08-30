@@ -31,6 +31,7 @@ on:
           - '@vouchington/media'
           - '@vouchington/wikimedia'
           - '@vouchington/memberships'
+          - '@vouchington/rate-limit'
       bump:
         description: Semver bump type
         type: choice

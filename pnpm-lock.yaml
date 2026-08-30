@@ -150,6 +150,12 @@ importers:
         specifier: ^0.15.3
         version: 0.15.3(express@5.2.1(supports-color@7.2.0))
 
+  packages/rate-limit:
+    dependencies:
+      valkyries:
+        specifier: ^0.8.0
+        version: 0.8.0
+
   packages/robots:
     dependencies:
       robots-parser:
@@ -1369,6 +1375,44 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@valkey/valkey-glide-darwin-arm64@2.5.1':
+    resolution: {integrity: sha512-DC6T0oYkyFnVIMABnmdtB2ZViJXMNMT8VtPQi4dniLBMbQJVS0BFO735bzDLkONZqnOf4lSRQMk+UYhUSE2n8Q==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@valkey/valkey-glide-darwin-x64@2.5.1':
+    resolution: {integrity: sha512-3XNRg2gwHpDGfpLm7og4cBCR9vvldd3z1OgqK4EBB75XSkx9gFXgcmIR8JYHiz9pnjv4FkeTCU6/WIPDCW7iTw==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@valkey/valkey-glide-linux-arm64-gnu@2.5.1':
+    resolution: {integrity: sha512-D3AnYqMefXaaZJLPa4Q5A506On0/zg2ikI+YKWQsVXSgegf+YRXMrjfYqXa+LQD8s8jMMlZB/FAmSr4g+iv3CQ==}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  '@valkey/valkey-glide-linux-arm64-musl@2.5.1':
+    resolution: {integrity: sha512-LIzxQhWhoPPIbYAy86moO1RA+SyFkNTxDPfR67MnGIZ7eaiFG9dfPfSdLC/LUN53D+/tbtaQYeyFxK3mNr3lcQ==}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
+  '@valkey/valkey-glide-linux-x64-gnu@2.5.1':
+    resolution: {integrity: sha512-VUXP852lmBp09WSG1/Yd9SFoATUW+MRRVaXhFabQkRlHm/7sm/0X9K2xyU5j41OeoHYK6Zne7YyGIyE1zgkV4Q==}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@valkey/valkey-glide-linux-x64-musl@2.5.1':
+    resolution: {integrity: sha512-KVRvCMBEFiyOkxgOy6KDC3M4QmpSOnRZa39mkOx/nZwP/9fFzuJ3g0RTGVcLQ75RqRSexqitE4MuG8IpUKjn5w==}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
+
+  '@valkey/valkey-glide@2.5.1':
+    resolution: {integrity: sha512-vtYyMJ2L42RH5CgBNtG2ffupNxu8c6KTzWvhXsUI2zChIFJQwUcuHuEdqXeOjTJZ9XfWs1E4w1TMiwnZSqGlkw==}
+    engines: {node: '>=16'}
+
   '@vitest/coverage-v8@4.1.11':
     resolution: {integrity: sha512-8MVGEFnJIcdGjcbfKmeq8z0pZHH0JlVtoVZH9Q/qwUp6wyFnEJUBMrw9DCaj+ra3vShGmhavjalMIhPNxZAUcw==}
     peerDependencies:
@@ -2418,6 +2462,10 @@ packages:
     resolution: {integrity: sha512-xZe/16rV4aa+HGSOCiY2YeLT1OybRLrrkL/Rqaq7p7GMVXjFh+6wN4oMYgjFmnSnhY8t6Xpdl2l9qmnHYuMHwQ==}
     hasBin: true
 
+  valkyries@0.8.0:
+    resolution: {integrity: sha512-oNEKunMsnZMR0Ioz8tt3HksnbFf4WQhfzgeC2DoJJ7G0gVNAyc9EYk3lXtGuuUumlOwYOQPVxiuVK6gd1Y+7Bg==}
+    engines: {node: '>=24.0.0'}
+
   vary@1.1.2:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
@@ -3420,6 +3468,36 @@ snapshots:
 
   '@typescript/typescript-win32-x64@7.0.2':
     optional: true
+
+  '@valkey/valkey-glide-darwin-arm64@2.5.1':
+    optional: true
+
+  '@valkey/valkey-glide-darwin-x64@2.5.1':
+    optional: true
+
+  '@valkey/valkey-glide-linux-arm64-gnu@2.5.1':
+    optional: true
+
+  '@valkey/valkey-glide-linux-arm64-musl@2.5.1':
+    optional: true
+
+  '@valkey/valkey-glide-linux-x64-gnu@2.5.1':
+    optional: true
+
+  '@valkey/valkey-glide-linux-x64-musl@2.5.1':
+    optional: true
+
+  '@valkey/valkey-glide@2.5.1':
+    dependencies:
+      long: 5.3.2
+      protobufjs: 7.6.5
+    optionalDependencies:
+      '@valkey/valkey-glide-darwin-arm64': 2.5.1
+      '@valkey/valkey-glide-darwin-x64': 2.5.1
+      '@valkey/valkey-glide-linux-arm64-gnu': 2.5.1
+      '@valkey/valkey-glide-linux-arm64-musl': 2.5.1
+      '@valkey/valkey-glide-linux-x64-gnu': 2.5.1
+      '@valkey/valkey-glide-linux-x64-musl': 2.5.1
 
   '@vitest/coverage-v8@4.1.11(vitest@4.1.11)':
     dependencies:
@@ -4555,6 +4633,10 @@ snapshots:
   unpipe@1.0.0: {}
 
   uuid@14.0.2: {}
+
+  valkyries@0.8.0:
+    dependencies:
+      '@valkey/valkey-glide': 2.5.1
 
   vary@1.1.2: {}
 
