@@ -14,7 +14,8 @@ adapter. Importing the root package never loads it.
 
 ## Store
 
-Bind the store to a `Psql` instance and static, unqualified identifiers. The table is owned and
+Bind the store to a `Psql` instance and static, unqualified identifiers. Validated identifiers are
+quoted in generated SQL, including when they match PostgreSQL keywords. The table is owned and
 migrated by the application. It must have this contract (replace `entity_id` with the configured
 column):
 
@@ -53,9 +54,11 @@ await votes.upsert(userId, [{ entityId, score: 1 }], {
 ```
 
 `upsert()` deduplicates input with last-value-wins semantics, locks IDs in deterministic order,
-does not append unchanged ballots, and honors `QueryOptions` transaction reuse. `clear()` appends
-a `NULL` score unless the current ballot is already clear. `getCurrent()` reads the primary for
-mutation correctness; `getByUser()` and paginated projections read the replica. Cursor scopes
+does not append unchanged ballots, and honors `QueryOptions` transaction reuse when the supplied
+transaction uses PostgreSQL's `READ COMMITTED` isolation. Stable-snapshot isolation levels are
+rejected because a waiter cannot observe the ballot committed by the prior lock holder. `clear()`
+appends a `NULL` score unless the current ballot is already clear. `getCurrent()` reads the primary
+for mutation correctness; `getByUser()` and paginated projections read the replica. Cursor scopes
 include the requested user/entity IDs to prevent replay across principals. Pages return camel-case
 `pageInfo` from `@vouchington/pagination`.
 

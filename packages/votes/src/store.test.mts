@@ -107,6 +107,16 @@ describe('vote store', () => {
     await expect(votes.getCurrent(USER_B, 'not-a-uuid')).rejects.toThrow('Invalid entityId')
   })
 
+  it('rejects caller transactions with stable snapshots', async () => {
+    const votes = store()
+    await psql.withTransaction(async (query) => {
+      await query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
+      await expect(
+        votes.upsert(USER_B, [{ entityId: ENTITY_C, score: 1 }], {}, { query }),
+      ).rejects.toThrow('READ COMMITTED')
+    })
+  })
+
   it('keyset-paginates current votes with scoped camel-case page info', async () => {
     const votes = store()
     await votes.upsert(USER_A, [{ entityId: ENTITY_C, score: 1 }])
@@ -125,6 +135,9 @@ describe('vote store', () => {
       endCursor: null,
     })
     await expect(votes.listByUser(USER_A, { limit: 1, after: 'bad' })).rejects.toThrow(
+      'Invalid vote cursor',
+    )
+    await expect(votes.listByUser(USER_A, { limit: 1, after: '' })).rejects.toThrow(
       'Invalid vote cursor',
     )
     await expect(votes.listByEntity(ENTITY_A, { limit: 0 })).rejects.toThrow('limit')
@@ -172,6 +185,22 @@ describe('vote store', () => {
     await expect(votes.listByUser(USER_B, { limit: 10 })).resolves.toMatchObject({
       results: [expect.objectContaining({ entityId: ENTITY_A }), expect.anything()],
     })
+  })
+
+  it('quotes validated PostgreSQL keyword identifiers', async () => {
+    await psql.write('/* resetKeywordVoteTest */ DROP TABLE IF EXISTS "order"')
+    await psql.write(
+      '/* createKeywordVoteTest */ CREATE TABLE "order" (id UUID DEFAULT uuidv7() PRIMARY KEY, user_id UUID NOT NULL, "user" UUID NOT NULL, score SMALLINT, ip_address INET, device_id UUID, session_id UUID, user_agent_id UUID, created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP)',
+    )
+    try {
+      const votes = createVoteStore(psql, { table: 'order', entityIdColumn: 'user' })
+      await expect(votes.upsert(USER_A, [{ entityId: ENTITY_A, score: 1 }])).resolves.toHaveLength(
+        1,
+      )
+      await expect(votes.getCurrent(USER_A, ENTITY_A)).resolves.toMatchObject({ score: 1 })
+    } finally {
+      await psql.write('/* dropKeywordVoteTest */ DROP TABLE "order"')
+    }
   })
 
   it('rejects malformed database rows', () => {

@@ -6,6 +6,10 @@ export function assertSqlIdentifier(value: string, name: string): string {
   return value
 }
 
+export function quoteSqlIdentifier(value: string, name: string): string {
+  return `"${assertSqlIdentifier(value, name)}"`
+}
+
 export function isUuid(value: string): boolean {
   return UUID.test(value)
 }

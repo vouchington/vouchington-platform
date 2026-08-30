@@ -1,4 +1,4 @@
-import type { Psql, QueryOptions } from '@vouchington/postgres'
+import type { Psql, QueryExecutor, QueryOptions } from '@vouchington/postgres'
 
 import { assertVoteScore } from './codec.mts'
 import { assertSqlIdentifier, assertUuid } from './identifiers.mts'
@@ -86,6 +86,7 @@ async function upsert(
   const values = normalizeVotes(votes)
   if (values.length === 0) return []
   return psql.withTransactionOptions(queryOptions, async (query) => {
+    if (queryOptions.query) await assertReadCommitted(query)
     const userAgentId = audit.userAgent
       ? ((await options.resolveUserAgentId?.(audit.userAgent, query)) ?? null)
       : null
@@ -95,6 +96,13 @@ async function upsert(
     )
     return rows.map(toEvent)
   })
+}
+
+async function assertReadCommitted(query: QueryExecutor): Promise<void> {
+  const { rows } = await query<{ transaction_isolation: string }>('SHOW transaction_isolation')
+  if (rows[0]?.transaction_isolation !== 'read committed') {
+    throw new Error('Vote upserts require a READ COMMITTED transaction')
+  }
 }
 
 async function getCurrent(

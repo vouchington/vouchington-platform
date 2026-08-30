@@ -54,7 +54,9 @@ function assertPage(page: VotePageOptions): void {
 }
 
 function decodeAfter(after: string | undefined, scope: string): string | undefined {
-  return after ? decodeScopedUuidCursor(after, scope, 'Invalid vote cursor').id : undefined
+  return after !== undefined
+    ? decodeScopedUuidCursor(after, scope, 'Invalid vote cursor').id
+    : undefined
 }
 
 function toPage(
