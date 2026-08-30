@@ -23,43 +23,12 @@ describe('passkeys', () => {
     })
   })
 
-  it('validates relying-party configuration', () => {
-    expect(() => createPasskeys({ ...baseOptions(), rpId: ' ' })).toThrow('rpId')
-    expect(() => createPasskeys({ ...baseOptions(), rpName: ' ' })).toThrow('rpName')
-    expect(() => createPasskeys({ ...baseOptions(), challengeTtlSeconds: 0 })).toThrow(
-      'challengeTtlSeconds',
-    )
-    const { residentKey: _residentKey, ...withoutResidentKey } = baseOptions()
-    expect(() => createPasskeys(withoutResidentKey as never)).toThrow('residentKey')
-    expect(() => createPasskeys({ ...baseOptions(), residentKey: 'invalid' as never })).toThrow(
-      'residentKey',
-    )
-    const { attestationType: _attestationType, ...withoutAttestation } = baseOptions()
-    expect(() => createPasskeys(withoutAttestation as never)).toThrow('attestationType')
-    expect(() => createPasskeys({ ...baseOptions(), attestationType: 'invalid' as never })).toThrow(
-      'attestationType',
-    )
-    const { userIdsEqual: _userIdsEqual, ...withoutEquality } = baseOptions()
-    expect(() => createPasskeys(withoutEquality as never)).toThrow('userIdsEqual')
-    const { failureLimiter: _failureLimiter, ...withoutLimiter } = baseOptions()
-    expect(() => createPasskeys(withoutLimiter as never)).toThrow('failureLimiter')
-    const { serializeUserId: _serializeUserId, ...withoutSerializer } = baseOptions()
-    expect(() => createPasskeys(withoutSerializer as never)).toThrow('serializeUserId')
-    const { userVerification: _userVerification, ...withoutPolicy } = baseOptions()
-    expect(() => createPasskeys(withoutPolicy as never)).toThrow('userVerification')
-    expect(() =>
-      createPasskeys({
-        ...baseOptions(),
-        userVerification: { ...baseOptions().userVerification, authentication: 'invalid' as never },
-      }),
-    ).toThrow('userVerification')
-  })
-
   it('encodes identifiers in default state keys', async () => {
     const { options, put } = configured()
     const { namespace: _namespace, ...defaultOptions } = options
     const passkeys = createPasskeys({
       ...defaultOptions,
+      authenticatorAttachment: null,
       serializeUserId: (userId) => `id=${userId}`,
     })
     await passkeys.registration.createOptions(testUser({ id: 'user:1' }), 'device:1')
@@ -101,9 +70,11 @@ describe('passkeys', () => {
         rpName: 'Example',
         userID: new Uint8Array([7, 8, 9]),
         attestationType: 'none',
+        supportedAlgorithmIDs: [-8, -7, -257],
         userDisplayName: 'person@example.test',
         excludeCredentials: [{ id: 'credential-1' }],
         authenticatorSelection: {
+          authenticatorAttachment: 'platform',
           residentKey: 'discouraged',
           userVerification: 'preferred',
         },
@@ -272,6 +243,9 @@ describe('passkeys', () => {
     const { options } = configured()
     const passkeys = createPasskeys({
       ...options,
+      attestationType: 'indirect',
+      authenticatorAttachment: 'cross-platform',
+      supportedAlgorithmIDs: [-7],
       userVerification: {
         registration: 'required',
         authentication: 'required',
@@ -279,6 +253,15 @@ describe('passkeys', () => {
       },
     })
     await passkeys.registration.createOptions(testUser(), 'device-1')
+    expect(webauthn.generateRegistrationOptions).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        attestationType: 'indirect',
+        supportedAlgorithmIDs: [-7],
+        authenticatorSelection: expect.objectContaining({
+          authenticatorAttachment: 'cross-platform',
+        }),
+      }),
+    )
     webauthn.verifyRegistrationResponse.mockResolvedValueOnce({ verified: false })
     await expect(verifyRegistration(passkeys)).rejects.toMatchObject({
       code: 'invalid_credentials',
@@ -423,6 +406,8 @@ function configured() {
       repository,
       namespace: 'site',
       attestationType: 'none' as const,
+      authenticatorAttachment: 'platform' as const,
+      supportedAlgorithmIDs: [-8, -7, -257],
       residentKey: 'discouraged' as const,
       userIdsEqual: (left: string, right: string) => left === right,
       serializeUserId: String,

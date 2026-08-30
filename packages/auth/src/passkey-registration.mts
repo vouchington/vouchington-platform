@@ -26,9 +26,14 @@ export function createPasskeyRegistration<UserId, PasskeyId, Created, Registrati
         userName: user.name,
         userID: Uint8Array.from(user.webAuthnUserId),
         userDisplayName: user.displayName ?? user.name,
-        attestationType: options.attestationType,
+        // SimpleWebAuthn v13 forwards `indirect` at runtime but narrows it out of this option's type.
+        attestationType: options.attestationType as 'none' | 'direct' | 'enterprise',
+        supportedAlgorithmIDs: [...options.supportedAlgorithmIDs],
         excludeCredentials: credentialIds.map((id) => ({ id })),
         authenticatorSelection: {
+          ...(options.authenticatorAttachment === null
+            ? {}
+            : { authenticatorAttachment: options.authenticatorAttachment }),
           residentKey: options.residentKey,
           userVerification,
         },
@@ -93,6 +98,8 @@ function validateOptions(options: {
   rpName: string
   challengeTtlSeconds: number
   attestationType?: unknown
+  authenticatorAttachment?: unknown
+  supportedAlgorithmIDs?: readonly unknown[]
   userIdsEqual?: unknown
   failureLimiter?: { record?: unknown }
   serializeUserId?: unknown
@@ -111,6 +118,18 @@ function validateOptions(options: {
     throw new TypeError('residentKey policy must be explicitly configured')
   if (!isAttestation(options.attestationType))
     throw new TypeError('attestationType policy must be explicitly configured')
+  if (
+    options.authenticatorAttachment !== null &&
+    options.authenticatorAttachment !== 'platform' &&
+    options.authenticatorAttachment !== 'cross-platform'
+  )
+    throw new TypeError('authenticatorAttachment policy must be explicitly configured')
+  if (
+    !Array.isArray(options.supportedAlgorithmIDs) ||
+    options.supportedAlgorithmIDs.length === 0 ||
+    !options.supportedAlgorithmIDs.every(Number.isSafeInteger)
+  )
+    throw new TypeError('supportedAlgorithmIDs must be a non-empty integer array')
   if (typeof options.userIdsEqual !== 'function')
     throw new TypeError('userIdsEqual must be explicitly configured')
   if (typeof options.failureLimiter?.record !== 'function')
@@ -132,5 +151,5 @@ function isPolicy(value: unknown) {
 }
 
 function isAttestation(value: unknown) {
-  return value === 'none' || value === 'direct' || value === 'enterprise'
+  return value === 'none' || value === 'indirect' || value === 'direct' || value === 'enterprise'
 }

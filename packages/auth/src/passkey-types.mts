@@ -1,5 +1,7 @@
 import type {
+  AuthenticatorAttachment,
   AuthenticatorTransportFuture,
+  COSEAlgorithmIdentifier,
   VerifiedRegistrationResponse,
 } from '@simplewebauthn/server'
 import type { ExpiringStateStore } from './types.mts'
@@ -56,6 +58,8 @@ export interface PasskeyOptions<
   state: ExpiringStateStore
   repository: PasskeyRepository<UserId, PasskeyId, Created, RegistrationContext>
   attestationType: PasskeyAttestation
+  authenticatorAttachment: AuthenticatorAttachment | null
+  supportedAlgorithmIDs: readonly COSEAlgorithmIdentifier[]
   residentKey: PasskeyResidentKey
   namespace?: string
   keys?: PasskeyStateKeys<UserId>
@@ -79,4 +83,4 @@ export interface PasskeyUser<UserId = string> {
 
 export type PasskeyUserVerification = 'discouraged' | 'preferred' | 'required'
 export type PasskeyResidentKey = 'discouraged' | 'preferred' | 'required'
-export type PasskeyAttestation = 'none' | 'direct' | 'enterprise'
+export type PasskeyAttestation = 'none' | 'indirect' | 'direct' | 'enterprise'
