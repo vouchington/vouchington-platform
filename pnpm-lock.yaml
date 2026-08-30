@@ -44,6 +44,9 @@ importers:
 
   packages/auth:
     dependencies:
+      '@jongleberry/api-server':
+        specifier: ^2.1.0
+        version: 2.1.0
       '@simplewebauthn/server':
         specifier: ^13.3.2
         version: 13.3.3
