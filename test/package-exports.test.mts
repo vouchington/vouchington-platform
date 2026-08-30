@@ -13,6 +13,7 @@ const packages = [
   'wikimedia',
   'memberships',
   'worker-runtime',
+  'rate-limit',
 ] as const
 
 describe('new package manifests and exports', () => {
@@ -56,6 +57,9 @@ describe('new package manifests and exports', () => {
     })
     expect(readManifest('memberships').dependencies).toBeUndefined()
     expect(readManifest('worker-runtime').dependencies).toBeUndefined()
+    expect(readManifest('rate-limit').dependencies).toEqual({
+      valkyries: '^0.8.0',
+    })
   })
 
   it('keeps membership declarations provider- and product-neutral', () => {
@@ -91,13 +95,10 @@ function readManifest(name: (typeof packages)[number]): Record<string, unknown> 
 }
 
 function importBuiltModule(file: string): void {
-  execFileSync(
-    process.execPath,
-    [
-      '--input-type=module',
-      '--eval',
-      `await import(${JSON.stringify(pathToFileURL(resolve(file)).href)})`,
-    ],
-    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
-  )
+  const url = JSON.stringify(pathToFileURL(resolve(file)).href)
+  const script = `const api = await import(${url}); if (typeof api.closeManagedValkeyClients === 'function') await api.closeManagedValkeyClients()`
+  execFileSync(process.execPath, ['--input-type=module', '--eval', script], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
 }

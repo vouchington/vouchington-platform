@@ -26,6 +26,7 @@ SKU names.
 | [`@vouchington/media`](packages/media)                             | Schema-less direct upload orchestration and S3 adapter             |
 | [`@vouchington/wikimedia`](packages/wikimedia)                     | Injected Wikimedia search and page-summary client                  |
 | [`@vouchington/memberships`](packages/memberships)                 | Schema-less membership lifecycle and provider primitives           |
+| [`@vouchington/rate-limit`](packages/rate-limit)                   | Focused sliding-window Valkey rate-limit primitives                |
 | [`@vouchington/browser-crawl`](packages/browser-crawl)             | Injected Playwright rendered-page collection                       |
 | [`@vouchington/domain-verification`](packages/domain-verification) | DNS TXT and secure-transport well-known verification               |
 | [`@vouchington/crawler-html`](packages/crawler-html)               | HTML content decoding and extraction                               |

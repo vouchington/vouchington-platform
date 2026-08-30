@@ -36,6 +36,7 @@ docker run --rm -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:18
 - `@vouchington/browser-crawl` — injected Playwright rendered-page collection
 - `@vouchington/domain-verification` — DNS TXT and secure-transport verification primitives
 - `@vouchington/media` — schema-less direct upload orchestration and an injected S3 adapter
+- `@vouchington/rate-limit` — focused sliding-window Valkey rate-limit primitives
 
 - `@vouchington/csv` — BOM-safe CSV parsing and spreadsheet-safe serialization
 - `@vouchington/html-utils` — HTML entity and text helpers
