@@ -5,6 +5,7 @@ import {
   catalog,
   emptyGrowth,
   WIDGETS_RANGE_POLICY,
+  widgetsCatalogTable,
   widgetsGrowth,
 } from './snapshot.test-helpers.mts'
 
@@ -12,15 +13,7 @@ describe('buildSchemaSnapshot — partitioning and growth classification', () =>
   it('attaches the growth partition policy and marks growth unbounded for a partitioned table', () => {
     const snapshot = buildSchemaSnapshot(
       catalog({
-        tables: [
-          {
-            table_name: 'widgets',
-            relkind: 'p',
-            partition_strategy: 'r',
-            partition_key: 'RANGE (created_at)',
-            comment: null,
-          },
-        ],
+        tables: [widgetsCatalogTable('p')],
       }),
       widgetsGrowth(),
     )
