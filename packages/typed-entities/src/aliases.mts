@@ -46,9 +46,12 @@ export function createAliasOperations<
           }
         }
         for (const alias of aliases) await transaction.putAlias(targetId, alias)
+        const lifecycle = await runtime
+          .policy(source)
+          .projectLifecycle?.({ context, entity: source })
         const input = {
           aliases,
-          lifecycle: runtime.policy(source).projectLifecycle?.({ context, entity: source }),
+          lifecycle,
           sourceId,
           sourceSlug: source.slug,
           targetId,

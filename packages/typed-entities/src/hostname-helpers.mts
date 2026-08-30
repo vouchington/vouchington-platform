@@ -1,3 +1,4 @@
+import { PolicyDeniedError } from './errors.mts'
 import type { Runtime } from './runtime.mts'
 import type {
   HostnameAssociation,
@@ -9,6 +10,30 @@ import type {
 } from './types.mts'
 
 type Change = (change: TypedEntityChange) => Promise<void>
+
+export async function permitHostnameRemoval<
+  TType extends string,
+  TEntity extends TypedEntity<TType>,
+  TContext,
+>(
+  runtime: Runtime<TType, TEntity, TContext>,
+  context: TContext,
+  entity: TEntity,
+  item: HostnameAssociation | HostnameClaim,
+  operation: string,
+  allowInactive = false,
+): Promise<void> {
+  const policy = runtime.policy(entity)
+  const check = policy.canRemoveHostname?.({
+    context,
+    entity,
+    hostname: item.hostname,
+    primary: item.primary,
+  })
+  if (allowInactive) {
+    if (check !== undefined && !(await check)) throw new PolicyDeniedError(operation, entity.type)
+  } else await runtime.permit(context, entity, operation, check)
+}
 
 export async function removeClaim<TType extends string, TEntity extends TypedEntity<TType>>(
   transaction: TypedEntityTransaction<TType, TEntity>,
@@ -42,14 +67,8 @@ export function removeAssociationOperation<
         entityId,
         hostname,
       )
-      const policy = runtime.policy(entity)
       for (const item of matches) {
-        await runtime.permit(
-          context,
-          entity,
-          'remove hostname association',
-          policy.canRemoveHostname?.({ context, entity, ...item }),
-        )
+        await permitHostnameRemoval(runtime, context, entity, item, 'remove hostname association')
       }
       for (const item of matches) await removeAssociation(transaction, item, change)
     })

@@ -31,6 +31,9 @@ export function fixture(
   ])
   let state: State = emptyState()
   let transactions = 0
+  let hostnameLockHook:
+    | ((hostnames: readonly string[], claims: Map<string, HostnameClaim>) => void)
+    | undefined
   const locks: string[] = []
   const audits: TypedEntityChange[] = []
   const commits: (readonly TypedEntityChange[])[] = []
@@ -41,7 +44,13 @@ export function fixture(
     ): Promise<TResult> {
       transactions++
       const draft = cloneState(state)
-      const result = await operation(makeTransaction(draft, entities, locks))
+      const result = await operation(
+        makeTransaction(draft, entities, locks, (hostnames) => {
+          const hook = hostnameLockHook
+          hostnameLockHook = undefined
+          hook?.(hostnames, draft.claims)
+        }),
+      )
       state = draft
       return result
     },
@@ -66,6 +75,11 @@ export function fixture(
     engine,
     entities,
     locks,
+    onNextHostnameLock(
+      hook: (hostnames: readonly string[], claims: Map<string, HostnameClaim>) => void,
+    ) {
+      hostnameLockHook = hook
+    },
     get state() {
       return state
     },
@@ -99,6 +113,7 @@ function makeTransaction(
   state: State,
   entities: Map<string, Entity>,
   locks: string[],
+  onHostnameLock: (hostnames: readonly string[]) => void,
 ): TypedEntityTransaction<EntityType, Entity> {
   return {
     addParentId: async (id, parentId) => void setFor(state.parents, id).add(parentId),
@@ -122,7 +137,10 @@ function makeTransaction(
     lockAliases: async (values) => void locks.push(`aliases:${values.join(',')}`),
     lockEntities: async (values) => void locks.push(`entities:${values.join(',')}`),
     lockHierarchy: async () => void locks.push('hierarchy'),
-    lockHostnames: async (values) => void locks.push(`hostnames:${values.join(',')}`),
+    lockHostnames: async (values) => {
+      locks.push(`hostnames:${values.join(',')}`)
+      onHostnameLock(values)
+    },
     mergeEntities: async (input) => void state.merges.push(input),
     putAlias: async (id, alias) => void state.aliases.set(alias, id),
     putHostnameAssociation: async (item) => void state.associations.set(key(item), item),

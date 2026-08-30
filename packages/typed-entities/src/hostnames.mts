@@ -1,6 +1,7 @@
 import { HostnameClaimedError } from './errors.mts'
 import type { Runtime } from './runtime.mts'
 import {
+  permitHostnameRemoval,
   removeAssociation,
   removeAssociationOperation,
   removeClaim,
@@ -18,7 +19,6 @@ export function createHostnameOperations<
     runtime.run(context, async (transaction, change) => {
       const hostname = runtime.hostname(value)
       await transaction.lockEntities([entityId])
-      await transaction.lockHostnames([hostname])
       const entity = await runtime.entity(transaction, entityId)
       const policy = runtime.policy(entity)
       await runtime.permit(
@@ -27,6 +27,14 @@ export function createHostnameOperations<
         'claim hostname',
         policy.canClaimHostname?.({ context, entity, hostname, primary }),
       )
+      const initial = primary ? await transaction.listHostnameClaims(entityId) : []
+      const hostnames = [
+        ...new Set([
+          hostname,
+          ...initial.filter((item) => item.primary).map((item) => item.hostname),
+        ]),
+      ].toSorted()
+      await transaction.lockHostnames(hostnames)
       const existing = await transaction.getHostnameClaim(hostname)
       if (existing !== null && existing.entityId !== entityId) {
         const owner = await transaction.getEntity(existing.entityId)
@@ -40,16 +48,29 @@ export function createHostnameOperations<
         if (reclaim === undefined || !(await reclaim)) {
           throw new HostnameClaimedError(hostname, existing.entityId)
         }
+        if (owner !== null) {
+          await permitHostnameRemoval(
+            runtime,
+            context,
+            owner,
+            existing,
+            'remove hostname claim',
+            true,
+          )
+        }
         await removeClaim(transaction, existing, change)
       }
       if (existing?.entityId === entityId && (existing.primary || !primary)) return hostname
       const current = await transaction.listHostnameClaims(entityId)
-      if (primary) {
-        for (const item of current.filter((item) => item.primary && item.hostname !== hostname)) {
-          await removeClaim(transaction, item, change)
-        }
+      const displaced = current.filter(
+        (item) => primary && item.primary && item.hostname !== hostname,
+      )
+      if (existing?.entityId === entityId) displaced.push(existing)
+      const removals = uniqueByHostname(displaced)
+      for (const item of removals) {
+        await permitHostnameRemoval(runtime, context, entity, item, 'remove hostname claim')
       }
-      if (existing?.entityId === entityId) await removeClaim(transaction, existing, change)
+      for (const item of removals) await removeClaim(transaction, item, change)
       const item = { entityId, hostname, primary }
       await transaction.putHostnameClaim(item)
       await change({ kind: 'hostname.claimed', ...item })
@@ -62,12 +83,12 @@ export function createHostnameOperations<
       await transaction.lockEntities([entityId])
       await transaction.lockHostnames([hostname])
       const entity = await runtime.entity(transaction, entityId)
-      const policy = runtime.policy(entity)
-      await runtime.permit(
+      await permitHostnameRemoval(
+        runtime,
         context,
         entity,
+        { entityId, hostname, primary },
         'remove hostname claim',
-        policy.canRemoveHostname?.({ context, entity, hostname, primary }),
       )
       const existing = await transaction.getHostnameClaim(hostname)
       if (existing?.entityId === entityId && existing.primary === primary) {
@@ -79,19 +100,17 @@ export function createHostnameOperations<
     runtime.run(context, async (transaction, change) => {
       await transaction.lockEntities([entityId])
       const entity = await runtime.entity(transaction, entityId)
-      const claims = (await transaction.listHostnameClaims(entityId))
+      const snapshot = (await transaction.listHostnameClaims(entityId))
         .filter((item) => item.primary === primary)
         .toSorted((left, right) => left.hostname.localeCompare(right.hostname))
-      await transaction.lockHostnames(claims.map((item) => item.hostname))
-      const policy = runtime.policy(entity)
-      for (const item of claims) {
-        await runtime.permit(
-          context,
-          entity,
-          'remove hostname claim',
-          policy.canRemoveHostname?.({ context, entity, ...item }),
-        )
+      await transaction.lockHostnames(snapshot.map((item) => item.hostname))
+      const claims = []
+      for (const item of snapshot) {
+        const current = await transaction.getHostnameClaim(item.hostname)
+        if (current?.entityId === entityId && current.primary === primary) claims.push(current)
       }
+      for (const item of claims)
+        await permitHostnameRemoval(runtime, context, entity, item, 'remove hostname claim')
       for (const item of claims) await removeClaim(transaction, item, change)
     })
 
@@ -110,12 +129,13 @@ export function createHostnameOperations<
       const current = await transaction.listHostnameAssociations(entityId)
       const exact = current.find((item) => item.hostname === hostname)
       if (exact?.primary === primary || (exact?.primary === true && !primary)) return hostname
-      if (primary) {
-        for (const item of current.filter((item) => item.primary)) {
-          await removeAssociation(transaction, item, change)
-        }
+      const displaced = current.filter((item) => primary && item.primary)
+      if (exact !== undefined) displaced.push(exact)
+      const removals = uniqueByHostname(displaced)
+      for (const item of removals) {
+        await permitHostnameRemoval(runtime, context, entity, item, 'remove hostname association')
       }
-      if (exact !== undefined) await removeAssociation(transaction, exact, change)
+      for (const item of removals) await removeAssociation(transaction, item, change)
       const item = { entityId, hostname, primary }
       await transaction.putHostnameAssociation(item)
       await change({ kind: 'hostname.associated', ...item })
@@ -154,4 +174,10 @@ export function createHostnameOperations<
     resolveHostnameAssociations: (context: TContext, value: string) =>
       resolveAssociations(runtime, context, value),
   }
+}
+
+function uniqueByHostname<TItem extends { readonly hostname: string }>(items: readonly TItem[]) {
+  return [...new Map(items.map((item) => [item.hostname, item])).values()].toSorted((left, right) =>
+    left.hostname.localeCompare(right.hostname),
+  )
 }

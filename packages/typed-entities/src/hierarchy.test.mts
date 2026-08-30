@@ -58,4 +58,20 @@ describe('hierarchies', () => {
       new PolicyDeniedError('remove parent', 'group'),
     )
   })
+
+  it('rejects new relationships to inactive parents', async () => {
+    const subject = fixture({
+      catalog: {
+        group: { isActive: ({ entity }) => entity.id !== 'one' },
+        place: {},
+      },
+    })
+    await expect(subject.engine.addParent(subject.context, 'two', 'one')).rejects.toEqual(
+      new PolicyDeniedError('use inactive entity', 'group'),
+    )
+    subject.state.parents.set('two', new Set(['one']))
+    await expect(
+      subject.engine.removeParent(subject.context, 'two', 'one'),
+    ).resolves.toBeUndefined()
+  })
 })

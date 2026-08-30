@@ -20,6 +20,7 @@ export function createHierarchyOperations<
         add ? 'add parent' : 'remove parent',
         policy.canParent?.({ context, entity, parent }),
       )
+      if (add) await runtime.permit(context, parent, 'add parent')
       const parents = await transaction.listParentIds(entityId)
       if (add && !parents.includes(parentId)) {
         await assertAcyclic(transaction, entityId, parentId)

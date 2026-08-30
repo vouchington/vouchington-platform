@@ -10,6 +10,7 @@ describe('exclusive hostname claims', () => {
     await subject.engine.claimAdditionalHostname(subject.context, 'one', 'alt.one.test')
     await subject.engine.claimAdditionalHostname(subject.context, 'one', 'alt.one.test')
     await subject.engine.claimPrimaryHostname(subject.context, 'one', 'new.one.test')
+    expect(subject.locks).toContain('hostnames:new.one.test,one.test')
     await expect(subject.engine.listHostnameClaims(subject.context, 'one')).resolves.toEqual([
       { entityId: 'one', hostname: 'alt.one.test', primary: false },
       { entityId: 'one', hostname: 'new.one.test', primary: true },
@@ -32,6 +33,28 @@ describe('exclusive hostname claims', () => {
     await expect(
       denied.engine.claimAdditionalHostname(denied.context, 'two', 'shared.test'),
     ).rejects.toEqual(new HostnameClaimedError('shared.test', 'one'))
+
+    const protectedOwner = fixture({
+      catalog: {
+        group: {
+          canRemoveHostname: ({ entity }) => entity.id !== 'one',
+          mayReclaimHostname: () => true,
+        },
+        place: {},
+      },
+    })
+    await protectedOwner.engine.claimAdditionalHostname(
+      protectedOwner.context,
+      'one',
+      'protected.test',
+    )
+    await expect(
+      protectedOwner.engine.claimAdditionalHostname(
+        protectedOwner.context,
+        'two',
+        'protected.test',
+      ),
+    ).rejects.toEqual(new PolicyDeniedError('remove hostname claim', 'group'))
 
     const allowed = fixture({
       catalog: {
@@ -88,6 +111,25 @@ describe('exclusive hostname claims', () => {
     await expect(subject.engine.clearAdditionalHostnames(subject.context, 'one')).rejects.toEqual(
       new PolicyDeniedError('remove hostname claim', 'group'),
     )
+    await expect(
+      subject.engine.claimPrimaryHostname(subject.context, 'one', 'new.one.test'),
+    ).rejects.toEqual(new PolicyDeniedError('remove hostname claim', 'group'))
+    await expect(
+      subject.engine.claimPrimaryHostname(subject.context, 'one', 'alt.one.test'),
+    ).rejects.toEqual(new PolicyDeniedError('remove hostname claim', 'group'))
+    expect(subject.state.claims.get('one.test')?.entityId).toBe('one')
+  })
+
+  it('revalidates claim ownership after acquiring clear locks', async () => {
+    const subject = fixture()
+    await subject.engine.claimPrimaryHostname(subject.context, 'one', 'one.test')
+    const auditCount = subject.audits.length
+    subject.onNextHostnameLock((_hostnames, claims) => {
+      claims.set('one.test', { entityId: 'two', hostname: 'one.test', primary: true })
+    })
+    await subject.engine.clearPrimaryHostname(subject.context, 'one')
+    expect(subject.state.claims.get('one.test')?.entityId).toBe('two')
+    expect(subject.audits).toHaveLength(auditCount)
   })
 })
 
@@ -130,9 +172,15 @@ describe('non-exclusive hostname associations', () => {
     const removeDenied = fixture({
       catalog: { group: { canRemoveHostname: () => false }, place: {} },
     })
-    await removeDenied.engine.associateAdditionalHostname(removeDenied.context, 'one', 'one.test')
+    await removeDenied.engine.associatePrimaryHostname(removeDenied.context, 'one', 'one.test')
     await expect(
       removeDenied.engine.removeHostnameAssociation(removeDenied.context, 'one', 'one.test'),
     ).rejects.toEqual(new PolicyDeniedError('remove hostname association', 'group'))
+    await expect(
+      removeDenied.engine.associatePrimaryHostname(removeDenied.context, 'one', 'other.test'),
+    ).rejects.toEqual(new PolicyDeniedError('remove hostname association', 'group'))
+    await expect(
+      removeDenied.engine.listHostnameAssociations(removeDenied.context, 'one'),
+    ).resolves.toEqual([{ entityId: 'one', hostname: 'one.test', primary: true }])
   })
 })

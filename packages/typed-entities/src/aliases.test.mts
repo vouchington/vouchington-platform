@@ -67,6 +67,18 @@ describe('aliases and merges', () => {
     expect(subject.locks).toContain('aliases:first,zeta')
   })
 
+  it('awaits asynchronous lifecycle projections before persistence and audit', async () => {
+    const subject = fixture({
+      catalog: {
+        group: { projectLifecycle: async () => Promise.resolve('archived') },
+        place: {},
+      },
+    })
+    await subject.engine.merge(subject.context, 'one', 'two')
+    expect(subject.state.merges[0]?.lifecycle).toBe('archived')
+    expect(subject.audits.at(-1)).toMatchObject({ kind: 'entity.merged', lifecycle: 'archived' })
+  })
+
   it('rolls back every merge write when an alias conflicts', async () => {
     const subject = fixture()
     await subject.engine.claimAlias(subject.context, 'one', 'zeta')
