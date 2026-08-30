@@ -6,7 +6,7 @@
   "ignore": ["test/fixtures/dependency-cruiser/**"],
   "workspaces": {
     "packages/postgres": {
-      "entry": ["src/index.mts!"],
+      "entry": ["src/index.mts!", "src/pg-schema-snapshot/index.mts!"],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!", "!src/**/test-helpers.mts!"],
     },
     "packages/utils": {
