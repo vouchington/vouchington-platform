@@ -27,6 +27,7 @@ on:
           - '@vouchington/frontmatter'
           - '@vouchington/http-transport'
           - '@vouchington/image-resize'
+          - '@vouchington/media'
           - '@vouchington/wikimedia'
           - '@vouchington/memberships'
       bump:

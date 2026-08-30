@@ -22,6 +22,7 @@ SKU names.
 | [`@vouchington/frontmatter`](packages/frontmatter)                 | Deterministic YAML frontmatter serialization                       |
 | [`@vouchington/http-transport`](packages/http-transport)           | Redirect-safe transport with injected fetch/address pinning        |
 | [`@vouchington/image-resize`](packages/image-resize)               | Sharp byte transforms, metadata, and image format negotiation      |
+| [`@vouchington/media`](packages/media)                             | Schema-less direct upload orchestration and S3 adapter             |
 | [`@vouchington/wikimedia`](packages/wikimedia)                     | Injected Wikimedia search and page-summary client                  |
 | [`@vouchington/memberships`](packages/memberships)                 | Schema-less membership lifecycle and provider primitives           |
 | [`@vouchington/browser-crawl`](packages/browser-crawl)             | Injected Playwright rendered-page collection                       |

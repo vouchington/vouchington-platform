@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import sharp from 'sharp'
 import { inspectImage } from './metadata.mts'
 import { ImageTransformError, transformImage } from './transform.mts'
@@ -21,6 +24,17 @@ describe('image transforms', () => {
       width: 20,
       hasAlpha: true,
     })
+  })
+
+  it('inspects an image from a local file path', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'image-resize-'))
+    const path = join(directory, 'source.png')
+    try {
+      await writeFile(path, await source())
+      await expect(inspectImage(path)).resolves.toMatchObject({ format: 'png', width: 20 })
+    } finally {
+      await rm(directory, { force: true, recursive: true })
+    }
   })
 
   it('supports each encoder and flattening JPEG alpha', async () => {

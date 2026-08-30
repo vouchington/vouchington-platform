@@ -15,7 +15,7 @@ export interface InspectImageOptions {
 }
 
 export async function inspectImage(
-  input: Uint8Array,
+  input: Uint8Array | string,
   options: InspectImageOptions = {},
 ): Promise<ImageMetadata> {
   const metadata = await sharp(input, { limitInputPixels: options.maxInputPixels }).metadata()

@@ -12,3 +12,6 @@ const bytes = await transformImage(originalBytes, { width: 800, format, quality:
 
 Callers select resize dimensions, pixel limits, output quality, transparent-background handling,
 and response/cache policy. The package only transforms supplied bytes.
+
+`inspectImage` accepts either supplied bytes or a caller-managed local file path. Path support lets
+worker processes inspect temporary downloads without loading the full object into memory.
