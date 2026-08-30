@@ -52,6 +52,31 @@ export function normalizeAsciiHostname(value: string): string | null {
     return null
   }
 }
+
+/** Normalizes ASCII or IDN hostnames, using WHATWG URL punycode conversion for Unicode input. */
+export function normalizeHostname(value: string): string | null {
+  const ascii = normalizeAsciiHostname(value)
+  // oxlint-disable-next-line no-control-regex -- detect input requiring WHATWG punycode conversion.
+  if (ascii !== null || !/[^\x00-\x7F]/.test(value)) return ascii
+  const input = value
+    .trim()
+    .replace(
+      /^(https?):\/+|^(https?):/i,
+      (_match, first?: string, second?: string) => `${first ?? second}://`,
+    )
+  try {
+    const candidate = /^[a-z][a-z0-9+.-]*:\/\//i.test(input) ? input : `https://${input}`
+    const url = new URL(candidate)
+    return url.username || url.password ? null : normalizeAsciiHostname(url.hostname)
+  } catch {
+    return null
+  }
+}
+
+/** Removes one leading lowercase `www.` and trailing dots for presentation. */
+export function formatHostnameForDisplay(hostname: string): string {
+  return hostname.replace(/^www\./, '').replace(/\.+$/, '')
+}
 export function extractUrlHostname(value: string): string | null {
   try {
     return new URL(value).hostname || null

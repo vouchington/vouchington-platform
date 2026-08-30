@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest'
 import {
   extractUrlHostname,
   extractUrlScheme,
+  formatHostnameForDisplay,
   getFirstPathSegment,
   isAsciiHostname,
   isExternalHttpUrl,
   matchesHostnamePattern,
   matchesPathnamePattern,
   normalizeAsciiHostname,
+  normalizeHostname,
   sanitizeImageUrl,
   sanitizeLinkUrl,
 } from './urls.mts'
@@ -45,6 +47,21 @@ describe('URLs', () => {
     expect(extractUrlHostname('https://example.test/path')).toBe('example.test')
     expect(extractUrlHostname('mailto:a@example.test')).toBeNull()
     expect(extractUrlHostname('not a url')).toBeNull()
+  })
+
+  it('normalizes IDN hostnames without changing the explicit ASCII helper', () => {
+    expect(normalizeHostname('münich.com')).toBe('xn--mnich-kva.com')
+    expect(normalizeHostname('HTTPS:/MÜNICH.com./path')).toBe('xn--mnich-kva.com')
+    expect(normalizeHostname('https:MÜNICH.com')).toBe('xn--mnich-kva.com')
+    expect(normalizeHostname('https://user:pass@münich.com')).toBeNull()
+    expect(normalizeHostname('münich..com')).toBeNull()
+    expect(normalizeHostname('https://[münich')).toBeNull()
+    expect(normalizeHostname('example.com')).toBe('example.com')
+  })
+
+  it('formats hostnames for display without applying normalization policy', () => {
+    expect(formatHostnameForDisplay('www.www.example.com...')).toBe('www.example.com')
+    expect(formatHostnameForDisplay('WWW.example.com')).toBe('WWW.example.com')
   })
 
   it('handles pathname groups and SQL-like matching', () => {
