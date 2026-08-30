@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-const packages = ['http-transport', 'image-resize', 'wikimedia', 'memberships'] as const
+const packages = ['http-transport', 'image-resize', 'media', 'wikimedia', 'memberships'] as const
 
 describe('new package manifests and exports', () => {
   beforeAll(() => {
@@ -21,11 +21,22 @@ describe('new package manifests and exports', () => {
     }
   })
 
+  it('publishes the media S3 subpath', () => {
+    expect(Object.keys(readManifest('media').exports as object)).toEqual(['.', './s3'])
+    expect(existsSync('packages/media/dist/s3.mjs')).toBe(true)
+    expect(existsSync('packages/media/dist/s3.d.mts')).toBe(true)
+    expect(() => importBuiltModule('packages/media/dist/s3.mjs')).not.toThrow()
+  })
+
   it('keeps runtime dependencies limited to direct package needs', () => {
     expect(readManifest('http-transport').dependencies).toBeUndefined()
     expect(readManifest('image-resize').dependencies).toEqual({
       negotiator: '^1.1.0',
       sharp: '^0.35.3',
+    })
+    expect(readManifest('media').dependencies).toEqual({
+      '@aws-sdk/client-s3': '^3.1121.0',
+      '@aws-sdk/s3-request-presigner': '^3.1121.0',
     })
     expect(readManifest('wikimedia').dependencies).toEqual({
       '@jongleberry/api-server': '^2.1.0',
