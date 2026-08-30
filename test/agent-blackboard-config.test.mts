@@ -42,10 +42,10 @@ describe('Agent Blackboard host configuration', () => {
     expect(instructions).toMatch(/codex plugin add agent-blackboard@agent-blackboard/u)
     expect(instructions).toMatch(/agent-blackboard@0\.5\.0/u)
     const config = readFileSync('.codex/config.toml', 'utf8')
-    expect(config).toMatch(/\[plugins\."agent-blackboard@agent-blackboard"\]\nenabled = true/u)
-    const approvals = [...config.matchAll(/\.tools\.([a-z_]+)\]\napproval_mode = "approve"/gu)].map(
-      (match) => match[1],
-    )
+    expect(config).toMatch(/\[plugins\."agent-blackboard@agent-blackboard"\]\r?\nenabled = true/u)
+    const approvals = [
+      ...config.matchAll(/\.tools\.([a-z_]+)\]\r?\napproval_mode = "approve"/gu),
+    ].map((match) => match[1])
     expect(config.match(/approval_mode = "approve"/gu)).toHaveLength(8)
     expect(approvals).toEqual([
       'entry_append',
