@@ -1,8 +1,8 @@
 name: Final Code Review
 
 on:
-  pull_request_target:
-    types: [opened, reopened, synchronize, ready_for_review, converted_to_draft, closed]
+  repository_dispatch:
+    types: [final-review-requested]
 
 permissions:
   actions: read
@@ -10,22 +10,18 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: final-code-review-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+  group: final-code-review-${{ github.event.client_payload.pr_number }}-${{ github.event.client_payload.head_sha }}
   cancel-in-progress: true
 
 jobs:
   select-final-review:
     name: Select final review
-    if: >-
-      github.event.pull_request.base.ref == github.event.repository.default_branch
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 5
     permissions:
       actions: read
-      checks: read
       contents: read
-      issues: write
-      pull-requests: write
+      pull-requests: read
     outputs:
       should_review: ${{ steps.select.outputs.should_review }}
       gate_status: ${{ steps.select.outputs.gate_status }}
@@ -35,28 +31,19 @@ jobs:
     steps:
       - name: Select final review
         id: select
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          EVENT_ACTION: ${{ github.event.action }}
-          EVENT_NAME: ${{ github.event_name }}
-          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          READY_AT: ${{ github.event.pull_request.updated_at }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          COMPLETE_LABEL: final-code-review:complete
-          GH_RETRY_ATTEMPTS: '3'
-          GH_RETRY_BACKOFF_SECONDS: '5'
-          GH_RETRY_TRANSPORT_MARKERS: |
-            net/http: TLS handshake timeout
-            net/http: timeout awaiting response headers
-            connection reset by peer
-            unexpected EOF
-            i/o timeout
-          TESTS_WAIT_ATTEMPTS: '160'
-          TESTS_WAIT_SECONDS: '30'
-          CI_WORKFLOW: ci.yml
-          TESTS_JOB_NAME: test
-        uses: vouchington/vouchington-tooling/.github/actions/final-review-select@f5f41caba5aef0b31e507a67123c76f1c9a53d02 # v0.3.0
+        uses: vouchington/vouchington-tooling/.github/actions/select-final-review@f98f5c18e1f10ced362d43d646ca49611adf4876
+        with:
+          read-token: ${{ github.token }}
+          pr-number: ${{ github.event.client_payload.pr_number }}
+          event-action: ${{ github.event.action }}
+          event-head-sha: ${{ github.event.client_payload.head_sha }}
+          source-run-id: ${{ github.event.client_payload.source_run_id }}
+          source-run-attempt: ${{ github.event.client_payload.source_run_attempt }}
+          source-base-sha: ${{ github.event.client_payload.base_sha }}
+          default-branch: ${{ github.event.repository.default_branch }}
+          workflow-path: .github/workflows/ci.yml
+          workflow-event: pull_request
+          fan-in-job: test
 
   validate-review-settings:
     name: Validate code review settings
@@ -134,7 +121,7 @@ jobs:
           persist-credentials: false
       - name: Run OpenCode OpenRouter review
         id: opencode-review-agent
-        uses: vouchington/vouchington-tooling/.github/actions/opencode-code-review@1bcaf04b0ee3bf816c406d0239e7d7c54e44eb3f # v0.0.19
+        uses: vouchington/vouchington-tooling/.github/actions/opencode-code-review@f98f5c18e1f10ced362d43d646ca49611adf4876
         with:
           pr_number: ${{ needs.select-final-review.outputs.pr_number }}
           provider_name: OpenCode OpenRouter
@@ -182,12 +169,14 @@ jobs:
           [ "$(jq -r '.state' <<< "$pr_json")" = open ]
       - name: Post OpenCode OpenRouter review
         id: opencode-review-poster
-        uses: vouchington/vouchington-tooling/.github/actions/code-review-poster@1bcaf04b0ee3bf816c406d0239e7d7c54e44eb3f # v0.0.19
+        uses: vouchington/vouchington-tooling/.github/actions/code-review-poster@f98f5c18e1f10ced362d43d646ca49611adf4876
         with:
           pr_number: ${{ needs.select-final-review.outputs.pr_number }}
           artifact_id: ${{ needs.opencode-code-review.outputs.payload_artifact_id }}
           provider_name: OpenCode OpenRouter
           token_source: github-token
+          expected_head_sha: ${{ needs.select-final-review.outputs.head_sha }}
+          expected_base_sha: ${{ needs.select-final-review.outputs.base_sha }}
       - name: Require poster success
         if: >-
           always() && (steps.opencode-review-poster.outcome != 'success' ||
@@ -239,7 +228,7 @@ jobs:
           persist-credentials: false
       - name: Run OpenCode Zen review
         id: opencode-review-agent
-        uses: vouchington/vouchington-tooling/.github/actions/opencode-code-review@1bcaf04b0ee3bf816c406d0239e7d7c54e44eb3f # v0.0.19
+        uses: vouchington/vouchington-tooling/.github/actions/opencode-code-review@f98f5c18e1f10ced362d43d646ca49611adf4876
         with:
           pr_number: ${{ needs.select-final-review.outputs.pr_number }}
           provider_name: OpenCode Zen
@@ -287,12 +276,14 @@ jobs:
           [ "$(jq -r '.state' <<< "$pr_json")" = open ]
       - name: Post OpenCode Zen review
         id: opencode-review-poster
-        uses: vouchington/vouchington-tooling/.github/actions/code-review-poster@1bcaf04b0ee3bf816c406d0239e7d7c54e44eb3f # v0.0.19
+        uses: vouchington/vouchington-tooling/.github/actions/code-review-poster@f98f5c18e1f10ced362d43d646ca49611adf4876
         with:
           pr_number: ${{ needs.select-final-review.outputs.pr_number }}
           artifact_id: ${{ needs.opencode-zen-code-review.outputs.payload_artifact_id }}
           provider_name: OpenCode Zen
           token_source: github-token
+          expected_head_sha: ${{ needs.select-final-review.outputs.head_sha }}
+          expected_base_sha: ${{ needs.select-final-review.outputs.base_sha }}
       - name: Require poster success
         if: >-
           always() && (steps.opencode-review-poster.outcome != 'success' ||
@@ -302,11 +293,7 @@ jobs:
           exit 1
 
   code-reviewed:
-    name: >-
-      ${{ github.event.pull_request.draft == false &&
-      github.event.pull_request.state == 'open' &&
-      github.event.pull_request.base.ref == github.event.repository.default_branch &&
-      'Code Reviewed' || 'Ignore ineligible final review' }}
+    name: Code Reviewed
     needs:
       - select-final-review
       - validate-review-settings
@@ -318,17 +305,29 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
+      checks: write
+      contents: read
       issues: write
       pull-requests: write
     steps:
-      - name: Validate final review outcome
-        id: gate
+      - name: Run native final review gate
+        uses: vouchington/vouchington-tooling/.github/actions/final-review-gate@f98f5c18e1f10ced362d43d646ca49611adf4876
+        with:
+          gate_status: ${{ needs.select-final-review.outputs.gate_status }}
+          token: ${{ github.token }}
+          pr_number: ${{ needs.select-final-review.outputs.pr_number }}
+          selected_head_sha: ${{ needs.select-final-review.outputs.head_sha }}
+          selected_base_sha: ${{ needs.select-final-review.outputs.base_sha }}
+          default_branch: ${{ github.event.repository.default_branch }}
+          complete_label: final-code-review:complete
+          requested_label: final-code-review:requested
+          check_name: Code Reviewed
         env:
           SELECT_RESULT: ${{ needs.select-final-review.result }}
           SETTINGS_RESULT: ${{ needs.validate-review-settings.result }}
-          IS_DRAFT: ${{ github.event.pull_request.draft }}
-          EVENT_STATE: ${{ github.event.pull_request.state }}
-          EVENT_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          IS_DRAFT: 'false'
+          EVENT_STATE: open
+          EVENT_BASE_REF: ${{ github.event.repository.default_branch }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           GATE_STATUS: ${{ needs.select-final-review.outputs.gate_status }}
           GH_TOKEN: ${{ github.token }}
@@ -356,6 +355,3 @@ jobs:
             connection reset by peer
             unexpected EOF
             i/o timeout
-        uses: vouchington/vouchington-tooling/.github/actions/final-review-gate@f5f41caba5aef0b31e507a67123c76f1c9a53d02 # v0.3.0
-        with:
-          gate_status: ${{ needs.select-final-review.outputs.gate_status }}
