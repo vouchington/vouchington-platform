@@ -20,6 +20,7 @@ const upload = await createMediaUpload(
     policy: { acceptsContentType: (type) => type.startsWith('image/'), maxBytes: 50_000_000 },
     createId: crypto.randomUUID,
     createObjectKey: (id) => `pending/${id}`,
+    expiresInSeconds: 3_600,
     presignUpload: ({ key, contentType, expiresInSeconds }) =>
       storage.presignUpload({ key, contentType, expiresInSeconds }),
     savePending: saveUpload,
