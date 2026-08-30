@@ -8,6 +8,7 @@ export type {
   PasskeyOptions,
   PasskeyRepository,
   PasskeyResidentKey,
+  PasskeyStateStore,
   PasskeyStateKeys,
   PasskeyUser,
   PasskeyUserVerification,
@@ -21,4 +22,13 @@ export function createPasskeys<UserId, PasskeyId, Created, RegistrationContext =
     registration: createPasskeyRegistration(options),
     authentication: createPasskeyAuthentication(options),
   }
+}
+
+export function createStringPasskeys<PasskeyId, Created, RegistrationContext = undefined>(
+  options: Omit<
+    PasskeyOptions<string, PasskeyId, Created, RegistrationContext>,
+    'serializeUserId' | 'userIdsEqual'
+  >,
+) {
+  return createPasskeys({ ...options, serializeUserId: String, userIdsEqual: (a, b) => a === b })
 }

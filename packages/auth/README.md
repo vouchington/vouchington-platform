@@ -16,9 +16,9 @@ The root export has no HTTP-framework dependency at runtime. `@vouchington/auth/
 application operations to `@jongleberry/api-server` handlers without choosing route paths, cookie
 names, provider names, response schemas, or authorization policy.
 
-Passkey callers provide RP identity, expected origins, an atomic challenge store, and a credential
-repository. Discoverable authentication is sign-in only: an unknown credential fails and never
-creates an identity. TOTP is optional. OAuth providers are resolved from a caller-owned registry.
+Passkey callers provide RP identity, expected origins, an atomic string challenge store, and a
+credential repository. Discoverable authentication is sign-in only: an unknown credential fails
+and never creates an identity. TOTP is optional. OAuth providers are resolved from a caller-owned registry.
 The optional `createJwtSessionIssuer` composes `@vouchington/session-jwt`; applications with richer
 session policy may inject their own issuer into `createAuthenticationFlow`.
 
@@ -31,7 +31,11 @@ Persistence and policy are ports rather than built-ins:
   Callers also provide a stable, non-PII WebAuthn user handle and explicitly choose every
   ceremony-timeout, user-verification, resident-key, attestation, authenticator-attachment,
   credential-algorithm, user-ID equality, and user-ID serialization policy.
-  Counter updates must atomically advance only when the stored counter is lower.
+  Counter updates must atomically accept an advancing counter or a repeated zero for counterless
+  authenticators, allowing applications to record every successful use. Failed-attempt limiting
+  runs only after a credential-bearing assertion fails; malformed responses without a credential ID
+  and successful assertions do not consume that budget. String-ID applications can use
+  `createStringPasskeys` to supply equality and serialization without local adapters.
 - TOTP verification requires an explicit acceptance window and a caller-owned store that atomically
   advances the factor's last-used time-step counter, preventing a valid code from completing
   multiple login attempts.
