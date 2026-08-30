@@ -1,0 +1,84 @@
+import { generateRegistrationOptions, verifyRegistrationResponse } from '@simplewebauthn/server'
+import { AuthError } from './errors.mts'
+import type { PasskeyOptions, PasskeyUser } from './passkey-types.mts'
+
+export function createPasskeyRegistration<UserId, PasskeyId, Created, RegistrationContext>(
+  options: PasskeyOptions<UserId, PasskeyId, Created, RegistrationContext>,
+) {
+  validateOptions(options)
+  const defaults = defaultKeys<UserId>(options.namespace)
+  const keys = options.keys
+  const key = keys
+    ? (userId: UserId, deviceId: string) => keys.registration(userId, deviceId)
+    : defaults.registration
+
+  return {
+    async createOptions(user: PasskeyUser<UserId>, deviceId: string) {
+      const credentialIds = await options.repository.listCredentialIds(user.id)
+      const generated = await generateRegistrationOptions({
+        rpName: options.rpName,
+        rpID: options.rpId,
+        userName: user.name,
+        userDisplayName: user.displayName ?? user.name,
+        excludeCredentials: credentialIds.map((id) => ({ id })),
+        authenticatorSelection: {
+          residentKey: 'preferred',
+          userVerification: 'preferred',
+        },
+      })
+      await options.state.put(
+        key(user.id, deviceId),
+        generated.challenge,
+        options.challengeTtlSeconds,
+      )
+      return generated
+    },
+
+    async verify(input: {
+      userId: UserId
+      deviceId: string
+      expectedOrigin: string
+      response: unknown
+      context: RegistrationContext
+    }): Promise<Created> {
+      const challenge = await options.state.consume<string>(key(input.userId, input.deviceId))
+      if (!challenge)
+        throw new AuthError('challenge_expired', 400, 'Registration challenge expired')
+      let verification: Awaited<ReturnType<typeof verifyRegistrationResponse>>
+      try {
+        verification = await verifyRegistrationResponse({
+          response: input.response as Parameters<typeof verifyRegistrationResponse>[0]['response'],
+          expectedChallenge: challenge,
+          expectedOrigin: input.expectedOrigin,
+          expectedRPID: options.rpId,
+        })
+      } catch (error) {
+        throw new AuthError('invalid_credentials', 400, 'Registration verification failed', {
+          cause: error,
+        })
+      }
+      if (!verification.verified || !verification.registrationInfo)
+        throw new AuthError('invalid_credentials', 400, 'Registration verification failed')
+      return options.repository.create({
+        userId: input.userId,
+        registration: verification.registrationInfo,
+        context: input.context,
+      })
+    },
+  }
+}
+
+function defaultKeys<UserId>(namespace = 'auth') {
+  const segment = (value: unknown) => encodeURIComponent(String(value))
+  return {
+    registration: (userId: UserId, deviceId: string) =>
+      `${namespace}:passkey-registration:${segment(userId)}:${segment(deviceId)}`,
+  }
+}
+
+function validateOptions(options: { rpId: string; rpName: string; challengeTtlSeconds: number }) {
+  if (!options.rpId.trim()) throw new TypeError('rpId must not be empty')
+  if (!options.rpName.trim()) throw new TypeError('rpName must not be empty')
+  if (!Number.isSafeInteger(options.challengeTtlSeconds) || options.challengeTtlSeconds <= 0)
+    throw new TypeError('challengeTtlSeconds must be a positive safe integer')
+}
