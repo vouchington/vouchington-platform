@@ -31,6 +31,7 @@ export function fixture(
   ])
   let state: State = emptyState()
   let transactions = 0
+  let retryNextTransaction = false
   let hostnameLockHook:
     | ((hostnames: readonly string[], claims: Map<string, HostnameClaim>) => void)
     | undefined
@@ -43,6 +44,11 @@ export function fixture(
       operation: (transaction: TypedEntityTransaction<EntityType, Entity>) => Promise<TResult>,
     ): Promise<TResult> {
       transactions++
+      if (retryNextTransaction) {
+        retryNextTransaction = false
+        const discarded = cloneState(state)
+        await operation(makeTransaction(discarded, entities, locks, () => undefined))
+      }
       const draft = cloneState(state)
       const result = await operation(
         makeTransaction(draft, entities, locks, (hostnames) => {
@@ -79,6 +85,9 @@ export function fixture(
       hook: (hostnames: readonly string[], claims: Map<string, HostnameClaim>) => void,
     ) {
       hostnameLockHook = hook
+    },
+    retryNextTransaction() {
+      retryNextTransaction = true
     },
     get state() {
       return state

@@ -44,7 +44,9 @@ export function createRuntime<TType extends string, TEntity extends TypedEntity<
 ): Runtime<TType, TEntity, TContext> {
   const policy = (entity: TEntity): TypedEntityPolicy<TType, TEntity, TContext> => {
     const value = options.catalog[entity.type]
-    if (value === undefined) throw new UnknownEntityTypeError(entity.type)
+    if (!Object.hasOwn(options.catalog, entity.type) || value === undefined) {
+      throw new UnknownEntityTypeError(entity.type)
+    }
     return value
   }
   return {
@@ -73,15 +75,18 @@ export function createRuntime<TType extends string, TEntity extends TypedEntity<
     },
     policy,
     async run(context, operation) {
-      const changes: TypedEntityChange[] = []
-      const result = await options.store.transact(context, (transaction) =>
-        operation(transaction, async (change) => {
+      const committed = await options.store.transact(context, async (transaction) => {
+        const changes: TypedEntityChange[] = []
+        const result = await operation(transaction, async (change) => {
           await options.hooks?.audit?.({ change, context, transaction })
           changes.push(change)
-        }),
-      )
-      if (changes.length > 0) await options.hooks?.afterCommit?.({ changes, context })
-      return result
+        })
+        return { changes, result }
+      })
+      if (committed.changes.length > 0) {
+        await options.hooks?.afterCommit?.({ changes: committed.changes, context })
+      }
+      return committed.result
     },
   }
 }

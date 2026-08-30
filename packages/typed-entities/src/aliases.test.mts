@@ -140,6 +140,28 @@ describe('aliases and merges', () => {
     await expect(subject.engine.claimAlias(subject.context, 'unknown', 'alias')).rejects.toEqual(
       new UnknownEntityTypeError('other'),
     )
+    subject.entities.set('inherited', {
+      id: 'inherited',
+      slug: 'inherited',
+      type: 'constructor',
+    } as unknown as Entity)
+    await expect(subject.engine.claimAlias(subject.context, 'inherited', 'alias')).rejects.toEqual(
+      new UnknownEntityTypeError('constructor'),
+    )
     expect(new InvalidAliasError('x').code).toBe('INVALID_ALIAS')
+  })
+
+  it('publishes only changes from the committed transaction attempt', async () => {
+    const committed: unknown[][] = []
+    const subject = fixture({
+      hooks: {
+        afterCommit: async ({ changes }) => void committed.push([...changes]),
+      },
+    })
+    subject.retryNextTransaction()
+    await subject.engine.claimAlias(subject.context, 'one', 'alpha')
+    expect(committed).toHaveLength(1)
+    expect(committed[0]).toHaveLength(1)
+    expect(subject.state.aliases.get('alpha')).toBe('one')
   })
 })
