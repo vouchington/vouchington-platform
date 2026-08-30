@@ -113,10 +113,8 @@ export function createPasskeyAuthentication<UserId, PasskeyId, Created, Registra
     }
     if (!verification.verified) return invalidPasskey(failureWithCredential)
     const newCounter = verification.authenticationInfo.newCounter
-    if (newCounter !== passkey.counter) {
-      const updated = await options.repository.updateCounter(passkey.id, newCounter)
-      if (!updated) return invalidPasskey(failureWithCredential)
-    }
+    const updated = await options.repository.updateCounter(passkey.id, newCounter)
+    if (!updated) return invalidPasskey(failureWithCredential)
     return { userId: passkey.userId, passkeyId: passkey.id }
   }
 

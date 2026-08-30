@@ -317,7 +317,7 @@ describe('passkeys', () => {
     })
   })
 
-  it('accepts authenticators without counter support without a repository update', async () => {
+  it('records successful use for authenticators without counter support', async () => {
     const { options, repository } = configured()
     repository.findByCredentialId.mockResolvedValueOnce({ ...storedPasskey(), counter: 0 })
     webauthn.verifyAuthenticationResponse.mockResolvedValueOnce({
@@ -330,7 +330,7 @@ describe('passkeys', () => {
       userId: 'user-1',
       passkeyId: 'passkey-1',
     })
-    expect(repository.updateCounter).not.toHaveBeenCalled()
+    expect(repository.updateCounter).toHaveBeenCalledWith('passkey-1', 0)
   })
 
   it('supports legacy state keys and caller-owned failed-attempt limiting', async () => {

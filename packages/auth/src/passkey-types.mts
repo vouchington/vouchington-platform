@@ -34,7 +34,7 @@ export interface PasskeyRepository<
     registration: NonNullable<VerifiedRegistrationResponse['registrationInfo']>
     context: RegistrationContext
   }): Promise<Created>
-  /** Atomically update only when the stored counter is lower; return whether it advanced. */
+  /** Atomically accept an advancing counter, or a repeated zero for counterless authenticators. */
   updateCounter(passkeyId: PasskeyId, counter: number): Promise<boolean>
 }
 

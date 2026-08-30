@@ -31,10 +31,11 @@ Persistence and policy are ports rather than built-ins:
   Callers also provide a stable, non-PII WebAuthn user handle and explicitly choose every
   ceremony-timeout, user-verification, resident-key, attestation, authenticator-attachment,
   credential-algorithm, user-ID equality, and user-ID serialization policy.
-  Counter updates must atomically advance only when the stored counter is lower. Failed-attempt
-  limiting runs only after a credential-bearing assertion fails; malformed responses without a
-  credential ID and successful assertions do not consume that budget. String-ID applications can
-  use `createStringPasskeys` to supply equality and serialization without local adapters.
+  Counter updates must atomically accept an advancing counter or a repeated zero for counterless
+  authenticators, allowing applications to record every successful use. Failed-attempt limiting
+  runs only after a credential-bearing assertion fails; malformed responses without a credential ID
+  and successful assertions do not consume that budget. String-ID applications can use
+  `createStringPasskeys` to supply equality and serialization without local adapters.
 - TOTP verification requires an explicit acceptance window and a caller-owned store that atomically
   advances the factor's last-used time-step counter, preventing a valid code from completing
   multiple login attempts.
