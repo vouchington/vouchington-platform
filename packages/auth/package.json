@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/auth",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Injected authentication protocol engines and API-server handler factories.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/auth#readme",
   "bugs": {
