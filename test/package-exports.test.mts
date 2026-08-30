@@ -15,6 +15,7 @@ const packages = [
   'worker-runtime',
   'rate-limit',
   'reviews',
+  'moderation',
 ] as const
 
 describe('new package manifests and exports', () => {
@@ -62,6 +63,9 @@ describe('new package manifests and exports', () => {
       valkyries: '^0.8.0',
     })
     expect(readManifest('reviews').dependencies).toEqual({
+      '@jongleberry/api-server': '^2.1.0',
+    })
+    expect(readManifest('moderation').dependencies).toEqual({
       '@jongleberry/api-server': '^2.1.0',
     })
   })

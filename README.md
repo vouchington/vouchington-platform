@@ -16,6 +16,7 @@ SKU names.
 | [`@vouchington/queue-errors`](packages/queue-errors)               | glide-mq retry classification and rate-limit helpers               |
 | [`@vouchington/worker-runtime`](packages/worker-runtime)           | Queue selection, GlideMQ worker loading, and schedule registration |
 | [`@vouchington/pagination`](packages/pagination)                   | Cursor codecs, guards, and configuration-owned query parsing       |
+| [`@vouchington/moderation`](packages/moderation)                   | Configurable report intake, queue claims, and route factories      |
 | [`@vouchington/csv`](packages/csv)                                 | BOM-safe parsing and spreadsheet-safe CSV serialization            |
 | [`@vouchington/html-utils`](packages/html-utils)                   | HTML entity decoding and text helpers                              |
 | [`@vouchington/phone-validation`](packages/phone-validation)       | Phone normalization and predicates                                 |

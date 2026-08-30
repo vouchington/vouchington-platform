@@ -15,6 +15,7 @@ on:
           - '@vouchington/queue-errors'
           - '@vouchington/worker-runtime'
           - '@vouchington/pagination'
+          - '@vouchington/moderation'
           - '@vouchington/crawler-html'
           - '@vouchington/embeds'
           - '@vouchington/rss-parser'
