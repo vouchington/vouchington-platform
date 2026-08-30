@@ -16,6 +16,7 @@ export function createSpikeWindowTracker(limit: number, windowMs: number): Spike
     throw new RangeError('windowMs must be positive and finite')
   const windows = new Map<string, SpikeWindow>()
   let lastSweepAt = -Infinity
+  let lastTimestamp = -Infinity
 
   function sweepExpiredWindows(timestamp: number): void {
     if (timestamp - lastSweepAt < windowMs) return
@@ -31,6 +32,11 @@ export function createSpikeWindowTracker(limit: number, windowMs: number): Spike
     },
     recordAndCheck(fingerprint, timestamp) {
       if (!Number.isFinite(timestamp)) throw new RangeError('timestamp must be finite')
+      if (timestamp < lastTimestamp) {
+        windows.clear()
+        lastSweepAt = timestamp
+      }
+      lastTimestamp = timestamp
       sweepExpiredWindows(timestamp)
       const existing = windows.get(fingerprint)
       const window =

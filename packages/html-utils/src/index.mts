@@ -32,9 +32,8 @@ export function decodeHtmlEntities(value: string, options: DecodeHtmlEntitiesOpt
   const insensitive = options.caseInsensitiveNamedEntities ?? []
   const normalizedValue = protectedValue.replace(NAMED_ENTITY, (match, name: string) => {
     const normalized = name.toLowerCase()
-    return insensitive.some((selected) => selected.toLowerCase() === normalized)
-      ? `&${normalized};`
-      : match
+    const selected = insensitive.find((candidate) => candidate.toLowerCase() === normalized)
+    return selected === undefined ? match : `&${selected};`
   })
   let decoded = decodeHTMLStrict(normalizedValue)
   for (const [index, entity] of invalid.entries())

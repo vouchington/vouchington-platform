@@ -21,9 +21,9 @@ describe('HTML entity and text helpers', () => {
     expect(isInsideHtmlTag('plain', 2)).toBe(false)
   })
   it('normalizes only caller-selected named entities case-insensitively', () => {
-    const options = { caseInsensitiveNamedEntities: ['amp', 'mdash', 'frac12'] }
-    expect(decodeHtmlEntities('&AMP; &mDash; &FRAC12; &NBSP; &Aacute;', options)).toBe(
-      '& — ½ &NBSP; Á',
+    const options = { caseInsensitiveNamedEntities: ['amp', 'mdash', 'frac12', 'AElig'] }
+    expect(decodeHtmlEntities('&AMP; &mDash; &FRAC12; &aElIg; &NBSP; &Aacute;', options)).toBe(
+      '& — ½ Æ &NBSP; Á',
     )
     expect(decodeHtmlEntities('&MDASH;')).toBe('&MDASH;')
   })

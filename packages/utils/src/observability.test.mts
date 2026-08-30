@@ -102,6 +102,8 @@ describe('observability scrubbing', () => {
     expect(tracker.recordAndCheck('c', 1_002)).toBe(false)
     expect(tracker.recordAndCheck('d', 2_001)).toBe(true)
     expect(tracker.size).toBe(1)
+    expect(tracker.recordAndCheck('d', 0)).toBe(true)
+    expect(tracker.size).toBe(1)
   })
 
   it('rejects spike settings that could prevent bounded eviction', () => {

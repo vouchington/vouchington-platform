@@ -39,6 +39,12 @@ describe('hashtag normalization', () => {
       authored: '#One::Two...Three',
       key: 'one-two-three',
     })
+    const overlapping = createHashtagNormalizer({
+      maximumAuthoredLength: 20,
+      maximumKeyLength: 20,
+      separators: ['a', 'ab'],
+    })
+    expect(overlapping.normalizeQuery('#xaby')).toBe('x-y')
     const none = createHashtagNormalizer({
       maximumAuthoredLength: 20,
       maximumKeyLength: 20,

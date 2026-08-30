@@ -57,7 +57,9 @@ function assertLength(value: number, name: string): void {
 }
 
 function createSeparatorPattern(separators: readonly string[]): RegExp | null {
-  const tokens = [...new Set(separators.filter((separator) => separator.length > 0))]
+  const tokens = [...new Set(separators.filter((separator) => separator.length > 0))].sort(
+    (left, right) => right.length - left.length,
+  )
   if (tokens.length === 0) return null
   return new RegExp(`(?:${tokens.map(escapeRegularExpression).join('|')})+`, 'g')
 }
