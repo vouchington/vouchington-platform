@@ -88,7 +88,7 @@ export function createReviewsEngine<
     async createReview(actor, input) {
       const event = await options.repository.transaction(async (transaction) => {
         await authorize(actor, 'create-review', transaction)
-        for (const rating of input.ratings) assertRating(rating, options)
+        await assertRatingSet(input.ratings, options, targetTypes)
         const review = await options.reviews.createReview(actor, input.review, transaction)
         const reviewId = options.reviews.getReviewId(review)
         assertReviewId(reviewId)

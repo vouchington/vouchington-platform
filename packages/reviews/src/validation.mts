@@ -3,6 +3,7 @@ import type { EngineOptions } from './internal-types.mts'
 import type {
   CreateReviewRatingInput,
   ReviewRating,
+  ReviewRatingScale,
   ReviewTarget,
   UpdateReviewRatingInput,
 } from './types.mts'
@@ -164,32 +165,14 @@ function assertTarget<TTargetType extends string>(
     throw new ReviewsError('target-type-not-allowed', 'The review target type is not allowed.')
 }
 
-function assertValue<
-  TActor,
-  TReviewId extends string,
-  TTargetType extends string,
-  TTransaction,
-  TCreate,
-  TUpdate,
-  TListQuery,
-  TReview,
-  TListResult,
->(
-  value: unknown,
-  options: EngineOptions<
-    TActor,
-    TReviewId,
-    TTargetType,
-    TTransaction,
-    TCreate,
-    TUpdate,
-    TListQuery,
-    TReview,
-    TListResult
-  >,
-): void {
+function assertValue(value: unknown, options: { readonly policy: { rating: ReviewRatingScale } }) {
   const { minimum, maximum } = options.policy.rating
-  if (typeof value !== 'number' || !Number.isInteger(value) || value < minimum || value > maximum)
+  if (
+    typeof value !== 'number' ||
+    !Number.isSafeInteger(value) ||
+    value < minimum ||
+    value > maximum
+  )
     throw new ReviewsError('invalid-rating', 'Rating is outside the configured scale.')
 }
 
