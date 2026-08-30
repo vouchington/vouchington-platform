@@ -12,6 +12,7 @@ describe('authentication flow', () => {
     const issueSession = vi.fn(async (user: { id: string }) => `session:${user.id}`)
     const options = {
       resolveUser: vi.fn(async (email: string) => ({ id: email })),
+      isSuspended: vi.fn(async () => false),
       hasMfa: vi.fn(async () => false),
       createMfaAttempt: vi.fn(async () => 'attempt-1'),
       issueSession,

@@ -9,7 +9,7 @@ export function createAuthenticationFlow<Identity, User, Session, Context>(
     context: Context,
   ): Promise<AuthenticationResult<User, Session>> {
     const user = await options.resolveUser(identity, context)
-    if (await options.isSuspended?.(user, context)) {
+    if (await options.isSuspended(user, context)) {
       throw new AuthError('invalid_credentials', 403, 'Account unavailable')
     }
     if (await options.hasMfa(user, context)) {

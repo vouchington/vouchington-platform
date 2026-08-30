@@ -24,7 +24,7 @@ export type AuthenticationResult<User, Session> = Authenticated<User, Session> |
 
 export interface AuthenticationFlowOptions<Identity, User, Session, Context> {
   resolveUser(identity: Identity, context: Context): Promise<User>
-  isSuspended?(user: User, context: Context): Promise<boolean> | boolean
+  isSuspended(user: User, context: Context): Promise<boolean> | boolean
   hasMfa(user: User, context: Context): Promise<boolean>
   createMfaAttempt(user: User, context: Context): Promise<string>
   issueSession(user: User, context: Context): Promise<Session>

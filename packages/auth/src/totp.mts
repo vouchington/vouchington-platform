@@ -8,19 +8,22 @@ export interface TotpReplayStore<Key> {
 export interface TotpOptions<Key> {
   issuer: string
   replay: TotpReplayStore<Key>
-  algorithm?: 'SHA1' | 'SHA256' | 'SHA512'
-  digits?: 6 | 7 | 8
-  period?: number
+  algorithm: 'SHA1' | 'SHA256' | 'SHA512'
+  digits: 6 | 7 | 8
+  period: number
   window: number
-  secretBytes?: number
+  secretBytes: number
   now?: () => number
 }
 
 export function createTotp<Key>(options: TotpOptions<Key>) {
   if (!options.issuer.trim()) throw new TypeError('issuer must not be empty')
-  const period = options.period ?? 30
+  const period = options.period
   const window = options.window
-  const secretBytes = options.secretBytes ?? 20
+  const secretBytes = options.secretBytes
+  if (!['SHA1', 'SHA256', 'SHA512'].includes(options.algorithm))
+    throw new TypeError('algorithm must be SHA1, SHA256, or SHA512')
+  if (![6, 7, 8].includes(options.digits)) throw new TypeError('digits must be 6, 7, or 8')
   assertNonNegativeInteger(window, 'window')
   assertPositiveInteger(period, 'period')
   assertPositiveInteger(secretBytes, 'secretBytes')
@@ -30,8 +33,8 @@ export function createTotp<Key>(options: TotpOptions<Key>) {
     return new OTPAuth.TOTP({
       issuer: options.issuer,
       label: accountName,
-      algorithm: options.algorithm ?? 'SHA1',
-      digits: options.digits ?? 6,
+      algorithm: options.algorithm,
+      digits: options.digits,
       period,
       secret,
     })

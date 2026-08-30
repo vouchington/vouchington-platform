@@ -44,10 +44,10 @@ Default state keys percent-encode identifiers to avoid delimiter collisions. App
 live one-time state should inject key builders matching their existing keys until that state expires.
 
 `@vouchington/auth/api-server` returns handlers rather than registering global routes. Applications
-choose paths, parse product-specific body schemas inside operations, and retain ownership of cookies
-and response shapes. Operations can override response serialization for redirects, cookies, and
-other non-JSON callbacks. JSON handlers require `application/json` and cap request bodies at 100 KB;
-the MFA status handler is body-free.
+choose paths, request-body limits, parse product-specific body schemas inside operations, and retain
+ownership of cookies and response shapes. Operations can override response serialization for
+redirects, cookies, and other non-JSON callbacks. JSON handlers require `application/json`; the MFA
+status handler is body-free.
 
 Password authentication is not included in this initial release.
 

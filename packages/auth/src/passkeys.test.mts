@@ -56,6 +56,21 @@ describe('passkeys', () => {
     )
   })
 
+  it('rejects malformed Unicode before building default state keys', async () => {
+    const passkeys = createPasskeys(baseOptions())
+    await expect(passkeys.registration.createOptions(testUser(), '\ud800')).rejects.toMatchObject({
+      code: 'invalid_request',
+      status: 400,
+    })
+    await expect(passkeys.authentication.createOptions('user-1', '\udc00')).rejects.toMatchObject({
+      code: 'invalid_request',
+      status: 400,
+    })
+    await expect(passkeys.authentication.createDiscoverableOptions('\ud800')).rejects.toMatchObject(
+      { code: 'invalid_request', status: 400 },
+    )
+  })
+
   it('creates and verifies registration ceremonies through injected storage', async () => {
     const { options, repository, put } = configured()
     const passkeys = createPasskeys({ ...options, userIdsEqual: (left, right) => left === right })

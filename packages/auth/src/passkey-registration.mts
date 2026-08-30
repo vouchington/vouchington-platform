@@ -1,6 +1,7 @@
 import { generateRegistrationOptions, verifyRegistrationResponse } from '@simplewebauthn/server'
 import { AuthError } from './errors.mts'
 import type { PasskeyOptions, PasskeyUser } from './passkey-types.mts'
+import { encodeStateSegment } from './state-key.mts'
 
 export function createPasskeyRegistration<UserId, PasskeyId, Created, RegistrationContext>(
   options: PasskeyOptions<UserId, PasskeyId, Created, RegistrationContext>,
@@ -78,10 +79,9 @@ function validateUserHandle(userId: Uint8Array) {
 }
 
 function defaultKeys<UserId>(namespace = 'auth') {
-  const segment = (value: unknown) => encodeURIComponent(String(value))
   return {
     registration: (userId: UserId, deviceId: string) =>
-      `${namespace}:passkey-registration:${segment(userId)}:${segment(deviceId)}`,
+      `${namespace}:passkey-registration:${encodeStateSegment(userId)}:${encodeStateSegment(deviceId)}`,
   }
 }
 

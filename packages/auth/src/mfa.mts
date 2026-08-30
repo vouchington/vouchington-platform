@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { AuthError } from './errors.mts'
+import { isWellFormedUnicode } from './state-key.mts'
 import type { ExpiringStateStore } from './types.mts'
 
 export interface MfaStateOptions {
@@ -30,7 +31,8 @@ export function createMfaState<Attempt>(options: MfaStateOptions) {
       ? (userId: string, token: string) =>
           `${namespace}:mfa-reauthentication:${segment(userId)}:${segment(token)}`
       : (userId: string, token: string) => keys.reauthentication(userId, token)
-  const valid = (id: string) => isWellFormed(id) && (options.isValidId?.(id) ?? id.length > 0)
+  const valid = (id: string) =>
+    isWellFormedUnicode(id) && (options.isValidId?.(id) ?? id.length > 0)
 
   return {
     async createAttempt(attempt: Attempt): Promise<string> {
@@ -54,7 +56,7 @@ export function createMfaState<Attempt>(options: MfaStateOptions) {
       return attempt
     },
     async createReauthentication(userId: string): Promise<string> {
-      if (!isWellFormed(userId)) throw new TypeError('userId must be well-formed Unicode')
+      if (!isWellFormedUnicode(userId)) throw new TypeError('userId must be well-formed Unicode')
       const token = createId()
       if (!valid(token)) throw new TypeError('createId returned an invalid identifier')
       await options.store.put(
@@ -65,22 +67,10 @@ export function createMfaState<Attempt>(options: MfaStateOptions) {
       return token
     },
     async consumeReauthentication(userId: string, token: string): Promise<boolean> {
-      if (!isWellFormed(userId) || !valid(token)) return false
+      if (!isWellFormedUnicode(userId) || !valid(token)) return false
       return (await options.store.consume<boolean>(reauthenticationKey(userId, token))) === true
     },
   }
-}
-
-function isWellFormed(value: string): boolean {
-  for (let index = 0; index < value.length; index += 1) {
-    const code = value.charCodeAt(index)
-    if (code >= 0xd800 && code <= 0xdbff) {
-      const next = value.charCodeAt(index + 1)
-      if (!(next >= 0xdc00 && next <= 0xdfff)) return false
-      index += 1
-    } else if (code >= 0xdc00 && code <= 0xdfff) return false
-  }
-  return true
 }
 
 function assertTtl(value: number, name: string): void {

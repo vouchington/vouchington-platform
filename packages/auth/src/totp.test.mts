@@ -5,7 +5,7 @@ import { createTotp } from './totp.mts'
 describe('TOTP', () => {
   it('creates setup material and verifies current codes with secure defaults', async () => {
     const replay = { advance: vi.fn(async () => true) }
-    const totp = createTotp({ issuer: 'Example', replay, window: 1 })
+    const totp = createTotp(totpOptions(replay, { window: 1 }))
     const setup = totp.createSetup('person@example.test')
     expect(setup.secret).toMatch(/^[A-Z2-7]+$/)
     expect(setup.uri).toMatch(/^otpauth:\/\/totp\//)
@@ -28,7 +28,7 @@ describe('TOTP', () => {
   it('rejects a valid code when its time step was already consumed', async () => {
     const timestamp = 1_800_000_000_000
     const replay = { advance: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(false) }
-    const totp = createTotp({ issuer: 'Example', replay, window: 0, now: () => timestamp })
+    const totp = createTotp(totpOptions(replay, { window: 0, now: () => timestamp }))
     const setup = totp.createSetup('person@example.test')
     const token = new OTPAuth.TOTP({
       issuer: 'Example',
@@ -50,8 +50,7 @@ describe('TOTP', () => {
   it('supports configured algorithms and validates inputs', () => {
     const replay = { advance: async () => true }
     const totp = createTotp({
-      issuer: 'Example',
-      replay,
+      ...totpOptions(replay),
       algorithm: 'SHA256',
       digits: 8,
       period: 60,
@@ -60,12 +59,32 @@ describe('TOTP', () => {
     })
     expect(totp.createSetup('account').uri).toContain('algorithm=SHA256')
     expect(() => totp.createSetup(' ')).toThrow('accountName')
-    expect(() => createTotp({ issuer: ' ', replay, window: 0 })).toThrow('issuer')
-    expect(() => createTotp({ issuer: 'Example', replay } as never)).toThrow('window')
-    expect(() => createTotp({ issuer: 'Example', replay, period: 0, window: 0 })).toThrow('period')
-    expect(() => createTotp({ issuer: 'Example', replay, window: -1 })).toThrow('window')
-    expect(() => createTotp({ issuer: 'Example', replay, window: 0, secretBytes: 0 })).toThrow(
-      'secretBytes',
+    expect(() => createTotp(totpOptions(replay, { issuer: ' ' }))).toThrow('issuer')
+    expect(() => createTotp({ ...totpOptions(replay), window: undefined } as never)).toThrow(
+      'window',
     )
+    expect(() => createTotp(totpOptions(replay, { period: 0 }))).toThrow('period')
+    expect(() => createTotp(totpOptions(replay, { window: -1 }))).toThrow('window')
+    expect(() => createTotp(totpOptions(replay, { secretBytes: 0 }))).toThrow('secretBytes')
+    expect(() => createTotp(totpOptions(replay, { algorithm: 'invalid' as never }))).toThrow(
+      'algorithm',
+    )
+    expect(() => createTotp(totpOptions(replay, { digits: 5 as never }))).toThrow('digits')
   })
 })
+
+function totpOptions<Key>(
+  replay: { advance(key: Key, counter: number): Promise<boolean> },
+  overrides: Partial<Parameters<typeof createTotp<Key>>[0]> = {},
+) {
+  return {
+    issuer: 'Example',
+    replay,
+    algorithm: 'SHA1' as const,
+    digits: 6 as const,
+    period: 30,
+    window: 0,
+    secretBytes: 20,
+    ...overrides,
+  }
+}

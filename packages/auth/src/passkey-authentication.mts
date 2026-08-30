@@ -1,20 +1,21 @@
 import { generateAuthenticationOptions, verifyAuthenticationResponse } from '@simplewebauthn/server'
 import { AuthError } from './errors.mts'
 import type { PasskeyFailure, PasskeyOptions, StoredPasskey } from './passkey-types.mts'
+import { encodeStateSegment } from './state-key.mts'
 
 export function createPasskeyAuthentication<UserId, PasskeyId, Created, RegistrationContext>(
   options: PasskeyOptions<UserId, PasskeyId, Created, RegistrationContext>,
 ) {
   const namespace = options.namespace ?? 'auth'
-  const segment = (value: unknown) => encodeURIComponent(String(value))
   const keys = options.keys
   const userKey = keys
     ? (userId: UserId, deviceId: string) => keys.authentication(userId, deviceId)
     : (userId: UserId, deviceId: string) =>
-        `${namespace}:passkey-authentication:${segment(userId)}:${segment(deviceId)}`
+        `${namespace}:passkey-authentication:${encodeStateSegment(userId)}:${encodeStateSegment(deviceId)}`
   const discoverableKey = keys
     ? (deviceId: string) => keys.discoverableAuthentication(deviceId)
-    : (deviceId: string) => `${namespace}:passkey-discoverable-authentication:${segment(deviceId)}`
+    : (deviceId: string) =>
+        `${namespace}:passkey-discoverable-authentication:${encodeStateSegment(deviceId)}`
 
   async function createOptions(userId: UserId, deviceId: string) {
     const credentialIds = await options.repository.listCredentialIds(userId)
