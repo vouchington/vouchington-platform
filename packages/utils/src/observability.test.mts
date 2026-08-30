@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   SENSITIVE_VALUE,
   composeBeforeSend,
+  createSpikeWindowTracker,
   isAllowedEnvironment,
   scrubEvent,
   scrubHeaders,
@@ -88,5 +89,28 @@ describe('observability scrubbing', () => {
     })
     expect(composeBeforeSend(undefined, options)({}, {})).toEqual({})
     expect(composeBeforeSend((input) => input, options)(event, {})).toBe(event)
+  })
+
+  it('tracks spike windows independently and evicts expired fingerprints', () => {
+    const tracker = createSpikeWindowTracker(1, 1_000)
+    expect(tracker.recordAndCheck('a', 0)).toBe(true)
+    expect(tracker.recordAndCheck('a', 1)).toBe(false)
+    expect(tracker.recordAndCheck('b', 500)).toBe(true)
+    expect(tracker.size).toBe(2)
+    expect(tracker.recordAndCheck('c', 1_001)).toBe(true)
+    expect(tracker.size).toBe(2)
+    expect(tracker.recordAndCheck('c', 1_002)).toBe(false)
+    expect(tracker.recordAndCheck('d', 2_001)).toBe(true)
+    expect(tracker.size).toBe(1)
+  })
+
+  it('rejects spike settings that could prevent bounded eviction', () => {
+    expect(() => createSpikeWindowTracker(Number.NaN, 1_000)).toThrow(RangeError)
+    expect(() => createSpikeWindowTracker(-1, 1_000)).toThrow(RangeError)
+    expect(() => createSpikeWindowTracker(1, Number.POSITIVE_INFINITY)).toThrow(RangeError)
+    expect(() => createSpikeWindowTracker(1, 0)).toThrow(RangeError)
+    const tracker = createSpikeWindowTracker(0, 1)
+    expect(() => tracker.recordAndCheck('a', Number.NaN)).toThrow(RangeError)
+    expect(tracker.recordAndCheck('a', 0)).toBe(false)
   })
 })

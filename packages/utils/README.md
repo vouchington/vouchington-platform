@@ -31,15 +31,19 @@ import { createMessageTranslator } from '@vouchington/utils/message-catalog'
   and deterministic JSON serialization.
 - `feature-flags`: base64 JSON feature-flag cookie parsing and serialization with caller-injected
   codecs, cookie names, and size policy.
-- `dates`, `format`, `strings`, and `text-metrics`: UTC-day, duration, formatting, text normalization,
-  title casing, and word/sentence helpers.
+- `dates`, `format`, `strings`, and `text-metrics`: UTC-day, duration, weighted-average and display
+  formatting, text normalization, title casing, and word/sentence helpers.
 - `gtin`, `bigint-ids`, and `validation`: GTIN predicates, canonical positive PostgreSQL bigint IDs,
   and basic email/UUID predicates.
 - `query` and `query-string`: generic array/boolean/number parsing, bounded integer parsing, and
   query-string serialization. Cursor parsing intentionally belongs to `@vouchington/pagination`.
 - `slugs` and `urls`: ASCII-only slugification and URL/hostname primitives. URL hostname helpers
-  return `null` for invalid input; `normalizeAsciiHostname` names its ASCII-only contract directly.
-  `matchesHostnamePattern` supports exact and inclusive `*.` hostname patterns.
+  return `null` for invalid input; `normalizeAsciiHostname` names its ASCII-only contract directly,
+  while `normalizeHostname` also supports WHATWG IDN conversion. `matchesHostnamePattern` supports
+  exact and inclusive `*.` hostname patterns.
+- `hashtags`: caller-configured authored/key length and separator policy for canonical ASCII hashtag
+  keys. The package does not choose application limits or accepted input separators.
+- `fetch-ports`: the Fetch standard forbidden-port list and membership predicates.
 - `language-tags`: caller-configured locale normalization and strict `Accept-Language` parsing and
   best matching. HTTP ranges reject malformed syntax and quality parameters; explicit `q=0` ranges
   exclude a candidate when they tie for that candidate's most-specific matching range, so `en;q=0`
@@ -53,8 +57,9 @@ import { createMessageTranslator } from '@vouchington/utils/message-catalog'
   descriptors. Catalog segments cannot contain dots because dots delimit nested keys. Plural values
   and configured number parameters must be finite numbers; callers own catalog content, locale
   choice, and number formatting.
-- `observability`: SDK-free URL, request, event, and span scrubbing. Callers provide credential
-  headers and environment or spike policy; this package has no product defaults.
+- `observability`: SDK-free URL, request, event, and span scrubbing plus a bounded spike-window
+  tracker. Callers provide credential headers and environment or spike policy; this package has no
+  product defaults.
 
 ```ts
 const money = createMoneyCatalog([{ code: 'credit', minorUnitExponent: 2 }] as const, 6)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { decodeHtmlEntities, escapeHtml, isInsideHtmlTag } from './index.mts'
+import { decodeHtmlEntities, escapeHtml, isInsideHtmlElement, isInsideHtmlTag } from './index.mts'
 
 describe('HTML entity and text helpers', () => {
   it('escapes HTML and XML text contexts', () => {
@@ -19,5 +19,21 @@ describe('HTML entity and text helpers', () => {
     expect(isInsideHtmlTag('<unfinished', 5)).toBe(false)
     expect(isInsideHtmlTag('<a>hello', 5)).toBe(false)
     expect(isInsideHtmlTag('plain', 2)).toBe(false)
+  })
+  it('normalizes only caller-selected named entities case-insensitively', () => {
+    const options = { caseInsensitiveNamedEntities: ['amp', 'mdash', 'frac12'] }
+    expect(decodeHtmlEntities('&AMP; &mDash; &FRAC12; &NBSP; &Aacute;', options)).toBe(
+      '& — ½ &NBSP; Á',
+    )
+    expect(decodeHtmlEntities('&MDASH;')).toBe('&MDASH;')
+  })
+  it('recognizes positions inside caller-selected elements', () => {
+    expect(isInsideHtmlElement('<code>hello', 8, ['code', 'pre'])).toBe(true)
+    expect(isInsideHtmlElement('<code>hello</code>', 18, ['code', 'pre'])).toBe(false)
+    expect(isInsideHtmlElement('<pre class="x">hello', 16, ['code', 'pre'])).toBe(true)
+    expect(isInsideHtmlElement('<CODE>hello', 8, ['code'])).toBe(false)
+    expect(isInsideHtmlElement('<codepen>hello', 10, ['code'])).toBe(false)
+    expect(isInsideHtmlElement('<custom.name>hello', 14, ['custom.name'])).toBe(true)
+    expect(isInsideHtmlElement('<code>hello', 8, [''])).toBe(false)
   })
 })

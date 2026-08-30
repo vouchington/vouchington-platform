@@ -66,3 +66,14 @@ export function formatDuration(seconds: number): string {
     ? `${hours}:${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`
     : `${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`
 }
+
+/** Calculates the weighted mean of numeric record keys, or null when the total weight is zero. */
+export function calculateWeightedAverage(weights: Readonly<Record<string, number>>): number | null {
+  const total = Object.values(weights).reduce((sum, weight) => sum + weight, 0)
+  if (total === 0) return null
+  const weightedTotal = Object.entries(weights).reduce(
+    (sum, [value, weight]) => sum + Number(value) * weight,
+    0,
+  )
+  return weightedTotal / total
+}

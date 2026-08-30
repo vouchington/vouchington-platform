@@ -1,4 +1,5 @@
 export const SENSITIVE_VALUE = '[Filtered]'
+export { createSpikeWindowTracker, type SpikeWindowTracker } from './spike-window.mts'
 const URL_ATTRIBUTES = [
   'url',
   'url.full',

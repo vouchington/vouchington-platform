@@ -144,6 +144,16 @@
       "types": "./dist/observability.d.mts",
       "import": "./dist/observability.mjs",
       "default": "./dist/observability.mjs"
+    },
+    "./hashtags": {
+      "types": "./dist/hashtags.d.mts",
+      "import": "./dist/hashtags.mjs",
+      "default": "./dist/hashtags.mjs"
+    },
+    "./fetch-ports": {
+      "types": "./dist/fetch-ports.d.mts",
+      "import": "./dist/fetch-ports.mjs",
+      "default": "./dist/fetch-ports.mjs"
     }
   },
   "publishConfig": {
