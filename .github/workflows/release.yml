@@ -16,6 +16,7 @@ on:
           - '@vouchington/worker-runtime'
           - '@vouchington/pagination'
           - '@vouchington/crawler-html'
+          - '@vouchington/embeds'
           - '@vouchington/rss-parser'
           - '@vouchington/rss-crawler'
           - '@vouchington/robots'

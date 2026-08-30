@@ -1,6 +1,17 @@
 import { defineConfig } from 'vitest/config'
+import { fileURLToPath } from 'node:url'
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@vouchington/crawler-html': fileURLToPath(
+        new URL('./packages/crawler-html/src/index.mts', import.meta.url),
+      ),
+      '@vouchington/http-transport': fileURLToPath(
+        new URL('./packages/http-transport/src/index.mts', import.meta.url),
+      ),
+    },
+  },
   test: {
     fileParallelism: false,
     include: ['packages/*/src/**/*.test.mts', 'test/**/*.test.mts'],

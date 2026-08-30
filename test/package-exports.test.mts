@@ -6,6 +6,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 
 const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
 const packages = [
+  'embeds',
   'http-transport',
   'image-resize',
   'media',
@@ -36,6 +37,11 @@ describe('new package manifests and exports', () => {
   })
 
   it('keeps runtime dependencies limited to direct package needs', () => {
+    expect(readManifest('embeds').dependencies).toEqual({
+      '@vouchington/crawler-html': '^0.0.0',
+      '@vouchington/http-transport': '^0.0.0',
+      parse5: '^8.0.0',
+    })
     expect(readManifest('http-transport').dependencies).toBeUndefined()
     expect(readManifest('image-resize').dependencies).toEqual({
       negotiator: '^1.1.0',
@@ -57,6 +63,23 @@ describe('new package manifests and exports', () => {
     expect(declarations).not.toMatch(
       /stripe|filaments|voucha|membership_skus|\bplus\b|\bpro\b|select /i,
     )
+  })
+
+  it('publishes provider presets from an explicit subpath', () => {
+    const exports = readManifest('embeds').exports as Record<
+      string,
+      { import: string; types: string }
+    >
+    expect(Object.keys(exports)).toEqual(['.', './providers'])
+    expect(existsSync(`packages/embeds/${exports['./providers']!.import.replace('./', '')}`)).toBe(
+      true,
+    )
+    expect(existsSync(`packages/embeds/${exports['./providers']!.types.replace('./', '')}`)).toBe(
+      true,
+    )
+    expect(() =>
+      importBuiltModule(`packages/embeds/${exports['./providers']!.import.replace('./', '')}`),
+    ).not.toThrow()
   })
 })
 

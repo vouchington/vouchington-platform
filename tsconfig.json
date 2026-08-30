@@ -1,6 +1,8 @@
 {
   "compilerOptions": {
     "paths": {
+      "@vouchington/crawler-html": ["./packages/crawler-html/src/index.mts"],
+      "@vouchington/http-transport": ["./packages/http-transport/src/index.mts"],
       "@vouchington/rss-parser": ["./packages/rss-parser/src/index.mts"],
       "@vouchington/uuid-v7": ["./packages/uuid-v7/src/index.mts"]
     },
