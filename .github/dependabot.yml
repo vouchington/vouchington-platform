@@ -17,62 +17,33 @@ updates:
         - valkyries
     open-pull-requests-limit: 5
     groups:
-      first-party-minor-and-patch:
-        applies-to: version-updates
-        patterns:
-          - '@jongleberry/api-server'
-          - '@jongleberry/vurst-html'
-          - '@vouchington/crawler-html'
-          - '@vouchington/http-transport'
-          - '@vouchington/rss-parser'
-          - '@vouchington/uuid-v7'
-          - pr-shepherd
-          - valkyries
-        update-types:
-          - minor
-          - patch
-      typescript-toolchain-minor-and-patch:
+      typescript-toolchain:
         applies-to: version-updates
         patterns:
           - '@types/node'
           - typescript
-        update-types:
-          - minor
-          - patch
-      vitest-minor-and-patch:
+      vitest:
         applies-to: version-updates
         patterns:
           - '@vitest/coverage-v8'
           - vitest
-        update-types:
-          - minor
-          - patch
       vitest-security:
         applies-to: security-updates
         patterns:
           - '@vitest/coverage-v8'
           - vitest
-        update-types:
-          - minor
-          - patch
-      oxc-toolchain-minor-and-patch:
+      oxc-toolchain:
         applies-to: version-updates
         patterns:
           - oxfmt
           - oxlint
           - oxlint-tsgolint
-        update-types:
-          - minor
-          - patch
       oxc-toolchain-security:
         applies-to: security-updates
         patterns:
           - oxfmt
           - oxlint
           - oxlint-tsgolint
-        update-types:
-          - minor
-          - patch
   - package-ecosystem: github-actions
     directory: /
     schedule:
@@ -80,18 +51,3 @@ updates:
     cooldown:
       default-days: 7
     open-pull-requests-limit: 5
-    groups:
-      github-maintained-actions-minor-and-patch:
-        applies-to: version-updates
-        patterns:
-          - actions/*
-        update-types:
-          - minor
-          - patch
-      github-maintained-actions-security:
-        applies-to: security-updates
-        patterns:
-          - actions/*
-        update-types:
-          - minor
-          - patch
