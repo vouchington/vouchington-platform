@@ -67,12 +67,13 @@ export function resolveMembershipBenefit<
 ): CatalogBenefitValue<Catalog, BenefitId, Plan> | undefined {
   for (const group of catalog.groups) {
     const benefit = group.benefits.find((item) => item.id === benefitId)
-    if (benefit && Object.hasOwn(benefit.values, plan))
-      return (benefit.values as Record<PropertyKey, unknown>)[plan] as CatalogBenefitValue<
-        Catalog,
-        BenefitId,
-        Plan
-      >
+    if (!benefit) continue
+    if (!Object.hasOwn(benefit.values, plan)) return undefined
+    return (benefit.values as Record<PropertyKey, unknown>)[plan] as CatalogBenefitValue<
+      Catalog,
+      BenefitId,
+      Plan
+    >
   }
   return undefined
 }

@@ -15,8 +15,8 @@ export function transitionMembershipLifecycle(
   at: Date,
 ): MembershipLifecycleFields {
   const status = update.status ?? current.status
-  if (current.status === 'expired' && !isTerminalMembershipStatus(status)) {
-    throw new Error('An expired membership cannot transition to a non-terminal status')
+  if (current.status === 'expired' && status !== 'expired') {
+    throw new Error('An expired membership cannot transition to another status')
   }
   const timestamp =
     status === 'active'

@@ -100,6 +100,13 @@ describe('membership lifecycle', () => {
         later,
       ),
     ).toThrow('expired membership')
+    expect(() =>
+      transitionMembershipLifecycle(
+        { ...active, status: 'expired', expiredAt: at },
+        { status: 'cancelled' },
+        later,
+      ),
+    ).toThrow('expired membership')
     expect(isTerminalMembershipStatus('cancelled')).toBe(true)
     expect(isTerminalMembershipStatus('expired')).toBe(true)
     expect(isTerminalMembershipStatus('active')).toBe(false)
