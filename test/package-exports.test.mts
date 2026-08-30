@@ -50,8 +50,8 @@ describe('new package manifests and exports', () => {
       sharp: '^0.35.3',
     })
     expect(readManifest('media').dependencies).toEqual({
-      '@aws-sdk/client-s3': '^3.1121.0',
-      '@aws-sdk/s3-request-presigner': '^3.1121.0',
+      '@aws-sdk/client-s3': '^3.1116.0',
+      '@aws-sdk/s3-request-presigner': '^3.1116.0',
     })
     expect(readManifest('wikimedia').dependencies).toEqual({
       '@jongleberry/api-server': '^2.1.0',
