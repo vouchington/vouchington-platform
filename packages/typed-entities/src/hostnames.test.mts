@@ -133,6 +133,11 @@ describe('hostname rules', () => {
         kind: 'additional',
         value: 'one.test',
       }),
-    ).toThrow(new InvalidHostnameClaimError('one.test', 'a primary claim cannot become additional'))
+    ).toThrow(
+      new InvalidHostnameClaimError(
+        'one.test',
+        'a primary claim cannot be downgraded to additional; remove the primary claim first',
+      ),
+    )
   })
 })

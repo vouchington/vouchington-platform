@@ -31,7 +31,10 @@ export function planHostnameClaim(input: {
   if (current?.entityId === input.entityId) {
     if (current.kind === input.kind) return { claim, hostname, releases, write: false }
     if (input.kind === 'additional') {
-      throw new InvalidHostnameClaimError(hostname, 'a primary claim cannot become additional')
+      throw new InvalidHostnameClaimError(
+        hostname,
+        'a primary claim cannot be downgraded to additional; remove the primary claim first',
+      )
     }
     releases.push(current)
   } else if (current !== null) {
