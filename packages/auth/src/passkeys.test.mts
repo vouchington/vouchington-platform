@@ -68,6 +68,7 @@ describe('passkeys', () => {
       expect.objectContaining({
         rpID: 'example.test',
         rpName: 'Example',
+        timeout: 60_000,
         userID: new Uint8Array([7, 8, 9]),
         attestationType: 'none',
         supportedAlgorithmIDs: [-8, -7, -257],
@@ -106,7 +107,10 @@ describe('passkeys', () => {
     })
     await expect(verifyRegistration(passkeys)).resolves.toBe('created-passkey')
     expect(webauthn.verifyRegistrationResponse).toHaveBeenLastCalledWith(
-      expect.objectContaining({ requireUserVerification: false }),
+      expect.objectContaining({
+        requireUserVerification: false,
+        supportedAlgorithmIDs: [-8, -7, -257],
+      }),
     )
     expect(repository.create).toHaveBeenCalledWith({
       userId: 'user-1',
@@ -156,12 +160,14 @@ describe('passkeys', () => {
     await passkeys.authentication.createOptions('user-1', 'device-1')
     expect(webauthn.generateAuthenticationOptions).toHaveBeenCalledWith({
       rpID: 'example.test',
+      timeout: 60_000,
       allowCredentials: [{ id: 'credential-1' }],
       userVerification: 'preferred',
     })
     await passkeys.authentication.createDiscoverableOptions('device-2')
     expect(webauthn.generateAuthenticationOptions).toHaveBeenLastCalledWith({
       rpID: 'example.test',
+      timeout: 60_000,
       allowCredentials: [],
       userVerification: 'required',
     })
@@ -332,7 +338,7 @@ describe('passkeys', () => {
         authentication: (userId, deviceId) => `legacy-auth:${userId}:${deviceId}`,
         discoverableAuthentication: (deviceId) => `legacy-discoverable:${deviceId}`,
       },
-      failureLimiter: { record: async () => true },
+      failureLimiter: { isLimited: async () => false, record: async () => true },
     })
     await passkeys.registration.createOptions(testUser({ name: 'name' }), 'device-1')
     expect(put).toHaveBeenLastCalledWith(
@@ -402,6 +408,7 @@ function configured() {
       rpId: 'example.test',
       rpName: 'Example',
       challengeTtlSeconds: 300,
+      timeoutMs: 60_000,
       state,
       repository,
       namespace: 'site',
@@ -411,7 +418,7 @@ function configured() {
       residentKey: 'discouraged' as const,
       userIdsEqual: (left: string, right: string) => left === right,
       serializeUserId: String,
-      failureLimiter: { record: async () => false },
+      failureLimiter: { isLimited: async () => false, record: async () => false },
       userVerification: {
         registration: 'preferred' as const,
         authentication: 'preferred' as const,

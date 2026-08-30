@@ -9,6 +9,7 @@ describe('passkey options', () => {
     expect(() => createPasskeys({ ...baseOptions(), challengeTtlSeconds: 0 })).toThrow(
       'challengeTtlSeconds',
     )
+    expect(() => createPasskeys({ ...baseOptions(), timeoutMs: 0 })).toThrow('timeoutMs')
     const { residentKey: _residentKey, ...withoutResidentKey } = baseOptions()
     expect(() => createPasskeys(withoutResidentKey as never)).toThrow('residentKey')
     expect(() => createPasskeys({ ...baseOptions(), residentKey: 'invalid' as never })).toThrow(
@@ -58,6 +59,7 @@ function baseOptions(): PasskeyOptions<string, string, undefined> {
     rpId: 'example.test',
     rpName: 'Example',
     challengeTtlSeconds: 300,
+    timeoutMs: 60_000,
     state: { put: async () => undefined, get: async () => null, consume: async () => null },
     repository: {
       listCredentialIds: async () => [],
@@ -69,7 +71,7 @@ function baseOptions(): PasskeyOptions<string, string, undefined> {
     authenticatorAttachment: 'platform',
     supportedAlgorithmIDs: [-8, -7, -257],
     residentKey: 'discouraged',
-    failureLimiter: { record: async () => false },
+    failureLimiter: { isLimited: async () => false, record: async () => false },
     userIdsEqual: (left, right) => left === right,
     serializeUserId: String,
     userVerification: {

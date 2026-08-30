@@ -6,7 +6,7 @@ export interface ExpiringStateStore {
 }
 
 export interface AttemptLimiter<Input> {
-  isLimited?(input: Input): Promise<boolean>
+  isLimited(input: Input): Promise<boolean>
   record(input: Input): Promise<boolean>
 }
 

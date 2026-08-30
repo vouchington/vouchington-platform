@@ -23,6 +23,7 @@ export function createPasskeyRegistration<UserId, PasskeyId, Created, Registrati
       const generated = await generateRegistrationOptions({
         rpName: options.rpName,
         rpID: options.rpId,
+        timeout: options.timeoutMs,
         userName: user.name,
         userID: Uint8Array.from(user.webAuthnUserId),
         userDisplayName: user.displayName ?? user.name,
@@ -63,6 +64,7 @@ export function createPasskeyRegistration<UserId, PasskeyId, Created, Registrati
           expectedChallenge: challenge,
           expectedOrigin: input.expectedOrigin,
           expectedRPID: options.rpId,
+          supportedAlgorithmIDs: [...options.supportedAlgorithmIDs],
           requireUserVerification: options.userVerification.registration === 'required',
         })
       } catch (error) {
@@ -97,6 +99,7 @@ function validateOptions(options: {
   rpId: string
   rpName: string
   challengeTtlSeconds: number
+  timeoutMs?: unknown
   attestationType?: unknown
   authenticatorAttachment?: unknown
   supportedAlgorithmIDs?: readonly unknown[]
@@ -114,6 +117,8 @@ function validateOptions(options: {
   if (!options.rpName.trim()) throw new TypeError('rpName must not be empty')
   if (!Number.isSafeInteger(options.challengeTtlSeconds) || options.challengeTtlSeconds <= 0)
     throw new TypeError('challengeTtlSeconds must be a positive safe integer')
+  if (!Number.isSafeInteger(options.timeoutMs) || (options.timeoutMs as number) <= 0)
+    throw new TypeError('timeoutMs must be a positive safe integer')
   if (!isPolicy(options.residentKey))
     throw new TypeError('residentKey policy must be explicitly configured')
   if (!isAttestation(options.attestationType))

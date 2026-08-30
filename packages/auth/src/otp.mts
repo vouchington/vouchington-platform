@@ -73,8 +73,8 @@ export function createEmailOtp<DeliveryContext = undefined>(
   }
 }
 
-async function recordAttempt<Input>(limiter: AttemptLimiter<Input> | undefined, input: Input) {
-  if (limiter && ((await limiter.isLimited?.(input)) || (await limiter.record(input))))
+async function recordAttempt<Input>(limiter: AttemptLimiter<Input>, input: Input) {
+  if ((await limiter.isLimited(input)) || (await limiter.record(input)))
     throw new AuthError('rate_limited', 429, 'Too many authentication attempts')
 }
 

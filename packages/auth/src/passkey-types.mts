@@ -55,6 +55,7 @@ export interface PasskeyOptions<
   rpId: string
   rpName: string
   challengeTtlSeconds: number
+  timeoutMs: number
   state: ExpiringStateStore
   repository: PasskeyRepository<UserId, PasskeyId, Created, RegistrationContext>
   attestationType: PasskeyAttestation

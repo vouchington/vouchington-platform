@@ -55,8 +55,8 @@ describe('email OTP', () => {
       digest: (token) => `digest:${token}`,
       store: { put, consume },
       deliver,
-      requestLimiter: { record: async () => false },
-      verificationLimiter: { record: async () => false },
+      requestLimiter: { isLimited: async () => false, record: async () => false },
+      verificationLimiter: { isLimited: async () => false, record: async () => false },
       ttlSeconds: 60,
       now: () => now,
     })
@@ -97,8 +97,8 @@ describe('email OTP', () => {
       digest: String,
       store: { put: async () => undefined, consume: async () => true },
       deliver: async ({ token }) => void delivered.push(token),
-      requestLimiter: { record: async () => false },
-      verificationLimiter: { record: async () => false },
+      requestLimiter: { isLimited: async () => false, record: async () => false },
+      verificationLimiter: { isLimited: async () => false, record: async () => false },
       ttlSeconds: 1,
     })
     await otp.request('person@example.test', undefined)
@@ -120,8 +120,11 @@ describe('email OTP', () => {
     const otp = createEmailOtp({
       ...baseOtpOptions(),
       store: { put, consume },
-      requestLimiter: { record: async ({ email }) => email === 'limited@example.test' },
-      verificationLimiter: { record: async () => true },
+      requestLimiter: {
+        isLimited: async () => false,
+        record: async ({ email }) => email === 'limited@example.test',
+      },
+      verificationLimiter: { isLimited: async () => false, record: async () => true },
     })
     await expect(otp.request('limited@example.test', undefined)).rejects.toMatchObject({
       code: 'rate_limited',
@@ -240,7 +243,7 @@ describe('MFA verification flow', () => {
     const record = vi.fn(async ({ factor }: { factor: string }) => factor === 'limited')
     const flow = createMfaFlow({
       state,
-      limiter: { record },
+      limiter: { isLimited: async () => false, record },
       verify: async ({ factor }) => factor === 'valid',
       complete: async ({ attempt }) => `session:${attempt.userId}`,
     })
@@ -276,7 +279,7 @@ describe('MFA verification flow', () => {
 
     const disappeared = createMfaFlow({
       state: { peekAttempt: async () => ({ userId: 'user-5' }), consumeAttempt: async () => null },
-      limiter: { record: async () => false },
+      limiter: { isLimited: async () => false, record: async () => false },
       verify: async () => true,
       complete: async () => 'unused',
     })
@@ -286,7 +289,7 @@ describe('MFA verification flow', () => {
 
     const falsy = createMfaFlow({
       state: { peekAttempt: async () => 0, consumeAttempt: async () => 0 },
-      limiter: { record: async () => false },
+      limiter: { isLimited: async () => false, record: async () => false },
       verify: async () => true,
       complete: async ({ attempt }) => attempt,
     })
@@ -347,8 +350,8 @@ function baseOtpOptions() {
     digest: String,
     store: { put: async () => undefined, consume: async () => false },
     deliver: async () => undefined,
-    requestLimiter: { record: async () => false },
-    verificationLimiter: { record: async () => false },
+    requestLimiter: { isLimited: async () => false, record: async () => false },
+    verificationLimiter: { isLimited: async () => false, record: async () => false },
     ttlSeconds: 1,
   }
 }

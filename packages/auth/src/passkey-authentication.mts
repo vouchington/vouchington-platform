@@ -24,6 +24,7 @@ export function createPasskeyAuthentication<UserId, PasskeyId, Created, Registra
     const userVerification = options.userVerification.authentication
     const generated = await generateAuthenticationOptions({
       rpID: options.rpId,
+      timeout: options.timeoutMs,
       allowCredentials: credentialIds.map((id) => ({ id })),
       userVerification,
     })
@@ -39,6 +40,7 @@ export function createPasskeyAuthentication<UserId, PasskeyId, Created, Registra
     const userVerification = options.userVerification.discoverableAuthentication
     const generated = await generateAuthenticationOptions({
       rpID: options.rpId,
+      timeout: options.timeoutMs,
       allowCredentials: [],
       userVerification,
     })
@@ -89,7 +91,7 @@ export function createPasskeyAuthentication<UserId, PasskeyId, Created, Registra
       ...failure,
       ...(typeof credentialId === 'string' ? { credentialId } : {}),
     }
-    if (await options.failureLimiter.isLimited?.(failureWithCredential)) return rateLimited()
+    if (await options.failureLimiter.isLimited(failureWithCredential)) return rateLimited()
     if (typeof credentialId !== 'string') return invalidPasskey(failureWithCredential)
     const passkey = await options.repository.findByCredentialId(credentialId)
     const expectedUserId = failure.userId
