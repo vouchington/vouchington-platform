@@ -2,7 +2,13 @@ import { ReviewsError } from './errors.mts'
 import type { ReviewRatingsEngine, ReviewRatingsEngineOptions } from './engine-types.mts'
 import { validatePolicy } from './policy.mts'
 import { assertTargetAbsent, assertTargetPresent } from './target-state.mts'
-import { assertChanges, assertEligible, assertRating, assertRatingSet } from './validation.mts'
+import {
+  assertChanges,
+  assertEligible,
+  assertRating,
+  assertRatingSet,
+  assertReviewId,
+} from './validation.mts'
 import type { ReviewAction, ReviewRating, ReviewTarget } from './types.mts'
 
 export function createReviewRatingsEngine<
@@ -21,7 +27,6 @@ export function createReviewRatingsEngine<
     reviewId: TReviewId,
     target?: ReviewTarget<TTargetType>,
   ) => {
-    assertReviewId(reviewId)
     await options.authorize(
       {
         actor,
@@ -101,9 +106,4 @@ export function createReviewRatingsEngine<
       })
     },
   }
-}
-
-function assertReviewId(reviewId: unknown): asserts reviewId is string {
-  if (typeof reviewId !== 'string' || reviewId.trim() === '')
-    throw new ReviewsError('invalid-review-id', 'Review IDs must be non-empty strings.')
 }

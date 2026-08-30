@@ -9,6 +9,11 @@ import type {
   UpdateReviewRatingInput,
 } from './types.mts'
 
+export function assertReviewId(reviewId: unknown): asserts reviewId is string {
+  if (typeof reviewId !== 'string' || reviewId.trim() === '')
+    throw new ReviewsError('invalid-review-id', 'Review IDs must be non-empty strings.')
+}
+
 export async function assertEligible<
   TActor,
   TReviewId extends string,

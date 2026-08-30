@@ -2,7 +2,7 @@ import { ReviewsError } from './errors.mts'
 import type { ReviewsEngine, ReviewsEngineOptions } from './engine-types.mts'
 import { createReviewRatingsEngine } from './rating-engine.mts'
 import { validatePolicy } from './policy.mts'
-import { assertEligible, assertRatingSet } from './validation.mts'
+import { assertEligible, assertRatingSet, assertReviewId } from './validation.mts'
 import type { ReviewAction } from './types.mts'
 
 export function createReviewsEngine<
@@ -122,9 +122,4 @@ export function createReviewsEngine<
       })
     },
   }
-}
-
-function assertReviewId(reviewId: unknown): asserts reviewId is string {
-  if (typeof reviewId !== 'string' || reviewId.trim() === '')
-    throw new ReviewsError('invalid-review-id', 'Review IDs must be non-empty strings.')
 }
