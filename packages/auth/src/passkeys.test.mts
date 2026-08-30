@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createPasskeys } from './passkeys.mts'
+import { createPasskeys, createStringPasskeys } from './passkeys.mts'
 import type { PasskeyRepository, PasskeyStateStore, StoredPasskey } from './passkey-types.mts'
 
 type TestPasskeys = ReturnType<typeof createPasskeys<string, string, string, string>>
@@ -216,7 +216,7 @@ describe('passkeys', () => {
 
   it('updates counters for user-bound and discoverable successful assertions', async () => {
     const { options, repository, reserve } = configured()
-    const passkeys = createPasskeys({ ...options, userIdsEqual: (left, right) => left === right })
+    const passkeys = createStringPasskeys(options)
     webauthn.verifyAuthenticationResponse.mockResolvedValue({
       verified: true,
       authenticationInfo: { newCounter: 8 },
