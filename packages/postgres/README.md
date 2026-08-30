@@ -68,6 +68,22 @@ await psql.withMigrationSession(async (client) => {
 })
 ```
 
+## Schema snapshots
+
+The explicit `@vouchington/postgres/pg-schema-snapshot` subpath reads PostgreSQL catalogs, builds a
+stable structural snapshot, renders Markdown reference files, and detects index renames. It accepts
+an injected query function, so the application owns its pools and schema policy.
+
+```ts
+import { buildSchemaSnapshot, readSchemaCatalog } from '@vouchington/postgres/pg-schema-snapshot'
+
+const catalog = await readSchemaCatalog((sql) => psql.read(sql))
+const snapshot = buildSchemaSnapshot(catalog, {
+  partitionPolicies: new Map(),
+  unboundedUnpartitionedTables: new Set(),
+})
+```
+
 ## Conventions
 
 - UUIDv7 primary keys

@@ -10,7 +10,7 @@ SKU names.
 
 | Package                                                            | Description                                                        |
 | ------------------------------------------------------------------ | ------------------------------------------------------------------ |
-| [`@vouchington/postgres`](packages/postgres)                       | Triple-pool PostgreSQL runtime, transactions, cursors, migrations  |
+| [`@vouchington/postgres`](packages/postgres)                       | PostgreSQL runtime, migrations, and structural schema snapshots    |
 | [`@vouchington/utils`](packages/utils)                             | Dependency-free explicit-subpath utilities, including i18n helpers |
 | [`@vouchington/session-jwt`](packages/session-jwt)                 | Portable RS512 JWT primitives and UUIDv7 identifiers               |
 | [`@vouchington/queue-errors`](packages/queue-errors)               | glide-mq retry classification and rate-limit helpers               |

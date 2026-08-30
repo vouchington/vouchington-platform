@@ -1,7 +1,7 @@
 {
   "name": "@vouchington/postgres",
   "version": "0.0.2",
-  "description": "Opinionated PostgreSQL runtime: triple pools, annotated queries, transactions, cursors, and migrations.",
+  "description": "Opinionated PostgreSQL runtime: pools, transactions, migrations, and schema snapshots.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/postgres#readme",
   "bugs": {
     "url": "https://github.com/vouchington/vouchington-platform/issues"
@@ -26,6 +26,11 @@
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs",
       "default": "./dist/index.mjs"
+    },
+    "./pg-schema-snapshot": {
+      "types": "./dist/pg-schema-snapshot/index.d.mts",
+      "import": "./dist/pg-schema-snapshot/index.mjs",
+      "default": "./dist/pg-schema-snapshot/index.mjs"
     }
   },
   "publishConfig": {
