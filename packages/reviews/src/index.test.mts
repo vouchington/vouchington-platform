@@ -200,6 +200,9 @@ describe('createReviewsEngine', () => {
     await expect(fixture.engine.listRatings('alice', '   ')).rejects.toMatchObject({
       code: 'invalid-review-id',
     })
+    await expect(fixture.engine.updateReview('alice', '', { title: 'x' })).rejects.toMatchObject({
+      code: 'invalid-review-id',
+    })
     expect(fixture.order).toEqual([])
     await expect(
       fixture.engine.addRating('alice', 'review-1', {

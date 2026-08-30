@@ -34,6 +34,11 @@ rating set is revalidated, so application-defined update payloads cannot bypass 
 The engine calls `onPostCommit` only after the repository transaction resolves; transaction safety
 is guaranteed by the injected repository implementation.
 
+Applications that already own review lifecycle operations can use `createReviewRatingsEngine`
+with the same repository, authorization, policy, and post-commit contracts. It exposes only
+`listRatings`, `addRating`, `updateRating`, and `deleteRating`, so no unused or transaction-incorrect
+lifecycle adapter is required.
+
 All rules are explicit. The package has no built-in target types, rating scale, rating count,
 comparison rule, deletion rule, auth policy, table name, UUID assumption, or ordering uniqueness
 rule. Target IDs are opaque non-empty strings and rating CRUD is individual, never a bulk replace.

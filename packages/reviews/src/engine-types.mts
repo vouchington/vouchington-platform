@@ -10,17 +10,36 @@ import type {
   UpdateReviewRatingInput,
 } from './types.mts'
 
+export interface ReviewRatingPostCommitEvent<TReviewId extends string, TTargetType extends string> {
+  readonly action: 'add-rating' | 'delete-rating' | 'update-rating'
+  readonly rating: ReviewRating<TTargetType>
+  readonly reviewId: TReviewId
+}
+
 export type ReviewPostCommitEvent<TReviewId extends string, TTargetType extends string, TReview> =
-  | {
-      readonly action: 'add-rating' | 'delete-rating' | 'update-rating'
-      readonly rating: ReviewRating<TTargetType>
-      readonly reviewId: TReviewId
-    }
+  | ReviewRatingPostCommitEvent<TReviewId, TTargetType>
   | {
       readonly action: 'create-review' | 'update-review'
       readonly review: TReview
       readonly reviewId: TReviewId
     }
+
+export interface ReviewRatingsEngineOptions<
+  TActor,
+  TReviewId extends string,
+  TTargetType extends string,
+  TTransaction,
+> {
+  readonly authorize: (
+    input: ReviewAuthorizationInput<TActor, TReviewId, TTargetType>,
+    transaction: TTransaction,
+  ) => Promise<void> | void
+  readonly onPostCommit: (
+    event: ReviewRatingPostCommitEvent<TReviewId, TTargetType>,
+  ) => Promise<void> | void
+  readonly policy: ReviewsPolicy<TActor, TReviewId, TTargetType, TTransaction>
+  readonly repository: ReviewsRepository<TReviewId, TTargetType, TTransaction>
+}
 
 export interface ReviewsEngineOptions<
   TActor,
@@ -63,24 +82,27 @@ export interface ReviewsEngine<
   TListQuery,
   TReview,
   TListResult,
-> {
+> extends ReviewRatingsEngine<TActor, TReviewId, TTargetType> {
+  createReview(actor: TActor, input: CreateReviewInput<TCreate, TTargetType>): Promise<TReview>
+  listReviews(actor: TActor, query: TListQuery): Promise<TListResult>
+  updateReview(actor: TActor, reviewId: TReviewId, input: TUpdate): Promise<TReview>
+}
+
+export interface ReviewRatingsEngine<TActor, TReviewId extends string, TTargetType extends string> {
   addRating(
     actor: TActor,
     reviewId: TReviewId,
     input: CreateReviewRatingInput<TTargetType>,
   ): Promise<ReviewRating<TTargetType>>
-  createReview(actor: TActor, input: CreateReviewInput<TCreate, TTargetType>): Promise<TReview>
   deleteRating(
     actor: TActor,
     reviewId: TReviewId,
     target: ReviewTarget<TTargetType>,
   ): Promise<ReviewRating<TTargetType>>
   listRatings(actor: TActor, reviewId: TReviewId): Promise<readonly ReviewRating<TTargetType>[]>
-  listReviews(actor: TActor, query: TListQuery): Promise<TListResult>
   updateRating(
     actor: TActor,
     reviewId: TReviewId,
     input: UpdateReviewRatingInput<TTargetType>,
   ): Promise<ReviewRating<TTargetType>>
-  updateReview(actor: TActor, reviewId: TReviewId, input: TUpdate): Promise<TReview>
 }

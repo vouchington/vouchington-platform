@@ -1,7 +1,15 @@
 export { createReviewsEngine } from './engine.mts'
+export { createReviewRatingsEngine } from './rating-engine.mts'
 export { ReviewsError, type ReviewsErrorCode } from './errors.mts'
 export { registerReviewRoutes } from './routes.mts'
-export type { ReviewPostCommitEvent, ReviewsEngine, ReviewsEngineOptions } from './engine-types.mts'
+export type {
+  ReviewPostCommitEvent,
+  ReviewRatingPostCommitEvent,
+  ReviewRatingsEngine,
+  ReviewRatingsEngineOptions,
+  ReviewsEngine,
+  ReviewsEngineOptions,
+} from './engine-types.mts'
 export type {
   LifecycleRouteOptions,
   RatingRouteOptions,
