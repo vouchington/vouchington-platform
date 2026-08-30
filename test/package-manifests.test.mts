@@ -14,6 +14,7 @@ const packages = [
   'frontmatter',
   'browser-crawl',
   'domain-verification',
+  'wikimedia',
 ]
 
 describe('runtime package manifests', () => {

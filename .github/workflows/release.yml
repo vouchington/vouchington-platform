@@ -27,6 +27,7 @@ on:
           - '@vouchington/frontmatter'
           - '@vouchington/http-transport'
           - '@vouchington/image-resize'
+          - '@vouchington/wikimedia'
       bump:
         description: Semver bump type
         type: choice
