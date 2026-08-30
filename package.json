@@ -26,7 +26,8 @@
     "oxfmt:check": "oxfmt --check",
     "knip": "knip",
     "dependency-cruiser": "pnpm run build && depcruise packages/*/dist",
-    "actionlint": "github-actionlint"
+    "actionlint": "github-actionlint",
+    "agent:verify-skills": "vouchington --version && test -f node_modules/vouchington-tooling/skills/github-actions-authoring/SKILL.md && test -f node_modules/vouchington-tooling/skills/github-actions-checklist/SKILL.md"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
@@ -39,7 +40,8 @@
     "oxlint-tsgolint": "^7.0.2001",
     "pr-shepherd": "^0.37.0",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "vouchington-tooling": "^0.3.5"
   },
   "engines": {
     "node": ">=24.0.0"

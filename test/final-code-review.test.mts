@@ -1,56 +1,117 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
-const TOOLING_PIN = 'f5f41caba5aef0b31e507a67123c76f1c9a53d02'
-const OPENCODE_PIN = '1bcaf04b0ee3bf816c406d0239e7d7c54e44eb3f'
-const workflow = readFileSync('.github/workflows/final-code-review.yml', 'utf8')
+const finalReview = readFileSync('.github/workflows/final-code-review.yml', 'utf8')
+const request = readFileSync('.github/workflows/request-final-review.yml', 'utf8')
+const cleanup = readFileSync('.github/workflows/clear-final-review-labels.yml', 'utf8')
+const ci = readFileSync('.github/workflows/ci.yml', 'utf8')
 
-describe('Final Code Review gate', () => {
-  it('uses a trusted default-branch PR trigger and one native Code Reviewed job', () => {
-    expect(existsSync('.github/workflows/ci-request-final-code-review.yml')).toBe(false)
-    expect(workflow).toContain('name: Final Code Review')
-    expect(workflow).toContain('pull_request_target:')
-    expect(workflow).toContain(
-      'types: [opened, reopened, synchronize, ready_for_review, converted_to_draft, closed]',
+function expectPinnedAction(text: string, action: string) {
+  const escaped = action.replaceAll('.', '\\.')
+  expect(text).toMatch(
+    new RegExp(`^\\s*(?:-\\s+)?uses: ${escaped}@[0-9a-f]{40} # v[0-9][^\\s]*$`, 'm'),
+  )
+}
+
+describe('event-driven final code review', () => {
+  it('routes each completed CI fan-in through one correlated dispatch', () => {
+    expect(request).toContain('workflow_run:')
+    expect(request).toContain('workflows: [CI]')
+    expect(request).toContain('types: [completed]')
+    expect(request).toContain("github.event.workflow_run.event == 'pull_request'")
+    expect(request).toContain('source-run-id: ${{ github.event.workflow_run.id }}')
+    expect(request).toContain('source-run-attempt: ${{ github.event.workflow_run.run_attempt }}')
+    expect(request).toContain('source-workflow-path: .github/workflows/ci.yml')
+    expect(request).toContain('fan-in-job: tests')
+    expect(request).toContain('review-check-name: Code Reviewed')
+    expectPinnedAction(
+      request,
+      'vouchington/vouchington-tooling/.github/actions/request-final-review',
     )
-    expect(workflow).toContain("'Code Reviewed' || 'Ignore ineligible final review'")
-    expect(workflow).not.toContain("github.event.label.name == 'final-code-review:requested'")
-    expect(workflow).not.toContain('checks: write')
-    expect(workflow).not.toContain('CODE_REVIEW_TRIGGER_TOKEN')
-    expect(workflow).not.toContain('check-runs')
   })
 
-  it('selects the exact tested CI head through the pinned composite', () => {
-    expect(workflow).toContain(
-      `vouchington/vouchington-tooling/.github/actions/final-review-select@${TOOLING_PIN}`,
+  it('selects exactly the dispatched CI attempt and never waits for CI', () => {
+    expect(finalReview).toContain('repository_dispatch:')
+    expect(finalReview).toContain('types: [final-review-requested]')
+    expect(finalReview).toContain('source-run-id: ${{ github.event.client_payload.source_run_id }}')
+    expect(finalReview).toContain(
+      'source-run-attempt: ${{ github.event.client_payload.source_run_attempt }}',
     )
-    expect(workflow).toContain('CI_WORKFLOW: ci.yml')
-    expect(workflow).toContain('TESTS_JOB_NAME: test')
-    expect(workflow).toContain('GH_TOKEN: ${{ github.token }}')
-    expect(workflow).toContain('issues: write\n      pull-requests: write')
+    expect(finalReview).toContain('source-base-sha: ${{ github.event.client_payload.base_sha }}')
+    expect(finalReview).toContain('workflow-path: .github/workflows/ci.yml')
+    expect(finalReview).toContain('fan-in-job: tests')
+    expect(finalReview).not.toMatch(/WAIT_(ATTEMPTS|SECONDS)|TESTS_WAIT|wait-for-tests/i)
+    expectPinnedAction(
+      finalReview,
+      'vouchington/vouchington-tooling/.github/actions/select-final-review',
+    )
+    expect(existsSync('.github/actions/final-review-select/action.yml')).toBe(false)
   })
 
-  it('keeps provider and poster failures advisory behind the native gate', () => {
-    expect(workflow.match(/continue-on-error: true/g)).toHaveLength(4)
-    expect(workflow).toContain(
-      `vouchington/vouchington-tooling/.github/actions/final-review-gate@${TOOLING_PIN}`,
+  it('keeps the selected-head synthetic Code Reviewed check', () => {
+    expect(finalReview).toContain('name: >-\n      Code Reviewed')
+    expect(finalReview).toContain('checks: write')
+    expect(finalReview).toContain(
+      'selected_head_sha: ${{ needs.select-final-review.outputs.head_sha }}',
     )
-    expect(workflow).toContain("CLAUDE_ENABLED: 'false'")
-    expect(workflow).toContain('if: always()')
-    expect(workflow).toContain('COMPLETE_LABEL: final-code-review:complete')
+    expect(finalReview).toContain(
+      'selected_base_sha: ${{ needs.select-final-review.outputs.base_sha }}',
+    )
+    expect(finalReview).toContain('check_name: Code Reviewed')
+    expectPinnedAction(
+      finalReview,
+      'vouchington/vouchington-tooling/.github/actions/final-review-gate',
+    )
   })
 
-  it('runs OpenRouter and Zen in parallel with the pinned provider actions', () => {
-    expect(workflow).toContain('opencode-code-review:')
-    expect(workflow).toContain('opencode-zen-code-review:')
-    expect(workflow).toContain(
-      `vouchington/vouchington-tooling/.github/actions/opencode-code-review@${OPENCODE_PIN}`,
+  it('keeps exact selected-head and trusted-base refs', () => {
+    expect(finalReview).toContain('ref: ${{ needs.select-final-review.outputs.head_sha }}')
+    expect(finalReview).toContain(
+      'trusted_prompt_ref: ${{ needs.select-final-review.outputs.base_sha }}',
     )
-    expect(workflow).toContain(
-      `vouchington/vouchington-tooling/.github/actions/code-review-poster@${OPENCODE_PIN}`,
+    expect(finalReview).toContain(
+      'expected_base_sha: ${{ needs.select-final-review.outputs.base_sha }}',
     )
-    expect(workflow).toContain("needs.select-final-review.outputs.should_review == 'true'")
-    expect(workflow).toContain('cancel-in-progress: true')
+    expect(finalReview).toContain('persist-credentials: false')
+  })
+
+  it('cancels and clears state only from base-owned lifecycle orchestration', () => {
+    expect(cleanup).toContain('pull_request_target:')
+    expect(cleanup).toContain('types: [converted_to_draft, closed]')
+    expect(cleanup).toContain('github.event.pull_request.base.repo.full_name == github.repository')
+    expect(cleanup).toContain('cancel-in-progress: true')
+    expect(cleanup).toContain('final-code-review:requested')
+    expect(cleanup).toContain('final-code-review:complete')
+    expect(cleanup).not.toMatch(/sleep|poll|WAIT_/i)
+    expect(cleanup).not.toContain('actions/checkout')
+  })
+
+  it('keeps a bounded CI fan-in for the router', () => {
+    expect(ci).toContain('tests:')
+    expect(ci).toContain('name: tests')
+    expect(ci).toContain('needs: [test, actionlint]')
+    expect(ci).toContain('timeout-minutes: 2')
+  })
+
+  it('pins every repository action by identity, SHA shape, and version comment', () => {
+    for (const file of readdirSync('.github/workflows')) {
+      const workflow = readFileSync(`.github/workflows/${file}`, 'utf8')
+      for (const line of workflow.split('\n').filter((candidate) => candidate.includes('uses:'))) {
+        if (line.includes('uses: ./')) continue
+        expect(line).toMatch(/uses: [^@\s]+@[0-9a-f]{40} # v[0-9][^\s]*$/)
+      }
+    }
+  })
+
+  it('bounds every concrete job and keeps public PR-target workflows base-owned', () => {
+    for (const text of [finalReview, request, cleanup, ci]) {
+      for (const job of text.split(/^  [a-z][\w-]*:\n/m).slice(1)) {
+        if (!job.includes('runs-on:')) continue
+        expect(job).toMatch(/timeout-minutes: (?:[1-9]|[12][0-9]|30)\b/)
+      }
+    }
+    expect(finalReview).not.toContain('pull_request_target')
+    expect(request).not.toContain('pull_request_target')
   })
 })

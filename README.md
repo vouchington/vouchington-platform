@@ -53,11 +53,14 @@ Postgres 18 is required for tests (`DATABASE_URL`, default
 
 ## Final code review
 
-`Final Code Review / Code Reviewed` is a native, exact-PR-head gate. It waits for the current
-head's `test` and `actionlint` checks, keeps forks and dependency bots secretless, and runs trusted
-same-repository review providers only from the default-branch workflow definition. Provider and
-review-posting failures are advisory; selection, settings, exact-head verification, required CI,
-and label updates fail closed. `CODE_REVIEW_REQUIRED` is intentionally unsupported.
+`Final Code Review / Code Reviewed` is a selected-head synthetic check. A completed CI `tests`
+fan-in emits one correlated `workflow_run` to `repository_dispatch` request; the final-review
+workflow validates that exact run, attempt, head, and base once before running providers. This
+replaces remote-state polling. Forks and dependency bots remain secretless, while trusted review
+providers run only from default-branch-owned workflow definitions. Provider and review-posting
+failures are advisory; selection, settings, exact-head verification, required CI, and lifecycle
+label updates fail closed. Draft and closed PRs cancel matching review work and clear lifecycle
+labels. `CODE_REVIEW_REQUIRED` is intentionally unsupported.
 
 ## Publishing
 
