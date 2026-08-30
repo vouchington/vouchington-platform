@@ -44,6 +44,10 @@ import { createMessageTranslator } from '@vouchington/utils/message-catalog'
 - `hashtags`: caller-configured authored/key length and separator policy for canonical ASCII hashtag
   keys. The package does not choose application limits or accepted input separators.
 - `fetch-ports`: the Fetch standard forbidden-port list and membership predicates.
+- `http-body`: bounded Fetch response-body reads with abort propagation and typed missing/oversize
+  errors.
+- `http-link-pagination`: fail-closed RFC 8288 next-link parsing with same-origin URL and
+  unambiguous cursor extraction.
 - `language-tags`: caller-configured locale normalization and strict `Accept-Language` parsing and
   best matching. HTTP ranges reject malformed syntax and quality parameters; explicit `q=0` ranges
   exclude a candidate when they tie for that candidate's most-specific matching range, so `en;q=0`
