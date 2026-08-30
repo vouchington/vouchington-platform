@@ -35,5 +35,8 @@ describe('HTML entity and text helpers', () => {
     expect(isInsideHtmlElement('<codepen>hello', 10, ['code'])).toBe(false)
     expect(isInsideHtmlElement('<custom.name>hello', 14, ['custom.name'])).toBe(true)
     expect(isInsideHtmlElement('<code>hello', 8, [''])).toBe(false)
+    expect(isInsideHtmlElement('<code><code></code>hello</code>', 24, ['code'])).toBe(true)
+    expect(isInsideHtmlElement('<code/><pre>hello', 12, ['code'])).toBe(false)
+    expect(isInsideHtmlElement('<code>hello', 3, ['code'])).toBe(false)
   })
 })

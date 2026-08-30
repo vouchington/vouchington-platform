@@ -2,6 +2,8 @@ import { decodeHTMLStrict } from 'entities'
 
 const INVALID_NUMERIC_ENTITY = /&#(?:\d+|[xX][0-9a-fA-F]+);/g
 const NAMED_ENTITY = /&([A-Za-z][A-Za-z0-9]*);/g
+const HTML_ELEMENT_TAG = /<(\/?)([A-Za-z][A-Za-z0-9.:-]*)(?=[\s/>])[^>]*>/g
+const SELF_CLOSING_TAG = /\/\s*>$/
 export interface DecodeHtmlEntitiesOptions {
   caseInsensitiveNamedEntities?: readonly string[]
 }
@@ -27,12 +29,12 @@ export function decodeHtmlEntities(value: string, options: DecodeHtmlEntitiesOpt
     invalid.push(match)
     return `${sentinelPrefix}${invalid.length - 1}\u0000`
   })
-  const insensitive = new Set(
-    options.caseInsensitiveNamedEntities?.map((name) => name.toLowerCase()) ?? [],
-  )
+  const insensitive = options.caseInsensitiveNamedEntities ?? []
   const normalizedValue = protectedValue.replace(NAMED_ENTITY, (match, name: string) => {
     const normalized = name.toLowerCase()
-    return insensitive.has(normalized) ? `&${normalized};` : match
+    return insensitive.some((selected) => selected.toLowerCase() === normalized)
+      ? `&${normalized};`
+      : match
   })
   let decoded = decodeHTMLStrict(normalizedValue)
   for (const [index, entity] of invalid.entries())
@@ -46,25 +48,15 @@ export function isInsideHtmlElement(
   position: number,
   elementNames: readonly string[],
 ): boolean {
-  const before = value.slice(0, position)
-  return elementNames.some((name) => {
-    if (!name) return false
-    const escapedName = escapeRegularExpression(name)
-    return (
-      lastMatchIndex(before, new RegExp(`<${escapedName}(?=[\\s/>])`, 'g')) >
-      lastMatchIndex(before, new RegExp(`</${escapedName}\\s*>`, 'g'))
-    )
-  })
-}
-
-function lastMatchIndex(value: string, pattern: RegExp): number {
-  let result = -1
-  for (const match of value.matchAll(pattern)) result = match.index
-  return result
-}
-
-function escapeRegularExpression(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const depths = elementNames.map(() => 0)
+  for (const match of value.matchAll(HTML_ELEMENT_TAG)) {
+    if (match.index + match[0].length > position) break
+    const elementIndex = elementNames.indexOf(match[2]!)
+    if (elementIndex < 0 || !elementNames[elementIndex]) continue
+    if (match[1] === '/') depths[elementIndex] = Math.max(0, depths[elementIndex]! - 1)
+    else if (!SELF_CLOSING_TAG.test(match[0])) depths[elementIndex]! += 1
+  }
+  return depths.some((depth) => depth > 0)
 }
 /** Performs a lightweight lexical check; it does not parse malformed HTML or literal angle brackets. */
 export function isInsideHtmlTag(value: string, position: number): boolean {
