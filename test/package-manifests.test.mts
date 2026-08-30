@@ -18,6 +18,7 @@ const packages = [
   'memberships',
   'worker-runtime',
   'rate-limit',
+  'reviews',
 ]
 
 describe('runtime package manifests', () => {
