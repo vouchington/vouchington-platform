@@ -19,6 +19,7 @@ const packages = [
   'worker-runtime',
   'rate-limit',
   'reviews',
+  'moderation',
 ]
 
 describe('runtime package manifests', () => {
