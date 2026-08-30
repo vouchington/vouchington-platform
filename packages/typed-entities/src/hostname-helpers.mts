@@ -38,8 +38,9 @@ export function removeAssociationOperation<
       const hostname = runtime.hostname(value)
       await transaction.lockEntities([entityId])
       const entity = await runtime.entity(transaction, entityId)
-      const matches = (await transaction.listHostnameAssociations(entityId)).filter(
-        (item) => item.hostname === hostname,
+      const matches = await transaction.listHostnameAssociationsByEntityAndHostname(
+        entityId,
+        hostname,
       )
       const policy = runtime.policy(entity)
       for (const item of matches) {

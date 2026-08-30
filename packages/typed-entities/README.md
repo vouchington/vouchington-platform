@@ -26,7 +26,8 @@ await entities.claimPrimaryHostname(context, 'organization-1', 'acme.example')
 
 Every mutation runs inside `store.transact`. Adapters provide deterministic entity, alias, hierarchy,
 and hostname locks plus the primitive reads and writes declared by `TypedEntityTransaction`. A
-failed operation must roll back all writes.
+failed operation must roll back all writes. `listHostnameAssociationsByEntityAndHostname` gives
+persistence adapters a targeted lookup for removals.
 
 `merge` normalizes and deduplicates the source slug and aliases, locks them in sorted order, checks
 every conflict, transfers them, then applies the application-owned lifecycle projection. Hierarchy

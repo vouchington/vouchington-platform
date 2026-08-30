@@ -89,6 +89,10 @@ export type TypedEntityTransaction<TType extends string, TEntity extends TypedEn
   readonly putHostnameClaim: (claim: HostnameClaim) => Promise<void>
   readonly removeHostnameClaim: (claim: HostnameClaim) => Promise<void>
   readonly listHostnameAssociations: (entityId: string) => Promise<readonly HostnameAssociation[]>
+  readonly listHostnameAssociationsByEntityAndHostname: (
+    entityId: string,
+    hostname: string,
+  ) => Promise<readonly HostnameAssociation[]>
   readonly listHostnameAssociationsByHostname: (
     hostname: string,
   ) => Promise<readonly HostnameAssociation[]>

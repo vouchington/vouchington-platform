@@ -110,6 +110,10 @@ function makeTransaction(
       [...state.parents].filter(([, parents]) => parents.has(id)).map(([childId]) => childId),
     listHostnameAssociations: async (id) =>
       [...state.associations.values()].filter((item) => item.entityId === id),
+    listHostnameAssociationsByEntityAndHostname: async (id, hostname) =>
+      [...state.associations.values()].filter(
+        (item) => item.entityId === id && item.hostname === hostname,
+      ),
     listHostnameAssociationsByHostname: async (hostname) =>
       [...state.associations.values()].filter((item) => item.hostname === hostname),
     listHostnameClaims: async (id) =>
