@@ -32,7 +32,10 @@ persistence adapters a targeted lookup for removals.
 `merge` normalizes and deduplicates the source slug and aliases, locks them in sorted order, checks
 every conflict, transfers them, then applies the application-owned lifecycle projection. Hierarchy
 operations support multiple parents and reject self or indirect cycles while holding the adapter's
-hierarchy lock.
+hierarchy lock. Cross-type merges require both type policies to explicitly opt in through
+`isCompatible`. `validateParent` applies the same locks, activity checks, policy, and cycle
+validation as `addParent` without writing the relation, for applications whose relation row remains
+application-owned.
 
 Primary and additional hostname claims are exclusive across entities. An application can opt into
 reclaiming a missing or stale owner through `mayReclaimHostname`. Primary and additional hostname
@@ -40,6 +43,9 @@ associations are separate, non-exclusive records for source/reference use cases.
 
 `hooks.audit` runs inside the transaction. `hooks.afterCommit` receives the completed change set
 only after the transaction succeeds, making it suitable for application-owned cache and queue work.
+An adapter may make `store.transact` reuse a transaction carried by its context so package
+operations and application-owned writes are atomic. When reusing a caller-owned outer transaction,
+leave `hooks.afterCommit` unset and run commit-dependent effects from the outer transaction owner.
 
 Aliases use `normalizeKey` from `@vouchington/utils/strings` by default, and hostnames use
 `normalizeAsciiHostname` from `@vouchington/utils/urls`. Applications can inject stricter

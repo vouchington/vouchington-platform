@@ -9,21 +9,15 @@ export function createHierarchyOperations<
 >(runtime: Runtime<TType, TEntity, TContext>) {
   const relation = (context: TContext, entityId: string, parentId: string, add: boolean) =>
     runtime.run(context, async (transaction, change) => {
-      await transaction.lockHierarchy()
-      await transaction.lockEntities([entityId, parentId].toSorted())
-      const entity = await runtime.entity(transaction, entityId)
-      const parent = await runtime.entity(transaction, parentId)
-      const policy = runtime.policy(entity)
-      await runtime.permit(
+      const parents = await validateParentRelation(
+        runtime,
         context,
-        entity,
-        add ? 'add parent' : 'remove parent',
-        policy.canParent?.({ context, entity, parent }),
+        transaction,
+        entityId,
+        parentId,
+        add,
       )
-      if (add) await runtime.permit(context, parent, 'add parent')
-      const parents = await transaction.listParentIds(entityId)
       if (add && !parents.includes(parentId)) {
-        await assertAcyclic(transaction, entityId, parentId)
         await transaction.addParentId(entityId, parentId)
         await change({ entityId, kind: 'parent.added', parentId })
       } else if (!add && parents.includes(parentId)) {
@@ -46,7 +40,40 @@ export function createHierarchyOperations<
       }),
     removeParent: (context: TContext, entityId: string, parentId: string) =>
       relation(context, entityId, parentId, false),
+    validateParent: (context: TContext, entityId: string, parentId: string) =>
+      runtime.run(context, async (transaction) => {
+        await validateParentRelation(runtime, context, transaction, entityId, parentId, true)
+      }),
   }
+}
+
+async function validateParentRelation<
+  TType extends string,
+  TEntity extends TypedEntity<TType>,
+  TContext,
+>(
+  runtime: Runtime<TType, TEntity, TContext>,
+  context: TContext,
+  transaction: TypedEntityTransaction<TType, TEntity>,
+  entityId: string,
+  parentId: string,
+  add: boolean,
+): Promise<readonly string[]> {
+  await transaction.lockHierarchy()
+  await transaction.lockEntities([entityId, parentId].toSorted())
+  const entity = await runtime.entity(transaction, entityId)
+  const parent = await runtime.entity(transaction, parentId)
+  const policy = runtime.policy(entity)
+  await runtime.permit(
+    context,
+    entity,
+    add ? 'add parent' : 'remove parent',
+    policy.canParent?.({ context, entity, parent }),
+  )
+  if (add) await runtime.permit(context, parent, 'add parent')
+  const parents = await transaction.listParentIds(entityId)
+  if (add && !parents.includes(parentId)) await assertAcyclic(transaction, entityId, parentId)
+  return parents
 }
 
 async function assertAcyclic<TType extends string, TEntity extends TypedEntity<TType>>(

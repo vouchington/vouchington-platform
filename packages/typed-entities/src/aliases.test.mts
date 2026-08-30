@@ -127,6 +127,17 @@ describe('aliases and merges', () => {
     )
   })
 
+  it('allows both application type policies to opt into a cross-type merge', async () => {
+    const subject = fixture({
+      catalog: {
+        group: { isCompatible: () => true },
+        place: { isCompatible: () => true },
+      },
+    })
+    await expect(subject.engine.merge(subject.context, 'one', 'place')).resolves.toBeUndefined()
+    expect(subject.state.merges[0]).toMatchObject({ sourceId: 'one', targetId: 'place' })
+  })
+
   it('reports missing entities and types with stable domain codes', async () => {
     const subject = fixture()
     await expect(subject.engine.claimAlias(subject.context, 'missing', 'alias')).rejects.toEqual(

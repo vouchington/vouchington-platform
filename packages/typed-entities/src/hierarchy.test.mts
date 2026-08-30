@@ -33,6 +33,19 @@ describe('hierarchies', () => {
     await expect(subject.engine.listParents(subject.context, 'one')).resolves.toEqual([])
   })
 
+  it('validates a parent relation without performing the application-owned write', async () => {
+    const subject = fixture()
+    await subject.engine.addParent(subject.context, 'two', 'one')
+    await expect(
+      subject.engine.validateParent(subject.context, 'three', 'two'),
+    ).resolves.toBeUndefined()
+    await expect(subject.engine.listParents(subject.context, 'three')).resolves.toEqual([])
+    await subject.engine.addParent(subject.context, 'three', 'two')
+    await expect(subject.engine.validateParent(subject.context, 'one', 'three')).rejects.toEqual(
+      new HierarchyCycleError('one', 'three'),
+    )
+  })
+
   it('walks converging parent paths once', async () => {
     const subject = fixture()
     subject.entities.set('four', { id: 'four', slug: 'fourth', type: 'group' })

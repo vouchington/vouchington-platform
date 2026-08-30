@@ -82,9 +82,14 @@ async function assertMergePolicy<
   TEntity extends TypedEntity<TType>,
   TContext,
 >(runtime: Runtime<TType, TEntity, TContext>, context: TContext, source: TEntity, target: TEntity) {
-  if (source.type !== target.type) throw new InvalidEntityMergeError(source.id, target.id)
   const sourcePolicy = runtime.policy(source)
   const targetPolicy = runtime.policy(target)
+  if (
+    source.type !== target.type &&
+    (sourcePolicy.isCompatible === undefined || targetPolicy.isCompatible === undefined)
+  ) {
+    throw new InvalidEntityMergeError(source.id, target.id)
+  }
   await runtime.permit(
     context,
     source,
