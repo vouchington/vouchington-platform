@@ -65,6 +65,8 @@ importers:
 
   packages/domain-verification: {}
 
+  packages/memberships: {}
+
   packages/frontmatter:
     dependencies:
       yaml:

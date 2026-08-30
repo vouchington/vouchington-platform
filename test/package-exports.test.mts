@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-const packages = ['http-transport', 'image-resize', 'wikimedia'] as const
+const packages = ['http-transport', 'image-resize', 'wikimedia', 'memberships'] as const
 
 describe('new package manifests and exports', () => {
   beforeAll(() => {
@@ -30,6 +30,14 @@ describe('new package manifests and exports', () => {
     expect(readManifest('wikimedia').dependencies).toEqual({
       '@jongleberry/api-server': '^2.1.0',
     })
+    expect(readManifest('memberships').dependencies).toBeUndefined()
+  })
+
+  it('keeps membership declarations provider- and product-neutral', () => {
+    const declarations = readFileSync('packages/memberships/dist/index.d.mts', 'utf8')
+    expect(declarations).not.toMatch(
+      /stripe|filaments|voucha|membership_skus|\bplus\b|\bpro\b|select /i,
+    )
   })
 })
 
