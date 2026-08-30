@@ -59,10 +59,10 @@ export interface PasskeyOptions<
   keys?: PasskeyStateKeys<UserId>
   failureLimiter?: AttemptLimiter<PasskeyFailure<UserId>>
   userIdsEqual?: (left: UserId, right: UserId) => boolean
-  userVerification?: {
-    registration?: PasskeyUserVerification
-    authentication?: PasskeyUserVerification
-    discoverableAuthentication?: PasskeyUserVerification
+  userVerification: {
+    registration: PasskeyUserVerification
+    authentication: PasskeyUserVerification
+    discoverableAuthentication: PasskeyUserVerification
   }
 }
 

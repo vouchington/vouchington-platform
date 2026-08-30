@@ -20,7 +20,7 @@ export function createPasskeyAuthentication<UserId, PasskeyId, Created, Registra
     const credentialIds = await options.repository.listCredentialIds(userId)
     if (credentialIds.length === 0)
       throw new AuthError('invalid_request', 400, 'No passkeys are registered')
-    const userVerification = options.userVerification?.authentication ?? 'preferred'
+    const userVerification = options.userVerification.authentication
     const generated = await generateAuthenticationOptions({
       rpID: options.rpId,
       allowCredentials: credentialIds.map((id) => ({ id })),
@@ -35,7 +35,7 @@ export function createPasskeyAuthentication<UserId, PasskeyId, Created, Registra
   }
 
   async function createDiscoverableOptions(deviceId: string) {
-    const userVerification = options.userVerification?.discoverableAuthentication ?? 'required'
+    const userVerification = options.userVerification.discoverableAuthentication
     const generated = await generateAuthenticationOptions({
       rpID: options.rpId,
       allowCredentials: [],
@@ -136,8 +136,8 @@ function requiresUserVerification(
 ) {
   const requirement =
     mode === 'discoverable'
-      ? (options.userVerification?.discoverableAuthentication ?? 'required')
-      : (options.userVerification?.authentication ?? 'preferred')
+      ? options.userVerification.discoverableAuthentication
+      : options.userVerification.authentication
   return requirement === 'required'
 }
 

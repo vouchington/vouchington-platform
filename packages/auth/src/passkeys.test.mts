@@ -29,6 +29,14 @@ describe('passkeys', () => {
     expect(() => createPasskeys({ ...baseOptions(), challengeTtlSeconds: 0 })).toThrow(
       'challengeTtlSeconds',
     )
+    const { userVerification: _userVerification, ...withoutPolicy } = baseOptions()
+    expect(() => createPasskeys(withoutPolicy as never)).toThrow('userVerification')
+    expect(() =>
+      createPasskeys({
+        ...baseOptions(),
+        userVerification: { ...baseOptions().userVerification, authentication: 'invalid' as never },
+      }),
+    ).toThrow('userVerification')
   })
 
   it('encodes identifiers in default state keys', async () => {
@@ -371,6 +379,11 @@ function configured() {
       state,
       repository,
       namespace: 'site',
+      userVerification: {
+        registration: 'preferred' as const,
+        authentication: 'preferred' as const,
+        discoverableAuthentication: 'required' as const,
+      },
     },
   }
 }

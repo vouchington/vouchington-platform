@@ -16,7 +16,7 @@ export function createPasskeyRegistration<UserId, PasskeyId, Created, Registrati
     async createOptions(user: PasskeyUser<UserId>, deviceId: string) {
       validateUserHandle(user.webAuthnUserId)
       const credentialIds = await options.repository.listCredentialIds(user.id)
-      const userVerification = options.userVerification?.registration ?? 'preferred'
+      const userVerification = options.userVerification.registration
       const generated = await generateRegistrationOptions({
         rpName: options.rpName,
         rpID: options.rpId,
@@ -54,8 +54,7 @@ export function createPasskeyRegistration<UserId, PasskeyId, Created, Registrati
           expectedChallenge: challenge,
           expectedOrigin: input.expectedOrigin,
           expectedRPID: options.rpId,
-          requireUserVerification:
-            (options.userVerification?.registration ?? 'preferred') === 'required',
+          requireUserVerification: options.userVerification.registration === 'required',
         })
       } catch (error) {
         throw new AuthError('invalid_credentials', 400, 'Registration verification failed', {
@@ -86,9 +85,30 @@ function defaultKeys<UserId>(namespace = 'auth') {
   }
 }
 
-function validateOptions(options: { rpId: string; rpName: string; challengeTtlSeconds: number }) {
+function validateOptions(options: {
+  rpId: string
+  rpName: string
+  challengeTtlSeconds: number
+  userVerification?: {
+    registration?: unknown
+    authentication?: unknown
+    discoverableAuthentication?: unknown
+  }
+}) {
   if (!options.rpId.trim()) throw new TypeError('rpId must not be empty')
   if (!options.rpName.trim()) throw new TypeError('rpName must not be empty')
   if (!Number.isSafeInteger(options.challengeTtlSeconds) || options.challengeTtlSeconds <= 0)
     throw new TypeError('challengeTtlSeconds must be a positive safe integer')
+  const policies = options.userVerification
+  if (
+    !policies ||
+    !isUserVerification(policies.registration) ||
+    !isUserVerification(policies.authentication) ||
+    !isUserVerification(policies.discoverableAuthentication)
+  )
+    throw new TypeError('all userVerification policies must be explicitly configured')
+}
+
+function isUserVerification(value: unknown) {
+  return value === 'discouraged' || value === 'preferred' || value === 'required'
 }
