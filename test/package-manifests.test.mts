@@ -16,6 +16,7 @@ const packages = [
   'domain-verification',
   'wikimedia',
   'memberships',
+  'worker-runtime',
 ]
 
 describe('runtime package manifests', () => {
@@ -42,6 +43,15 @@ describe('runtime package manifests', () => {
       dependencies: Record<string, string>
     }
     expect(manifest.dependencies['@vouchington/uuid-v7']).toBe('^0.0.0')
+  })
+
+  it('declares GlideMQ as the worker runtime peer and development dependency', () => {
+    const manifest = JSON.parse(readFileSync('packages/worker-runtime/package.json', 'utf8')) as {
+      devDependencies: Record<string, string>
+      peerDependencies: Record<string, string>
+    }
+    expect(manifest.devDependencies['glide-mq']).toBe('^0.15.3')
+    expect(manifest.peerDependencies['glide-mq']).toBe('^0.15.3')
   })
 })
 

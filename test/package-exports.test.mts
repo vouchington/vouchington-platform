@@ -5,7 +5,14 @@ import { pathToFileURL } from 'node:url'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-const packages = ['http-transport', 'image-resize', 'media', 'wikimedia', 'memberships'] as const
+const packages = [
+  'http-transport',
+  'image-resize',
+  'media',
+  'wikimedia',
+  'memberships',
+  'worker-runtime',
+] as const
 
 describe('new package manifests and exports', () => {
   beforeAll(() => {
@@ -42,6 +49,7 @@ describe('new package manifests and exports', () => {
       '@jongleberry/api-server': '^2.1.0',
     })
     expect(readManifest('memberships').dependencies).toBeUndefined()
+    expect(readManifest('worker-runtime').dependencies).toBeUndefined()
   })
 
   it('keeps membership declarations provider- and product-neutral', () => {

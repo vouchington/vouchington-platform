@@ -191,6 +191,12 @@ importers:
         specifier: ^2.1.0
         version: 2.1.0
 
+  packages/worker-runtime:
+    devDependencies:
+      glide-mq:
+        specifier: ^0.15.3
+        version: 0.15.3(express@5.2.1(supports-color@7.2.0))
+
 packages:
 
   '@aws-sdk/checksums@3.1000.29':

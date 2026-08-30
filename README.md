@@ -14,6 +14,7 @@ SKU names.
 | [`@vouchington/utils`](packages/utils)                             | Dependency-free explicit-subpath utilities, including i18n helpers |
 | [`@vouchington/session-jwt`](packages/session-jwt)                 | Portable RS512 JWT primitives and UUIDv7 identifiers               |
 | [`@vouchington/queue-errors`](packages/queue-errors)               | glide-mq retry classification and rate-limit helpers               |
+| [`@vouchington/worker-runtime`](packages/worker-runtime)           | Queue selection, GlideMQ worker loading, and schedule registration |
 | [`@vouchington/pagination`](packages/pagination)                   | Cursor codecs, guards, and configuration-owned query parsing       |
 | [`@vouchington/csv`](packages/csv)                                 | BOM-safe parsing and spreadsheet-safe CSV serialization            |
 | [`@vouchington/html-utils`](packages/html-utils)                   | HTML entity decoding and text helpers                              |
