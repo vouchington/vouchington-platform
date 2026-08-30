@@ -70,7 +70,7 @@ describe('new package manifests and exports', () => {
       '@jongleberry/api-server': '^2.1.0',
     })
     expect(readManifest('typed-entities').dependencies).toEqual({
-      '@vouchington/utils': '^0.3.0',
+      '@vouchington/utils': '^0.4.0',
     })
   })
 
