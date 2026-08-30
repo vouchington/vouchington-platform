@@ -168,6 +168,12 @@ importers:
         specifier: ^0.8.0
         version: 0.8.0
 
+  packages/reviews:
+    dependencies:
+      '@jongleberry/api-server':
+        specifier: ^2.1.0
+        version: 2.1.0
+
   packages/robots:
     dependencies:
       robots-parser:

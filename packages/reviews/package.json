@@ -1,0 +1,44 @@
+{
+  "name": "@vouchington/reviews",
+  "version": "0.0.0",
+  "description": "Schema-less, policy-injected review ratings engine and API-server route registration.",
+  "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/reviews#readme",
+  "bugs": {
+    "url": "https://github.com/vouchington/vouchington-platform/issues"
+  },
+  "license": "MIT",
+  "author": "Jonathan Ong",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vouchington/vouchington-platform.git",
+    "directory": "packages/reviews"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "@jongleberry/api-server": "^2.1.0"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}
