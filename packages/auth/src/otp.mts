@@ -1,4 +1,3 @@
-import { randomBytes } from 'node:crypto'
 import { AuthError } from './errors.mts'
 import type { AttemptLimiter } from './types.mts'
 
@@ -14,13 +13,13 @@ export interface EmailOtpStore {
 
 export interface EmailOtpOptions<DeliveryContext = undefined> {
   normalizeEmail(email: string): Promise<string> | string
+  generateToken(): Promise<string> | string
+  normalizeToken(token: string): string
   digest(token: string): Promise<string> | string
   store: EmailOtpStore
   deliver(input: { email: string; token: string; context: DeliveryContext }): Promise<void>
   ttlSeconds: number
-  tokenBytes?: number
   now?: () => Date
-  createRandomBytes?: typeof randomBytes
   requestLimiter?: AttemptLimiter<EmailOtpAttempt<DeliveryContext>>
   verificationLimiter?: AttemptLimiter<EmailOtpAttempt<DeliveryContext>>
 }
@@ -28,21 +27,19 @@ export interface EmailOtpOptions<DeliveryContext = undefined> {
 export function createEmailOtp<DeliveryContext = undefined>(
   options: EmailOtpOptions<DeliveryContext>,
 ) {
-  const tokenBytes = options.tokenBytes ?? 4
   assertPositiveInteger(options.ttlSeconds, 'ttlSeconds')
-  assertPositiveInteger(tokenBytes, 'tokenBytes')
   const now = options.now ?? (() => new Date())
-  const createBytes = options.createRandomBytes ?? randomBytes
 
   return {
     async request(email: string, context: DeliveryContext): Promise<{ email: string }> {
       const normalized = await options.normalizeEmail(email)
       await recordAttempt(options.requestLimiter, { email: normalized, context })
-      const token = createBytes(tokenBytes).toString('hex').toUpperCase()
+      const token = await options.generateToken()
+      if (!token) throw new TypeError('generateToken must return a non-empty token')
       const issuedAt = now()
       await options.store.put({
         email: normalized,
-        digest: await options.digest(token),
+        digest: await options.digest(options.normalizeToken(token)),
         expiresAt: new Date(issuedAt.getTime() + options.ttlSeconds * 1_000),
       })
       await options.deliver({ email: normalized, token, context })
@@ -58,7 +55,7 @@ export function createEmailOtp<DeliveryContext = undefined>(
       await recordAttempt(options.verificationLimiter, { email: normalized, context })
       const consumed = await options.store.consume({
         email: normalized,
-        digest: await options.digest(token.trim().toUpperCase()),
+        digest: await options.digest(options.normalizeToken(token)),
         now: now(),
       })
       if (!consumed)

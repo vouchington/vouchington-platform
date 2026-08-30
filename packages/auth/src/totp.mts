@@ -11,7 +11,7 @@ export interface TotpOptions<Key> {
   algorithm?: 'SHA1' | 'SHA256' | 'SHA512'
   digits?: 6 | 7 | 8
   period?: number
-  window?: number
+  window: number
   secretBytes?: number
   now?: () => number
 }
@@ -19,7 +19,7 @@ export interface TotpOptions<Key> {
 export function createTotp<Key>(options: TotpOptions<Key>) {
   if (!options.issuer.trim()) throw new TypeError('issuer must not be empty')
   const period = options.period ?? 30
-  const window = options.window ?? 1
+  const window = options.window
   const secretBytes = options.secretBytes ?? 20
   assertNonNegativeInteger(window, 'window')
   assertPositiveInteger(period, 'period')

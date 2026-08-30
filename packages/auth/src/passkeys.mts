@@ -6,6 +6,7 @@ export type {
   PasskeyFailure,
   PasskeyOptions,
   PasskeyRepository,
+  PasskeyResidentKey,
   PasskeyStateKeys,
   PasskeyUser,
   PasskeyUserVerification,

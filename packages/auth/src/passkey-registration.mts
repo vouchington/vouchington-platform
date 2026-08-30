@@ -25,7 +25,7 @@ export function createPasskeyRegistration<UserId, PasskeyId, Created, Registrati
         userDisplayName: user.displayName ?? user.name,
         excludeCredentials: credentialIds.map((id) => ({ id })),
         authenticatorSelection: {
-          residentKey: 'preferred',
+          residentKey: options.residentKey,
           userVerification,
         },
       })
@@ -89,6 +89,7 @@ function validateOptions(options: {
   rpId: string
   rpName: string
   challengeTtlSeconds: number
+  residentKey?: unknown
   userVerification?: {
     registration?: unknown
     authentication?: unknown
@@ -99,16 +100,18 @@ function validateOptions(options: {
   if (!options.rpName.trim()) throw new TypeError('rpName must not be empty')
   if (!Number.isSafeInteger(options.challengeTtlSeconds) || options.challengeTtlSeconds <= 0)
     throw new TypeError('challengeTtlSeconds must be a positive safe integer')
+  if (!isPolicy(options.residentKey))
+    throw new TypeError('residentKey policy must be explicitly configured')
   const policies = options.userVerification
   if (
     !policies ||
-    !isUserVerification(policies.registration) ||
-    !isUserVerification(policies.authentication) ||
-    !isUserVerification(policies.discoverableAuthentication)
+    !isPolicy(policies.registration) ||
+    !isPolicy(policies.authentication) ||
+    !isPolicy(policies.discoverableAuthentication)
   )
     throw new TypeError('all userVerification policies must be explicitly configured')
 }
 
-function isUserVerification(value: unknown) {
+function isPolicy(value: unknown) {
   return value === 'discouraged' || value === 'preferred' || value === 'required'
 }

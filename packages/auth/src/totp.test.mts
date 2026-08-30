@@ -5,7 +5,7 @@ import { createTotp } from './totp.mts'
 describe('TOTP', () => {
   it('creates setup material and verifies current codes with secure defaults', async () => {
     const replay = { advance: vi.fn(async () => true) }
-    const totp = createTotp({ issuer: 'Example', replay })
+    const totp = createTotp({ issuer: 'Example', replay, window: 1 })
     const setup = totp.createSetup('person@example.test')
     expect(setup.secret).toMatch(/^[A-Z2-7]+$/)
     expect(setup.uri).toMatch(/^otpauth:\/\/totp\//)
@@ -60,9 +60,12 @@ describe('TOTP', () => {
     })
     expect(totp.createSetup('account').uri).toContain('algorithm=SHA256')
     expect(() => totp.createSetup(' ')).toThrow('accountName')
-    expect(() => createTotp({ issuer: ' ', replay })).toThrow('issuer')
-    expect(() => createTotp({ issuer: 'Example', replay, period: 0 })).toThrow('period')
+    expect(() => createTotp({ issuer: ' ', replay, window: 0 })).toThrow('issuer')
+    expect(() => createTotp({ issuer: 'Example', replay } as never)).toThrow('window')
+    expect(() => createTotp({ issuer: 'Example', replay, period: 0, window: 0 })).toThrow('period')
     expect(() => createTotp({ issuer: 'Example', replay, window: -1 })).toThrow('window')
-    expect(() => createTotp({ issuer: 'Example', replay, secretBytes: 0 })).toThrow('secretBytes')
+    expect(() => createTotp({ issuer: 'Example', replay, window: 0, secretBytes: 0 })).toThrow(
+      'secretBytes',
+    )
   })
 })

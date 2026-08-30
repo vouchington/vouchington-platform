@@ -29,6 +29,11 @@ describe('passkeys', () => {
     expect(() => createPasskeys({ ...baseOptions(), challengeTtlSeconds: 0 })).toThrow(
       'challengeTtlSeconds',
     )
+    const { residentKey: _residentKey, ...withoutResidentKey } = baseOptions()
+    expect(() => createPasskeys(withoutResidentKey as never)).toThrow('residentKey')
+    expect(() => createPasskeys({ ...baseOptions(), residentKey: 'invalid' as never })).toThrow(
+      'residentKey',
+    )
     const { userVerification: _userVerification, ...withoutPolicy } = baseOptions()
     expect(() => createPasskeys(withoutPolicy as never)).toThrow('userVerification')
     expect(() =>
@@ -64,6 +69,10 @@ describe('passkeys', () => {
         userID: new Uint8Array([7, 8, 9]),
         userDisplayName: 'person@example.test',
         excludeCredentials: [{ id: 'credential-1' }],
+        authenticatorSelection: {
+          residentKey: 'discouraged',
+          userVerification: 'preferred',
+        },
       }),
     )
     expect(put).toHaveBeenCalledWith(
@@ -379,6 +388,7 @@ function configured() {
       state,
       repository,
       namespace: 'site',
+      residentKey: 'discouraged' as const,
       userVerification: {
         registration: 'preferred' as const,
         authentication: 'preferred' as const,

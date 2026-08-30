@@ -47,13 +47,13 @@ describe('email OTP', () => {
     const now = new Date('2026-01-02T03:04:05.000Z')
     const otp = createEmailOtp({
       normalizeEmail: (email) => email.trim().toLowerCase(),
+      generateToken: () => 'AbCd',
+      normalizeToken: (token) => token.trim().toUpperCase(),
       digest: (token) => `digest:${token}`,
       store: { put, consume },
       deliver,
       ttlSeconds: 60,
-      tokenBytes: 2,
       now: () => now,
-      createRandomBytes: () => Buffer.from([0xab, 0xcd]),
     })
     await expect(otp.request(' PERSON@EXAMPLE.TEST ', undefined)).resolves.toEqual({
       email: 'person@example.test',
@@ -65,7 +65,7 @@ describe('email OTP', () => {
     })
     expect(deliver).toHaveBeenCalledWith({
       email: 'person@example.test',
-      token: 'ABCD',
+      token: 'AbCd',
       context: undefined,
     })
     await expect(otp.verify('PERSON@EXAMPLE.TEST', ' abcd ', undefined)).resolves.toEqual({
@@ -83,19 +83,22 @@ describe('email OTP', () => {
     })
   })
 
-  it('supports secure defaults and validates numeric configuration', async () => {
+  it('uses caller-owned token formats and validates configuration', async () => {
     const delivered: string[] = []
     const otp = createEmailOtp({
       normalizeEmail: String,
+      generateToken: () => '123456',
+      normalizeToken: String,
       digest: String,
       store: { put: async () => undefined, consume: async () => true },
       deliver: async ({ token }) => void delivered.push(token),
       ttlSeconds: 1,
     })
     await otp.request('person@example.test', undefined)
-    expect(delivered[0]).toMatch(/^[0-9A-F]{8}$/)
+    expect(delivered[0]).toBe('123456')
     expect(() => createEmailOtp({ ...baseOtpOptions(), ttlSeconds: 0 })).toThrow('ttlSeconds')
-    expect(() => createEmailOtp({ ...baseOtpOptions(), tokenBytes: 0 })).toThrow('tokenBytes')
+    const invalid = createEmailOtp({ ...baseOtpOptions(), generateToken: () => '' })
+    await expect(invalid.request('person@example.test', undefined)).rejects.toThrow('generateToken')
   })
 
   it('runs caller-owned request and verification limiters before side effects', async () => {
@@ -195,6 +198,16 @@ describe('MFA state', () => {
     await expect(invalidAttemptId.createReauthentication('user')).rejects.toThrow(
       'invalid identifier',
     )
+
+    const unicode = createMfaState({
+      ...baseMfaOptions(),
+      createId: () => 'valid-😀',
+    })
+    await expect(unicode.createAttempt('value')).resolves.toBe('valid-😀')
+    await expect(unicode.peekAttempt('\ud800')).resolves.toBeNull()
+    await expect(unicode.consumeAttempt('\udc00')).resolves.toBeNull()
+    await expect(unicode.createReauthentication('\ud800')).rejects.toThrow('well-formed Unicode')
+    await expect(unicode.consumeReauthentication('\udc00', 'valid-😀')).resolves.toBe(false)
   })
 })
 
@@ -306,6 +319,8 @@ describe('OAuth orchestration', () => {
 function baseOtpOptions() {
   return {
     normalizeEmail: String,
+    generateToken: () => 'token',
+    normalizeToken: String,
     digest: String,
     store: { put: async () => undefined, consume: async () => false },
     deliver: async () => undefined,
