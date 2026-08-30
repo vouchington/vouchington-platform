@@ -3,6 +3,8 @@
     "paths": {
       "@vouchington/crawler-html": ["./packages/crawler-html/src/index.mts"],
       "@vouchington/http-transport": ["./packages/http-transport/src/index.mts"],
+      "@vouchington/pagination": ["./packages/pagination/src/index.mts"],
+      "@vouchington/postgres": ["./packages/postgres/src/index.mts"],
       "@vouchington/rss-parser": ["./packages/rss-parser/src/index.mts"],
       "@vouchington/session-jwt": ["./packages/session-jwt/src/index.mts"],
       "@vouchington/utils/strings": ["./packages/utils/src/strings.mts"],
