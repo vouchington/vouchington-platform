@@ -72,7 +72,7 @@ export function requestInit(
 }
 
 export function parseHttpUrl(input: string | URL): URL {
-  const url = input instanceof URL ? new URL(input) : new URL(input)
+  const url = new URL(input)
   if ((url.protocol !== 'http:' && url.protocol !== 'https:') || url.username || url.password) {
     throw new TypeError('URL must use HTTP or HTTPS without credentials')
   }
