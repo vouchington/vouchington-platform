@@ -95,11 +95,12 @@ describe('completeMediaUpload', () => {
   })
 
   it('preserves failures when marking failed also fails', async () => {
+    const markFailed = vi.fn(async () => Promise.reject(new Error('mark')))
     const deps = dependencies({
       readObject: async () => Promise.reject(new Error('read')),
-      markFailed: async () => Promise.reject(new Error('mark')),
+      markFailed,
     })
     await expect(completeMediaUpload('new', deps)).rejects.toThrow('read')
-    expect(deps.markFailed).toHaveBeenCalledWith(incoming, expect.any(Error))
+    expect(markFailed).toHaveBeenCalledWith(incoming, expect.any(Error))
   })
 })
