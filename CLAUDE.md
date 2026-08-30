@@ -38,6 +38,7 @@ docker run --rm -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:18
 - `@vouchington/domain-verification` — DNS TXT and secure-transport verification primitives
 - `@vouchington/media` — schema-less direct upload orchestration and an injected S3 adapter
 - `@vouchington/rate-limit` — focused sliding-window Valkey rate-limit primitives
+- `@vouchington/typed-entities` — injected transaction-scoped typed entity semantics
 
 - `@vouchington/csv` — BOM-safe CSV parsing and spreadsheet-safe serialization
 - `@vouchington/html-utils` — HTML entity and text helpers
@@ -52,6 +53,10 @@ own `@vouchington/<name>` package and declare that dependency there. Node built-
 third-party dependencies.
 
 Record the source SHA and path list in the commit body when copying from the product monorepo.
+
+`@vouchington/typed-entities` is the exception to the normal explicit-subpath utility convention:
+its cohesive public API is root-export-only. Applications own entity type strings, schema, policy,
+authorization, and transaction implementation; the package owns only generic semantic invariants.
 
 Use `pr-shepherd` (not `gh pr checks`) to iterate pull requests.
 

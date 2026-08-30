@@ -37,6 +37,7 @@ SKU names.
 | [`@vouchington/rss-parser`](packages/rss-parser)                   | RSS, Atom, and JSON feed parsing                                   |
 | [`@vouchington/rss-crawler`](packages/rss-crawler)                 | Transport-injected feed crawling                                   |
 | [`@vouchington/robots`](packages/robots)                           | Transport- and cache-injected robots.txt evaluation                |
+| [`@vouchington/typed-entities`](packages/typed-entities)           | Transaction-scoped typed entity aliases, hierarchy, and hostnames  |
 
 ## Commands
 

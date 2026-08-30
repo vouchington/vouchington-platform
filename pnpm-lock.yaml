@@ -222,6 +222,12 @@ importers:
         specifier: ^6.2.10
         version: 6.2.10
 
+  packages/typed-entities:
+    dependencies:
+      '@vouchington/utils':
+        specifier: ^0.3.0
+        version: 0.3.0
+
   packages/utils: {}
 
   packages/uuid-v7:
@@ -1554,6 +1560,10 @@ packages:
 
   '@vitest/utils@4.1.11':
     resolution: {integrity: sha512-zTCVGpyFsGWBhllOyKlTw/vnr6D9qxsfSDyfbyZmTyjHw5N/VuvzHpHoQjm2ZJzn4RJgx5w4r7V0er69CmLgPQ==}
+
+  '@vouchington/utils@0.3.0':
+    resolution: {integrity: sha512-FQTRxZ2C+VunycnANzkCd6Fkw7v1jEeVaxsfsOHX0Qg6q+lnNhDMGDUQRUEsgXRUDRZwechM7GDdA8xLuX0lXw==}
+    engines: {node: '>=24.0.0'}
 
   accepts@2.0.0:
     resolution: {integrity: sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng==}
@@ -3801,6 +3811,8 @@ snapshots:
       '@vitest/pretty-format': 4.1.11
       convert-source-map: 2.0.0
       tinyrainbow: 3.1.1
+
+  '@vouchington/utils@0.3.0': {}
 
   accepts@2.0.0:
     dependencies:

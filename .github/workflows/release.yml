@@ -36,6 +36,7 @@ on:
           - '@vouchington/memberships'
           - '@vouchington/rate-limit'
           - '@vouchington/reviews'
+          - '@vouchington/typed-entities'
       bump:
         description: Semver bump type
         type: choice
