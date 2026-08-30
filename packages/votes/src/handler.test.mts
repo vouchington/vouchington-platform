@@ -175,6 +175,18 @@ describe('framework-neutral vote handler', () => {
     ).toThrow('checkRateLimit')
   })
 
+  it('validates scores returned by custom codecs', async () => {
+    const handler = createVoteHandler({
+      adapter: adapter(),
+      validateEntityId: isUuid,
+      choiceCodec: { choices: ['up'], scoreForChoice: () => 32_768 },
+      getEntity: async () => ({ id: ID }),
+      upsert: async () => [],
+      messages,
+    })
+    await expect(handler(context())).rejects.toThrow('smallint')
+  })
+
   it('does not mutate when a clear lookup finds no current ballot', async () => {
     const upsert = vi.fn(async () => [])
     const onNoop = vi.fn()

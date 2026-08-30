@@ -156,6 +156,9 @@ describe('vote store', () => {
     expect(() =>
       createVoteStore(psql, { table: 'vote_store_test_votes', entityIdColumn: 'Entity' }),
     ).toThrow('Invalid entityIdColumn')
+    expect(() =>
+      createVoteStore(psql, { table: `a${'b'.repeat(63)}`, entityIdColumn: 'entity_id' }),
+    ).toThrow('Invalid table')
   })
 
   it('supports the default scope and an absent user-agent resolver', async () => {

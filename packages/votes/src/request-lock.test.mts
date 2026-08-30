@@ -37,7 +37,9 @@ describe('vote request lock', () => {
       ENTITY_ID.toUpperCase(),
       async () => undefined,
     )
-    expect(query).toHaveBeenNthCalledWith(1, expect.any(String), [`votes:${USER_ID}:${ENTITY_ID}`])
+    expect(query).toHaveBeenNthCalledWith(1, expect.any(String), [
+      `vote-request:votes:${USER_ID}:${ENTITY_ID}`,
+    ])
   })
 
   it('validates configuration and lock identities', async () => {

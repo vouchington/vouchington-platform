@@ -1,4 +1,4 @@
-import { isVoteChoice } from './codec.mts'
+import { assertVoteScore, isVoteChoice } from './codec.mts'
 import type { CreateVoteHandlerOptions, CurrentVote, VoteEvent, VoteMutation } from './types.mts'
 
 export function createVoteHandler<
@@ -125,7 +125,9 @@ async function getChoice<
     options.messages.invalidChoice,
   )
   const safeChoice = choice as TChoice
-  return { choice: safeChoice, score: options.choiceCodec.scoreForChoice(safeChoice) }
+  const score = options.choiceCodec.scoreForChoice(safeChoice)
+  assertVoteScore(score)
+  return { choice: safeChoice, score }
 }
 
 function isNoop<

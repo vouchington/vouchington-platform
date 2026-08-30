@@ -11,7 +11,7 @@ export function createVoteRequestLock(psql: Psql, namespace: string) {
   ): Promise<Result> {
     const safeUserId = assertUuid(userId, 'userId')
     const safeEntityId = assertUuid(entityId, 'entityId')
-    return withSessionLock(psql, `${namespace}:${safeUserId}:${safeEntityId}`, work)
+    return withSessionLock(psql, `vote-request:${namespace}:${safeUserId}:${safeEntityId}`, work)
   }
 }
 
