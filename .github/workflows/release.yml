@@ -10,6 +10,7 @@ on:
         default: '@vouchington/postgres'
         options:
           - '@vouchington/postgres'
+          - '@vouchington/votes'
           - '@vouchington/utils'
           - '@vouchington/session-jwt'
           - '@vouchington/queue-errors'
