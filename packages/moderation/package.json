@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/moderation",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Configurable report intake, queue-claim helpers, and API-server handler factories.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/moderation#readme",
   "bugs": {
