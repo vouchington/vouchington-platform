@@ -12,7 +12,6 @@ SKU names.
 | ------------------------------------------------------------------ | ------------------------------------------------------------------ |
 | [`@vouchington/auth`](packages/auth)                               | Injected OTP, passkey, MFA/TOTP, and OAuth authentication engines  |
 | [`@vouchington/postgres`](packages/postgres)                       | PostgreSQL runtime, migrations, and structural schema snapshots    |
-| [`@vouchington/votes`](packages/votes)                             | Injectable append-only vote store and HTTP mutation engine         |
 | [`@vouchington/utils`](packages/utils)                             | Dependency-free explicit-subpath utilities, including i18n helpers |
 | [`@vouchington/session-jwt`](packages/session-jwt)                 | Portable RS512 JWT primitives and UUIDv7 identifiers               |
 | [`@vouchington/queue-errors`](packages/queue-errors)               | glide-mq retry classification and rate-limit helpers               |
