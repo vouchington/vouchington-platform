@@ -221,7 +221,7 @@ importers:
         specifier: ^0.0.0
         version: link:../pagination
       '@vouchington/postgres':
-        specifier: ^0.0.2
+        specifier: ^0.0.3
         version: link:../postgres
       sql-template-strings:
         specifier: ^2.2.2

@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "@vouchington/pagination": "^0.0.0",
-    "@vouchington/postgres": "^0.0.2",
+    "@vouchington/postgres": "^0.0.3",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
