@@ -53,10 +53,13 @@ function firstString(record: Record<string, unknown>, keys: readonly string[]): 
 function oEmbedHref(links: Record<string, unknown>): string | null {
   const alternate = links.alternate
   if (!alternate || typeof alternate !== 'object' || Array.isArray(alternate)) return null
-  return firstString(alternate as Record<string, unknown>, [
-    'application/json+oembed',
-    'application/json; charset=utf-8+oembed',
-  ])
+  const alternatives = alternate as Record<string, unknown>
+  for (const type of Object.keys(alternatives)) {
+    if (type.split(';', 1)[0]?.trim().toLowerCase() !== 'application/json+oembed') continue
+    const href = firstString(alternatives, [type])
+    if (href) return href
+  }
+  return null
 }
 
 function clean(value: string | undefined): string | null {

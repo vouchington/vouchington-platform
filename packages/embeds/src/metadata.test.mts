@@ -65,4 +65,21 @@ describe('document metadata', () => {
       ),
     ).toMatchObject({ description: null, oEmbedUrl: null })
   })
+
+  it('accepts case-insensitive oEmbed media types with parameters', () => {
+    const result = extractDocumentMetadata(
+      {
+        content: '',
+        meta: {},
+        links: {
+          alternate: {
+            'text/html': ['/ignored'],
+            'Application/JSON+OEmbed; charset=utf-8': ['/oembed'],
+          },
+        },
+      },
+      base,
+    )
+    expect(result.oEmbedUrl?.href).toBe('https://example.com/oembed')
+  })
 })
