@@ -6,7 +6,7 @@ import {
   createVoteHandler,
   isUuid,
 } from './index.mts'
-import type { VoteHandlerAdapter } from './types.mts'
+import type { VoteChoiceCodec, VoteHandlerAdapter } from './types.mts'
 
 const ID = '00000000-0000-7000-8000-000000000001'
 type User = { id: string }
@@ -185,6 +185,43 @@ describe('framework-neutral vote handler', () => {
       messages,
     })
     await expect(handler(context())).rejects.toThrow('smallint')
+  })
+
+  it('resolves an entity-specific choice codec after access checks', async () => {
+    type Choice = 'up' | 'down' | 'support' | 'oppose'
+    const calls: string[] = []
+    const upsert = vi.fn(async () => [])
+    const checkRateLimit = vi.fn(async () => false)
+    const handler = createVoteHandler({
+      adapter: adapter(),
+      rateLimitPrefix: 'votes',
+      validateEntityId: isUuid,
+      choiceCodec: (entity: {
+        policy: 'sentiment' | 'recommendation'
+      }): VoteChoiceCodec<Choice> => {
+        calls.push(`codec:${entity.policy}`)
+        return {
+          choices:
+            entity.policy === 'sentiment'
+              ? (['up', 'down'] as const)
+              : (['support', 'oppose'] as const),
+          scoreForChoice: (choice) => ({ up: 1, down: -1, support: 1, oppose: -1 })[choice],
+        }
+      },
+      getEntity: async () => ({ id: ID, policy: 'recommendation' as const }),
+      assertAccess: () => {
+        calls.push('access')
+      },
+      upsert,
+      checkRateLimit,
+      messages,
+    })
+    await handler(context({ body: { choice: 'support' } }))
+    expect(calls).toEqual(['access', 'codec:recommendation'])
+    expect(upsert).toHaveBeenCalledWith(ID, { entityId: ID, score: 1 }, expect.anything())
+    expect(checkRateLimit).toHaveBeenCalledOnce()
+    await expect(handler(context({ body: { choice: 'up' } }))).rejects.toThrow('invalid-choice')
+    expect(checkRateLimit).toHaveBeenCalledOnce()
   })
 
   it('does not mutate when a clear lookup finds no current ballot', async () => {

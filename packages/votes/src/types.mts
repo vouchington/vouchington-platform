@@ -108,7 +108,7 @@ export type CreateVoteHandlerOptions<
   readonly rateLimitPrefix?: string
   readonly clear?: boolean
   readonly validateEntityId: (id: string) => boolean
-  readonly choiceCodec: VoteChoiceCodec<TChoice>
+  readonly choiceCodec: VoteChoiceCodec<TChoice> | ((entity: TEntity) => VoteChoiceCodec<TChoice>)
   readonly getEntity: (id: string) => Promise<TEntity | null>
   readonly upsert: (
     userId: string,

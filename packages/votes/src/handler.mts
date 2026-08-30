@@ -30,7 +30,7 @@ export function createVoteHandler<
     await options.assertAccess?.(context, safeUser, safeEntity)
     const selected = options.clear
       ? { choice: null, score: null }
-      : await getChoice(context, options)
+      : await getChoice(context, safeEntity, options)
     const audit = await adapter.getAudit(context)
     const rateLimitInput = options.rateLimitPrefix
       ? { prefix: options.rateLimitPrefix, user: safeUser, audit }
@@ -113,19 +113,22 @@ async function getChoice<
   TResult,
 >(
   context: TContext,
+  entity: TEntity,
   options: CreateVoteHandlerOptions<TContext, TUser, TEntity, TChoice, TCurrent, TResult>,
 ) {
+  const choiceCodec =
+    typeof options.choiceCodec === 'function' ? options.choiceCodec(entity) : options.choiceCodec
   const body = await options.adapter.getBody(context)
   options.adapter.assert(context, isRecord(body), 422, options.messages.invalidBody)
   const choice = isRecord(body) ? body.choice : undefined
   options.adapter.assert(
     context,
-    isVoteChoice(options.choiceCodec, choice),
+    isVoteChoice(choiceCodec, choice),
     422,
     options.messages.invalidChoice,
   )
   const safeChoice = choice as TChoice
-  const score = options.choiceCodec.scoreForChoice(safeChoice)
+  const score = choiceCodec.scoreForChoice(safeChoice)
   assertVoteScore(score)
   return { choice: safeChoice, score }
 }
