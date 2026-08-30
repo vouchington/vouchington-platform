@@ -54,7 +54,7 @@ export function createPasskeyRegistration<UserId, PasskeyId, Created, Registrati
       response: unknown
       context: RegistrationContext
     }): Promise<Created> {
-      const challenge = await options.state.consume<string>(key(input.userId, input.deviceId))
+      const challenge = await options.state.consume(key(input.userId, input.deviceId))
       if (!challenge)
         throw new AuthError('challenge_expired', 400, 'Registration challenge expired')
       let verification: Awaited<ReturnType<typeof verifyRegistrationResponse>>

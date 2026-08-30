@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPasskeys } from './passkeys.mts'
-import type { PasskeyRepository, StoredPasskey } from './passkey-types.mts'
-import type { ExpiringStateStore } from './types.mts'
+import type { PasskeyRepository, PasskeyStateStore, StoredPasskey } from './passkey-types.mts'
 
 type TestPasskeys = ReturnType<typeof createPasskeys<string, string, string, string>>
 
@@ -179,7 +178,7 @@ describe('passkeys', () => {
   })
 
   it('rejects invalid assertions without creating identities', async () => {
-    const { options, repository } = configured()
+    const { options, repository, reserve } = configured()
     const passkeys = createPasskeys(options)
     await expect(verifyAuthentication(passkeys, {})).rejects.toMatchObject({
       code: 'challenge_expired',
@@ -188,11 +187,15 @@ describe('passkeys', () => {
     await expect(verifyAuthentication(passkeys, {})).rejects.toMatchObject({
       code: 'invalid_credentials',
     })
+    expect(reserve).not.toHaveBeenCalled()
     await createAuthenticationChallenge(passkeys)
     repository.findByCredentialId.mockResolvedValueOnce(null)
     await expect(verifyAuthentication(passkeys)).rejects.toMatchObject({
       code: 'invalid_credentials',
     })
+    expect(reserve).toHaveBeenCalledWith(
+      expect.objectContaining({ mode: 'user-bound', credentialId: 'credential-1' }),
+    )
     await createAuthenticationChallenge(passkeys)
     repository.findByCredentialId.mockResolvedValueOnce({ ...storedPasskey(), userId: 'user-2' })
     await expect(verifyAuthentication(passkeys)).rejects.toMatchObject({
@@ -212,7 +215,7 @@ describe('passkeys', () => {
   })
 
   it('updates counters for user-bound and discoverable successful assertions', async () => {
-    const { options, repository } = configured()
+    const { options, repository, reserve } = configured()
     const passkeys = createPasskeys({ ...options, userIdsEqual: (left, right) => left === right })
     webauthn.verifyAuthenticationResponse.mockResolvedValue({
       verified: true,
@@ -243,6 +246,7 @@ describe('passkeys', () => {
     ).resolves.toEqual({ userId: 'user-1', passkeyId: 'passkey-1' })
     expect(repository.updateCounter).toHaveBeenCalledTimes(2)
     expect(repository.updateCounter).toHaveBeenCalledWith('passkey-1', 8)
+    expect(reserve).not.toHaveBeenCalled()
   })
 
   it('keeps caller-owned user-verification policies consistent', async () => {
@@ -330,7 +334,7 @@ describe('passkeys', () => {
   })
 
   it('supports legacy state keys and caller-owned failed-attempt limiting', async () => {
-    const { options, put } = configured()
+    const { options, put, repository } = configured()
     const passkeys = createPasskeys({
       ...options,
       keys: {
@@ -347,11 +351,12 @@ describe('passkeys', () => {
       300,
     )
     await passkeys.authentication.createDiscoverableOptions('device-2')
+    repository.findByCredentialId.mockResolvedValueOnce(null)
     await expect(
       passkeys.authentication.verifyDiscoverable({
         deviceId: 'device-2',
         expectedOrigin: 'https://example.test',
-        response: {},
+        response: { id: 'missing' },
       }),
     ).rejects.toMatchObject({ code: 'rate_limited', status: 429 })
 
@@ -363,13 +368,14 @@ describe('passkeys', () => {
     )
   })
 
-  it('rejects attempts that are already limited', async () => {
+  it('rate-limits failed assertions after verification', async () => {
     const { options } = configured()
     const passkeys = createPasskeys({
       ...options,
       failureLimiter: { reserve: async () => false },
     })
     await passkeys.authentication.createOptions('user-1', 'device-1')
+    webauthn.verifyAuthenticationResponse.mockResolvedValueOnce({ verified: false })
     await expect(verifyAuthentication(passkeys)).rejects.toMatchObject({
       code: 'rate_limited',
       status: 429,
@@ -380,11 +386,10 @@ describe('passkeys', () => {
 function configured() {
   const values = new Map<string, unknown>()
   const put = vi.fn(async (key: string, value: unknown) => void values.set(key, value))
-  const state: ExpiringStateStore = {
+  const state: PasskeyStateStore = {
     put,
-    get: async <T,>(key: string) => (values.get(key) as T | undefined) ?? null,
-    consume: async <T,>(key: string) => {
-      const value = values.get(key) as T | undefined
+    consume: async (key: string) => {
+      const value = values.get(key) as string | undefined
       values.delete(key)
       return value ?? null
     },
@@ -400,6 +405,7 @@ function configured() {
     ),
     updateCounter: vi.fn(async () => true),
   } satisfies PasskeyRepository<string, string, string, string>
+  const reserve = vi.fn(async () => true)
   return {
     state,
     put,
@@ -418,13 +424,14 @@ function configured() {
       residentKey: 'discouraged' as const,
       userIdsEqual: (left: string, right: string) => left === right,
       serializeUserId: String,
-      failureLimiter: { reserve: async () => true },
+      failureLimiter: { reserve },
       userVerification: {
         registration: 'preferred' as const,
         authentication: 'preferred' as const,
         discoverableAuthentication: 'required' as const,
       },
     },
+    reserve,
   }
 }
 

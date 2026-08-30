@@ -58,7 +58,7 @@ export function createPasskeyAuthentication<UserId, PasskeyId, Created, Registra
     expectedOrigin: string
     response: unknown
   }): Promise<{ userId: UserId; passkeyId: PasskeyId }> {
-    const challenge = await options.state.consume<string>(userKey(input.userId, input.deviceId))
+    const challenge = await options.state.consume(userKey(input.userId, input.deviceId))
     return verifyWithChallenge(challenge, input.response, input.expectedOrigin, {
       mode: 'user-bound',
       deviceId: input.deviceId,
@@ -71,7 +71,7 @@ export function createPasskeyAuthentication<UserId, PasskeyId, Created, Registra
     expectedOrigin: string
     response: unknown
   }): Promise<{ userId: UserId; passkeyId: PasskeyId }> {
-    const challenge = await options.state.consume<string>(discoverableKey(input.deviceId))
+    const challenge = await options.state.consume(discoverableKey(input.deviceId))
     return verifyWithChallenge(challenge, input.response, input.expectedOrigin, {
       mode: 'discoverable',
       deviceId: input.deviceId,
@@ -91,8 +91,7 @@ export function createPasskeyAuthentication<UserId, PasskeyId, Created, Registra
       ...failure,
       ...(typeof credentialId === 'string' ? { credentialId } : {}),
     }
-    if (!(await options.failureLimiter.reserve(failureWithCredential))) return rateLimited()
-    if (typeof credentialId !== 'string') return invalidPasskey(failureWithCredential)
+    if (typeof credentialId !== 'string') return invalidPasskey(failureWithCredential, false)
     const passkey = await options.repository.findByCredentialId(credentialId)
     if (
       !passkey ||
@@ -110,7 +109,7 @@ export function createPasskeyAuthentication<UserId, PasskeyId, Created, Registra
         requireUserVerification: requiresUserVerification(options, failure.mode),
       })
     } catch (error) {
-      return invalidPasskey(failureWithCredential, error)
+      return invalidPasskey(failureWithCredential, true, error)
     }
     if (!verification.verified) return invalidPasskey(failureWithCredential)
     const newCounter = verification.authenticationInfo.newCounter
@@ -121,7 +120,12 @@ export function createPasskeyAuthentication<UserId, PasskeyId, Created, Registra
     return { userId: passkey.userId, passkeyId: passkey.id }
   }
 
-  async function invalidPasskey(failure: PasskeyFailure<UserId>, cause?: unknown): Promise<never> {
+  async function invalidPasskey(
+    failure: PasskeyFailure<UserId>,
+    recordFailure = true,
+    cause?: unknown,
+  ): Promise<never> {
+    if (recordFailure && !(await options.failureLimiter.reserve(failure))) return rateLimited()
     throw new AuthError(
       'invalid_credentials',
       401,

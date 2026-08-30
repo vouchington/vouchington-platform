@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createPasskeys } from './passkeys.mts'
+import { createPasskeys, createStringPasskeys } from './passkeys.mts'
 import type { PasskeyOptions } from './passkey-types.mts'
 
 describe('passkey options', () => {
@@ -52,6 +52,13 @@ describe('passkey options', () => {
       }),
     ).toThrow('userVerification')
   })
+
+  it('supplies string user identity policy', async () => {
+    const passkeys = createStringPasskeys(baseOptions())
+    await expect(passkeys.authentication.createOptions('user-1', 'device-1')).rejects.toMatchObject(
+      { code: 'invalid_request' },
+    )
+  })
 })
 
 function baseOptions(): PasskeyOptions<string, string, undefined> {
@@ -60,7 +67,7 @@ function baseOptions(): PasskeyOptions<string, string, undefined> {
     rpName: 'Example',
     challengeTtlSeconds: 300,
     timeoutMs: 60_000,
-    state: { put: async () => undefined, get: async () => null, consume: async () => null },
+    state: { put: async () => undefined, consume: async () => null },
     repository: {
       listCredentialIds: async () => [],
       findByCredentialId: async () => null,

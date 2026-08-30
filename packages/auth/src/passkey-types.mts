@@ -4,8 +4,13 @@ import type {
   COSEAlgorithmIdentifier,
   VerifiedRegistrationResponse,
 } from '@simplewebauthn/server'
-import type { ExpiringStateStore } from './types.mts'
 import type { AttemptLimiter } from './types.mts'
+
+export interface PasskeyStateStore {
+  put(key: string, challenge: string, ttlSeconds: number): Promise<void>
+  /** Atomically read and delete the challenge so concurrent ceremonies cannot both succeed. */
+  consume(key: string): Promise<string | null>
+}
 
 export interface StoredPasskey<UserId = string, PasskeyId = string> {
   id: PasskeyId
@@ -53,7 +58,7 @@ export interface PasskeyOptions<
   rpName: string
   challengeTtlSeconds: number
   timeoutMs: number
-  state: ExpiringStateStore
+  state: PasskeyStateStore
   repository: PasskeyRepository<UserId, PasskeyId, Created, RegistrationContext>
   attestationType: PasskeyAttestation
   authenticatorAttachment: AuthenticatorAttachment | null
@@ -61,6 +66,7 @@ export interface PasskeyOptions<
   residentKey: PasskeyResidentKey
   namespace?: string
   keys?: PasskeyStateKeys<UserId>
+  /** Records credential-bearing verification failures; false rejects the failed attempt as limited. */
   failureLimiter: AttemptLimiter<PasskeyFailure<UserId>>
   userIdsEqual: (left: UserId, right: UserId) => boolean
   serializeUserId(userId: UserId): string
