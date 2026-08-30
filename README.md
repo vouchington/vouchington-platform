@@ -29,6 +29,7 @@ SKU names.
 | [`@vouchington/browser-crawl`](packages/browser-crawl)             | Injected Playwright rendered-page collection                       |
 | [`@vouchington/domain-verification`](packages/domain-verification) | DNS TXT and secure-transport well-known verification               |
 | [`@vouchington/crawler-html`](packages/crawler-html)               | HTML content decoding and extraction                               |
+| [`@vouchington/embeds`](packages/embeds)                           | Policy-injected HTML unfurl and oEmbed resolution                  |
 | [`@vouchington/rss-parser`](packages/rss-parser)                   | RSS, Atom, and JSON feed parsing                                   |
 | [`@vouchington/rss-crawler`](packages/rss-crawler)                 | Transport-injected feed crawling                                   |
 | [`@vouchington/robots`](packages/robots)                           | Transport- and cache-injected robots.txt evaluation                |

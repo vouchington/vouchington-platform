@@ -4,7 +4,7 @@ import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-const packages = ['crawler-html', 'rss-parser', 'rss-crawler', 'robots']
+const packages = ['crawler-html', 'embeds', 'rss-parser', 'rss-crawler', 'robots']
 
 describe('crawler package catalog', () => {
   it('builds and imports every public package entrypoint', async () => {
