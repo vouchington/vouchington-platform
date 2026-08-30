@@ -40,9 +40,15 @@ export function createHierarchyOperations<
       }),
     removeParent: (context: TContext, entityId: string, parentId: string) =>
       relation(context, entityId, parentId, false),
-    validateParent: (context: TContext, entityId: string, parentId: string) =>
+    withValidatedParent: <TResult,>(
+      context: TContext,
+      entityId: string,
+      parentId: string,
+      operation: () => Promise<TResult>,
+    ) =>
       runtime.run(context, async (transaction) => {
         await validateParentRelation(runtime, context, transaction, entityId, parentId, true)
+        return operation()
       }),
   }
 }

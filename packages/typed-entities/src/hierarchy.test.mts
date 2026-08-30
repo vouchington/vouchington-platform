@@ -33,17 +33,25 @@ describe('hierarchies', () => {
     await expect(subject.engine.listParents(subject.context, 'one')).resolves.toEqual([])
   })
 
-  it('validates a parent relation without performing the application-owned write', async () => {
+  it('holds validation open through an application-owned relation write', async () => {
     const subject = fixture()
+    const writes: string[] = []
     await subject.engine.addParent(subject.context, 'two', 'one')
     await expect(
-      subject.engine.validateParent(subject.context, 'three', 'two'),
-    ).resolves.toBeUndefined()
+      subject.engine.withValidatedParent(subject.context, 'three', 'two', async () => {
+        writes.push('three:two')
+        return 'written'
+      }),
+    ).resolves.toBe('written')
+    expect(writes).toEqual(['three:two'])
     await expect(subject.engine.listParents(subject.context, 'three')).resolves.toEqual([])
     await subject.engine.addParent(subject.context, 'three', 'two')
-    await expect(subject.engine.validateParent(subject.context, 'one', 'three')).rejects.toEqual(
-      new HierarchyCycleError('one', 'three'),
-    )
+    await expect(
+      subject.engine.withValidatedParent(subject.context, 'one', 'three', async () => {
+        writes.push('one:three')
+      }),
+    ).rejects.toEqual(new HierarchyCycleError('one', 'three'))
+    expect(writes).toEqual(['three:two'])
   })
 
   it('walks converging parent paths once', async () => {
