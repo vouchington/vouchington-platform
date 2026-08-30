@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/typed-entities",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Pure rules for generic entity aliases, hierarchy cycles, and hostname claims.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/typed-entities#readme",
   "bugs": {
