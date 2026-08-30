@@ -100,5 +100,6 @@ describe('completeMediaUpload', () => {
       markFailed: async () => Promise.reject(new Error('mark')),
     })
     await expect(completeMediaUpload('new', deps)).rejects.toThrow('read')
+    expect(deps.markFailed).toHaveBeenCalledWith(incoming, expect.any(Error))
   })
 })

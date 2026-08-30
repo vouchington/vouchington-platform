@@ -16,7 +16,7 @@ export interface CompleteMediaUploadDependencies<Record> {
   findByDigest(digest: string): Promise<Record | null>
   getObjectKey(record: Record): string
   load(id: string): Promise<Record | null>
-  markFailed(id: string, error: unknown): Promise<void>
+  markFailed(record: Record, error: unknown): Promise<void>
   onDuplicate(existing: Record, incoming: Record): DuplicateMediaDecision
   persistDigest(id: string, digest: string): Promise<PersistDigestResult<Record>>
   readObject(key: string): Promise<MediaBody>
@@ -56,7 +56,7 @@ export async function completeMediaUpload<Record>(
     return result.record
   } catch (error) {
     try {
-      await dependencies.markFailed(id, error)
+      await dependencies.markFailed(incoming, error)
     } catch {
       // Preserve the workflow error; failure reporting is best effort.
     }
