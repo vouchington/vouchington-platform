@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/media",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Schema-less direct media upload orchestration and S3 storage primitives.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/media#readme",
   "bugs": {
