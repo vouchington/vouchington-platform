@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/postgres",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Opinionated PostgreSQL runtime: pools, transactions, migrations, and schema snapshots.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/postgres#readme",
   "bugs": {
