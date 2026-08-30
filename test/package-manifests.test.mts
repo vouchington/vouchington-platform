@@ -15,6 +15,7 @@ const packages = [
   'browser-crawl',
   'domain-verification',
   'wikimedia',
+  'memberships',
 ]
 
 describe('runtime package manifests', () => {
