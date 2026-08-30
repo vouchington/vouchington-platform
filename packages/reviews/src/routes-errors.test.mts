@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { Context } from '@jongleberry/api-server'
 
 import { registerReviewRoutes } from './index.mts'
-import type { ReviewRouteRegistrar } from './index.mts'
+import type { ReviewRatingsEngine, ReviewRouteRegistrar } from './index.mts'
 
 type Handlers = Partial<
   Record<'delete' | 'get' | 'patch' | 'post', (context: never) => Promise<void>>
@@ -84,6 +84,19 @@ describe('registerReviewRoutes failures', () => {
     await handlers.get('/ratings')?.post?.({} as never)
     expect(mapped).toHaveLength(1)
     expect(mapped[0]).toMatchObject({ message: 'bad body' })
+  })
+
+  it('accepts a rating-only engine for rating-only routes', () => {
+    registerReviewRoutes({
+      engine: {} as ReviewRatingsEngine<string, string, 'model'>,
+      routes: registrar(new Map()),
+      respond: async () => undefined,
+      mapError: async () => undefined,
+      ratings: {
+        paths: { list: '/ratings', add: '/ratings', update: '/rating', delete: '/rating' },
+        codecs: codecs(),
+      },
+    })
   })
 })
 

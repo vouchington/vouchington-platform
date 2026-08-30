@@ -1,6 +1,6 @@
 import type { Context } from '@jongleberry/api-server'
 
-import type { ReviewsEngine } from './engine-types.mts'
+import type { ReviewRatingsEngine, ReviewsEngine } from './engine-types.mts'
 import type {
   CreateReviewInput,
   CreateReviewRatingInput,
@@ -75,7 +75,23 @@ export interface ReviewRouteResult<TValue> {
   readonly value: TValue
 }
 
-export interface ReviewRouteOptions<
+interface SharedReviewRouteOptions {
+  readonly mapError: (context: Context, error: unknown) => Promise<void> | void
+  readonly respond: (context: Context, result: ReviewRouteResult<unknown>) => Promise<void> | void
+  readonly routes: ReviewRouteRegistrar
+}
+
+type RatingOnlyReviewRouteOptions<
+  TActor,
+  TReviewId extends string,
+  TTargetType extends string,
+> = SharedReviewRouteOptions & {
+  readonly engine: ReviewRatingsEngine<TActor, TReviewId, TTargetType>
+  readonly lifecycle?: undefined
+  readonly ratings: RatingRouteOptions<TActor, TReviewId, TTargetType>
+}
+
+export type LifecycleReviewRouteOptions<
   TActor,
   TReviewId extends string,
   TTargetType extends string,
@@ -84,7 +100,7 @@ export interface ReviewRouteOptions<
   TListQuery,
   TReview,
   TListResult,
-> {
+> = SharedReviewRouteOptions & {
   readonly engine: ReviewsEngine<
     TActor,
     TReviewId,
@@ -95,7 +111,7 @@ export interface ReviewRouteOptions<
     TReview,
     TListResult
   >
-  readonly lifecycle?: LifecycleRouteOptions<
+  readonly lifecycle: LifecycleRouteOptions<
     TActor,
     TReviewId,
     TTargetType,
@@ -103,8 +119,27 @@ export interface ReviewRouteOptions<
     TUpdate,
     TListQuery
   >
-  readonly mapError: (context: Context, error: unknown) => Promise<void> | void
   readonly ratings?: RatingRouteOptions<TActor, TReviewId, TTargetType>
-  readonly respond: (context: Context, result: ReviewRouteResult<unknown>) => Promise<void> | void
-  readonly routes: ReviewRouteRegistrar
 }
+
+export type ReviewRouteOptions<
+  TActor,
+  TReviewId extends string,
+  TTargetType extends string,
+  TCreate,
+  TUpdate,
+  TListQuery,
+  TReview,
+  TListResult,
+> =
+  | RatingOnlyReviewRouteOptions<TActor, TReviewId, TTargetType>
+  | LifecycleReviewRouteOptions<
+      TActor,
+      TReviewId,
+      TTargetType,
+      TCreate,
+      TUpdate,
+      TListQuery,
+      TReview,
+      TListResult
+    >

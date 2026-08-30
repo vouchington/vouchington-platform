@@ -1,6 +1,10 @@
 import type { Context } from '@jongleberry/api-server'
 
-import type { ReviewRouteOptions, ReviewRouteResult } from './route-types.mts'
+import type {
+  LifecycleReviewRouteOptions,
+  ReviewRouteOptions,
+  ReviewRouteResult,
+} from './route-types.mts'
 import { assertRoutes } from './route-validation.mts'
 
 export function registerReviewRoutes<
@@ -99,7 +103,7 @@ function registerLifecycleRoutes<
   TReview,
   TListResult,
 >(
-  options: ReviewRouteOptions<
+  options: LifecycleReviewRouteOptions<
     TActor,
     TReviewId,
     TTargetType,

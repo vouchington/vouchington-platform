@@ -9,28 +9,18 @@ import type {
   UpdateReviewRatingInput,
 } from './types.mts'
 
+export function assertReviewId(reviewId: unknown): asserts reviewId is string {
+  if (typeof reviewId !== 'string' || reviewId.trim() === '')
+    throw new ReviewsError('invalid-review-id', 'Review IDs must be non-empty strings.')
+}
+
 export async function assertEligible<
   TActor,
   TReviewId extends string,
   TTargetType extends string,
   TTransaction,
-  TCreate,
-  TUpdate,
-  TListQuery,
-  TReview,
-  TListResult,
 >(
-  options: EngineOptions<
-    TActor,
-    TReviewId,
-    TTargetType,
-    TTransaction,
-    TCreate,
-    TUpdate,
-    TListQuery,
-    TReview,
-    TListResult
-  >,
+  options: EngineOptions<TActor, TReviewId, TTargetType, TTransaction>,
   actor: TActor,
   reviewId: TReviewId,
   action: ReviewAction,
@@ -48,24 +38,9 @@ export function assertRating<
   TReviewId extends string,
   TTargetType extends string,
   TTransaction,
-  TCreate,
-  TUpdate,
-  TListQuery,
-  TReview,
-  TListResult,
 >(
   input: CreateReviewRatingInput<TTargetType>,
-  options: EngineOptions<
-    TActor,
-    TReviewId,
-    TTargetType,
-    TTransaction,
-    TCreate,
-    TUpdate,
-    TListQuery,
-    TReview,
-    TListResult
-  >,
+  options: EngineOptions<TActor, TReviewId, TTargetType, TTransaction>,
 ): void {
   assertValue(input.rating, options)
   assertOrder(input.order)
@@ -76,24 +51,9 @@ export function assertChanges<
   TReviewId extends string,
   TTargetType extends string,
   TTransaction,
-  TCreate,
-  TUpdate,
-  TListQuery,
-  TReview,
-  TListResult,
 >(
   input: UpdateReviewRatingInput<TTargetType>,
-  options: EngineOptions<
-    TActor,
-    TReviewId,
-    TTargetType,
-    TTransaction,
-    TCreate,
-    TUpdate,
-    TListQuery,
-    TReview,
-    TListResult
-  >,
+  options: EngineOptions<TActor, TReviewId, TTargetType, TTransaction>,
 ): void {
   const { order, rating } = input.changes
   if (order === undefined && rating === undefined)
@@ -107,24 +67,9 @@ export async function assertRatingSet<
   TReviewId extends string,
   TTargetType extends string,
   TTransaction,
-  TCreate,
-  TUpdate,
-  TListQuery,
-  TReview,
-  TListResult,
 >(
   ratings: readonly ReviewRating<TTargetType>[],
-  options: EngineOptions<
-    TActor,
-    TReviewId,
-    TTargetType,
-    TTransaction,
-    TCreate,
-    TUpdate,
-    TListQuery,
-    TReview,
-    TListResult
-  >,
+  options: EngineOptions<TActor, TReviewId, TTargetType, TTransaction>,
   targetTypes: ReadonlySet<string>,
 ): Promise<void> {
   const { minimum, maximum } = options.policy.count
