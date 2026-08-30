@@ -1,13 +1,15 @@
 import { generateRegistrationOptions, verifyRegistrationResponse } from '@simplewebauthn/server'
 import { AuthError } from './errors.mts'
 import type { PasskeyOptions, PasskeyUser } from './passkey-types.mts'
-import { encodeStateSegment } from './state-key.mts'
+import { encodeSerializedStateSegment, encodeStateSegment } from './state-key.mts'
 
 export function createPasskeyRegistration<UserId, PasskeyId, Created, RegistrationContext>(
   options: PasskeyOptions<UserId, PasskeyId, Created, RegistrationContext>,
 ) {
   validateOptions(options)
-  const defaults = defaultKeys<UserId>(options.namespace)
+  const defaults = defaultKeys<UserId>(options.namespace, (userId) =>
+    options.serializeUserId(userId),
+  )
   const keys = options.keys
   const key = keys
     ? (userId: UserId, deviceId: string) => keys.registration(userId, deviceId)
@@ -79,10 +81,10 @@ function validateUserHandle(userId: Uint8Array) {
     throw new TypeError('webAuthnUserId must contain between 1 and 64 bytes')
 }
 
-function defaultKeys<UserId>(namespace = 'auth') {
+function defaultKeys<UserId>(namespace = 'auth', serializeUserId: (userId: UserId) => string) {
   return {
     registration: (userId: UserId, deviceId: string) =>
-      `${namespace}:passkey-registration:${encodeStateSegment(userId)}:${encodeStateSegment(deviceId)}`,
+      `${namespace}:passkey-registration:${encodeSerializedStateSegment(serializeUserId(userId))}:${encodeStateSegment(deviceId)}`,
   }
 }
 
@@ -93,6 +95,7 @@ function validateOptions(options: {
   attestationType?: unknown
   userIdsEqual?: unknown
   failureLimiter?: { record?: unknown }
+  serializeUserId?: unknown
   residentKey?: unknown
   userVerification?: {
     registration?: unknown
@@ -112,6 +115,8 @@ function validateOptions(options: {
     throw new TypeError('userIdsEqual must be explicitly configured')
   if (typeof options.failureLimiter?.record !== 'function')
     throw new TypeError('failureLimiter must be explicitly configured')
+  if (typeof options.serializeUserId !== 'function')
+    throw new TypeError('serializeUserId must be explicitly configured')
   const policies = options.userVerification
   if (
     !policies ||

@@ -7,6 +7,12 @@ export function encodeStateSegment(value: unknown): string {
   return encodeURIComponent(text)
 }
 
+export function encodeSerializedStateSegment(value: unknown): string {
+  if (typeof value !== 'string' || value.length === 0)
+    throw new AuthError('invalid_request', 400, 'Serialized state identifier is invalid')
+  return encodeStateSegment(value)
+}
+
 export function isWellFormedUnicode(value: string): boolean {
   for (let index = 0; index < value.length; index += 1) {
     const code = value.charCodeAt(index)

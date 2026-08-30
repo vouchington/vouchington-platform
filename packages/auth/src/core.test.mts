@@ -13,6 +13,7 @@ describe('authentication flow', () => {
     const options = {
       resolveUser: vi.fn(async (email: string) => ({ id: email })),
       isSuspended: vi.fn(async () => false),
+      suspendedError: () => new AuthError('invalid_credentials', 418, 'Caller-owned rejection'),
       hasMfa: vi.fn(async () => false),
       createMfaAttempt: vi.fn(async () => 'attempt-1'),
       issueSession,
@@ -35,7 +36,8 @@ describe('authentication flow', () => {
     })
     await expect(suspended('blocked@example.test', undefined)).rejects.toMatchObject({
       code: 'invalid_credentials',
-      status: 403,
+      status: 418,
+      message: 'Caller-owned rejection',
     })
   })
 })
@@ -322,7 +324,7 @@ describe('OAuth orchestration', () => {
       oauth.continue({ provider: 'disabled', authorization: 'code', context: undefined }),
     ).rejects.toMatchObject({ code: 'provider_disabled', status: 404 })
     const withKnownProviders = createOAuth({
-      getProvider: () => undefined,
+      getProvider: () => ({ exchange }),
       isKnownProvider: () => false,
       connect: async () => undefined,
       continue: async () => undefined,

@@ -1,6 +1,7 @@
 export interface ExpiringStateStore {
   put<T>(key: string, value: T, ttlSeconds: number): Promise<void>
   get<T>(key: string): Promise<T | null>
+  /** Atomically read and delete the value so concurrent consumers cannot both succeed. */
   consume<T>(key: string): Promise<T | null>
 }
 
@@ -25,6 +26,7 @@ export type AuthenticationResult<User, Session> = Authenticated<User, Session> |
 export interface AuthenticationFlowOptions<Identity, User, Session, Context> {
   resolveUser(identity: Identity, context: Context): Promise<User>
   isSuspended(user: User, context: Context): Promise<boolean> | boolean
+  suspendedError(user: User, context: Context): Error
   hasMfa(user: User, context: Context): Promise<boolean>
   createMfaAttempt(user: User, context: Context): Promise<string>
   issueSession(user: User, context: Context): Promise<Session>

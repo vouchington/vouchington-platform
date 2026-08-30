@@ -43,6 +43,8 @@ describe('passkeys', () => {
     expect(() => createPasskeys(withoutEquality as never)).toThrow('userIdsEqual')
     const { failureLimiter: _failureLimiter, ...withoutLimiter } = baseOptions()
     expect(() => createPasskeys(withoutLimiter as never)).toThrow('failureLimiter')
+    const { serializeUserId: _serializeUserId, ...withoutSerializer } = baseOptions()
+    expect(() => createPasskeys(withoutSerializer as never)).toThrow('serializeUserId')
     const { userVerification: _userVerification, ...withoutPolicy } = baseOptions()
     expect(() => createPasskeys(withoutPolicy as never)).toThrow('userVerification')
     expect(() =>
@@ -56,10 +58,13 @@ describe('passkeys', () => {
   it('encodes identifiers in default state keys', async () => {
     const { options, put } = configured()
     const { namespace: _namespace, ...defaultOptions } = options
-    const passkeys = createPasskeys(defaultOptions)
+    const passkeys = createPasskeys({
+      ...defaultOptions,
+      serializeUserId: (userId) => `id=${userId}`,
+    })
     await passkeys.registration.createOptions(testUser({ id: 'user:1' }), 'device:1')
     expect(put).toHaveBeenLastCalledWith(
-      'auth:passkey-registration:user%3A1:device%3A1',
+      'auth:passkey-registration:id%3Duser%3A1:device%3A1',
       'registration-challenge',
       300,
     )
@@ -78,6 +83,10 @@ describe('passkeys', () => {
     await expect(passkeys.authentication.createDiscoverableOptions('\ud800')).rejects.toMatchObject(
       { code: 'invalid_request', status: 400 },
     )
+    const invalidUserId = createPasskeys({ ...baseOptions(), serializeUserId: () => '' })
+    await expect(
+      invalidUserId.registration.createOptions(testUser(), 'device-1'),
+    ).rejects.toMatchObject({ code: 'invalid_request', status: 400 })
   })
 
   it('creates and verifies registration ceremonies through injected storage', async () => {
@@ -416,6 +425,7 @@ function configured() {
       attestationType: 'none' as const,
       residentKey: 'discouraged' as const,
       userIdsEqual: (left: string, right: string) => left === right,
+      serializeUserId: String,
       failureLimiter: { record: async () => false },
       userVerification: {
         registration: 'preferred' as const,

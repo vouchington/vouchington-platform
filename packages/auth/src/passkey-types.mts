@@ -61,6 +61,7 @@ export interface PasskeyOptions<
   keys?: PasskeyStateKeys<UserId>
   failureLimiter: AttemptLimiter<PasskeyFailure<UserId>>
   userIdsEqual: (left: UserId, right: UserId) => boolean
+  serializeUserId(userId: UserId): string
   userVerification: {
     registration: PasskeyUserVerification
     authentication: PasskeyUserVerification

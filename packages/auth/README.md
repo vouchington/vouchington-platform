@@ -29,7 +29,7 @@ Persistence and policy are ports rather than built-ins:
 - Passkey storage accepts caller-owned registration context, such as a display name. State-key
   builders and failed-attempt limiters can preserve an application's existing deployment contract.
   Callers also provide a stable, non-PII WebAuthn user handle and explicitly choose every
-  user-verification, resident-key, attestation, and user-ID equality policy.
+  user-verification, resident-key, attestation, user-ID equality, and user-ID serialization policy.
   Counter updates must atomically advance only when the stored counter is lower.
 - TOTP verification requires an explicit acceptance window and a caller-owned store that atomically
   advances the factor's last-used time-step counter, preventing a valid code from completing
@@ -43,6 +43,8 @@ Persistence and policy are ports rather than built-ins:
 
 Default state keys percent-encode identifiers to avoid delimiter collisions. Applications migrating
 live one-time state should inject key builders matching their existing keys until that state expires.
+State-store `consume` implementations must atomically read and delete so concurrent ceremonies
+cannot both succeed.
 
 `@vouchington/auth/api-server` returns handlers rather than registering global routes. Applications
 choose paths, request-body limits, parse product-specific body schemas inside operations, and retain

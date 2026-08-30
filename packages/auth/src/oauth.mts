@@ -20,10 +20,10 @@ export function createOAuth<Input, Account, UserId, Context, Continued, Connecte
   options: OAuthOptions<Input, Account, UserId, Context, Continued, Connected>,
 ) {
   async function exchange(providerName: string, input: Input, expectedOrigin?: string) {
+    if (!options.isKnownProvider(providerName))
+      throw new AuthError('invalid_request', 400, 'Unknown OAuth provider')
     const provider = options.getProvider(providerName)
     if (!provider) {
-      if (!options.isKnownProvider(providerName))
-        throw new AuthError('invalid_request', 400, 'Unknown OAuth provider')
       throw new AuthError('provider_disabled', 404, 'OAuth provider is not enabled')
     }
     return provider.exchange(input, expectedOrigin)

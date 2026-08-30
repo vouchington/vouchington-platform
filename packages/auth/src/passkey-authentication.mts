@@ -1,7 +1,7 @@
 import { generateAuthenticationOptions, verifyAuthenticationResponse } from '@simplewebauthn/server'
 import { AuthError } from './errors.mts'
 import type { PasskeyFailure, PasskeyOptions, StoredPasskey } from './passkey-types.mts'
-import { encodeStateSegment } from './state-key.mts'
+import { encodeSerializedStateSegment, encodeStateSegment } from './state-key.mts'
 
 export function createPasskeyAuthentication<UserId, PasskeyId, Created, RegistrationContext>(
   options: PasskeyOptions<UserId, PasskeyId, Created, RegistrationContext>,
@@ -11,7 +11,7 @@ export function createPasskeyAuthentication<UserId, PasskeyId, Created, Registra
   const userKey = keys
     ? (userId: UserId, deviceId: string) => keys.authentication(userId, deviceId)
     : (userId: UserId, deviceId: string) =>
-        `${namespace}:passkey-authentication:${encodeStateSegment(userId)}:${encodeStateSegment(deviceId)}`
+        `${namespace}:passkey-authentication:${encodeSerializedStateSegment(options.serializeUserId(userId))}:${encodeStateSegment(deviceId)}`
   const discoverableKey = keys
     ? (deviceId: string) => keys.discoverableAuthentication(deviceId)
     : (deviceId: string) =>
