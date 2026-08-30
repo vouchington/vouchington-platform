@@ -46,5 +46,9 @@
       "entry": ["src/index.mts!"],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
     },
+    "packages/votes": {
+      "entry": ["src/index.mts!", "src/api-server.mts!"],
+      "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
+    },
   },
 }
