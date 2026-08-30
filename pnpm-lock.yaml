@@ -222,6 +222,12 @@ importers:
         specifier: ^6.2.10
         version: 6.2.10
 
+  packages/typed-entities:
+    dependencies:
+      '@vouchington/utils':
+        specifier: ^0.4.0
+        version: link:../utils
+
   packages/utils: {}
 
   packages/uuid-v7:

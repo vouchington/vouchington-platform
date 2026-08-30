@@ -16,6 +16,7 @@ const packages = [
   'rate-limit',
   'reviews',
   'moderation',
+  'typed-entities',
 ] as const
 
 describe('new package manifests and exports', () => {
@@ -67,6 +68,9 @@ describe('new package manifests and exports', () => {
     })
     expect(readManifest('moderation').dependencies).toEqual({
       '@jongleberry/api-server': '^2.1.0',
+    })
+    expect(readManifest('typed-entities').dependencies).toEqual({
+      '@vouchington/utils': '^0.4.0',
     })
   })
 

@@ -20,6 +20,7 @@ const packages = [
   'rate-limit',
   'reviews',
   'moderation',
+  'typed-entities',
 ]
 
 describe('runtime package manifests', () => {
