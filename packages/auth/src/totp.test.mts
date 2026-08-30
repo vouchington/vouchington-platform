@@ -13,7 +13,8 @@ describe('TOTP', () => {
       label: 'person@example.test',
       secret: OTPAuth.Secret.fromBase32(setup.secret),
     }).generate()
-    expect(totp.verify('person@example.test', setup.secret, token)).toBe(true)
+    const copiedToken = `${token.slice(0, 3)} ${token.slice(3)}`
+    expect(totp.verify('person@example.test', setup.secret, copiedToken)).toBe(true)
     expect(totp.verify('person@example.test', setup.secret, '000000')).toBe(false)
   })
 

@@ -37,7 +37,7 @@ export function createTotp(options: TotpOptions) {
     },
     verify(accountName: string, secret: string, token: string): boolean {
       const totp = authenticator(accountName, OTPAuth.Secret.fromBase32(secret))
-      return totp.validate({ token, window }) !== null
+      return totp.validate({ token: token.replace(/\s+/g, ''), window }) !== null
     },
   }
 }
