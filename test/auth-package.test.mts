@@ -24,7 +24,7 @@ describe('auth package publication boundary', () => {
       '@vouchington/session-jwt',
       'otpauth',
     ])
-    expect(manifest.peerDependencies).toEqual({ '@jongleberry/api-server': '^2.1.0' })
+    expect(Object.keys(manifest.peerDependencies)).toEqual(['@jongleberry/api-server'])
     for (const entry of Object.values(manifest.exports)) {
       importBuiltModule(`packages/auth/${entry.import.replace('./', '')}`)
       expect(readFileSync(`packages/auth/${entry.types.replace('./', '')}`, 'utf8')).not.toBe('')

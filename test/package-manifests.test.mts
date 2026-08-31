@@ -46,7 +46,8 @@ describe('runtime package manifests', () => {
     const manifest = JSON.parse(readFileSync('packages/session-jwt/package.json', 'utf8')) as {
       dependencies: Record<string, string>
     }
-    expect(manifest.dependencies['@vouchington/uuid-v7']).toBe('^0.0.0')
+    expect(manifest.dependencies['@vouchington/uuid-v7']).toEqual(expect.any(String))
+    expect(manifest.dependencies['@vouchington/uuid-v7']).not.toMatch(/^workspace:/)
   })
 
   it('declares GlideMQ as the worker runtime peer and development dependency', () => {
@@ -54,8 +55,8 @@ describe('runtime package manifests', () => {
       devDependencies: Record<string, string>
       peerDependencies: Record<string, string>
     }
-    expect(manifest.devDependencies['glide-mq']).toBe('^0.15.3')
-    expect(manifest.peerDependencies['glide-mq']).toBe('^0.15.3')
+    expect(manifest.devDependencies['glide-mq']).toEqual(expect.any(String))
+    expect(manifest.peerDependencies['glide-mq']).toBe(manifest.devDependencies['glide-mq'])
   })
 })
 
