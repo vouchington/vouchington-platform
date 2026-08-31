@@ -1,8 +1,7 @@
 import { extractHtmlContent, isHtmlContentType } from '@vouchington/crawler-html'
 
-import { extractDocumentMetadata } from './metadata.mts'
 import { parseOEmbedResponse, type OEmbedMetadata } from './oembed.mts'
-import { matchEmbedProvider } from './providers.mts'
+import { createResolutionPlan, enrichResolutionPlan } from './resolution.mts'
 import { readBoundedBody } from './response.mts'
 import {
   EmbedPolicyError,
@@ -15,7 +14,7 @@ import {
   withTimeout,
 } from './runtime.mts'
 import type {
-  EmbedProviderMatch,
+  EmbedResolutionPlan,
   EmbedResolver,
   EmbedResolverOptions,
   ResolveExtractedEmbedInput,
@@ -23,6 +22,18 @@ import type {
 } from './types.mts'
 
 export { EmbedPolicyError }
+
+export class OEmbedHttpError extends Error {
+  readonly retryAfter: string | null
+  readonly status: number
+
+  constructor(response: Response) {
+    super(`oEmbed request failed with HTTP ${response.status} for ${response.url}`)
+    this.name = 'OEmbedHttpError'
+    this.status = response.status
+    this.retryAfter = response.headers.get('retry-after')
+  }
+}
 
 export function createEmbedResolver(options: EmbedResolverOptions): EmbedResolver {
   const configuration = normalizeOptions(options)
@@ -54,11 +65,31 @@ export function createEmbedResolver(options: EmbedResolverOptions): EmbedResolve
         }
       })
     },
+    async planExtracted(input, callOptions) {
+      const documentUrl = parseHttpUrl(input.documentUrl)
+      return await withTimeout(configuration.timeoutMs, callOptions, async () => {
+        await requireAuthorized(configuration, documentUrl, 'document', documentUrl)
+        return await createResolutionPlan(configuration, documentUrl, documentUrl, input.content)
+      })
+    },
+    async resolveOEmbed(plan, callOptions) {
+      return await withTimeout(
+        configuration.timeoutMs,
+        callOptions,
+        async (signal) => await resolveOEmbed(configuration, plan, signal),
+      )
+    },
     async resolveExtracted(input, callOptions) {
       const documentUrl = parseHttpUrl(input.documentUrl)
       return await withTimeout(configuration.timeoutMs, callOptions, async (signal) => {
         await requireAuthorized(configuration, documentUrl, 'document', documentUrl)
-        return await resolveContent(configuration, documentUrl, documentUrl, input.content, signal)
+        const plan = await createResolutionPlan(
+          configuration,
+          documentUrl,
+          documentUrl,
+          input.content,
+        )
+        return await resolveOptionalOEmbed(configuration, plan, signal)
       })
     },
   }
@@ -71,45 +102,41 @@ async function resolveContent(
   content: ResolveExtractedEmbedInput['content'],
   signal: AbortSignal,
 ): Promise<ResolvedEmbed> {
-  const document = extractDocumentMetadata(content, documentUrl)
-  const provider = matchEmbedProvider(documentUrl, options.providers)
-  const endpoint = provider?.match.oEmbedUrl ?? document.oEmbedUrl
-  const oembed = endpoint ? await fetchOEmbed(options, endpoint, documentUrl, signal) : null
-  const playerOEmbed =
-    oembed && ['video', 'rich'].includes(oembed.type?.toLowerCase() ?? '') ? oembed : null
-  const playerUrl = provider?.match.playerUrl ?? playerOEmbed?.playerUrl ?? null
-  const player =
-    playerUrl &&
-    (await options.authorizeUrl(playerUrl, { purpose: 'player', sourceUrl: documentUrl }))
-      ? {
-          url: playerUrl.toString(),
-          width: playerOEmbed?.width ?? null,
-          height: playerOEmbed?.height ?? null,
-        }
-      : null
-  return {
-    kind: player ? 'player' : 'article',
-    requestedUrl: requestedUrl.toString(),
-    resolvedUrl: documentUrl.toString(),
-    title: oembed?.title ?? document.title,
-    description: document.description,
-    author:
-      oembed?.authorName || oembed?.authorUrl
-        ? { name: oembed.authorName, url: oembed.authorUrl?.toString() ?? null }
-        : null,
-    provider:
-      provider || oembed?.providerName || oembed?.providerUrl
-        ? providerMetadata(provider?.provider.key ?? null, provider?.match ?? null, oembed)
-        : null,
-    thumbnail:
-      oembed?.thumbnailUrl || document.thumbnailUrl
-        ? {
-            url: (oembed?.thumbnailUrl ?? document.thumbnailUrl)!.toString(),
-            width: oembed?.thumbnailWidth ?? null,
-            height: oembed?.thumbnailHeight ?? null,
-          }
-        : null,
-    player,
+  const plan = await createResolutionPlan(options, requestedUrl, documentUrl, content)
+  return await resolveOptionalOEmbed(options, plan, signal)
+}
+
+async function resolveOEmbed(
+  options: Configuration,
+  plan: EmbedResolutionPlan,
+  signal: AbortSignal,
+): Promise<ResolvedEmbed> {
+  if (!plan.oEmbedUrl) return plan.embed
+  const endpoint = parseHttpUrl(plan.oEmbedUrl)
+  const sourceUrl = parseHttpUrl(plan.embed.resolvedUrl)
+  const oembed = await fetchOEmbed(options, endpoint, sourceUrl, signal)
+  return await enrichResolutionPlan(options, plan, oembed)
+}
+
+async function resolveOptionalOEmbed(
+  options: Configuration,
+  plan: EmbedResolutionPlan,
+  signal: AbortSignal,
+): Promise<ResolvedEmbed> {
+  if (!plan.oEmbedUrl) return plan.embed
+  try {
+    return await resolveOEmbed(options, plan, signal)
+  } catch (error) {
+    if (signal.aborted) throw error
+    try {
+      options.onOEmbedError?.(error, {
+        endpoint: new URL(plan.oEmbedUrl),
+        sourceUrl: new URL(plan.embed.resolvedUrl),
+      })
+    } catch {
+      // Diagnostics must not turn optional enrichment into a fatal error.
+    }
+    return plan.embed
   }
 }
 
@@ -118,41 +145,18 @@ async function fetchOEmbed(
   endpoint: URL,
   sourceUrl: URL,
   signal: AbortSignal,
-): Promise<OEmbedMetadata | null> {
+): Promise<OEmbedMetadata> {
+  const response = await safeFetch(
+    options,
+    'oembed',
+    sourceUrl,
+  )(endpoint, requestInit(options, signal, 'application/json'))
   try {
-    const response = await safeFetch(
-      options,
-      'oembed',
-      sourceUrl,
-    )(endpoint, requestInit(options, signal, 'application/json'))
-    try {
-      if (!response.ok) throw new TypeError(`oEmbed request failed with HTTP ${response.status}`)
-      const contentType = response.headers.get('content-type') ?? ''
-      const body = await readBoundedBody(response, options.maxOEmbedSizeBytes)
-      return parseOEmbedResponse(body, contentType, new URL(response.url || endpoint))
-    } finally {
-      await response.body?.cancel().catch(() => undefined)
-    }
-  } catch (error) {
-    if (signal.aborted) throw error
-    try {
-      options.onOEmbedError?.(error, { endpoint, sourceUrl })
-    } catch {
-      // Diagnostics must not turn optional enrichment into a fatal error.
-    }
-    return null
-  }
-}
-
-function providerMetadata(
-  key: string | null,
-  match: EmbedProviderMatch | null,
-  oembed: OEmbedMetadata | null,
-) {
-  return {
-    key,
-    name: oembed?.providerName ?? null,
-    url: oembed?.providerUrl?.toString() ?? null,
-    resourceId: match?.resourceId ?? null,
+    if (!response.ok) throw new OEmbedHttpError(response)
+    const contentType = response.headers.get('content-type') ?? ''
+    const body = await readBoundedBody(response, options.maxOEmbedSizeBytes)
+    return parseOEmbedResponse(body, contentType, new URL(response.url || endpoint))
+  } finally {
+    await response.body?.cancel().catch(() => undefined)
   }
 }

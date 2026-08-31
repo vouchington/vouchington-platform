@@ -46,6 +46,21 @@ If an application already extracted a document with `@vouchington/crawler-html`,
 const metadata = await resolver.resolveExtracted({ documentUrl, content: extractedContent })
 ```
 
+Applications that schedule remote work separately can split this into two phases. The plan is
+JSON-serializable and contains the HTML-derived result plus, when discovered, the remote request:
+
+```ts
+const plan = await resolver.planExtracted({ documentUrl, content: extractedContent })
+await crawls.saveEmbedPlan(crawlId, plan)
+
+// In an application-owned queue worker. Failures throw so its retry policy remains in control.
+const metadata = await resolver.resolveOEmbed(plan)
+await crawls.saveEmbedMetadata(crawlId, metadata)
+```
+
+The package does not enqueue work, retry requests, rate-limit hosts, or persist plans and results.
+Those orchestration decisions remain with the application.
+
 ## Provider presets
 
 No providers are enabled by default. The `@vouchington/embeds/providers` entrypoint exports opt-in
