@@ -28,7 +28,7 @@ export class OEmbedHttpError extends Error {
   readonly status: number
 
   constructor(response: Response) {
-    super(`oEmbed request failed with HTTP ${response.status}`)
+    super(`oEmbed request failed with HTTP ${response.status} for ${response.url}`)
     this.name = 'OEmbedHttpError'
     this.status = response.status
     this.retryAfter = response.headers.get('retry-after')
