@@ -1,7 +1,7 @@
 {
   "name": "@vouchington/media",
   "version": "0.1.1",
-  "description": "Schema-less direct media upload orchestration and S3 storage primitives.",
+  "description": "Media upload validation, stream lifecycle, and S3 primitives.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/media#readme",
   "bugs": {
     "url": "https://github.com/vouchington/vouchington-platform/issues"
@@ -31,6 +31,11 @@
       "types": "./dist/s3.d.mts",
       "import": "./dist/s3.mjs",
       "default": "./dist/s3.mjs"
+    },
+    "./s3-presign": {
+      "types": "./dist/s3-presign.d.mts",
+      "import": "./dist/s3-presign.mjs",
+      "default": "./dist/s3-presign.mjs"
     }
   },
   "publishConfig": {

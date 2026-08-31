@@ -4,7 +4,12 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import sharp from 'sharp'
 import { inspectImage } from './metadata.mts'
-import { ImageTransformError, transformImage } from './transform.mts'
+import {
+  ImageInputPixelLimitError,
+  ImageTransformError,
+  transformImage,
+  transformImageToFile,
+} from './transform.mts'
 
 const source = () =>
   sharp({ create: { width: 20, height: 10, channels: 4, background: 'red' } })
@@ -26,18 +31,24 @@ describe('image transforms', () => {
     })
   })
 
-  it('inspects an image from a local file path', async () => {
+  it('transforms a local file path into a caller-managed output file', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'image-resize-'))
-    const path = join(directory, 'source.png')
+    const sourcePath = join(directory, 'source.png')
+    const outputPath = join(directory, 'output.webp')
     try {
-      await writeFile(path, await source())
-      await expect(inspectImage(path)).resolves.toMatchObject({ format: 'png', width: 20 })
+      await writeFile(sourcePath, await source())
+      await transformImageToFile(sourcePath, outputPath, { width: 10, format: 'webp' })
+      await expect(inspectImage(outputPath)).resolves.toMatchObject({
+        format: 'webp',
+        width: 10,
+        height: 5,
+      })
     } finally {
       await rm(directory, { force: true, recursive: true })
     }
   })
 
-  it('supports each encoder and flattening JPEG alpha', async () => {
+  it('matches Lambda alpha and EXIF orientation behavior', async () => {
     const input = await source()
     for (const format of ['avif', 'png'] as const) {
       await expect(
@@ -53,6 +64,39 @@ describe('image transforms', () => {
     await expect(transformImage(input, { width: 10, format: 'jpeg' })).resolves.toBeInstanceOf(
       Buffer,
     )
+    const oriented = await sharp(await source())
+      .withMetadata({ orientation: 6 })
+      .jpeg()
+      .toBuffer()
+    const orientedOutput = await transformImage(oriented, { width: 10, format: 'jpeg' })
+    await expect(inspectImage(orientedOutput)).resolves.toMatchObject({ height: 20 })
+  })
+
+  it('preserves Lambda grayscale and CMYK detection semantics', async () => {
+    const grayscale = await sharp(Buffer.alloc(20 * 10, 128), {
+      raw: { width: 20, height: 10, channels: 1 },
+    })
+      .toColourspace('b-w')
+      .png()
+      .toBuffer()
+    const grayscaleAlpha = await sharp(Buffer.alloc(20 * 10 * 2, 128), {
+      raw: { width: 20, height: 10, channels: 2 },
+    })
+      .toColourspace('b-w')
+      .png()
+      .toBuffer()
+    const rgb = await sharp({
+      create: { width: 20, height: 10, channels: 3, background: 'red' },
+    })
+      .png()
+      .toBuffer()
+    const cmyk = await sharp(rgb).toColourspace('cmyk').jpeg().toBuffer()
+    for (const bytes of [grayscale, grayscaleAlpha, rgb, cmyk]) {
+      await expect(transformImage(bytes, { width: 10, format: 'png' })).resolves.toBeInstanceOf(
+        Buffer,
+      )
+    }
+    await expect(transformImage(rgb, { width: 10, format: 'webp' })).resolves.toBeInstanceOf(Buffer)
   })
 
   it('validates options and wraps sharp failures', async () => {
@@ -80,5 +124,24 @@ describe('image transforms', () => {
     await expect(
       transformImage(Buffer.from('not an image'), { width: 1, format: 'png' }),
     ).rejects.toBeInstanceOf(ImageTransformError)
+    await expect(
+      transformImage(await source(), { width: 1, format: 'png', maxInputPixels: 1 }),
+    ).rejects.toBeInstanceOf(ImageInputPixelLimitError)
+
+    const directory = await mkdtemp(join(tmpdir(), 'image-resize-limit-'))
+    const sourcePath = join(directory, 'source.png')
+    const outputPath = join(directory, 'output.png')
+    try {
+      await writeFile(sourcePath, await source())
+      await expect(
+        transformImageToFile(sourcePath, outputPath, {
+          width: 1,
+          format: 'png',
+          maxInputPixels: 1,
+        }),
+      ).rejects.toBeInstanceOf(ImageInputPixelLimitError)
+    } finally {
+      await rm(directory, { force: true, recursive: true })
+    }
   })
 })

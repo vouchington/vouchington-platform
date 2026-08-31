@@ -33,11 +33,19 @@ describe('new package manifests and exports', () => {
     }
   })
 
-  it('publishes the media S3 subpath', () => {
-    expect(Object.keys(readManifest('media').exports as object)).toEqual(['.', './s3'])
+  it('publishes separate media S3 object and presign subpaths', () => {
+    expect(Object.keys(readManifest('media').exports as object)).toEqual([
+      '.',
+      './s3',
+      './s3-presign',
+    ])
     expect(existsSync('packages/media/dist/s3.mjs')).toBe(true)
     expect(existsSync('packages/media/dist/s3.d.mts')).toBe(true)
+    expect(existsSync('packages/media/dist/s3-presign.mjs')).toBe(true)
+    expect(existsSync('packages/media/dist/s3-presign.d.mts')).toBe(true)
+    expect(readFileSync('packages/media/dist/s3.mjs', 'utf8')).not.toContain('s3-request-presigner')
     expect(() => importBuiltModule('packages/media/dist/s3.mjs')).not.toThrow()
+    expect(() => importBuiltModule('packages/media/dist/s3-presign.mjs')).not.toThrow()
   })
 
   it('keeps runtime dependencies limited to direct package needs', () => {

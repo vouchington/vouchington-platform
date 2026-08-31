@@ -3,32 +3,32 @@ import {
   DeleteObjectsCommand,
   GetObjectCommand,
   PutObjectCommand,
+  type PutObjectCommandInput,
   type S3Client,
 } from '@aws-sdk/client-s3'
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 import type { MediaBody } from './types.mts'
 
-export interface S3MediaStorageOptions {
+export interface S3MediaObjectsOptions {
   bucket: string
   client: S3Client
-  sign?: (
-    client: S3Client,
-    command: PutObjectCommand,
-    options: { expiresIn: number },
-  ) => Promise<string>
 }
 
-export interface S3MediaStorage {
-  deleteObject(key: string): Promise<void>
-  deleteObjects(keys: readonly string[]): Promise<void>
-  getObject(key: string): Promise<MediaBody>
-  presignUpload(input: {
-    contentLength?: number
-    contentType: string
-    expiresInSeconds: number
-    key: string
-  }): Promise<string>
+export interface S3MediaObjects {
+  delete(key: string): Promise<void>
+  deleteMany(keys: readonly string[]): Promise<void>
+  getObject(key: string): Promise<S3MediaObject>
+  putObject(input: S3MediaPutObjectInput): Promise<void>
+}
+
+export type S3MediaPutObjectInput = Omit<PutObjectCommandInput, 'Bucket' | 'Key'> & { key: string }
+
+export interface S3MediaObject {
+  body: MediaBody
+  contentLength?: number
+  contentType?: string
+  etag?: string
+  metadata?: Record<string, string>
 }
 
 export type S3MediaDeleteFailure =
@@ -45,20 +45,8 @@ export class S3MediaDeleteError extends Error {
   }
 }
 
-export function createS3MediaStorage(options: S3MediaStorageOptions): S3MediaStorage {
-  const sign =
-    options.sign ?? ((client, command, signOptions) => getSignedUrl(client, command, signOptions))
+export function createS3MediaObjects(options: S3MediaObjectsOptions): S3MediaObjects {
   return {
-    async presignUpload(input) {
-      const command = new PutObjectCommand({
-        Bucket: options.bucket,
-        Key: input.key,
-        ContentLength: input.contentLength,
-        ContentType: input.contentType,
-        IfNoneMatch: '*',
-      })
-      return sign(options.client, command, { expiresIn: input.expiresInSeconds })
-    },
     async getObject(key) {
       const output = await options.client.send(
         new GetObjectCommand({ Bucket: options.bucket, Key: key }),
@@ -71,12 +59,24 @@ export function createS3MediaStorage(options: S3MediaStorageOptions): S3MediaSto
       if (typeof iterator !== 'function') {
         throw new TypeError('S3 returned an unreadable media body')
       }
-      return body as MediaBody
+      return {
+        body: body as MediaBody,
+        ...(output.ContentLength === undefined ? {} : { contentLength: output.ContentLength }),
+        ...(output.ContentType === undefined ? {} : { contentType: output.ContentType }),
+        ...(output.ETag === undefined ? {} : { etag: output.ETag }),
+        ...(output.Metadata === undefined ? {} : { metadata: output.Metadata }),
+      }
     },
-    async deleteObject(key) {
+    async putObject(input) {
+      const { key, ...commandInput } = input
+      await options.client.send(
+        new PutObjectCommand({ Bucket: options.bucket, Key: key, ...commandInput }),
+      )
+    },
+    async delete(key) {
       await options.client.send(new DeleteObjectCommand({ Bucket: options.bucket, Key: key }))
     },
-    async deleteObjects(keys) {
+    async deleteMany(keys) {
       const failures: S3MediaDeleteFailure[] = []
       for (let index = 0; index < keys.length; index += 1_000) {
         const batch = keys.slice(index, index + 1_000)

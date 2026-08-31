@@ -36,7 +36,7 @@ docker run --rm -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:18
 - `@vouchington/robots` — transport- and cache-injected robots.txt evaluation
 - `@vouchington/browser-crawl` — injected Playwright rendered-page collection
 - `@vouchington/domain-verification` — DNS TXT and secure-transport verification primitives
-- `@vouchington/media` — schema-less direct upload orchestration and an injected S3 adapter
+- `@vouchington/media` — media validation, stream lifecycle, and injected S3 primitives
 - `@vouchington/rate-limit` — focused sliding-window Valkey rate-limit primitives
 - `@vouchington/typed-entities` — injected transaction-scoped typed entity semantics
 
@@ -46,8 +46,11 @@ docker run --rm -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:18
 - `@vouchington/uuid-v7` — UUIDv7 creation, validation, date bounds, and base36 suffixes
 - `@vouchington/frontmatter` — Deterministic YAML frontmatter serialization
 
-Extracted APIs must be generalizable and parameterized; product identifiers, defaults, and policy
-belong in application adapters. Code with no third-party runtime dependencies belongs in an explicit
+Extracted APIs must be opinionated generic utilities, never orchestration or workflows. State
+transitions, transaction and ordering decisions, queue and retry behavior, HTTP lifecycle, cleanup
+coordination, product identifiers, product defaults, policy, persistence, and authorization belong
+in application adapters. Packages may encode safe, reusable implementation defaults when callers
+can override product-facing choices. Code with no third-party runtime dependencies belongs in an explicit
 `@vouchington/utils/<subpath>` export. Code requiring any third-party runtime dependency must be its
 own `@vouchington/<name>` package and declare that dependency there. Node built-ins do not count as
 third-party dependencies.
