@@ -72,6 +72,33 @@ describe('image transforms', () => {
     await expect(inspectImage(orientedOutput)).resolves.toMatchObject({ height: 20 })
   })
 
+  it('preserves Lambda grayscale and CMYK detection semantics', async () => {
+    const grayscale = await sharp(Buffer.alloc(20 * 10, 128), {
+      raw: { width: 20, height: 10, channels: 1 },
+    })
+      .toColourspace('b-w')
+      .png()
+      .toBuffer()
+    const grayscaleAlpha = await sharp(Buffer.alloc(20 * 10 * 2, 128), {
+      raw: { width: 20, height: 10, channels: 2 },
+    })
+      .toColourspace('b-w')
+      .png()
+      .toBuffer()
+    const rgb = await sharp({
+      create: { width: 20, height: 10, channels: 3, background: 'red' },
+    })
+      .png()
+      .toBuffer()
+    const cmyk = await sharp(rgb).toColourspace('cmyk').jpeg().toBuffer()
+    for (const bytes of [grayscale, grayscaleAlpha, rgb, cmyk]) {
+      await expect(transformImage(bytes, { width: 10, format: 'png' })).resolves.toBeInstanceOf(
+        Buffer,
+      )
+    }
+    await expect(transformImage(rgb, { width: 10, format: 'webp' })).resolves.toBeInstanceOf(Buffer)
+  })
+
   it('validates options and wraps sharp failures', async () => {
     await expect(transformImage(await source(), {} as never)).rejects.toThrow('width')
     await expect(transformImage(await source(), { width: 0, format: 'png' })).rejects.toThrow(

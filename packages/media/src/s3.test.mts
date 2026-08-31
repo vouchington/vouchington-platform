@@ -66,6 +66,16 @@ describe('S3 media objects', () => {
     })
   })
 
+  it('omits unavailable S3 response metadata', async () => {
+    const body = (async function* () {
+      yield Buffer.from('x')
+    })()
+    const client = { send: vi.fn(async () => ({ Body: body })) } as unknown as S3Client
+    await expect(
+      createS3MediaObjects({ client, bucket: 'bucket' }).getObject('key'),
+    ).resolves.toEqual({ body })
+  })
+
   it.each([{}, { Body: null }, { Body: 'bytes' }, { Body: {} }])(
     'rejects an unreadable response body',
     async (output) => {

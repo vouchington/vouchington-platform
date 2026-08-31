@@ -62,9 +62,9 @@ async function transform<Result>(
     })
     const metadata = await pipeline.metadata()
     const isGrayscale =
-      metadata.space === 'b-w' || (metadata.channels === 1 && metadata.hasAlpha !== true)
+      (metadata.channels === 1 && metadata.hasAlpha !== true) || metadata.space === 'b-w'
     const hasAlpha =
-      metadata.hasAlpha === true || (metadata.channels === 4 && metadata.space !== 'cmyk')
+      (metadata.channels === 4 && metadata.space !== 'cmyk') || metadata.hasAlpha === true
     pipeline.rotate().resize({
       width: options.width,
       height: options.height,
