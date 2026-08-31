@@ -60,6 +60,11 @@ export interface ResolvedEmbed {
   player: EmbedPlayer | null
 }
 
+export interface EmbedResolutionPlan {
+  embed: ResolvedEmbed
+  oEmbedUrl: string | null
+}
+
 export interface ResolveEmbedOptions {
   signal?: AbortSignal
 }
@@ -89,6 +94,11 @@ export interface EmbedResolverOptions {
 
 export interface EmbedResolver {
   resolve(url: string | URL, options?: ResolveEmbedOptions): Promise<ResolvedEmbed>
+  planExtracted(
+    input: ResolveExtractedEmbedInput,
+    options?: ResolveEmbedOptions,
+  ): Promise<EmbedResolutionPlan>
+  resolveOEmbed(plan: EmbedResolutionPlan, options?: ResolveEmbedOptions): Promise<ResolvedEmbed>
   resolveExtracted(
     input: ResolveExtractedEmbedInput,
     options?: ResolveEmbedOptions,

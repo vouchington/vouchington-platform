@@ -1,4 +1,4 @@
-export { createEmbedResolver, EmbedPolicyError } from './resolver.mts'
+export { createEmbedResolver, EmbedPolicyError, OEmbedHttpError } from './resolver.mts'
 export type {
   AuthorizeEmbedUrl,
   EmbedAuthorizationContext,
@@ -10,6 +10,7 @@ export type {
   EmbedProviderMetadata,
   EmbedResolver,
   EmbedResolverOptions,
+  EmbedResolutionPlan,
   EmbedUrlPurpose,
   OEmbedFailureContext,
   ResolvedEmbed,

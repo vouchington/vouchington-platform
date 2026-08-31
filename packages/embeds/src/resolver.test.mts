@@ -2,7 +2,7 @@ import type { CrawlerHtmlToMarkdownResult } from '@vouchington/crawler-html'
 import { describe, expect, it, vi } from 'vitest'
 
 import { youtubeProvider } from './providers.mts'
-import { createEmbedResolver, EmbedPolicyError } from './resolver.mts'
+import { createEmbedResolver, EmbedPolicyError, OEmbedHttpError } from './resolver.mts'
 import type { EmbedAuthorizationContext, EmbedResolverOptions } from './types.mts'
 
 const dispatcher = {} as NonNullable<RequestInit['dispatcher']>
@@ -174,6 +174,48 @@ describe('embed resolver', () => {
     expect(fetch).toHaveBeenCalledTimes(1)
     expect(result.title).toBe('Remote title')
     expect(result.description).toBe('Local description')
+  })
+
+  it('plans extracted metadata without performing the optional oEmbed request', async () => {
+    const fetch = vi.fn()
+    const resolver = createEmbedResolver(defaultOptions(fetch))
+    const plan = await resolver.planExtracted({
+      documentUrl: 'https://example.com/post',
+      content: extractedContent('https://api.example/oembed'),
+    })
+    expect(fetch).not.toHaveBeenCalled()
+    expect(plan.embed.title).toBe('Document title')
+    expect(plan.oEmbedUrl).toBe('https://api.example/oembed')
+    expect(JSON.parse(JSON.stringify(plan))).toEqual(plan)
+  })
+
+  it('resolves a planned oEmbed request as a separate throwing phase', async () => {
+    const fetch = vi.fn().mockResolvedValue(jsonResponse({ title: 'Remote title' }))
+    const resolver = createEmbedResolver(defaultOptions(fetch))
+    const plan = await resolver.planExtracted({
+      documentUrl: 'https://example.com/post',
+      content: extractedContent('https://api.example/oembed'),
+    })
+    expect((await resolver.resolveOEmbed(plan)).title).toBe('Remote title')
+    fetch.mockResolvedValue(new Response(null, { status: 503 }))
+    await expect(resolver.resolveOEmbed(plan)).rejects.toThrow('HTTP 503')
+  })
+
+  it('exposes remote status and retry timing to application-owned queues', async () => {
+    const resolver = createEmbedResolver(
+      defaultOptions(
+        vi
+          .fn()
+          .mockResolvedValue(new Response(null, { status: 429, headers: { 'retry-after': '15' } })),
+      ),
+    )
+    const plan = await resolver.planExtracted({
+      documentUrl: 'https://example.com/post',
+      content: extractedContent('https://api.example/oembed'),
+    })
+    const error = await resolver.resolveOEmbed(plan).catch((error: unknown) => error)
+    expect(error).toBeInstanceOf(OEmbedHttpError)
+    expect(error).toMatchObject({ status: 429, retryAfter: '15' })
   })
 
   it('falls back to document metadata when optional oEmbed fails', async () => {
