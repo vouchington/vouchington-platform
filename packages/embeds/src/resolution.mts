@@ -2,12 +2,7 @@ import { extractDocumentMetadata } from './metadata.mts'
 import type { OEmbedMetadata } from './oembed.mts'
 import { matchEmbedProvider } from './providers.mts'
 import type { Configuration } from './runtime.mts'
-import type {
-  EmbedProviderMatch,
-  EmbedResolutionPlan,
-  ResolveExtractedEmbedInput,
-  ResolvedEmbed,
-} from './types.mts'
+import type { EmbedResolutionPlan, ResolveExtractedEmbedInput, ResolvedEmbed } from './types.mts'
 
 export async function createResolutionPlan(
   options: Configuration,
@@ -32,7 +27,14 @@ export async function createResolutionPlan(
       title: document.title,
       description: document.description,
       author: null,
-      provider: provider ? providerMetadata(provider.provider.key, provider.match, null) : null,
+      provider: provider
+        ? {
+            key: provider.provider.key,
+            name: null,
+            url: null,
+            resourceId: provider.match.resourceId,
+          }
+        : null,
       thumbnail: document.thumbnailUrl
         ? { url: document.thumbnailUrl.toString(), width: null, height: null }
         : null,
@@ -86,18 +88,5 @@ export async function enrichResolutionPlan(
           }
         : null,
     player,
-  }
-}
-
-function providerMetadata(
-  key: string | null,
-  match: Pick<EmbedProviderMatch, 'resourceId'> | null,
-  oembed: OEmbedMetadata | null,
-) {
-  return {
-    key,
-    name: oembed?.providerName ?? null,
-    url: oembed?.providerUrl?.toString() ?? null,
-    resourceId: match?.resourceId || null,
   }
 }
