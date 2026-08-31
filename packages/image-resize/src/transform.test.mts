@@ -100,5 +100,21 @@ describe('image transforms', () => {
     await expect(
       transformImage(await source(), { width: 1, format: 'png', maxInputPixels: 1 }),
     ).rejects.toBeInstanceOf(ImageInputPixelLimitError)
+
+    const directory = await mkdtemp(join(tmpdir(), 'image-resize-limit-'))
+    const sourcePath = join(directory, 'source.png')
+    const outputPath = join(directory, 'output.png')
+    try {
+      await writeFile(sourcePath, await source())
+      await expect(
+        transformImageToFile(sourcePath, outputPath, {
+          width: 1,
+          format: 'png',
+          maxInputPixels: 1,
+        }),
+      ).rejects.toBeInstanceOf(ImageInputPixelLimitError)
+    } finally {
+      await rm(directory, { force: true, recursive: true })
+    }
   })
 })
