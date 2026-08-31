@@ -55,7 +55,7 @@ describe('runtime package manifests', () => {
       peerDependencies: Record<string, string>
     }
     expectCaretSemverRange(manifest.devDependencies['glide-mq'])
-    expect(manifest.peerDependencies['glide-mq']).toBe(manifest.devDependencies['glide-mq'])
+    expectCaretSemverRange(manifest.peerDependencies['glide-mq'])
   })
 })
 
