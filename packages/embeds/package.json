@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/embeds",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Policy-injected HTML unfurl and oEmbed resolution with SSRF-safe transport.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/embeds#readme",
   "bugs": {
