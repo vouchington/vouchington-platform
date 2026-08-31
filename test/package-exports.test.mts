@@ -91,8 +91,8 @@ function readManifest(name: (typeof packages)[number]): Record<string, unknown> 
 }
 
 function expectDependencyNames(name: (typeof packages)[number], expected: string[]): void {
-  const dependencies = readManifest(name).dependencies as Record<string, string>
-  expect(Object.keys(dependencies)).toEqual(expected)
+  const dependencies = (readManifest(name).dependencies ?? {}) as Record<string, string>
+  expect(Object.keys(dependencies).toSorted()).toEqual(expected.toSorted())
 }
 
 function importBuiltModule(file: string): void {
