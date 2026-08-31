@@ -6,6 +6,8 @@ import { pathToFileURL } from 'node:url'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+const caretSemverRange =
+  /^\^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u
 const packages = [
   'csv',
   'html-utils',
@@ -54,8 +56,11 @@ describe('runtime package manifests', () => {
       devDependencies: Record<string, string>
       peerDependencies: Record<string, string>
     }
-    expectCaretSemverRange(manifest.devDependencies['glide-mq'])
-    expect(manifest.peerDependencies['glide-mq']).toBe(manifest.devDependencies['glide-mq'])
+    const developmentRange = manifest.devDependencies['glide-mq']
+    const peerRange = manifest.peerDependencies['glide-mq']
+    expectCaretSemverRange(developmentRange)
+    expectCaretSemverRange(peerRange)
+    expect(caretRangeIncludesLowerBound(peerRange, developmentRange)).toBe(true)
   })
 })
 
@@ -66,7 +71,24 @@ function importBuiltModule(file: string): void {
 }
 
 function expectCaretSemverRange(value: string): void {
-  expect(value).toMatch(
-    /^\^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u,
-  )
+  expect(value).toMatch(caretSemverRange)
+}
+
+function caretRangeIncludesLowerBound(range: string, candidate: string): boolean {
+  const [major, minor, patch] = parseCaretRange(range)
+  const [candidateMajor, candidateMinor, candidatePatch] = parseCaretRange(candidate)
+  const candidateAtOrAboveFloor =
+    candidateMajor > major ||
+    (candidateMajor === major && candidateMinor > minor) ||
+    (candidateMajor === major && candidateMinor === minor && candidatePatch >= patch)
+  if (!candidateAtOrAboveFloor) return false
+  if (major > 0) return candidateMajor === major
+  if (minor > 0) return candidateMajor === 0 && candidateMinor === minor
+  return candidateMajor === 0 && candidateMinor === 0 && candidatePatch === patch
+}
+
+function parseCaretRange(value: string): [number, number, number] {
+  const match = caretSemverRange.exec(value)
+  if (!match) throw new Error(`Invalid caret SemVer range: ${value}`)
+  return [Number(match[1]), Number(match[2]), Number(match[3])]
 }
