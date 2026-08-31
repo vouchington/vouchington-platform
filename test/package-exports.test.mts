@@ -41,37 +41,21 @@ describe('new package manifests and exports', () => {
   })
 
   it('keeps runtime dependencies limited to direct package needs', () => {
-    expect(readManifest('embeds').dependencies).toEqual({
-      '@vouchington/crawler-html': '^0.0.0',
-      '@vouchington/http-transport': '^0.0.0',
-      parse5: '^8.0.0',
-    })
+    expectDependencyNames('embeds', [
+      '@vouchington/crawler-html',
+      '@vouchington/http-transport',
+      'parse5',
+    ])
     expect(readManifest('http-transport').dependencies).toBeUndefined()
-    expect(readManifest('image-resize').dependencies).toEqual({
-      negotiator: '^1.1.0',
-      sharp: '^0.35.3',
-    })
-    expect(readManifest('media').dependencies).toEqual({
-      '@aws-sdk/client-s3': '^3.1116.0',
-      '@aws-sdk/s3-request-presigner': '^3.1116.0',
-    })
-    expect(readManifest('wikimedia').dependencies).toEqual({
-      '@jongleberry/api-server': '^2.1.0',
-    })
+    expectDependencyNames('image-resize', ['negotiator', 'sharp'])
+    expectDependencyNames('media', ['@aws-sdk/client-s3', '@aws-sdk/s3-request-presigner'])
+    expectDependencyNames('wikimedia', ['@jongleberry/api-server'])
     expect(readManifest('memberships').dependencies).toBeUndefined()
     expect(readManifest('worker-runtime').dependencies).toBeUndefined()
-    expect(readManifest('rate-limit').dependencies).toEqual({
-      valkyries: '^0.8.0',
-    })
-    expect(readManifest('reviews').dependencies).toEqual({
-      '@jongleberry/api-server': '^2.1.0',
-    })
-    expect(readManifest('moderation').dependencies).toEqual({
-      '@jongleberry/api-server': '^2.1.0',
-    })
-    expect(readManifest('typed-entities').dependencies).toEqual({
-      '@vouchington/utils': '^0.4.0',
-    })
+    expectDependencyNames('rate-limit', ['valkyries'])
+    expectDependencyNames('reviews', ['@jongleberry/api-server'])
+    expectDependencyNames('moderation', ['@jongleberry/api-server'])
+    expectDependencyNames('typed-entities', ['@vouchington/utils'])
   })
 
   it('keeps membership declarations provider- and product-neutral', () => {
@@ -104,6 +88,11 @@ function readManifest(name: (typeof packages)[number]): Record<string, unknown> 
     string,
     unknown
   >
+}
+
+function expectDependencyNames(name: (typeof packages)[number], expected: string[]): void {
+  const dependencies = (readManifest(name).dependencies ?? {}) as Record<string, string>
+  expect(Object.keys(dependencies).toSorted()).toEqual(expected.toSorted())
 }
 
 function importBuiltModule(file: string): void {

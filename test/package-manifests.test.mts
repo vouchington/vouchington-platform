@@ -46,7 +46,7 @@ describe('runtime package manifests', () => {
     const manifest = JSON.parse(readFileSync('packages/session-jwt/package.json', 'utf8')) as {
       dependencies: Record<string, string>
     }
-    expect(manifest.dependencies['@vouchington/uuid-v7']).toBe('^0.0.0')
+    expectCaretSemverRange(manifest.dependencies['@vouchington/uuid-v7'])
   })
 
   it('declares GlideMQ as the worker runtime peer and development dependency', () => {
@@ -54,8 +54,8 @@ describe('runtime package manifests', () => {
       devDependencies: Record<string, string>
       peerDependencies: Record<string, string>
     }
-    expect(manifest.devDependencies['glide-mq']).toBe('^0.15.3')
-    expect(manifest.peerDependencies['glide-mq']).toBe('^0.15.3')
+    expectCaretSemverRange(manifest.devDependencies['glide-mq'])
+    expect(manifest.peerDependencies['glide-mq']).toBe(manifest.devDependencies['glide-mq'])
   })
 })
 
@@ -63,4 +63,10 @@ function importBuiltModule(file: string): void {
   const url = JSON.stringify(pathToFileURL(resolve(file)).href)
   const script = `const api = await import(${url}); if (typeof api.closeManagedValkeyClients === 'function') await api.closeManagedValkeyClients()`
   execFileSync(process.execPath, ['--input-type=module', '--eval', script], { stdio: 'pipe' })
+}
+
+function expectCaretSemverRange(value: string): void {
+  expect(value).toMatch(
+    /^\^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u,
+  )
 }

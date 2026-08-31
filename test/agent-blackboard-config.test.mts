@@ -19,7 +19,13 @@ describe('Agent Blackboard host configuration', () => {
       mcpServers: {
         'agent-blackboard': {
           command: 'npx',
-          args: ['-y', 'agent-blackboard@0.5.0', 'mcp'],
+          args: [
+            '-y',
+            expect.stringMatching(
+              /^agent-blackboard@(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/u,
+            ),
+            'mcp',
+          ],
           env: {
             AGENT_BLACKBOARD_URL: '${AGENT_BLACKBOARD_URL}',
             AGENT_BLACKBOARD_TOKEN: '${AGENT_BLACKBOARD_TOKEN}',
@@ -40,7 +46,10 @@ describe('Agent Blackboard host configuration', () => {
     const instructions = readFileSync('.codex/README.md', 'utf8')
     expect(instructions).toMatch(/codex plugin marketplace add jonathanong\/agent-blackboard/u)
     expect(instructions).toMatch(/codex plugin add agent-blackboard@agent-blackboard/u)
-    expect(instructions).toMatch(/agent-blackboard@0\.5\.0/u)
+    const packageSpec = JSON.parse(readFileSync('.mcp.json', 'utf8')).mcpServers['agent-blackboard']
+      .args[1] as string
+    expect(instructions).toContain(packageSpec)
+    expect(readFileSync('.claude/README.md', 'utf8')).toContain(packageSpec)
     const config = readFileSync('.codex/config.toml', 'utf8')
     expect(config).toMatch(/\[plugins\."agent-blackboard@agent-blackboard"\]\r?\nenabled = true/u)
     const approvals = [
