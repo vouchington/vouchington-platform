@@ -47,9 +47,9 @@ describe('validateMediaUpload', () => {
 
   it('creates coded errors with causes', () => {
     const cause = new Error('cause')
-    expect(new MediaError('INVALID_STATE', 'message', { cause })).toMatchObject({
+    expect(new MediaError('POLICY_INVALID', 'message', { cause })).toMatchObject({
       name: 'MediaError',
-      code: 'INVALID_STATE',
+      code: 'POLICY_INVALID',
       cause,
     })
     expect(vi.isMockFunction(policy.acceptsContentType)).toBe(false)

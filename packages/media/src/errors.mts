@@ -1,12 +1,4 @@
-export type MediaErrorCode =
-  | 'CONTENT_LENGTH_INVALID'
-  | 'CONTENT_TYPE_INVALID'
-  | 'DUPLICATE_MEDIA'
-  | 'EXPIRY_INVALID'
-  | 'INVALID_STATE'
-  | 'MEDIA_NOT_FOUND'
-  | 'POLICY_INVALID'
-  | 'UNAUTHORIZED'
+export type MediaErrorCode = 'CONTENT_LENGTH_INVALID' | 'CONTENT_TYPE_INVALID' | 'POLICY_INVALID'
 
 export class MediaError extends Error {
   readonly code: MediaErrorCode
@@ -15,5 +7,15 @@ export class MediaError extends Error {
     super(message, options)
     this.name = 'MediaError'
     this.code = code
+  }
+}
+
+export class MediaSizeLimitError extends Error {
+  constructor(
+    readonly maxBytes: number,
+    readonly size: number,
+  ) {
+    super(`Media body exceeds the ${maxBytes}-byte limit`)
+    this.name = 'MediaSizeLimitError'
   }
 }

@@ -1,43 +1,36 @@
 # @vouchington/media
 
-Schema-less direct media upload orchestration for Node.js. Applications provide identifiers,
-object keys, persistence, authorization, lifecycle policy, queues, metadata extraction, and
-failure reporting. The optional `@vouchington/media/s3` entrypoint supplies an S3 adapter with an
-injected client and bucket.
+Utility primitives for validating direct-upload request metadata and safely consuming media streams.
+Applications own identifiers, object keys, persistence, authorization, lifecycle policy, queues,
+metadata extraction, and failure reporting.
 
-Duplicate reuse/rejection is orchestrated directly. Replacement is an injected atomic operation so
-an application can make the incoming record durable before retiring valid existing media.
-
-This first release handles caller-uploaded objects only. Remote URL ingestion, HTTP fetching,
-image transformation, and video processing are deliberately outside its scope. Compose metadata
-processing with `@vouchington/image-resize` when Sharp-backed inspection is needed.
+`@vouchington/media/s3` contains caller-configured object writes plus reads, deletes, and batched
+deletes. Reads return the body with optional length, content type, ETag, and metadata. The separately
+imported `@vouchington/media/s3-presign` entrypoint creates upload URLs, keeping object consumers
+independent from the request-presigner at runtime.
 
 ```ts
-import { createMediaUpload } from '@vouchington/media'
-import { createS3MediaStorage } from '@vouchington/media/s3'
+import { validateMediaUpload } from '@vouchington/media'
+import { createS3MediaObjects } from '@vouchington/media/s3'
+import { createS3MediaUploadPresigner } from '@vouchington/media/s3-presign'
 
-const storage = createS3MediaStorage({ client, bucket: process.env.UPLOAD_BUCKET! })
-const upload = await createMediaUpload(
+const metadata = validateMediaUpload(
   { contentType: request.headers.get('content-type'), contentLength: 42 },
-  {
-    policy: { acceptsContentType: (type) => type.startsWith('image/'), maxBytes: 50_000_000 },
-    createId: crypto.randomUUID,
-    createObjectKey: (id) => `pending/${id}`,
-    expiresInSeconds: 3_600,
-    presignUpload: ({ key, contentType, expiresInSeconds }) =>
-      storage.presignUpload({ key, contentType, expiresInSeconds }),
-    savePending: saveUpload,
-  },
+  { acceptsContentType: (type) => type.startsWith('image/'), maxBytes: 50_000_000 },
 )
+const objects = createS3MediaObjects({ client, bucket: process.env.UPLOAD_BUCKET! })
+const presigner = createS3MediaUploadPresigner({ client, bucket: process.env.UPLOAD_BUCKET! })
+const uploadUrl = await presigner.presignUpload({ key, ...metadata, expiresInSeconds: 3_600 })
 ```
 
 No bucket name, CDN URL, MIME allowlist, size limit, expiry, database schema, authorization rule,
-moderation decision, or queue policy is built in.
+moderation decision, or queue policy is built in. `hashMediaBody` hashes an async byte stream.
+`spoolMediaBody` creates an owned private temporary file with optional incremental size enforcement;
+its caller invokes `cleanup()`. `withTemporaryMediaFile` builds on that lifecycle and cleans up after
+its callback.
 
-The declared upload length is a request and signing input; it does not independently
-prove the stored object's final size. Applications that require that guarantee should verify object
-metadata during completion.
+The declared upload length is a request and signing input; it does not independently prove the
+stored object's final size. Applications that require that guarantee should verify object metadata.
 
-The S3 adapter signs uploads with `If-None-Match: *` so an accepted object key cannot be
-overwritten by reusing its URL. Upload clients must send that header, and bucket CORS policy must
-allow it.
+Pass `ifNoneMatch: '*'` to the presigner when a caller wants a write-once upload URL. Upload clients
+must send that header, and bucket CORS policy must allow it.

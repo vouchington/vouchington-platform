@@ -1,4 +1,4 @@
-import sharp from 'sharp'
+import sharp, { type Sharp } from 'sharp'
 import { IMAGE_OUTPUT_FORMATS, type ImageOutputFormat } from './formats.mts'
 
 export interface TransformImageOptions {
@@ -12,6 +12,8 @@ export interface TransformImageOptions {
   flattenBackground?: { r: number; g: number; b: number; alpha?: number }
 }
 
+export type ImageInput = Uint8Array | string
+
 export class ImageTransformError extends Error {
   constructor(
     message: string,
@@ -22,39 +24,85 @@ export class ImageTransformError extends Error {
   }
 }
 
+export class ImageInputPixelLimitError extends ImageTransformError {
+  constructor(
+    readonly maxInputPixels: number | boolean | undefined,
+    cause: unknown,
+  ) {
+    super('Image input exceeds the configured pixel limit', cause)
+    this.name = 'ImageInputPixelLimitError'
+  }
+}
+
 export async function transformImage(
-  input: Uint8Array,
+  input: ImageInput,
   options: TransformImageOptions,
 ): Promise<Buffer> {
+  return transform(input, options, (pipeline) => pipeline.toBuffer())
+}
+
+export async function transformImageToFile(
+  input: ImageInput,
+  outputPath: string,
+  options: TransformImageOptions,
+): Promise<void> {
+  await transform(input, options, (pipeline) => pipeline.toFile(outputPath))
+}
+
+async function transform<Result>(
+  input: ImageInput,
+  options: TransformImageOptions,
+  output: (pipeline: Sharp) => Promise<Result>,
+): Promise<Result> {
   validateOptions(options)
   try {
-    const pipeline = sharp(input, { limitInputPixels: options.maxInputPixels }).rotate().resize({
+    const pipeline = sharp(input, {
+      limitInputPixels: options.maxInputPixels,
+      sequentialRead: true,
+    })
+    const metadata = await pipeline.metadata()
+    const isGrayscale =
+      metadata.space === 'b-w' || (metadata.channels === 1 && metadata.hasAlpha !== true)
+    const hasAlpha =
+      metadata.hasAlpha === true || (metadata.channels === 4 && metadata.space !== 'cmyk')
+    pipeline.rotate().resize({
       width: options.width,
       height: options.height,
       fit: 'inside',
       withoutEnlargement: true,
     })
+    if (isGrayscale && !hasAlpha) pipeline.toColorspace('b-w')
     switch (options.format) {
       case 'avif':
-        pipeline.avif({ quality: options.quality, lossless: options.lossless })
+        pipeline.avif({
+          quality: options.quality,
+          lossless: options.lossless,
+          chromaSubsampling: '4:2:0',
+        })
         break
       case 'webp':
-        pipeline.webp({ quality: options.quality, lossless: options.lossless })
+        pipeline.webp({
+          quality: options.quality,
+          lossless: options.lossless,
+          alphaQuality: hasAlpha ? options.quality : undefined,
+        })
         break
       case 'png':
         pipeline.png({
           progressive: options.progressive,
           compressionLevel: options.lossless ? 9 : 6,
+          palette: !hasAlpha && !isGrayscale,
         })
         break
       case 'jpeg':
-        if (options.flattenBackground !== undefined)
-          pipeline.flatten({ background: options.flattenBackground })
+        if (hasAlpha)
+          pipeline.flatten({ background: options.flattenBackground ?? { r: 255, g: 255, b: 255 } })
         pipeline.jpeg({ quality: options.quality, progressive: options.progressive, mozjpeg: true })
         break
     }
-    return await pipeline.toBuffer()
+    return await output(pipeline)
   } catch (error) {
+    if (isPixelLimitError(error)) throw new ImageInputPixelLimitError(options.maxInputPixels, error)
     throw new ImageTransformError(`Image transformation failed: ${String(error)}`, error)
   }
 }
@@ -86,4 +134,8 @@ function validateOptions(options: TransformImageOptions): void {
 
 function isPositiveSafeInteger(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value > 0
+}
+
+function isPixelLimitError(error: unknown): boolean {
+  return error instanceof Error && /exceeds pixel limit/i.test(error.message)
 }

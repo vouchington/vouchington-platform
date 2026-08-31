@@ -9,17 +9,4 @@ export interface ValidatedMediaUpload {
   contentType: string
 }
 
-export type MediaBody = AsyncIterable<Uint8Array>
-
-export interface PendingMediaUpload {
-  contentLength: number
-  contentType: string
-  id: string
-  key: string
-}
-
-export interface CreatedMediaUpload<Record> extends PendingMediaUpload {
-  expiresAt: Date
-  record: Record
-  uploadUrl: string
-}
+export type MediaBody = AsyncIterable<Uint8Array> & { destroy?(): void }
