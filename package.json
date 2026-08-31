@@ -33,7 +33,7 @@
     "@vitest/coverage-v8": "^4.1.11",
     "dependency-cruiser": "^18.2.0",
     "github-actionlint": "^1.7.12",
-    "knip": "^6.32.2",
+    "knip": "^6.33.0",
     "oxfmt": "^0.64.0",
     "oxlint": "^1.79.0",
     "oxlint-tsgolint": "^7.0.2001",
