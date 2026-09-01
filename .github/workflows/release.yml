@@ -131,6 +131,9 @@ jobs:
 
       - name: Commit and tag release plan
         run: |
+          if [ "$(node scripts/release.mts is-resume "$RUNNER_TEMP/release-plan.json")" = "true" ]; then
+            exit 0
+          fi
           PACKAGE=$(node scripts/release.mts selected-package "$RUNNER_TEMP/release-plan.json")
           VERSION=$(node scripts/release.mts selected-version "$RUNNER_TEMP/release-plan.json")
           SUMMARY=$(node scripts/release.mts summary "$RUNNER_TEMP/release-plan.json")
@@ -140,7 +143,11 @@ jobs:
           fi
           node scripts/release.mts tag "$RUNNER_TEMP/release-plan.json"
 
-      - run: git push --atomic origin HEAD:main --follow-tags
+      - name: Push release commit and tags
+        run: |
+          if [ "$(node scripts/release.mts is-resume "$RUNNER_TEMP/release-plan.json")" = "false" ]; then
+            git push --atomic origin HEAD:main --follow-tags
+          fi
 
       - name: Publish planned packages with npm OIDC
         run: node scripts/release.mts publish "$RUNNER_TEMP/release-plan.json"

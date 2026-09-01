@@ -8,6 +8,7 @@ import {
   publishMissing,
   remoteReleaseComplete,
 } from '../scripts/release-remote.mts'
+import { checkoutReleaseCommit, tagPlan } from '../scripts/release-git.mts'
 import type { StoredReleasePlan } from '../scripts/release-plan.mts'
 
 const plan: StoredReleasePlan = {
@@ -71,6 +72,49 @@ describe('resumable release operations', () => {
     expect(childProcess.execFileSync).toHaveBeenCalledWith(
       'gh',
       expect.arrayContaining(['create', 'dependent-v2.0.0']),
+      { stdio: 'inherit' },
+    )
+  })
+})
+
+describe('release git state', () => {
+  it('checks out the one commit shared by all release tags', () => {
+    childProcess.execFileSync.mockImplementation((_executable, arguments_: string[] = []) =>
+      arguments_[0] === 'rev-list' ? 'abc123\n' : Buffer.from(''),
+    )
+
+    checkoutReleaseCommit(plan)
+
+    expect(childProcess.execFileSync).toHaveBeenCalledWith(
+      'git',
+      ['checkout', '--detach', 'abc123'],
+      {
+        stdio: 'inherit',
+      },
+    )
+  })
+
+  it('rejects release tags from different commits', () => {
+    childProcess.execFileSync.mockImplementation((_executable, arguments_: string[] = []) =>
+      arguments_[3]?.startsWith('base-') ? 'abc123\n' : 'def456\n',
+    )
+
+    expect(() => checkoutReleaseCommit(plan)).toThrow('do not share one commit')
+  })
+
+  it('keeps matching tags and creates missing tags', () => {
+    childProcess.execFileSync.mockImplementation((_executable, arguments_: string[] = []) => {
+      if (arguments_[0] === 'rev-parse') return 'abc123\n'
+      if (arguments_[3]?.startsWith('base-')) return 'abc123\n'
+      if (arguments_[0] === 'rev-list') throw new Error('missing')
+      return Buffer.from('')
+    })
+
+    tagPlan(plan)
+
+    expect(childProcess.execFileSync).toHaveBeenCalledWith(
+      'git',
+      ['tag', '-a', 'dependent-v2.0.0', '-m', '@vouchington/dependent v2.0.0'],
       { stdio: 'inherit' },
     )
   })

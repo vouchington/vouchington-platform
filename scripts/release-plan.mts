@@ -30,7 +30,7 @@ export interface WorkspaceReleasePlan {
   selectedPackage: string
 }
 
-export type StoredReleasePlan = Omit<WorkspaceReleasePlan, 'packages'>
+export type StoredReleasePlan = Omit<WorkspaceReleasePlan, 'packages'> & { resumed?: true }
 
 const bumpStrength: Record<ReleaseType, number> = { patch: 1, minor: 2, major: 3 }
 

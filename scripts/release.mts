@@ -4,6 +4,7 @@ import { resolve } from 'node:path'
 
 import semver from 'semver'
 
+import { checkoutReleaseCommit, tagPlan } from './release-git.mts'
 import {
   planWorkspaceRelease,
   releaseTypes,
@@ -33,7 +34,7 @@ switch (command) {
     runForEach(readPlan(expectArguments(arguments_, 1)[0]), 'pnpm', ['pack', '--dry-run'])
     break
   case 'tag':
-    tag(readPlan(expectArguments(arguments_, 1)[0]))
+    tagPlan(readPlan(expectArguments(arguments_, 1)[0]))
     break
   case 'publish':
     publishMissing(readPlan(expectArguments(arguments_, 1)[0]))
@@ -46,6 +47,9 @@ switch (command) {
     break
   case 'selected-package':
     process.stdout.write(readPlan(expectArguments(arguments_, 1)[0]).selectedPackage)
+    break
+  case 'is-resume':
+    process.stdout.write(String(readPlan(expectArguments(arguments_, 1)[0]).resumed === true))
     break
   case 'summary':
     summary(readPlan(expectArguments(arguments_, 1)[0]))
@@ -65,8 +69,9 @@ function prepare(
   if (existsSync(persistedPath)) {
     const persisted = readPlan(persistedPath)
     if (!remoteReleaseComplete(persisted)) {
+      checkoutReleaseCommit(persisted)
       assertPlanMatchesWorkspace(persisted)
-      writeJson(resolve(planPath), persisted)
+      writeJson(resolve(planPath), { ...persisted, resumed: true })
       return
     }
   }
@@ -118,19 +123,6 @@ function verify(plan: StoredReleasePlan): void {
   }
 }
 
-function tag(plan: StoredReleasePlan): void {
-  const head = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
-  for (const release of plan.releases) {
-    const name = `${release.directory}-v${release.toVersion}`
-    const existing = tagCommit(name)
-    if (existing === head) continue
-    if (existing) throw new Error(`Tag ${name} points to ${existing}, not ${head}`)
-    execFileSync('git', ['tag', '-a', name, '-m', `${release.name} v${release.toVersion}`], {
-      stdio: 'inherit',
-    })
-  }
-}
-
 function runForEach(plan: StoredReleasePlan, executable: string, arguments_: string[]): void {
   for (const release of plan.releases)
     execFileSync(executable, arguments_, {
@@ -163,14 +155,6 @@ function assertPlanMatchesWorkspace(plan: StoredReleasePlan): void {
   for (const release of plan.releases)
     if (versions.get(release.name) !== release.toVersion)
       throw new Error(`Pending release plan does not match ${release.name}@${release.toVersion}`)
-}
-
-function tagCommit(name: string): string | undefined {
-  try {
-    return execFileSync('git', ['rev-list', '-n', '1', name], { encoding: 'utf8' }).trim()
-  } catch {
-    return undefined
-  }
 }
 
 function readManifest(directory: string): PackageManifest {

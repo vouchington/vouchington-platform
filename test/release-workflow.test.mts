@@ -48,6 +48,7 @@ describe('release workflow', () => {
       'git add packages/*/package.json pnpm-lock.yaml .github/release-plan.json',
     )
     expect(workflow).toContain('if ! git diff --cached --quiet; then')
+    expect(workflow).toContain('node scripts/release.mts is-resume')
   })
 
   it('uses pnpm to convert workspace protocols while packing and publishing', () => {
