@@ -66,10 +66,13 @@ describe('new package manifests and exports', () => {
     expectDependencyNames('typed-entities', ['@vouchington/utils'])
   })
 
-  it('keeps membership declarations provider- and product-neutral', () => {
+  it('keeps membership declarations utility-only and product-neutral', () => {
     const declarations = readFileSync('packages/memberships/dist/index.d.mts', 'utf8')
     expect(declarations).not.toMatch(
       /stripe|filaments|voucha|membership_skus|\bplus\b|\bpro\b|select /i,
+    )
+    expect(declarations).not.toMatch(
+      /Capability|Normalized.*Webhook|RefundablePayment|MembershipProviderOperation|LifecycleFields/,
     )
   })
 

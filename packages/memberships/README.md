@@ -1,13 +1,10 @@
 # @vouchington/memberships
 
-Dependency-free, schema-less primitives for membership lifecycles, SKU grouping, benefit catalogs,
-and payment-provider adapters.
+Dependency-free utilities for membership status checks, change classification, SKU grouping, and
+benefit catalogs.
 
 ```ts
-import {
-  buildMembershipBenefitCatalog,
-  transitionMembershipLifecycle,
-} from '@vouchington/memberships'
+import { buildMembershipBenefitCatalog, classifyMembershipChange } from '@vouchington/memberships'
 
 const catalog = buildMembershipBenefitCatalog(
   {
@@ -28,13 +25,20 @@ const catalog = buildMembershipBenefitCatalog(
   },
   new Set(['requests'] as const),
 )
+
+const change = classifyMembershipChange({
+  previousStatus: 'active',
+  nextStatus: 'active',
+  previousPlan: 'basic',
+  nextPlan: 'premium',
+  previousSku: 'basic-monthly',
+  nextSku: 'premium-monthly',
+  comparePlans: (left, right) =>
+    ['basic', 'premium'].indexOf(left) - ['basic', 'premium'].indexOf(right),
+})
 ```
 
-The package fixes only the lifecycle vocabulary: `active`, `past_due`, `paused`, `cancelled`, and
-`expired`. It does not define database tables, products, entitlements, authorization, payment
-processors, hosted portals, or refund persistence. Applications own their plans, IDs, money policy,
-provider-specific adapters, webhook authentication, and access enforcement.
-
-Provider capabilities are structural interfaces. An application supplies its own adapter context and
-request/result types for subscription creation, updates, cancellation, webhook normalization,
-refundable-payment lookup, and refunds.
+The status utilities use the vocabulary `active`, `past_due`, `paused`, `cancelled`, and `expired`.
+The package does not define state transitions, database tables, products, entitlements,
+authorization, payment-provider contracts, webhooks, hosted portals, or refund workflows.
+Applications own those concerns along with plans, IDs, money policy, persistence, and side effects.

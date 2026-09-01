@@ -27,7 +27,7 @@ SKU names.
 | [`@vouchington/image-resize`](packages/image-resize)               | Sharp transforms, file output, metadata, and negotiation           |
 | [`@vouchington/media`](packages/media)                             | Upload validation, streams, and split S3 primitives                |
 | [`@vouchington/wikimedia`](packages/wikimedia)                     | Injected Wikimedia search and page-summary client                  |
-| [`@vouchington/memberships`](packages/memberships)                 | Schema-less membership lifecycle and provider primitives           |
+| [`@vouchington/memberships`](packages/memberships)                 | Membership catalog, SKU grouping, and status utilities             |
 | [`@vouchington/rate-limit`](packages/rate-limit)                   | Focused sliding-window Valkey rate-limit primitives                |
 | [`@vouchington/reviews`](packages/reviews)                         | Policy-injected schema-less review lifecycle and ratings engine    |
 | [`@vouchington/browser-crawl`](packages/browser-crawl)             | Injected Playwright rendered-page collection                       |

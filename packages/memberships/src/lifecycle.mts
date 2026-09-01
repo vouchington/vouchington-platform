@@ -1,39 +1,7 @@
-import type {
-  MembershipChangeType,
-  MembershipLifecycleFields,
-  MembershipLifecycleUpdate,
-  MembershipStatus,
-} from './types.mts'
+import type { MembershipChangeType, MembershipStatus } from './types.mts'
 
 export function isTerminalMembershipStatus(status: MembershipStatus): boolean {
   return status === 'cancelled' || status === 'expired'
-}
-
-export function transitionMembershipLifecycle(
-  current: MembershipLifecycleFields,
-  update: MembershipLifecycleUpdate,
-  at: Date,
-): MembershipLifecycleFields {
-  const status = update.status ?? current.status
-  if (current.status === 'expired' && status !== 'expired') {
-    throw new Error('An expired membership cannot transition to another status')
-  }
-  const timestamp =
-    status === 'active'
-      ? null
-      : current.status === status
-        ? (timestampForStatus(current, status) ?? at)
-        : at
-  return {
-    status,
-    cancelledAt: status === 'cancelled' ? timestamp : null,
-    expiredAt: status === 'expired' ? timestamp : null,
-    pastDueAt: status === 'past_due' ? timestamp : null,
-    pausedAt: status === 'paused' ? timestamp : null,
-    cancelAtPeriodEnd: isTerminalMembershipStatus(status)
-      ? false
-      : (update.cancelAtPeriodEnd ?? current.cancelAtPeriodEnd),
-  }
 }
 
 export function classifyMembershipChange<Plan, Sku>(options: {
@@ -53,22 +21,6 @@ export function classifyMembershipChange<Plan, Sku>(options: {
   }
   if (previousStatus !== nextStatus) return classifyStatusChange(previousStatus, nextStatus)
   return previousSku !== nextSku ? 'sku_migration' : null
-}
-
-function timestampForStatus(
-  current: MembershipLifecycleFields,
-  status: Exclude<MembershipStatus, 'active'>,
-): Date | null {
-  switch (status) {
-    case 'cancelled':
-      return current.cancelledAt
-    case 'expired':
-      return current.expiredAt
-    case 'past_due':
-      return current.pastDueAt
-    case 'paused':
-      return current.pausedAt
-  }
 }
 
 function classifyStatusChange(
