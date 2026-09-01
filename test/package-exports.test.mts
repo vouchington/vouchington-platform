@@ -13,7 +13,6 @@ const packages = [
   'wikimedia',
   'memberships',
   'worker-runtime',
-  'rate-limit',
   'reviews',
   'typed-entities',
 ] as const
@@ -59,7 +58,6 @@ describe('new package manifests and exports', () => {
     expectDependencyNames('wikimedia', ['@jongleberry/api-server'])
     expect(readManifest('memberships').dependencies).toBeUndefined()
     expect(readManifest('worker-runtime').dependencies).toBeUndefined()
-    expectDependencyNames('rate-limit', ['valkyries'])
     expectDependencyNames('reviews', ['@jongleberry/api-server'])
     expectDependencyNames('typed-entities', ['@vouchington/utils'])
   })
