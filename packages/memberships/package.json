@@ -1,7 +1,7 @@
 {
   "name": "@vouchington/memberships",
   "version": "0.1.0",
-  "description": "Schema-less membership lifecycle, catalog, SKU, and provider primitives.",
+  "description": "Membership catalog, SKU grouping, status, and change-classification utilities.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/memberships#readme",
   "bugs": {
     "url": "https://github.com/vouchington/vouchington-platform/issues"
