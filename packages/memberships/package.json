@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/memberships",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Membership catalog, SKU grouping, status, and change-classification utilities.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/memberships#readme",
   "bugs": {
