@@ -204,4 +204,19 @@ describe('membership offer selection', () => {
       ),
     ).toEqual([offers[1], offers[2]])
   })
+
+  it('omits a canonical product when its resolver returns undefined', () => {
+    const offers: Offer[] = [
+      { id: 'basic', product: 'basic', interval: 'month', currency: 'cad', revision: 1 },
+      { id: 'premium', product: 'premium', interval: 'month', currency: 'cad', revision: 1 },
+    ]
+
+    expect(
+      dedupeMembershipOffersByProduct(
+        offers,
+        (offer) => offer.product,
+        (productOffers) => (productOffers[0]!.product === 'basic' ? undefined : productOffers[0]),
+      ),
+    ).toEqual([offers[1]])
+  })
 })
