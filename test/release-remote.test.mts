@@ -39,7 +39,12 @@ describe('resumable release operations', () => {
     childProcess.execFileSync.mockReturnValue(Buffer.from('2.0.0'))
 
     expect(remoteReleaseComplete(plan)).toBe(true)
-    expect(childProcess.execFileSync).toHaveBeenCalledTimes(4)
+    expect(childProcess.execFileSync).toHaveBeenCalledTimes(5)
+    expect(childProcess.execFileSync).toHaveBeenCalledWith(
+      'gh',
+      ['api', 'repos/{owner}/{repo}', '--silent'],
+      expect.objectContaining({ encoding: 'utf8' }),
+    )
     expect(childProcess.execFileSync).toHaveBeenCalledWith(
       'gh',
       ['api', 'repos/{owner}/{repo}/releases/tags/base-v2.0.0', '--silent'],
@@ -55,6 +60,26 @@ describe('resumable release operations', () => {
     })
 
     expect(remoteReleaseComplete(plan)).toBe(false)
+  })
+
+  it('recognizes a missing GitHub release after confirming repository access', () => {
+    childProcess.execFileSync.mockImplementation((executable, arguments_: string[] = []) => {
+      if (executable === 'gh' && arguments_[1]?.endsWith('base-v2.0.0'))
+        throw commandError('gh: Not Found (HTTP 404)')
+      return Buffer.from('2.0.0')
+    })
+
+    expect(remoteReleaseComplete(plan)).toBe(false)
+  })
+
+  it('propagates a repository-level 404', () => {
+    childProcess.execFileSync.mockImplementation((executable, arguments_: string[] = []) => {
+      if (executable === 'gh' && arguments_[1] === 'repos/{owner}/{repo}')
+        throw commandError('gh: Not Found (HTTP 404)')
+      return Buffer.from('2.0.0')
+    })
+
+    expect(() => remoteReleaseComplete(plan)).toThrow('lookup failed')
   })
 
   it('skips versions and GitHub releases that already exist', () => {

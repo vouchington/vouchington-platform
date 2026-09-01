@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process'
 import type { StoredReleasePlan } from './release-plan.mts'
 
 export function remoteReleaseComplete(plan: StoredReleasePlan): boolean {
+  assertGitHubRepositoryAccessible()
   return plan.releases.every(
     (release) => versionExists(release.name, release.toVersion) && githubReleaseExists(release),
   )
@@ -19,6 +20,7 @@ export function publishMissing(plan: StoredReleasePlan): void {
 }
 
 export function createMissingGitHubReleases(plan: StoredReleasePlan): void {
+  assertGitHubRepositoryAccessible()
   for (const release of plan.releases) {
     if (githubReleaseExists(release)) continue
     execFileSync(
@@ -50,6 +52,13 @@ function githubReleaseExists(release: StoredReleasePlan['releases'][number]): bo
     ],
     /\(HTTP 404\)/u,
   )
+}
+
+function assertGitHubRepositoryAccessible(): void {
+  execFileSync('gh', ['api', 'repos/{owner}/{repo}', '--silent'], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
 }
 
 function tagName(release: StoredReleasePlan['releases'][number]): string {
