@@ -2,9 +2,11 @@ import { describe, expect, expectTypeOf, it } from 'vitest'
 import {
   buildMembershipBenefitCatalog,
   classifyMembershipChange,
+  dedupeMembershipOffersByProduct,
   groupMembershipSkusByPlan,
   isTerminalMembershipStatus,
   resolveMembershipBenefit,
+  selectMembershipOffer,
 } from './index.mts'
 
 describe('membership status and changes', () => {
@@ -107,5 +109,80 @@ describe('SKU grouping and generic catalogs', () => {
         new Set(['requests']),
       ),
     ).toThrow('Duplicate membership benefit')
+  })
+})
+
+describe('membership offer selection', () => {
+  type Offer = {
+    id: string
+    product: string
+    interval: 'month' | 'year'
+    currency: 'cad' | 'eur' | 'usd'
+    revision: number
+  }
+
+  const selection = {
+    interval: 'month' as const,
+    preferredCurrency: 'cad' as const,
+    getInterval: (offer: Offer) => offer.interval,
+    getCurrency: (offer: Offer) => offer.currency,
+    getIdentity: (offer: Offer) => offer.revision,
+    compareIdentity: (left: number, right: number) => left - right,
+  }
+
+  it('selects the newest preferred-currency offer for the requested interval', () => {
+    const offers: Offer[] = [
+      { id: 'usd-new', product: 'basic', interval: 'month', currency: 'usd', revision: 3 },
+      { id: 'cad-old', product: 'basic', interval: 'month', currency: 'cad', revision: 1 },
+      { id: 'cad-new', product: 'basic', interval: 'month', currency: 'cad', revision: 2 },
+      { id: 'yearly', product: 'basic', interval: 'year', currency: 'cad', revision: 4 },
+    ]
+
+    expect(selectMembershipOffer(offers, selection)).toBe(offers[2])
+  })
+
+  it('falls back to the newest interval match when the preferred currency is unavailable', () => {
+    const offers: Offer[] = [
+      { id: 'usd-old', product: 'basic', interval: 'month', currency: 'usd', revision: 1 },
+      { id: 'eur-new', product: 'basic', interval: 'month', currency: 'eur', revision: 2 },
+      { id: 'yearly', product: 'basic', interval: 'year', currency: 'cad', revision: 3 },
+    ]
+
+    expect(selectMembershipOffer(offers, selection)).toBe(offers[1])
+    expect(selectMembershipOffer([], selection)).toBeUndefined()
+  })
+
+  it('keeps the first offer when stable identities compare equally', () => {
+    const first: Offer = {
+      id: 'first',
+      product: 'basic',
+      interval: 'month',
+      currency: 'cad',
+      revision: 1,
+    }
+    const equallyNew = { ...first, id: 'second' }
+
+    expect(selectMembershipOffer([first, equallyNew], selection)).toBe(first)
+  })
+
+  it('deduplicates by the caller-owned canonical product identity', () => {
+    const first: Offer = {
+      id: 'price-one',
+      product: 'product-basic',
+      interval: 'month',
+      currency: 'cad',
+      revision: 1,
+    }
+    const duplicate = { ...first, id: 'price-two', revision: 2 }
+    const premium = { ...first, id: 'price-three', product: 'product-premium' }
+
+    const deduplicated = dedupeMembershipOffersByProduct(
+      [first, duplicate, premium],
+      (offer) => offer.product,
+    )
+
+    expect(deduplicated).toHaveLength(2)
+    expect(deduplicated[0]).toBe(first)
+    expect(deduplicated[1]).toBe(premium)
   })
 })
