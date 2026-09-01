@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process'
 import type { StoredReleasePlan } from './release-plan.mts'
 
 export function remoteReleaseComplete(plan: StoredReleasePlan): boolean {
+  assertGitHubRepositoryAccessible()
   return plan.releases.every(
     (release) => versionExists(release.name, release.toVersion) && githubReleaseExists(release),
   )
@@ -19,6 +20,7 @@ export function publishMissing(plan: StoredReleasePlan): void {
 }
 
 export function createMissingGitHubReleases(plan: StoredReleasePlan): void {
+  assertGitHubRepositoryAccessible()
   for (const release of plan.releases) {
     if (githubReleaseExists(release)) continue
     execFileSync(
@@ -37,22 +39,47 @@ export function createMissingGitHubReleases(plan: StoredReleasePlan): void {
 }
 
 function versionExists(name: string, version: string): boolean {
-  return succeeds('npm', ['view', `${name}@${version}`, 'version'])
+  return artifactExists('npm', ['view', `${name}@${version}`, 'version', '--json'], /\bE404\b/u)
 }
 
 function githubReleaseExists(release: StoredReleasePlan['releases'][number]): boolean {
-  return succeeds('gh', ['release', 'view', tagName(release)])
+  return artifactExists(
+    'gh',
+    [
+      'api',
+      `repos/{owner}/{repo}/releases/tags/${encodeURIComponent(tagName(release))}`,
+      '--silent',
+    ],
+    /\(HTTP 404\)/u,
+  )
+}
+
+function assertGitHubRepositoryAccessible(): void {
+  execFileSync('gh', ['api', 'repos/{owner}/{repo}', '--silent'], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
 }
 
 function tagName(release: StoredReleasePlan['releases'][number]): string {
   return `${release.directory}-v${release.toVersion}`
 }
 
-function succeeds(executable: string, arguments_: string[]): boolean {
+function artifactExists(executable: string, arguments_: string[], missingPattern: RegExp): boolean {
   try {
-    execFileSync(executable, arguments_, { stdio: 'ignore' })
+    execFileSync(executable, arguments_, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
     return true
-  } catch {
-    return false
+  } catch (error) {
+    if (missingPattern.test(commandOutput(error))) return false
+    throw error
   }
+}
+
+function commandOutput(error: unknown): string {
+  if (typeof error !== 'object' || error === null) return ''
+  const { stderr, stdout } = error as { stderr?: unknown; stdout?: unknown }
+  return [stdout, stderr].filter((value): value is string => typeof value === 'string').join('\n')
 }

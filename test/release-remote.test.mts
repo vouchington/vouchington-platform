@@ -39,25 +39,55 @@ describe('resumable release operations', () => {
     childProcess.execFileSync.mockReturnValue(Buffer.from('2.0.0'))
 
     expect(remoteReleaseComplete(plan)).toBe(true)
-    expect(childProcess.execFileSync).toHaveBeenCalledTimes(4)
+    expect(childProcess.execFileSync).toHaveBeenCalledTimes(5)
+    expect(childProcess.execFileSync).toHaveBeenCalledWith(
+      'gh',
+      ['api', 'repos/{owner}/{repo}', '--silent'],
+      expect.objectContaining({ encoding: 'utf8' }),
+    )
+    expect(childProcess.execFileSync).toHaveBeenCalledWith(
+      'gh',
+      ['api', 'repos/{owner}/{repo}/releases/tags/base-v2.0.0', '--silent'],
+      expect.objectContaining({ encoding: 'utf8' }),
+    )
   })
 
   it('recognizes an incomplete plan', () => {
     childProcess.execFileSync.mockImplementation((executable, arguments_: string[]) => {
       if (executable === 'npm' && arguments_[1] === '@vouchington/dependent@2.0.0')
-        throw new Error('not found')
+        throw commandError('npm error code E404')
       return Buffer.from('2.0.0')
     })
 
     expect(remoteReleaseComplete(plan)).toBe(false)
   })
 
+  it('recognizes a missing GitHub release after confirming repository access', () => {
+    childProcess.execFileSync.mockImplementation((executable, arguments_: string[] = []) => {
+      if (executable === 'gh' && arguments_[1]?.endsWith('base-v2.0.0'))
+        throw commandError('gh: Not Found (HTTP 404)')
+      return Buffer.from('2.0.0')
+    })
+
+    expect(remoteReleaseComplete(plan)).toBe(false)
+  })
+
+  it('propagates a repository-level 404', () => {
+    childProcess.execFileSync.mockImplementation((executable, arguments_: string[] = []) => {
+      if (executable === 'gh' && arguments_[1] === 'repos/{owner}/{repo}')
+        throw commandError('gh: Not Found (HTTP 404)')
+      return Buffer.from('2.0.0')
+    })
+
+    expect(() => remoteReleaseComplete(plan)).toThrow('lookup failed')
+  })
+
   it('skips versions and GitHub releases that already exist', () => {
     childProcess.execFileSync.mockImplementation((executable, arguments_: string[] = []) => {
       if (arguments_[0] === 'view' && arguments_[1]?.includes('dependent'))
-        throw new Error('not found')
-      if (executable === 'gh' && arguments_[0] === 'release' && arguments_[1] === 'view')
-        if (arguments_[2] === 'dependent-v2.0.0') throw new Error('not found')
+        throw commandError('npm error code E404')
+      if (executable === 'gh' && arguments_[1]?.endsWith('dependent-v2.0.0'))
+        throw commandError('gh: Not Found (HTTP 404)')
       return Buffer.from('2.0.0')
     })
 
@@ -74,6 +104,22 @@ describe('resumable release operations', () => {
       expect.arrayContaining(['create', 'dependent-v2.0.0']),
       { stdio: 'inherit' },
     )
+  })
+
+  it.each([
+    ['npm', 'npm error code E401'],
+    ['npm', 'npm error code E429'],
+    ['npm', 'getaddrinfo ENOTFOUND registry.npmjs.org'],
+    ['gh', 'gh: HTTP 401'],
+    ['gh', 'gh: HTTP 500'],
+    ['gh', 'request failed: connection reset'],
+  ])('propagates %s lookup failures', (failedExecutable, message) => {
+    childProcess.execFileSync.mockImplementation((executable) => {
+      if (executable === failedExecutable) throw commandError(message)
+      return Buffer.from('2.0.0')
+    })
+
+    expect(() => remoteReleaseComplete(plan)).toThrow('lookup failed')
   })
 })
 
@@ -119,3 +165,10 @@ describe('release git state', () => {
     )
   })
 })
+
+function commandError(stderr: string): Error {
+  return Object.assign(new Error('lookup failed'), {
+    stderr,
+    stdout: '',
+  })
+}
