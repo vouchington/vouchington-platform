@@ -17,24 +17,24 @@ export function selectMembershipOffer<Offer, Interval, Currency, Identity>(
   offers: readonly Offer[],
   options: MembershipOfferSelectionOptions<Offer, Interval, Currency, Identity>,
 ): Offer | undefined {
-  let selected: Offer | undefined
-  let selectedIsPreferred = false
+  let selected: { offer: Offer; identity: Identity; isPreferred: boolean } | undefined
 
   for (const offer of offers) {
     if (options.getInterval(offer) !== options.interval) continue
     const isPreferred = options.getCurrency(offer) === options.preferredCurrency
-    if (
-      selected === undefined ||
-      (isPreferred && !selectedIsPreferred) ||
-      (isPreferred === selectedIsPreferred &&
-        options.compareIdentity(options.getIdentity(offer), options.getIdentity(selected)) > 0)
-    ) {
-      selected = offer
-      selectedIsPreferred = isPreferred
+    if (selected === undefined || (isPreferred && !selected.isPreferred)) {
+      selected = { offer, identity: options.getIdentity(offer), isPreferred }
+      continue
+    }
+    if (isPreferred === selected.isPreferred) {
+      const identity = options.getIdentity(offer)
+      if (options.compareIdentity(identity, selected.identity) > 0) {
+        selected = { offer, identity, isPreferred }
+      }
     }
   }
 
-  return selected
+  return selected?.offer
 }
 
 /** Groups offers by a caller-defined canonical product identity without filtering or copying them. */

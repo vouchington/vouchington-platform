@@ -1,4 +1,4 @@
-import { describe, expect, expectTypeOf, it } from 'vitest'
+import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 import {
   buildMembershipBenefitCatalog,
   classifyMembershipChange,
@@ -136,6 +136,7 @@ describe('membership offer selection', () => {
       { id: 'usd-new', product: 'basic', interval: 'month', currency: 'usd', revision: 3 },
       { id: 'cad-old', product: 'basic', interval: 'month', currency: 'cad', revision: 1 },
       { id: 'cad-new', product: 'basic', interval: 'month', currency: 'cad', revision: 2 },
+      { id: 'usd-latest', product: 'basic', interval: 'month', currency: 'usd', revision: 4 },
       { id: 'yearly', product: 'basic', interval: 'year', currency: 'cad', revision: 4 },
     ]
 
@@ -164,6 +165,18 @@ describe('membership offer selection', () => {
     const equallyNew = { ...first, id: 'second' }
 
     expect(selectMembershipOffer([first, equallyNew], selection)).toBe(first)
+  })
+
+  it('reads each offer identity once while choosing the newest match', () => {
+    const offers: Offer[] = [
+      { id: 'newest', product: 'basic', interval: 'month', currency: 'cad', revision: 3 },
+      { id: 'older', product: 'basic', interval: 'month', currency: 'cad', revision: 2 },
+      { id: 'oldest', product: 'basic', interval: 'month', currency: 'cad', revision: 1 },
+    ]
+    const getIdentity = vi.fn((offer: Offer) => offer.revision)
+
+    expect(selectMembershipOffer(offers, { ...selection, getIdentity })).toBe(offers[0])
+    expect(getIdentity).toHaveBeenCalledTimes(offers.length)
   })
 
   it('deduplicates by the caller-owned canonical product identity', () => {
