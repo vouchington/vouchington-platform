@@ -54,8 +54,8 @@ export function indexAndValidate(packages: WorkspacePackage[]): Map<string, Work
   const byName = new Map<string, WorkspacePackage>()
   for (const workspacePackage of packages) {
     const { name, version } = workspacePackage.manifest
-    if (!name || byName.has(name))
-      throw new Error(`Duplicate or missing workspace package name: ${name}`)
+    if (!name) throw new Error('Missing workspace package name')
+    if (byName.has(name)) throw new Error(`Duplicate workspace package name: ${name}`)
     if (!semver.valid(version)) throw new Error(`Invalid version for ${name}: ${version}`)
     byName.set(name, workspacePackage)
   }

@@ -300,6 +300,7 @@ describe('workspace release planning', () => {
         '@vouchington/utils',
         'minor',
         planPath,
+        join(root, '.github-release-plan.json'),
       ],
       { cwd: root },
     )

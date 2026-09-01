@@ -21,7 +21,7 @@ describe('release workflow', () => {
     const verify = position('node scripts/release.mts verify')
     const pack = position('node scripts/release.mts pack')
     const tag = position('node scripts/release.mts tag')
-    const push = position('git push origin HEAD:main --follow-tags')
+    const push = position('git push --atomic origin HEAD:main --follow-tags')
     const publish = position('node scripts/release.mts publish')
     const release = position('node scripts/release.mts github-release')
 
@@ -40,6 +40,14 @@ describe('release workflow', () => {
     expect(workflow).not.toContain(
       'working-directory: packages/${{ steps.bump.outputs.directory }}',
     )
+  })
+
+  it('persists release state and makes recovery operations idempotent', () => {
+    expect(workflow).toContain('".github/release-plan.json"')
+    expect(workflow).toContain(
+      'git add packages/*/package.json pnpm-lock.yaml .github/release-plan.json',
+    )
+    expect(workflow).toContain('if ! git diff --cached --quiet; then')
   })
 })
 

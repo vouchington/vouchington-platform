@@ -15,7 +15,7 @@ export { loadWorkspacePackages, type WorkspacePackage } from './release-workspac
 export const releaseTypes = ['patch', 'minor', 'major'] as const
 export type ReleaseType = (typeof releaseTypes)[number]
 
-export interface PlannedRelease {
+interface PlannedRelease {
   bump: ReleaseType
   directory: string
   fromVersion: string
@@ -29,6 +29,8 @@ export interface WorkspaceReleasePlan {
   releases: PlannedRelease[]
   selectedPackage: string
 }
+
+export type StoredReleasePlan = Omit<WorkspaceReleasePlan, 'packages'>
 
 const bumpStrength: Record<ReleaseType, number> = { patch: 1, minor: 2, major: 3 }
 

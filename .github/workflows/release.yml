@@ -106,7 +106,10 @@ jobs:
         env:
           PACKAGE: ${{ inputs.package }}
           BUMP: ${{ inputs.bump }}
-        run: node scripts/release.mts prepare "$PACKAGE" "$BUMP" "$RUNNER_TEMP/release-plan.json"
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: >-
+          node scripts/release.mts prepare "$PACKAGE" "$BUMP"
+          "$RUNNER_TEMP/release-plan.json" ".github/release-plan.json"
       - run: pnpm install --lockfile-only
       - run: pnpm install --frozen-lockfile
       - run: pnpm run typecheck
@@ -127,16 +130,17 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Commit and tag release plan
-        env:
-          PACKAGE: ${{ inputs.package }}
         run: |
+          PACKAGE=$(node scripts/release.mts selected-package "$RUNNER_TEMP/release-plan.json")
           VERSION=$(node scripts/release.mts selected-version "$RUNNER_TEMP/release-plan.json")
           SUMMARY=$(node scripts/release.mts summary "$RUNNER_TEMP/release-plan.json")
-          git add packages/*/package.json pnpm-lock.yaml
-          git commit -m "chore(release): ${PACKAGE} v${VERSION}" -m "$SUMMARY"
+          git add packages/*/package.json pnpm-lock.yaml .github/release-plan.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(release): ${PACKAGE} v${VERSION}" -m "$SUMMARY"
+          fi
           node scripts/release.mts tag "$RUNNER_TEMP/release-plan.json"
 
-      - run: git push origin HEAD:main --follow-tags
+      - run: git push --atomic origin HEAD:main --follow-tags
 
       - name: Publish planned packages with npm OIDC
         run: node scripts/release.mts publish "$RUNNER_TEMP/release-plan.json"
