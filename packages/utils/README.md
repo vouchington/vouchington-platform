@@ -9,6 +9,7 @@ import { createMoneyCatalog } from '@vouchington/utils/money'
 import { serializeCookie } from '@vouchington/utils/cookies'
 import { bestAcceptLanguageMatch } from '@vouchington/utils/language-tags'
 import { createMessageTranslator } from '@vouchington/utils/message-catalog'
+import { createReportInputParser } from '@vouchington/utils/moderation'
 ```
 
 ## Subpaths
@@ -35,6 +36,8 @@ import { createMessageTranslator } from '@vouchington/utils/message-catalog'
   formatting, text normalization, title casing, and word/sentence helpers.
 - `gtin`, `bigint-ids`, and `validation`: GTIN predicates, canonical positive PostgreSQL bigint IDs,
   and basic email/UUID predicates.
+- `moderation`: caller-configured report target, reason, identifier, note, and cross-field input
+  validation. Applications own catalogs, policy, error mapping, persistence, and HTTP behavior.
 - `query` and `query-string`: generic array/boolean/number parsing, bounded integer parsing, and
   query-string serialization. Cursor parsing intentionally belongs to `@vouchington/pagination`.
 - `slugs` and `urls`: ASCII-only slugification and URL/hostname primitives. URL hostname helpers

@@ -130,6 +130,11 @@
       "import": "./dist/validation.mjs",
       "default": "./dist/validation.mjs"
     },
+    "./moderation": {
+      "types": "./dist/moderation.d.mts",
+      "import": "./dist/moderation.mjs",
+      "default": "./dist/moderation.mjs"
+    },
     "./async": {
       "types": "./dist/async.d.mts",
       "import": "./dist/async.mjs",
