@@ -219,7 +219,7 @@ importers:
   packages/typed-entities:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.4.0
+        specifier: ^0.5.0
         version: link:../utils
 
   packages/utils: {}
