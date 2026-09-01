@@ -42,7 +42,10 @@ Offer selection is callback-driven. Applications define their interval and curre
 identity, and identity ordering. `selectMembershipOffer` filters to the requested interval, uses the
 preferred currency when one is available, then chooses the largest supplied identity. It otherwise
 falls back to the largest identity in any matching currency. Equal identities keep the first offer.
-`dedupeMembershipOffersByProduct` keeps the first offer for each canonical product identity.
+`groupMembershipOffersByProduct` groups without filtering. `dedupeMembershipOffersByProduct` keeps
+the first offer for each canonical product identity by default, or accepts a per-product resolver
+that can compose `selectMembershipOffer` and omit unmatched products. Neither utility defines
+product, currency, interval, or provider policy.
 
 The status utilities use the vocabulary `active`, `past_due`, `paused`, `cancelled`, and `expired`.
 The package does not define state transitions, database tables, products, entitlements,

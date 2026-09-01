@@ -37,16 +37,37 @@ export function selectMembershipOffer<Offer, Interval, Currency, Identity>(
   return selected
 }
 
-/** Preserves the first offer for each caller-defined canonical product identity. */
+/** Groups offers by a caller-defined canonical product identity without filtering or copying them. */
+export function groupMembershipOffersByProduct<Offer, ProductIdentity>(
+  offers: readonly Offer[],
+  getProductIdentity: (offer: Offer) => ProductIdentity,
+): Map<ProductIdentity, Offer[]> {
+  const grouped = new Map<ProductIdentity, Offer[]>()
+  for (const offer of offers) {
+    const identity = getProductIdentity(offer)
+    const entries = grouped.get(identity)
+    if (entries) entries.push(offer)
+    else grouped.set(identity, [offer])
+  }
+  return grouped
+}
+
+/**
+ * Keeps one caller-resolved offer per canonical product identity in first-product occurrence order.
+ *
+ * Without a resolver it preserves the first offer from each product group. A resolver can compose
+ * another generic primitive, such as `selectMembershipOffer`, or exclude a product by returning
+ * `undefined`.
+ */
 export function dedupeMembershipOffersByProduct<Offer, ProductIdentity>(
   offers: readonly Offer[],
   getProductIdentity: (offer: Offer) => ProductIdentity,
+  resolveProductOffers: (offers: readonly Offer[]) => Offer | undefined = (entries) => entries[0],
 ): Offer[] {
-  const identities = new Set<ProductIdentity>()
-  return offers.filter((offer) => {
-    const identity = getProductIdentity(offer)
-    if (identities.has(identity)) return false
-    identities.add(identity)
-    return true
-  })
+  return [...groupMembershipOffersByProduct(offers, getProductIdentity).values()].flatMap(
+    (productOffers) => {
+      const offer = resolveProductOffers(productOffers)
+      return offer === undefined ? [] : [offer]
+    },
+  )
 }

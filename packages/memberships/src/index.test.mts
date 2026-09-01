@@ -3,6 +3,7 @@ import {
   buildMembershipBenefitCatalog,
   classifyMembershipChange,
   dedupeMembershipOffersByProduct,
+  groupMembershipOffersByProduct,
   groupMembershipSkusByPlan,
   isTerminalMembershipStatus,
   resolveMembershipBenefit,
@@ -184,5 +185,23 @@ describe('membership offer selection', () => {
     expect(deduplicated).toHaveLength(2)
     expect(deduplicated[0]).toBe(first)
     expect(deduplicated[1]).toBe(premium)
+  })
+
+  it('groups and resolves each canonical product without product-specific policy', () => {
+    const offers: Offer[] = [
+      { id: 'basic-usd', product: 'basic', interval: 'month', currency: 'usd', revision: 3 },
+      { id: 'basic-cad', product: 'basic', interval: 'month', currency: 'cad', revision: 2 },
+      { id: 'premium-cad', product: 'premium', interval: 'month', currency: 'cad', revision: 1 },
+    ]
+    const grouped = groupMembershipOffersByProduct(offers, (offer) => offer.product)
+
+    expect(grouped.get('basic')).toEqual([offers[0], offers[1]])
+    expect(
+      dedupeMembershipOffersByProduct(
+        offers,
+        (offer) => offer.product,
+        (productOffers) => selectMembershipOffer(productOffers, selection),
+      ),
+    ).toEqual([offers[1], offers[2]])
   })
 })
