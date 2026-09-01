@@ -27,5 +27,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["packages/*/src/**/*.mts", "packages/*/src/**/*.d.ts"]
+  "include": ["packages/*/src/**/*.mts", "packages/*/src/**/*.d.ts", "scripts/**/*.mts"]
 }

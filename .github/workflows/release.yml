@@ -44,10 +44,6 @@ on:
           - patch
           - minor
           - major
-          - premajor
-          - preminor
-          - prepatch
-          - prerelease
 
 permissions:
   contents: write
@@ -61,7 +57,7 @@ jobs:
   release:
     # knip's oxc-parser OOMs on ubuntu-slim; match the CI test job.
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:18@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
@@ -105,6 +101,16 @@ jobs:
           package-manager-cache: false
 
       - run: pnpm install --frozen-lockfile
+      - name: Prepare release plan
+        env:
+          PACKAGE: ${{ inputs.package }}
+          BUMP: ${{ inputs.bump }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: >-
+          node scripts/release.mts prepare "$PACKAGE" "$BUMP"
+          "$RUNNER_TEMP/release-plan.json" ".github/release-plan.json"
+      - run: pnpm install --lockfile-only
+      - run: pnpm install --frozen-lockfile
       - run: pnpm run typecheck
       - run: pnpm run build
       - run: pnpm run lint
@@ -112,57 +118,40 @@ jobs:
       - run: pnpm run actionlint
 
       - name: Verify published runtime dependencies
-        env:
-          PACKAGE: ${{ inputs.package }}
-        run: |
-          node <<'NODE'
-          const { execFileSync } = require('node:child_process')
-          const { readFileSync, readdirSync } = require('node:fs')
-          const directory = readdirSync('packages', { withFileTypes: true })
-            .filter((entry) => entry.isDirectory())
-            .find((entry) => JSON.parse(readFileSync(`packages/${entry.name}/package.json`, 'utf8')).name === process.env.PACKAGE)
-          if (!directory) throw new Error(`Unknown package ${process.env.PACKAGE}`)
-          const manifest = JSON.parse(readFileSync(`packages/${directory.name}/package.json`, 'utf8'))
-          for (const [name, range] of Object.entries(manifest.dependencies ?? {})) {
-            if (!name.startsWith('@vouchington/')) continue
-            execFileSync('npm', ['view', `${name}@${range}`, 'version'], { stdio: 'inherit' })
-          }
-          NODE
+        run: node scripts/release.mts verify "$RUNNER_TEMP/release-plan.json"
+
+      - name: Dry-run planned packages
+        run: node scripts/release.mts pack "$RUNNER_TEMP/release-plan.json"
 
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Bump version, commit, tag
-        id: bump
-        env:
-          PACKAGE: ${{ inputs.package }}
-          BUMP: ${{ inputs.bump }}
+      - name: Commit and tag release plan
         run: |
-          DIRECTORY=$(node -p "require('node:fs').readdirSync('packages', { withFileTypes: true }).filter(entry => entry.isDirectory()).find(entry => JSON.parse(require('node:fs').readFileSync('packages/' + entry.name + '/package.json', 'utf8')).name === process.env.PACKAGE)?.name ?? ''")
-          if [ -z "$DIRECTORY" ]; then
-            echo "::error::Unknown package $PACKAGE" >&2
-            exit 1
+          if [ "$(node scripts/release.mts is-resume "$RUNNER_TEMP/release-plan.json")" = "true" ]; then
+            exit 0
           fi
-          pnpm --filter "$PACKAGE" version "$BUMP" --no-git-tag-version
-          VERSION=$(node -p "require('./packages/${DIRECTORY}/package.json').version")
-          git add "packages/${DIRECTORY}/package.json" pnpm-lock.yaml
-          git commit -m "chore(release): ${PACKAGE} v${VERSION}"
-          git tag -a "${DIRECTORY}-v${VERSION}" -m "${PACKAGE} v${VERSION}"
-          echo "directory=$DIRECTORY" >> "$GITHUB_OUTPUT"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          PACKAGE=$(node scripts/release.mts selected-package "$RUNNER_TEMP/release-plan.json")
+          VERSION=$(node scripts/release.mts selected-version "$RUNNER_TEMP/release-plan.json")
+          SUMMARY=$(node scripts/release.mts summary "$RUNNER_TEMP/release-plan.json")
+          git add packages/*/package.json pnpm-lock.yaml .github/release-plan.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(release): ${PACKAGE} v${VERSION}" -m "$SUMMARY"
+          fi
+          node scripts/release.mts tag "$RUNNER_TEMP/release-plan.json"
 
-      - run: git push origin HEAD:main --follow-tags
+      - name: Push release commit and tags
+        run: |
+          if [ "$(node scripts/release.mts is-resume "$RUNNER_TEMP/release-plan.json")" = "false" ]; then
+            git push --atomic origin HEAD:main --follow-tags
+          fi
 
-      - name: Publish with npm OIDC
-        working-directory: packages/${{ steps.bump.outputs.directory }}
-        run: npm publish --access public
+      - name: Publish planned packages with npm OIDC
+        run: node scripts/release.mts publish "$RUNNER_TEMP/release-plan.json"
 
-      - name: Create GitHub release
+      - name: Create GitHub releases
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        run: |
-          gh release create "${{ steps.bump.outputs.directory }}-v${{ steps.bump.outputs.version }}" \
-            --title "${{ inputs.package }} v${{ steps.bump.outputs.version }}" \
-            --generate-notes
+        run: node scripts/release.mts github-release "$RUNNER_TEMP/release-plan.json"
