@@ -36,7 +36,7 @@
     "prepack": "pnpm run build"
   },
   "dependencies": {
-    "@vouchington/utils": "^0.4.0"
+    "@vouchington/utils": "^0.5.0"
   },
   "engines": {
     "node": ">=24.0.0"
