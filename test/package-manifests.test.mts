@@ -21,7 +21,6 @@ const packages = [
   'worker-runtime',
   'rate-limit',
   'reviews',
-  'moderation',
   'typed-entities',
 ]
 

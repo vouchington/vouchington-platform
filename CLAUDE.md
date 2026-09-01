@@ -27,7 +27,6 @@ docker run --rm -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:18
 - `@vouchington/utils` — dependency-free explicit-subpath utilities
 - `@vouchington/session-jwt` — portable RS512 JWT primitives
 - `@vouchington/pagination` — cursor codecs, guards, and configurable query parsing
-- `@vouchington/moderation` — configurable report intake, queue-claim helpers, and Context handler factories
 - `@vouchington/queue-errors` — GlideMQ retry classification and rate-limit helpers
 - `@vouchington/crawler-html` — HTML content decoding and extraction
 - `@vouchington/embeds` — policy-injected HTML unfurl and oEmbed resolution

@@ -1,5 +1,13 @@
-import { ReportValidationError } from './types.mts'
-import type { ReportDraft } from './types.mts'
+interface ReportTarget<TType extends string, TId> {
+  type: TType
+  id: TId
+}
+
+interface ReportDraft<TType extends string, TId, TReason extends string> {
+  target: ReportTarget<TType, TId>
+  reason: TReason
+  note: string | null
+}
 
 export interface ReportInputConfig<TType extends string, TId, TReason extends string> {
   targetTypes: readonly TType[]
@@ -9,7 +17,7 @@ export interface ReportInputConfig<TType extends string, TId, TReason extends st
   validate?(draft: ReportDraft<TType, TId, TReason>): void
 }
 
-export interface RawReportInput {
+interface RawReportInput {
   targetType?: unknown
   targetId?: unknown
   reason?: unknown
@@ -20,6 +28,23 @@ export interface ReportInputParser<TType extends string, TId, TReason extends st
   parse(raw: RawReportInput): ReportDraft<TType, TId, TReason>
   readonly targetTypes: readonly TType[]
   readonly reasons: readonly TReason[]
+}
+
+export type ReportValidationCode =
+  | 'invalid_target_type'
+  | 'invalid_target_identifier'
+  | 'invalid_reason'
+  | 'invalid_note'
+  | 'note_too_long'
+
+export class ReportValidationError extends Error {
+  readonly code: ReportValidationCode
+
+  constructor(code: ReportValidationCode, message: string) {
+    super(message)
+    this.name = 'ReportValidationError'
+    this.code = code
+  }
 }
 
 export function createReportInputParser<TType extends string, TId, TReason extends string>(
@@ -69,13 +94,13 @@ function readonlyCatalog<T extends string>(values: readonly T[], name: string): 
 function enumValue<T extends string>(
   value: unknown,
   catalog: readonly T[],
-  code: ReportValidationError['code'],
+  code: ReportValidationCode,
   name: string,
 ): T {
   if (typeof value !== 'string' || !catalog.includes(value as T)) invalid(code, name)
   return value as T
 }
 
-function invalid(code: ReportValidationError['code'], name: string): never {
+function invalid(code: ReportValidationCode, name: string): never {
   throw new ReportValidationError(code, `Invalid ${name}`)
 }

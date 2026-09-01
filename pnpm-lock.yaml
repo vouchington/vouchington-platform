@@ -130,12 +130,6 @@ importers:
 
   packages/memberships: {}
 
-  packages/moderation:
-    dependencies:
-      '@jongleberry/api-server':
-        specifier: ^2.1.0
-        version: 2.1.0
-
   packages/pagination:
     dependencies:
       http-errors:

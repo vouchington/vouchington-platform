@@ -15,7 +15,6 @@ const packages = [
   'worker-runtime',
   'rate-limit',
   'reviews',
-  'moderation',
   'typed-entities',
 ] as const
 
@@ -62,7 +61,6 @@ describe('new package manifests and exports', () => {
     expect(readManifest('worker-runtime').dependencies).toBeUndefined()
     expectDependencyNames('rate-limit', ['valkyries'])
     expectDependencyNames('reviews', ['@jongleberry/api-server'])
-    expectDependencyNames('moderation', ['@jongleberry/api-server'])
     expectDependencyNames('typed-entities', ['@vouchington/utils'])
   })
 
