@@ -30,7 +30,7 @@ switch (command) {
     verify(readPlan(expectArguments(arguments_, 1)[0]))
     break
   case 'pack':
-    runForEach(readPlan(expectArguments(arguments_, 1)[0]), 'npm', ['pack', '--dry-run'])
+    runForEach(readPlan(expectArguments(arguments_, 1)[0]), 'pnpm', ['pack', '--dry-run'])
     break
   case 'tag':
     tag(readPlan(expectArguments(arguments_, 1)[0]))

@@ -49,6 +49,15 @@ describe('release workflow', () => {
     )
     expect(workflow).toContain('if ! git diff --cached --quiet; then')
   })
+
+  it('uses pnpm to convert workspace protocols while packing and publishing', () => {
+    expect(readFileSync('scripts/release.mts', 'utf8')).toContain(
+      "runForEach(readPlan(expectArguments(arguments_, 1)[0]), 'pnpm', ['pack', '--dry-run'])",
+    )
+    expect(readFileSync('scripts/release-remote.mts', 'utf8')).toContain(
+      "execFileSync('pnpm', ['publish', '--access', 'public', '--no-git-checks']",
+    )
+  })
 })
 
 function position(value: string): number {

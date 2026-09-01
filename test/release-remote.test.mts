@@ -64,8 +64,8 @@ describe('resumable release operations', () => {
     createMissingGitHubReleases(plan)
 
     expect(childProcess.execFileSync).toHaveBeenCalledWith(
-      'npm',
-      ['publish', '--access', 'public'],
+      'pnpm',
+      ['publish', '--access', 'public', '--no-git-checks'],
       expect.objectContaining({ cwd: 'packages/dependent' }),
     )
     expect(childProcess.execFileSync).toHaveBeenCalledWith(

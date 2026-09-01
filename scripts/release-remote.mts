@@ -11,7 +11,7 @@ export function remoteReleaseComplete(plan: StoredReleasePlan): boolean {
 export function publishMissing(plan: StoredReleasePlan): void {
   for (const release of plan.releases) {
     if (versionExists(release.name, release.toVersion)) continue
-    execFileSync('npm', ['publish', '--access', 'public'], {
+    execFileSync('pnpm', ['publish', '--access', 'public', '--no-git-checks'], {
       cwd: `packages/${release.directory}`,
       stdio: 'inherit',
     })
