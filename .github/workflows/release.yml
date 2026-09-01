@@ -33,7 +33,6 @@ on:
           - '@vouchington/media'
           - '@vouchington/wikimedia'
           - '@vouchington/memberships'
-          - '@vouchington/rate-limit'
           - '@vouchington/reviews'
           - '@vouchington/typed-entities'
       bump:
