@@ -12,6 +12,34 @@ export type MoneyRange<Code extends string = string> = {
   minimum: Money<Code>
   maximum: Money<Code> | null
 }
+export type ProportionalRounding = 'down' | 'up'
+
+/**
+ * Allocates a non-negative integer amount by an inclusive fraction.
+ *
+ * The result is exact when `amount * numerator` divides by `denominator`; otherwise callers
+ * explicitly select integer rounding down or up. All arithmetic is performed with `bigint` so
+ * safe integer inputs never pass through floating-point division.
+ */
+export function allocateProportionalAmount(
+  amount: number,
+  numerator: number,
+  denominator: number,
+  rounding: ProportionalRounding,
+): number {
+  if (!isAmount(amount) || !isAmount(numerator) || !isAmount(denominator))
+    throw new TypeError('Proportional allocation requires non-negative safe integer inputs')
+  if (denominator === 0 || numerator > denominator)
+    throw new RangeError('Proportional allocation requires a fraction from zero through one')
+  if (rounding !== 'down' && rounding !== 'up')
+    throw new TypeError('Proportional allocation rounding must be down or up')
+
+  const product = BigInt(amount) * BigInt(numerator)
+  const divisor = BigInt(denominator)
+  const quotient = product / divisor
+  const result = rounding === 'up' && product % divisor !== 0n ? quotient + 1n : quotient
+  return Number(result)
+}
 
 export function createMoneyCatalog<const Currencies extends readonly Currency[]>(
   entries: Currencies,

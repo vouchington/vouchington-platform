@@ -23,7 +23,9 @@ import { createReportInputParser } from '@vouchington/utils/moderation'
 - `request-client-info`: `createClientInfoParser(config)` validates caller-selected headers,
   families, platforms, compatibility, and versions.
 - `money`: `createMoneyCatalog(currencies, scale)` supplies exact integer parsing and validation for
-  the caller's catalog.
+  the caller's catalog. `allocateProportionalAmount(amount, numerator, denominator, rounding)`
+  allocates an inclusive fraction with `down` or `up` integer rounding chosen explicitly by the
+  caller; it uses exact integer arithmetic rather than floating-point division.
 - `env-contract`: `groupEnvContracts()` and `normalizeEnvContractGroups()` produce delimiter-safe
   metadata keys and surface/sensitivity lookups.
 - `cookies`: `serializeCookie(name, value, attributes)` validates cookie grammar and requires the

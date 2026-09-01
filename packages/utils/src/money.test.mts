@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { createMoneyCatalog, parsePostgresMoneyAmount } from './money.mts'
+import {
+  allocateProportionalAmount,
+  createMoneyCatalog,
+  parsePostgresMoneyAmount,
+} from './money.mts'
 
 const money = createMoneyCatalog(
   [
@@ -103,5 +107,35 @@ describe('money catalog', () => {
         ),
       ),
     ).toBe(false)
+  })
+})
+
+describe('allocateProportionalAmount', () => {
+  it('uses exact integer arithmetic with caller-selected rounding', () => {
+    expect(allocateProportionalAmount(100, 1, 4, 'down')).toBe(25)
+    expect(allocateProportionalAmount(100, 1, 4, 'up')).toBe(25)
+    expect(allocateProportionalAmount(101, 1, 4, 'down')).toBe(25)
+    expect(allocateProportionalAmount(101, 1, 4, 'up')).toBe(26)
+    expect(allocateProportionalAmount(1, 1, 3, 'down')).toBe(0)
+    expect(allocateProportionalAmount(1, 1, 3, 'up')).toBe(1)
+    expect(allocateProportionalAmount(0, 1, 3, 'up')).toBe(0)
+  })
+
+  it('avoids floating-point precision loss for safe integer inputs', () => {
+    expect(allocateProportionalAmount(9_007_199_254_740_991, 1, 3, 'down')).toBe(
+      3_002_399_751_580_330,
+    )
+    expect(allocateProportionalAmount(9_007_199_254_740_991, 1, 3, 'up')).toBe(
+      3_002_399_751_580_331,
+    )
+  })
+
+  it('rejects fractions and rounding modes outside its allocation contract', () => {
+    expect(() => allocateProportionalAmount(-1, 1, 1, 'down')).toThrow(TypeError)
+    expect(() => allocateProportionalAmount(1, -1, 1, 'down')).toThrow(TypeError)
+    expect(() => allocateProportionalAmount(1, 1, 0, 'down')).toThrow(RangeError)
+    expect(() => allocateProportionalAmount(1, 2, 1, 'down')).toThrow(RangeError)
+    expect(() => allocateProportionalAmount(1, 1.5, 2, 'down')).toThrow(TypeError)
+    expect(() => allocateProportionalAmount(1, 1, 2, 'nearest' as never)).toThrow(TypeError)
   })
 })
