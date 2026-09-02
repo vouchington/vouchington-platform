@@ -1,10 +1,13 @@
-import { describe, expect, expectTypeOf, it } from 'vitest'
+import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 import {
   buildMembershipBenefitCatalog,
   classifyMembershipChange,
+  dedupeMembershipOffersByProduct,
+  groupMembershipOffersByProduct,
   groupMembershipSkusByPlan,
   isTerminalMembershipStatus,
   resolveMembershipBenefit,
+  selectMembershipOffer,
 } from './index.mts'
 
 describe('membership status and changes', () => {
@@ -107,5 +110,126 @@ describe('SKU grouping and generic catalogs', () => {
         new Set(['requests']),
       ),
     ).toThrow('Duplicate membership benefit')
+  })
+})
+
+describe('membership offer selection', () => {
+  type Offer = {
+    id: string
+    product: string
+    interval: 'month' | 'year'
+    currency: 'cad' | 'eur' | 'usd'
+    revision: number
+  }
+
+  const selection = {
+    interval: 'month' as const,
+    preferredCurrency: 'cad' as const,
+    getInterval: (offer: Offer) => offer.interval,
+    getCurrency: (offer: Offer) => offer.currency,
+    getIdentity: (offer: Offer) => offer.revision,
+    compareIdentity: (left: number, right: number) => left - right,
+  }
+
+  it('selects the newest preferred-currency offer for the requested interval', () => {
+    const offers: Offer[] = [
+      { id: 'usd-new', product: 'basic', interval: 'month', currency: 'usd', revision: 3 },
+      { id: 'cad-old', product: 'basic', interval: 'month', currency: 'cad', revision: 1 },
+      { id: 'cad-new', product: 'basic', interval: 'month', currency: 'cad', revision: 2 },
+      { id: 'usd-latest', product: 'basic', interval: 'month', currency: 'usd', revision: 4 },
+      { id: 'yearly', product: 'basic', interval: 'year', currency: 'cad', revision: 4 },
+    ]
+
+    expect(selectMembershipOffer(offers, selection)).toBe(offers[2])
+  })
+
+  it('falls back to the newest interval match when the preferred currency is unavailable', () => {
+    const offers: Offer[] = [
+      { id: 'usd-old', product: 'basic', interval: 'month', currency: 'usd', revision: 1 },
+      { id: 'eur-new', product: 'basic', interval: 'month', currency: 'eur', revision: 2 },
+      { id: 'yearly', product: 'basic', interval: 'year', currency: 'cad', revision: 3 },
+    ]
+
+    expect(selectMembershipOffer(offers, selection)).toBe(offers[1])
+    expect(selectMembershipOffer([], selection)).toBeUndefined()
+  })
+
+  it('keeps the first offer when stable identities compare equally', () => {
+    const first: Offer = {
+      id: 'first',
+      product: 'basic',
+      interval: 'month',
+      currency: 'cad',
+      revision: 1,
+    }
+    const equallyNew = { ...first, id: 'second' }
+
+    expect(selectMembershipOffer([first, equallyNew], selection)).toBe(first)
+  })
+
+  it('reads each offer identity once while choosing the newest match', () => {
+    const offers: Offer[] = [
+      { id: 'newest', product: 'basic', interval: 'month', currency: 'cad', revision: 3 },
+      { id: 'older', product: 'basic', interval: 'month', currency: 'cad', revision: 2 },
+      { id: 'oldest', product: 'basic', interval: 'month', currency: 'cad', revision: 1 },
+    ]
+    const getIdentity = vi.fn((offer: Offer) => offer.revision)
+
+    expect(selectMembershipOffer(offers, { ...selection, getIdentity })).toBe(offers[0])
+    expect(getIdentity).toHaveBeenCalledTimes(offers.length)
+  })
+
+  it('deduplicates by the caller-owned canonical product identity', () => {
+    const first: Offer = {
+      id: 'price-one',
+      product: 'product-basic',
+      interval: 'month',
+      currency: 'cad',
+      revision: 1,
+    }
+    const duplicate = { ...first, id: 'price-two', revision: 2 }
+    const premium = { ...first, id: 'price-three', product: 'product-premium' }
+
+    const deduplicated = dedupeMembershipOffersByProduct(
+      [first, duplicate, premium],
+      (offer) => offer.product,
+    )
+
+    expect(deduplicated).toHaveLength(2)
+    expect(deduplicated[0]).toBe(first)
+    expect(deduplicated[1]).toBe(premium)
+  })
+
+  it('groups and resolves each canonical product without product-specific policy', () => {
+    const offers: Offer[] = [
+      { id: 'basic-usd', product: 'basic', interval: 'month', currency: 'usd', revision: 3 },
+      { id: 'basic-cad', product: 'basic', interval: 'month', currency: 'cad', revision: 2 },
+      { id: 'premium-cad', product: 'premium', interval: 'month', currency: 'cad', revision: 1 },
+    ]
+    const grouped = groupMembershipOffersByProduct(offers, (offer) => offer.product)
+
+    expect(grouped.get('basic')).toEqual([offers[0], offers[1]])
+    expect(
+      dedupeMembershipOffersByProduct(
+        offers,
+        (offer) => offer.product,
+        (productOffers) => selectMembershipOffer(productOffers, selection),
+      ),
+    ).toEqual([offers[1], offers[2]])
+  })
+
+  it('omits a canonical product when its resolver returns undefined', () => {
+    const offers: Offer[] = [
+      { id: 'basic', product: 'basic', interval: 'month', currency: 'cad', revision: 1 },
+      { id: 'premium', product: 'premium', interval: 'month', currency: 'cad', revision: 1 },
+    ]
+
+    expect(
+      dedupeMembershipOffersByProduct(
+        offers,
+        (offer) => offer.product,
+        (productOffers) => (productOffers[0]!.product === 'basic' ? undefined : productOffers[0]),
+      ),
+    ).toEqual([offers[1]])
   })
 })
