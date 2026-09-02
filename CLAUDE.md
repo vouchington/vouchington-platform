@@ -23,11 +23,13 @@ docker run --rm -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:18
 
 ## Packages
 
+- `@vouchington/auth` — injected WebAuthn passkey ceremony primitives
 - `@vouchington/postgres` — PostgreSQL runtime factory
 - `@vouchington/utils` — dependency-free explicit-subpath utilities
 - `@vouchington/session-jwt` — portable RS512 JWT primitives
 - `@vouchington/pagination` — cursor codecs, guards, and configurable query parsing
 - `@vouchington/queue-errors` — GlideMQ retry classification and rate-limit helpers
+- `@vouchington/worker-runtime` — queue selection and GlideMQ worker/schedule loading
 - `@vouchington/crawler-html` — HTML content decoding and extraction
 - `@vouchington/embeds` — policy-injected HTML unfurl and oEmbed resolution
 - `@vouchington/rss-parser` — RSS, Atom, and JSON feed parsing
@@ -35,7 +37,11 @@ docker run --rm -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:18
 - `@vouchington/robots` — transport- and cache-injected robots.txt evaluation
 - `@vouchington/browser-crawl` — injected Playwright rendered-page collection
 - `@vouchington/domain-verification` — DNS TXT and secure-transport verification primitives
+- `@vouchington/http-transport` — redirect-safe transport with injected fetch/address pinning
+- `@vouchington/image-resize` — Sharp transforms, file output, metadata, and negotiation
 - `@vouchington/media` — media validation, stream lifecycle, and injected S3 primitives
+- `@vouchington/wikimedia` — injected Wikimedia search and page-summary client
+- `@vouchington/memberships` — membership catalog, SKU grouping, and status utilities
 - `@vouchington/typed-entities` — injected transaction-scoped typed entity semantics
 
 - `@vouchington/csv` — BOM-safe CSV parsing and spreadsheet-safe serialization

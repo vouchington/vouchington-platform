@@ -1,7 +1,7 @@
 {
   "name": "@vouchington/auth",
   "version": "0.0.1",
-  "description": "Injected authentication protocol engines and API-server handler factories.",
+  "description": "Injected WebAuthn passkey ceremony primitives.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/auth#readme",
   "bugs": {
     "url": "https://github.com/vouchington/vouchington-platform/issues"
@@ -26,11 +26,6 @@
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs",
       "default": "./dist/index.mjs"
-    },
-    "./api-server": {
-      "types": "./dist/api-server.d.mts",
-      "import": "./dist/api-server.mjs",
-      "default": "./dist/api-server.mjs"
     }
   },
   "publishConfig": {
@@ -41,17 +36,7 @@
     "prepack": "pnpm run build"
   },
   "dependencies": {
-    "@simplewebauthn/server": "^13.3.2",
-    "@vouchington/session-jwt": "^0.0.1",
-    "otpauth": "^9.3.6"
-  },
-  "peerDependencies": {
-    "@jongleberry/api-server": "^2.1.0"
-  },
-  "peerDependenciesMeta": {
-    "@jongleberry/api-server": {
-      "optional": true
-    }
+    "@simplewebauthn/server": "^13.3.2"
   },
   "engines": {
     "node": ">=24.0.0"

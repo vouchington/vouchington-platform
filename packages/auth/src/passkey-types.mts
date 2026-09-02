@@ -4,7 +4,11 @@ import type {
   COSEAlgorithmIdentifier,
   VerifiedRegistrationResponse,
 } from '@simplewebauthn/server'
-import type { AttemptLimiter } from './types.mts'
+
+export interface AttemptLimiter<Input> {
+  /** Atomically reserve one permitted attempt; return false when the limit is exhausted. */
+  reserve(input: Input): Promise<boolean>
+}
 
 export interface PasskeyStateStore {
   put(key: string, challenge: string, ttlSeconds: number): Promise<void>

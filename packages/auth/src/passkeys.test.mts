@@ -57,6 +57,17 @@ describe('passkeys', () => {
     ).rejects.toMatchObject({ code: 'invalid_request', status: 400 })
   })
 
+  it('encodes well-formed surrogate pairs in default state keys', async () => {
+    const { options, put } = configured()
+    const passkeys = createPasskeys(options)
+    await passkeys.registration.createOptions(testUser(), 'device-\u{1F600}')
+    expect(put).toHaveBeenLastCalledWith(
+      'site:passkey-registration:user-1:device-%F0%9F%98%80',
+      'registration-challenge',
+      300,
+    )
+  })
+
   it('creates and verifies registration ceremonies through injected storage', async () => {
     const { options, repository, put } = configured()
     const passkeys = createPasskeys({ ...options, userIdsEqual: (left, right) => left === right })

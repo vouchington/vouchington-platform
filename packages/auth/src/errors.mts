@@ -2,8 +2,6 @@ export type AuthErrorCode =
   | 'challenge_expired'
   | 'invalid_credentials'
   | 'invalid_request'
-  | 'mfa_required'
-  | 'provider_disabled'
   | 'rate_limited'
 
 export class AuthError extends Error {

@@ -13,7 +13,7 @@ export function encodeSerializedStateSegment(value: unknown): string {
   return encodeStateSegment(value)
 }
 
-export function isWellFormedUnicode(value: string): boolean {
+function isWellFormedUnicode(value: string): boolean {
   for (let index = 0; index < value.length; index += 1) {
     const code = value.charCodeAt(index)
     if (code >= 0xd800 && code <= 0xdbff) {

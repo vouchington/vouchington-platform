@@ -3,6 +3,7 @@ import { createPasskeyRegistration } from './passkey-registration.mts'
 import type { PasskeyOptions } from './passkey-types.mts'
 
 export type {
+  AttemptLimiter,
   PasskeyFailure,
   PasskeyAttestation,
   PasskeyOptions,
