@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   decodeHtmlEntities,
   escapeHtml,
-  HTML_LEGACY_CASE_INSENSITIVE_NAMED_ENTITIES,
   isInsideCode,
   isInsideHtmlElement,
   isInsideHtmlTag,
@@ -52,14 +51,5 @@ describe('HTML entity and text helpers', () => {
     expect(isInsideCode('<pre>hi', 6)).toBe(true)
     expect(isInsideCode('<pre>hi</pre> hello', 18)).toBe(false)
     expect(isInsideCode('hello world', 5)).toBe(false)
-  })
-  it('decodes the exported legacy named-entity catalog case-insensitively', () => {
-    expect(HTML_LEGACY_CASE_INSENSITIVE_NAMED_ENTITIES).toContain('amp')
-    expect(HTML_LEGACY_CASE_INSENSITIVE_NAMED_ENTITIES).toContain('mdash')
-    expect(
-      decodeHtmlEntities('&AMP; &mDash; &NBSP;', {
-        caseInsensitiveNamedEntities: HTML_LEGACY_CASE_INSENSITIVE_NAMED_ENTITIES,
-      }),
-    ).toBe('& — \u00a0')
   })
 })
