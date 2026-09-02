@@ -41,6 +41,8 @@ export function decodeHtmlEntities(value: string, options: DecodeHtmlEntitiesOpt
   return decoded
 }
 
+const CODE_ELEMENT_NAMES = ['code', 'pre'] as const
+
 /** Performs a lightweight lexical check for positions inside selected HTML elements. */
 export function isInsideHtmlElement(
   value: string,
@@ -61,6 +63,11 @@ export function isInsideHtmlElement(
 export function isInsideHtmlTag(value: string, position: number): boolean {
   const open = value.lastIndexOf('<', position)
   return open >= 0 && value.lastIndexOf('>', position) < open && value.indexOf('>', open) > position
+}
+
+/** Convenience check for positions inside `<code>` or `<pre>` elements. */
+export function isInsideCode(value: string, position: number): boolean {
+  return isInsideHtmlElement(value, position, CODE_ELEMENT_NAMES)
 }
 function isValidCodePoint(point: number): boolean {
   return (

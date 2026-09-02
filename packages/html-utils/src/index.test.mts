@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { decodeHtmlEntities, escapeHtml, isInsideHtmlElement, isInsideHtmlTag } from './index.mts'
+import {
+  decodeHtmlEntities,
+  escapeHtml,
+  isInsideCode,
+  isInsideHtmlElement,
+  isInsideHtmlTag,
+} from './index.mts'
 
 describe('HTML entity and text helpers', () => {
   it('escapes HTML and XML text contexts', () => {
@@ -38,5 +44,12 @@ describe('HTML entity and text helpers', () => {
     expect(isInsideHtmlElement('<code><code></code>hello</code>', 24, ['code'])).toBe(true)
     expect(isInsideHtmlElement('<code/><pre>hello', 12, ['code'])).toBe(false)
     expect(isInsideHtmlElement('<code>hello', 3, ['code'])).toBe(false)
+  })
+  it('recognizes positions inside code or pre via isInsideCode', () => {
+    expect(isInsideCode('<code>hello', 8)).toBe(true)
+    expect(isInsideCode('<code>hi</code> hello', 20)).toBe(false)
+    expect(isInsideCode('<pre>hi', 6)).toBe(true)
+    expect(isInsideCode('<pre>hi</pre> hello', 18)).toBe(false)
+    expect(isInsideCode('hello world', 5)).toBe(false)
   })
 })
