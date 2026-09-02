@@ -50,18 +50,9 @@ importers:
 
   packages/auth:
     dependencies:
-      '@jongleberry/api-server':
-        specifier: ^2.1.0
-        version: 2.1.0
       '@simplewebauthn/server':
         specifier: ^13.3.2
         version: 13.3.3
-      '@vouchington/session-jwt':
-        specifier: ^0.0.1
-        version: link:../session-jwt
-      otpauth:
-        specifier: ^9.3.6
-        version: 9.5.1
 
   packages/browser-crawl:
     devDependencies:
@@ -182,12 +173,6 @@ importers:
       glide-mq:
         specifier: ^0.15.5
         version: 0.15.5(express@5.2.1(supports-color@7.2.0))
-
-  packages/reviews:
-    dependencies:
-      '@jongleberry/api-server':
-        specifier: ^2.1.0
-        version: 2.1.0
 
   packages/robots:
     dependencies:
@@ -611,10 +596,6 @@ packages:
     peerDependencies:
       '@emnapi/core': ^1.7.1 || ^2.0.0-alpha.4
       '@emnapi/runtime': ^1.7.1 || ^2.0.0-alpha.4
-
-  '@noble/hashes@2.2.0':
-    resolution: {integrity: sha512-IYqDGiTXab6FniAgnSdZwgWbomxpy9FtYvLKs7wCUs2a8RkITG+DFGO1DM9cr+E3/RgADRpFjrKVaJ1z6sjtEg==}
-    engines: {node: '>= 20.19.0'}
 
   '@nodable/entities@3.0.0':
     resolution: {integrity: sha512-8L9xFeTYKhm49xfIypoe2W5wV1m/3Z58kT+7kR9A8OyFxcPduI4VmxaUMQyKYrRjUoLLSXv6EKKID5Tvj9cUVw==}
@@ -2154,9 +2135,6 @@ packages:
   once@1.4.0:
     resolution: {integrity: sha512-lNaJgI+2Q5URQBkccEKHTQOPaXdUxnZZElQTZY0MFUAuaEqe1E+Nyvgdz/aIyNi6Z9MzO5dv1H8n58/GELp3+w==}
 
-  otpauth@9.5.1:
-    resolution: {integrity: sha512-fJmDAHc8wImfqqqOXIlBvT1dEKrZK0Cmb2VEgScpNTolCz0PHh6ExUZGv4sLtOsWNaHCQlD+rRqaPgnoxFoZjQ==}
-
   oxc-parser@0.147.0:
     resolution: {integrity: sha512-5xaug6t7GfV3BO5Iv+xHW1rmQkDEQ3BEu3L8g3InsvWO5i8CYGc4tCZ2X985QcwWNycFJam+aOns6Nr2XAThTA==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -3132,8 +3110,6 @@ snapshots:
       '@emnapi/runtime': 1.11.2
       '@tybys/wasm-util': 0.10.3
     optional: true
-
-  '@noble/hashes@2.2.0': {}
 
   '@nodable/entities@3.0.0': {}
 
@@ -4348,10 +4324,6 @@ snapshots:
   once@1.4.0:
     dependencies:
       wrappy: 1.0.2
-
-  otpauth@9.5.1:
-    dependencies:
-      '@noble/hashes': 2.2.0
 
   oxc-parser@0.147.0:
     dependencies:

@@ -19,7 +19,6 @@ const packages = [
   'wikimedia',
   'memberships',
   'worker-runtime',
-  'reviews',
   'typed-entities',
 ]
 

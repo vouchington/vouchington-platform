@@ -10,7 +10,7 @@ SKU names.
 
 | Package                                                            | Description                                                        |
 | ------------------------------------------------------------------ | ------------------------------------------------------------------ |
-| [`@vouchington/auth`](packages/auth)                               | Injected OTP, passkey, MFA/TOTP, and OAuth authentication engines  |
+| [`@vouchington/auth`](packages/auth)                               | Injected WebAuthn passkey ceremony primitives                      |
 | [`@vouchington/postgres`](packages/postgres)                       | PostgreSQL runtime, migrations, and structural schema snapshots    |
 | [`@vouchington/utils`](packages/utils)                             | Dependency-free explicit-subpath utilities, including moderation   |
 | [`@vouchington/session-jwt`](packages/session-jwt)                 | Portable RS512 JWT primitives and UUIDv7 identifiers               |
@@ -27,7 +27,6 @@ SKU names.
 | [`@vouchington/media`](packages/media)                             | Upload validation, streams, and split S3 primitives                |
 | [`@vouchington/wikimedia`](packages/wikimedia)                     | Injected Wikimedia search and page-summary client                  |
 | [`@vouchington/memberships`](packages/memberships)                 | Membership catalog, SKU grouping, and status utilities             |
-| [`@vouchington/reviews`](packages/reviews)                         | Policy-injected schema-less review lifecycle and ratings engine    |
 | [`@vouchington/browser-crawl`](packages/browser-crawl)             | Injected Playwright rendered-page collection                       |
 | [`@vouchington/domain-verification`](packages/domain-verification) | DNS TXT and secure-transport well-known verification               |
 | [`@vouchington/crawler-html`](packages/crawler-html)               | HTML content decoding and extraction                               |
