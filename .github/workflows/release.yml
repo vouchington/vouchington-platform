@@ -108,6 +108,7 @@ jobs:
         run: >-
           node scripts/release.mts prepare "$PACKAGE" "$BUMP"
           "$RUNNER_TEMP/release-plan.json" ".github/release-plan.json"
+      - run: pnpm exec oxfmt .github/release-plan.json
       - run: pnpm install --lockfile-only
       - run: pnpm install --frozen-lockfile
       - run: pnpm run typecheck
