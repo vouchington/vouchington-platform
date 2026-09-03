@@ -12,6 +12,7 @@ describe('release workflow', () => {
 
   it('prepares and validates the post-bump workspace before external mutations', () => {
     const prepare = position('node scripts/release.mts prepare')
+    const formatPlan = position('pnpm exec oxfmt .github/release-plan.json')
     const lockfile = position('pnpm install --lockfile-only')
     const typecheck = position('pnpm run typecheck')
     const build = position('pnpm run build')
@@ -25,7 +26,8 @@ describe('release workflow', () => {
     const publish = position('node scripts/release.mts publish')
     const release = position('node scripts/release.mts github-release')
 
-    expect(lockfile).toBeGreaterThan(prepare)
+    expect(formatPlan).toBeGreaterThan(prepare)
+    expect(lockfile).toBeGreaterThan(formatPlan)
     for (const validation of [typecheck, build, lint, tests, actionlint, verify, pack]) {
       expect(validation).toBeGreaterThan(lockfile)
       expect(tag).toBeGreaterThan(validation)
