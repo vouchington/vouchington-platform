@@ -210,6 +210,32 @@ describe('injected constructors', () => {
     expect(missing).toBeInstanceOf(AppUnrecoverable)
     expect(missing).not.toBeInstanceOf(GlideUnrecoverableError)
   })
+
+  it('accepts glide-mq’s own required-message UnrecoverableError as an injected constructor', () => {
+    // Regression: TerminalErrorConstructor previously required an optional `message` parameter,
+    // which made glide-mq's own `UnrecoverableError` (a required parameter) not assignable here.
+    // This line must typecheck — `pnpm run typecheck` is the actual assertion.
+    const thrown = catchThrown(() =>
+      unrecoverable(new Error('source'), 'terminal', {
+        UnrecoverableError: GlideUnrecoverableError,
+      }),
+    )
+    expect(thrown).toBeInstanceOf(GlideUnrecoverableError)
+    expect(thrown).toMatchObject({ message: 'terminal' })
+  })
+
+  it('accepts glide-mq’s own zero-arg RateLimitError as an injected constructor', async () => {
+    const worker: QueueRateLimiter = { rateLimit: async () => undefined }
+    const limited = await catchRejected(
+      handleRateLimitedError({ retryAfter: true }, worker, {
+        cooldownMs: 5,
+        isRateLimited: () => true,
+        RateLimitError: Worker.RateLimitError,
+      }),
+    )
+    expect(limited).toBeInstanceOf(Worker.RateLimitError)
+    expect(limited).toMatchObject({ delayMs: 5 })
+  })
 })
 
 function catchThrown(callback: () => never): unknown {
