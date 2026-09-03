@@ -19,7 +19,7 @@ export interface QueueRateLimiter {
   rateLimit(durationMs: number): Promise<void>
 }
 
-export interface RateLimitedErrorOptions extends QueueErrorConstructors {
+export interface RateLimitedErrorOptions extends QueueErrorConstructors, HttpRetryOptions {
   cooldownMs: number
   isRateLimited: (error: unknown) => boolean
   onUnhandled?: (error: unknown) => never
