@@ -29,7 +29,25 @@ Use `getStatus` for provider-specific error shapes and `isRetryableStatus` to ch
 responses are transient. Supplying `isRetryableStatus` replaces the default 408/429/5xx policy for
 every recognized 400–599 status, so the callback must return `true` for each status that your
 application considers transient.
-`unrecoverable(error, message?)` explicitly marks any failure terminal.
+`unrecoverable(error, message?, options?)` explicitly marks any failure terminal.
+
+Applications that resolve a different `glide-mq` copy than this package can pass
+`UnrecoverableError` and `RateLimitError` constructors so thrown errors match the
+application’s `instanceof` checks. Defaults remain this package’s glide-mq classes.
+
+```ts
+import { UnrecoverableError, Worker } from 'glide-mq'
+import { handleRateLimitedError, unrecoverable, wrapHttpForRetry } from '@vouchington/queue-errors'
+
+unrecoverable(error, 'terminal', { UnrecoverableError })
+wrapHttpForRetry(error, { UnrecoverableError, getStatus })
+await handleRateLimitedError(error, worker, {
+  cooldownMs,
+  isRateLimited,
+  UnrecoverableError,
+  RateLimitError: Worker.RateLimitError,
+})
+```
 
 ## Provider rate limits
 
