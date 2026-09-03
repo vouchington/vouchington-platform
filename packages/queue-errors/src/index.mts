@@ -2,7 +2,15 @@ import { UnrecoverableError, Worker } from 'glide-mq'
 
 export { UnrecoverableError }
 
-export interface HttpRetryOptions {
+export type TerminalErrorConstructor = new (message?: string) => Error
+export type RateLimitErrorConstructor = new () => Error
+
+export interface QueueErrorConstructors {
+  UnrecoverableError?: TerminalErrorConstructor
+  RateLimitError?: RateLimitErrorConstructor
+}
+
+export interface HttpRetryOptions extends Pick<QueueErrorConstructors, 'UnrecoverableError'> {
   getStatus?: (error: unknown) => number | undefined
   isRetryableStatus?: (status: number) => boolean
 }
@@ -11,16 +19,21 @@ export interface QueueRateLimiter {
   rateLimit(durationMs: number): Promise<void>
 }
 
-export interface RateLimitedErrorOptions {
+export interface RateLimitedErrorOptions extends QueueErrorConstructors, HttpRetryOptions {
   cooldownMs: number
   isRateLimited: (error: unknown) => boolean
   onUnhandled?: (error: unknown) => never
 }
 
-// Throws GlideMQ's terminal error while retaining useful source diagnostics.
-export function unrecoverable(error: unknown, message?: string): never {
+// Throws an error from the injected constructor, defaulting to GlideMQ's terminal error while retaining useful source diagnostics.
+export function unrecoverable(
+  error: unknown,
+  message?: string,
+  options: Pick<QueueErrorConstructors, 'UnrecoverableError'> = {},
+): never {
   const source = toError(error)
-  const terminal = new UnrecoverableError(message ?? source.message)
+  const ErrorCtor = options.UnrecoverableError ?? UnrecoverableError
+  const terminal = new ErrorCtor(message ?? source.message)
   if (source.stack !== undefined) terminal.stack = source.stack
   throw terminal
 }
@@ -43,7 +56,7 @@ export function wrapHttpForRetry(error: unknown, options: HttpRetryOptions = {})
   const status = (options.getStatus ?? getHttpStatus)(error)
   const retryable = options.isRetryableStatus ?? isRetryableHttpStatus
   if (status !== undefined && status >= 400 && status <= 599 && !retryable(status)) {
-    unrecoverable(error)
+    unrecoverable(error, undefined, options)
   }
   throw error
 }
@@ -57,9 +70,11 @@ export async function handleRateLimitedError(
   assertCooldown(options.cooldownMs)
   if (options.isRateLimited(error)) {
     await worker.rateLimit(options.cooldownMs)
-    throw Object.assign(new Worker.RateLimitError(), { delayMs: options.cooldownMs })
+    const RateLimitError = options.RateLimitError ?? Worker.RateLimitError
+    throw Object.assign(new RateLimitError(), { delayMs: options.cooldownMs })
   }
-  return (options.onUnhandled ?? wrapHttpForRetry)(error)
+  const onUnhandled = options.onUnhandled ?? ((value: unknown) => wrapHttpForRetry(value, options))
+  return onUnhandled(error)
 }
 
 function assertCooldown(cooldownMs: number): void {

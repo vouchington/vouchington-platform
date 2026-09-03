@@ -156,6 +156,62 @@ describe('queue rate limiting', () => {
   })
 })
 
+describe('injected constructors', () => {
+  class AppUnrecoverable extends Error {
+    constructor(message?: string) {
+      super(message)
+      this.name = 'AppUnrecoverable'
+    }
+  }
+  class AppRateLimit extends Error {
+    constructor() {
+      super('app rate limit')
+      this.name = 'AppRateLimit'
+    }
+  }
+
+  it('throws the caller UnrecoverableError instead of glide-mq’s', () => {
+    const thrown = catchThrown(() =>
+      unrecoverable(new Error('source'), 'terminal', { UnrecoverableError: AppUnrecoverable }),
+    )
+    expect(thrown).toBeInstanceOf(AppUnrecoverable)
+    expect(thrown).not.toBeInstanceOf(GlideUnrecoverableError)
+    expect(thrown).toMatchObject({ message: 'terminal', name: 'AppUnrecoverable' })
+    expect(
+      catchThrown(() =>
+        wrapHttpForRetry(
+          { status: 404, message: 'missing' },
+          { UnrecoverableError: AppUnrecoverable },
+        ),
+      ),
+    ).toBeInstanceOf(AppUnrecoverable)
+  })
+
+  it('throws the caller RateLimitError and uses UnrecoverableError on the default fallback', async () => {
+    const worker: QueueRateLimiter = { rateLimit: async () => undefined }
+    const limited = await catchRejected(
+      handleRateLimitedError({ retryAfter: true }, worker, {
+        cooldownMs: 5,
+        isRateLimited: () => true,
+        RateLimitError: AppRateLimit,
+      }),
+    )
+    expect(limited).toBeInstanceOf(AppRateLimit)
+    expect(limited).not.toBeInstanceOf(Worker.RateLimitError)
+    expect(limited).toMatchObject({ delayMs: 5, name: 'AppRateLimit' })
+
+    const missing = await catchRejected(
+      handleRateLimitedError({ status: 404, message: 'missing' }, worker, {
+        cooldownMs: 5,
+        isRateLimited: () => false,
+        UnrecoverableError: AppUnrecoverable,
+      }),
+    )
+    expect(missing).toBeInstanceOf(AppUnrecoverable)
+    expect(missing).not.toBeInstanceOf(GlideUnrecoverableError)
+  })
+})
+
 function catchThrown(callback: () => never): unknown {
   try {
     callback()
