@@ -25,7 +25,7 @@ export interface RateLimitedErrorOptions extends QueueErrorConstructors, HttpRet
   onUnhandled?: (error: unknown) => never
 }
 
-// Throws GlideMQ's terminal error while retaining useful source diagnostics.
+// Throws an error from the injected constructor, defaulting to GlideMQ's terminal error while retaining useful source diagnostics.
 export function unrecoverable(
   error: unknown,
   message?: string,
