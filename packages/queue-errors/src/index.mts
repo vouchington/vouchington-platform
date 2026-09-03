@@ -2,7 +2,7 @@ import { UnrecoverableError, Worker } from 'glide-mq'
 
 export { UnrecoverableError }
 
-export type TerminalErrorConstructor = new (message?: string) => Error
+export type TerminalErrorConstructor = new (message: string) => Error
 export type RateLimitErrorConstructor = new () => Error
 
 export interface QueueErrorConstructors {

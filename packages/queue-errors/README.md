@@ -33,7 +33,9 @@ application considers transient.
 
 Applications that resolve a different `glide-mq` copy than this package can pass
 `UnrecoverableError` and `RateLimitError` constructors so thrown errors match the
-application’s `instanceof` checks. Defaults remain this package’s glide-mq classes.
+application’s `instanceof` checks. Defaults remain this package’s glide-mq classes. The injected
+terminal constructor must accept a required `message: string` parameter, matching glide-mq's own
+`UnrecoverableError`; the injected rate-limit constructor takes no arguments.
 
 ```ts
 import { UnrecoverableError, Worker } from 'glide-mq'
