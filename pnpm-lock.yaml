@@ -36,8 +36,8 @@ importers:
         specifier: ^7.0.2001
         version: 7.0.2001
       pr-shepherd:
-        specifier: ^0.46.4
-        version: 0.46.4(supports-color@7.2.0)
+        specifier: ^0.46.5
+        version: 0.46.5(supports-color@7.2.0)
       semver:
         specifier: ^7.8.5
         version: 7.8.5
@@ -1764,8 +1764,8 @@ packages:
   fast-querystring@1.1.2:
     resolution: {integrity: sha512-g6KuKWmFXc0fID8WWH0jit4g0AGBoJhCkJMb1RmbsSEUNvQ+ZC8D6CUZ+GtF8nMzSPXnhiePyyqqipzNNEnHjg==}
 
-  fast-uri@3.1.6:
-    resolution: {integrity: sha512-7Ical1vFEMr0onbVzEDIreM22I4khW+fzyQPwvAFWBp1iwdshSZRsL4jjRvPG9JP1uiqMHRto+YU6R2/CzDz5Q==}
+  fast-uri@3.1.7:
+    resolution: {integrity: sha512-dOvZVzjdZdz7phd9v6jCbwxrBW3fK6n8Rc0CtdmM4bumzMnxywBYhuph6J819RRw/ku+rLbelwfMunktuzVVHg==}
 
   fast-xml-builder@1.3.1:
     resolution: {integrity: sha512-pIM/1n3ntFXKYrUZwW7QCK0gAW7XY+wzj1YMIV3tLDvPj/V+zTGJK5e3/4WJfwj0qWw2ElNXiTixda/R+3YSug==}
@@ -2286,8 +2286,8 @@ packages:
     resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
     engines: {node: '>=0.10.0'}
 
-  pr-shepherd@0.46.4:
-    resolution: {integrity: sha512-Jgr1uNTjBw+GdKz92A6tMmz2zJhH4HDv90KecsxD/lkn/IL8dAbTIQp3cUzxa0DXqUv9+C8EWZxUhTcl5JgRRQ==}
+  pr-shepherd@0.46.5:
+    resolution: {integrity: sha512-3Kw+G+Ww8DTbkjaH1r6PGrxDEYWkYpGQohT6BcTQuZPJ+Nhc1xIRkJkunpDCTTMnMNWfcI2ZqCZGkrssp/xsFg==}
     engines: {node: '>=22.18.0'}
     hasBin: true
 
@@ -3768,7 +3768,7 @@ snapshots:
   ajv@8.20.0:
     dependencies:
       fast-deep-equal: 3.1.3
-      fast-uri: 3.1.6
+      fast-uri: 3.1.7
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
 
@@ -3999,7 +3999,7 @@ snapshots:
     dependencies:
       fast-decode-uri-component: 1.0.1
 
-  fast-uri@3.1.6: {}
+  fast-uri@3.1.7: {}
 
   fast-xml-builder@1.3.1:
     dependencies:
@@ -4514,7 +4514,7 @@ snapshots:
     dependencies:
       xtend: 4.0.2
 
-  pr-shepherd@0.46.4(supports-color@7.2.0):
+  pr-shepherd@0.46.5(supports-color@7.2.0):
     dependencies:
       '@modelcontextprotocol/sdk': 1.30.0(supports-color@7.2.0)(zod@4.5.4)
       picomatch: 4.0.7
