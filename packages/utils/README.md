@@ -42,12 +42,16 @@ import { createReportInputParser } from '@vouchington/utils/moderation'
   validation. Applications own catalogs, policy, error mapping, persistence, and HTTP behavior.
 - `query` and `query-string`: generic array/boolean/number parsing, bounded integer parsing, and
   query-string serialization. Cursor parsing intentionally belongs to `@vouchington/pagination`.
-- `slugs` and `urls`: ASCII-only slugification and URL/hostname primitives. URL hostname helpers
-  return `null` for invalid input; `normalizeAsciiHostname` names its ASCII-only contract directly,
-  while `normalizeHostname` also supports WHATWG IDN conversion. `matchesHostnamePattern` supports
-  exact and inclusive `*.` hostname patterns.
+- `slugs` and `urls`: ASCII-only slugification, the `isSlug` lowercase `[a-z0-9-]+` predicate
+  (leading, trailing, and consecutive hyphens are allowed), and URL/hostname primitives. URL hostname
+  helpers return `null` for invalid input; `normalizeAsciiHostname` names its ASCII-only contract
+  directly, while `normalizeHostname` also supports WHATWG IDN conversion.
+  `matchesHostnamePattern` supports exact and inclusive `*.` hostname patterns.
 - `hashtags`: caller-configured authored/key length and separator policy for canonical ASCII hashtag
-  keys. The package does not choose application limits or accepted input separators.
+  keys, plus `maskHashtagBearingUrls` to blank absolute URLs and fragment-bearing relative paths.
+  The package does not choose application limits or accepted input separators.
+- `utm`: `createUtmParser({ sourceAliases, fallbackSourceParam? })` lowercases and trims UTM fields
+  and resolves `utm_source` through caller-owned aliases. The package has no default shortcode map.
 - `fetch-ports`: the Fetch standard forbidden-port list and membership predicates.
 - `http-body`: bounded Fetch response-body reads with abort propagation and typed missing/oversize
   errors.

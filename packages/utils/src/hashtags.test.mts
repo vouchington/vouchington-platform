@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createHashtagNormalizer } from './hashtags.mts'
+import { createHashtagNormalizer, maskHashtagBearingUrls } from './hashtags.mts'
 
 describe('hashtag normalization', () => {
   const normalizer = createHashtagNormalizer({
@@ -75,5 +75,48 @@ describe('hashtag normalization', () => {
     options.maximumKeyLength = 0
     expect(snapshot.normalize('#abc')).toEqual({ authored: '#abc', key: 'abc' })
     expect(snapshot.normalize('#abcd')).toBeNull()
+  })
+})
+
+describe('maskHashtagBearingUrls', () => {
+  it('masks absolute http(s) and www URLs including fragments', () => {
+    expect(maskHashtagBearingUrls('See https://example.test/#pricing now')).toBe(
+      `See ${' '.repeat('https://example.test/#pricing'.length)} now`,
+    )
+    expect(maskHashtagBearingUrls('See HTTP://example.test/plain now')).toBe(
+      `See ${' '.repeat('HTTP://example.test/plain'.length)} now`,
+    )
+    expect(maskHashtagBearingUrls('See www.example.test/#also now')).toBe(
+      `See ${' '.repeat('www.example.test/#also'.length)} now`,
+    )
+  })
+
+  it('masks relative paths only when they contain a fragment', () => {
+    expect(maskHashtagBearingUrls('Read /docs/plain then /docs/#x')).toBe(
+      'Read /docs/plain then         ',
+    )
+  })
+
+  it('keeps Wikipedia-style parentheses inside the URL token', () => {
+    expect(
+      maskHashtagBearingUrls(
+        'https://en.wikipedia.org/wiki/Foo_(bar)#History /docs/(v2_(legacy))#History #visible',
+      ),
+    ).toBe(
+      `${' '.repeat('https://en.wikipedia.org/wiki/Foo_(bar)#History'.length)} ${' '.repeat('/docs/(v2_(legacy))#History'.length)} #visible`,
+    )
+  })
+
+  it('stops at whitespace, angle brackets, and unbalanced closing parentheses', () => {
+    expect(maskHashtagBearingUrls('https://example.test/a>b')).toBe(
+      `${' '.repeat('https://example.test/a'.length)}>b`,
+    )
+    expect(maskHashtagBearingUrls('https://example.test/a<b')).toBe(
+      `${' '.repeat('https://example.test/a'.length)}<b`,
+    )
+    expect(maskHashtagBearingUrls('/Foo_(bar)#History)extra')).toBe(
+      `${' '.repeat('/Foo_(bar)#History'.length)})extra`,
+    )
+    expect(maskHashtagBearingUrls('/Foo_(bar))#outside')).toBe('/Foo_(bar))#outside')
   })
 })

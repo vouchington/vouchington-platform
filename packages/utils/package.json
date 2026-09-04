@@ -155,6 +155,11 @@
       "import": "./dist/hashtags.mjs",
       "default": "./dist/hashtags.mjs"
     },
+    "./utm": {
+      "types": "./dist/utm.d.mts",
+      "import": "./dist/utm.mjs",
+      "default": "./dist/utm.mjs"
+    },
     "./fetch-ports": {
       "types": "./dist/fetch-ports.d.mts",
       "import": "./dist/fetch-ports.mjs",
