@@ -2,11 +2,11 @@
   "changedManifests": ["packages/queue-errors/package.json"],
   "releases": [
     {
-      "bump": "minor",
+      "bump": "patch",
       "directory": "queue-errors",
-      "fromVersion": "0.0.0",
+      "fromVersion": "0.1.0",
       "name": "@vouchington/queue-errors",
-      "toVersion": "0.1.0"
+      "toVersion": "0.1.1"
     }
   ],
   "selectedPackage": "@vouchington/queue-errors"
