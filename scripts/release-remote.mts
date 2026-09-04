@@ -9,13 +9,27 @@ export function remoteReleaseComplete(plan: StoredReleasePlan): boolean {
   )
 }
 
+const ALREADY_PUBLISHED_PATTERN = /cannot publish over the previously published versions/iu
+
 export function publishMissing(plan: StoredReleasePlan): void {
   for (const release of plan.releases) {
     if (versionExists(release.name, release.toVersion)) continue
-    execFileSync('pnpm', ['publish', '--access', 'public', '--no-git-checks'], {
-      cwd: `packages/${release.directory}`,
-      stdio: 'inherit',
-    })
+    try {
+      execFileSync('pnpm', ['publish', '--access', 'public', '--no-git-checks'], {
+        cwd: `packages/${release.directory}`,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      })
+    } catch (error) {
+      const output = commandOutput(error)
+      if (!ALREADY_PUBLISHED_PATTERN.test(output)) {
+        console.error(output)
+        throw error
+      }
+      console.log(
+        `${release.name}@${release.toVersion} is already published on npm; treating as complete.`,
+      )
+    }
   }
 }
 
