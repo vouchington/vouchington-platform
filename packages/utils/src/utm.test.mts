@@ -74,5 +74,6 @@ describe('createUtmParser', () => {
     expect(
       parser.extractFromUrl(new URL('https://example.com/?utm_source=+&ref=ig')).utmSource,
     ).toBe('instagram')
+    expect(parser.extractFromUrl(new URL('https://example.com/?ref=+')).utmSource).toBeNull()
   })
 })
