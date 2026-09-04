@@ -35,36 +35,48 @@ const plan: StoredReleasePlan = {
 beforeEach(() => childProcess.execFileSync.mockReset())
 
 describe('resumable release operations', () => {
-  it('recognizes a fully published and announced plan', () => {
+  it('recognizes a fully published and announced plan, short-circuiting the GitHub lookup once npm confirms the version', () => {
     childProcess.execFileSync.mockReturnValue(Buffer.from('2.0.0'))
 
     expect(remoteReleaseComplete(plan)).toBe(true)
-    expect(childProcess.execFileSync).toHaveBeenCalledTimes(5)
+    expect(childProcess.execFileSync).toHaveBeenCalledTimes(3)
     expect(childProcess.execFileSync).toHaveBeenCalledWith(
       'gh',
       ['api', 'repos/{owner}/{repo}', '--silent'],
       expect.objectContaining({ encoding: 'utf8' }),
     )
     expect(childProcess.execFileSync).toHaveBeenCalledWith(
-      'gh',
-      ['api', 'repos/{owner}/{repo}/releases/tags/base-v2.0.0', '--silent'],
+      'npm',
+      ['view', '@vouchington/base@2.0.0', 'version', '--json'],
       expect.objectContaining({ encoding: 'utf8' }),
     )
   })
 
-  it('recognizes an incomplete plan', () => {
+  it('treats a release as complete when only the GitHub release exists', () => {
     childProcess.execFileSync.mockImplementation((executable, arguments_: string[]) => {
       if (executable === 'npm' && arguments_[1] === '@vouchington/dependent@2.0.0')
         throw commandError('npm error code E404')
       return Buffer.from('2.0.0')
     })
 
-    expect(remoteReleaseComplete(plan)).toBe(false)
+    expect(remoteReleaseComplete(plan)).toBe(true)
   })
 
-  it('recognizes a missing GitHub release after confirming repository access', () => {
+  it('treats a release as complete when only the npm version exists, after confirming repository access', () => {
     childProcess.execFileSync.mockImplementation((executable, arguments_: string[] = []) => {
       if (executable === 'gh' && arguments_[1]?.endsWith('base-v2.0.0'))
+        throw commandError('gh: Not Found (HTTP 404)')
+      return Buffer.from('2.0.0')
+    })
+
+    expect(remoteReleaseComplete(plan)).toBe(true)
+  })
+
+  it('recognizes a genuinely incomplete plan where neither marker exists for a release', () => {
+    childProcess.execFileSync.mockImplementation((executable, arguments_: string[] = []) => {
+      if (executable === 'npm' && arguments_[1] === '@vouchington/dependent@2.0.0')
+        throw commandError('npm error code E404')
+      if (executable === 'gh' && arguments_[1]?.endsWith('dependent-v2.0.0'))
         throw commandError('gh: Not Found (HTTP 404)')
       return Buffer.from('2.0.0')
     })
@@ -123,6 +135,48 @@ describe('resumable release operations', () => {
   })
 })
 
+describe('publishMissing idempotency', () => {
+  it('treats a "previously published" conflict on stdout as an idempotent success', () => {
+    childProcess.execFileSync.mockImplementation((executable, arguments_: string[] = []) => {
+      if (executable === 'npm') throw commandError('npm error code E404')
+      if (executable === 'pnpm' && arguments_[0] === 'publish') {
+        throw commandErrorOnStdout(
+          'You cannot publish over the previously published versions: 2.0.0.',
+        )
+      }
+      return Buffer.from('2.0.0')
+    })
+
+    expect(() => publishMissing(plan)).not.toThrow()
+  })
+
+  it('treats a "previously published" conflict on stderr as an idempotent success', () => {
+    childProcess.execFileSync.mockImplementation((executable, arguments_: string[] = []) => {
+      if (executable === 'npm') throw commandError('npm error code E404')
+      if (executable === 'pnpm' && arguments_[0] === 'publish') {
+        throw commandError('You cannot publish over the previously published versions: 2.0.0.')
+      }
+      return Buffer.from('2.0.0')
+    })
+
+    expect(() => publishMissing(plan)).not.toThrow()
+  })
+
+  it('rethrows a genuine publish failure such as an authentication error', () => {
+    childProcess.execFileSync.mockImplementation((executable, arguments_: string[] = []) => {
+      if (executable === 'npm') throw commandError('npm error code E404')
+      if (executable === 'pnpm' && arguments_[0] === 'publish') {
+        throw commandError(
+          '403 Forbidden - PUT https://registry.npmjs.org/... - authentication required',
+        )
+      }
+      return Buffer.from('2.0.0')
+    })
+
+    expect(() => publishMissing(plan)).toThrow('lookup failed')
+  })
+})
+
 describe('release git state', () => {
   it('checks out the one commit shared by all release tags', () => {
     childProcess.execFileSync.mockImplementation((_executable, arguments_: string[] = []) =>
@@ -170,5 +224,12 @@ function commandError(stderr: string): Error {
   return Object.assign(new Error('lookup failed'), {
     stderr,
     stdout: '',
+  })
+}
+
+function commandErrorOnStdout(stdout: string): Error {
+  return Object.assign(new Error('lookup failed'), {
+    stderr: '',
+    stdout,
   })
 }

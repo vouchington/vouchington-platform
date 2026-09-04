@@ -5,17 +5,31 @@ import type { StoredReleasePlan } from './release-plan.mts'
 export function remoteReleaseComplete(plan: StoredReleasePlan): boolean {
   assertGitHubRepositoryAccessible()
   return plan.releases.every(
-    (release) => versionExists(release.name, release.toVersion) && githubReleaseExists(release),
+    (release) => versionExists(release.name, release.toVersion) || githubReleaseExists(release),
   )
 }
+
+const ALREADY_PUBLISHED_PATTERN = /previously published/iu
 
 export function publishMissing(plan: StoredReleasePlan): void {
   for (const release of plan.releases) {
     if (versionExists(release.name, release.toVersion)) continue
-    execFileSync('pnpm', ['publish', '--access', 'public', '--no-git-checks'], {
-      cwd: `packages/${release.directory}`,
-      stdio: 'inherit',
-    })
+    try {
+      execFileSync('pnpm', ['publish', '--access', 'public', '--no-git-checks'], {
+        cwd: `packages/${release.directory}`,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      })
+    } catch (error) {
+      const output = commandOutput(error)
+      if (!ALREADY_PUBLISHED_PATTERN.test(output)) {
+        console.error(output)
+        throw error
+      }
+      console.log(
+        `${release.name}@${release.toVersion} is already published on npm; treating as complete.`,
+      )
+    }
   }
 }
 
