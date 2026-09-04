@@ -171,7 +171,7 @@ describe('publishMissing idempotency', () => {
 })
 
 describe('release git state', () => {
-  it('restores packages/ from the one commit shared by all release tags', () => {
+  it('restores only the released package directories from the one commit shared by all release tags', () => {
     childProcess.execFileSync.mockImplementation((_executable, arguments_: string[] = []) =>
       arguments_[0] === 'rev-list' ? 'abc123\n' : Buffer.from(''),
     )
@@ -183,7 +183,15 @@ describe('release git state', () => {
       ['git', ['rev-list', '-n', '1', 'dependent-v2.0.0'], { encoding: 'utf8' }],
       [
         'git',
-        ['restore', '--source', 'abc123', '--worktree', '--no-overlay', 'packages'],
+        [
+          'restore',
+          '--source',
+          'abc123',
+          '--worktree',
+          '--no-overlay',
+          'packages/base',
+          'packages/dependent',
+        ],
         { stdio: 'inherit' },
       ],
     ])
