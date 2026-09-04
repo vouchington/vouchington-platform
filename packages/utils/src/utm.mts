@@ -34,16 +34,14 @@ export function createUtmParser(options: UtmParserOptions): UtmParser {
       const rawSource = url.searchParams.get('utm_source')
       const fallback =
         fallbackSourceParam === undefined ? null : url.searchParams.get(fallbackSourceParam)
-      const utmSource = rawSource
-        ? resolveSource(rawSource)
-        : fallback
-          ? resolveSource(fallback)
-          : null
+      const normalizedSource = rawSource ? resolveSource(rawSource) || null : null
+      const normalizedFallback = fallback ? resolveSource(fallback) || null : null
+      const utmSource = normalizedSource ?? normalizedFallback
       return {
         utmSource,
-        utmMedium: url.searchParams.get('utm_medium')?.toLowerCase().trim() ?? null,
-        utmCampaign: url.searchParams.get('utm_campaign')?.toLowerCase().trim() ?? null,
-        utmContent: url.searchParams.get('utm_content')?.toLowerCase().trim() ?? null,
+        utmMedium: url.searchParams.get('utm_medium')?.toLowerCase().trim() || null,
+        utmCampaign: url.searchParams.get('utm_campaign')?.toLowerCase().trim() || null,
+        utmContent: url.searchParams.get('utm_content')?.toLowerCase().trim() || null,
       }
     },
   }

@@ -55,4 +55,24 @@ describe('createUtmParser', () => {
       utmContent: null,
     })
   })
+
+  it('treats whitespace-only fields as absent and can fall back', () => {
+    const parser = createUtmParser({
+      sourceAliases: { ig: 'instagram' },
+      fallbackSourceParam: 'ref',
+    })
+    expect(
+      parser.extractFromUrl(
+        new URL('https://example.com/?utm_source=+++&utm_medium=+&utm_campaign=%20&utm_content='),
+      ),
+    ).toEqual({
+      utmSource: null,
+      utmMedium: null,
+      utmCampaign: null,
+      utmContent: null,
+    })
+    expect(
+      parser.extractFromUrl(new URL('https://example.com/?utm_source=+&ref=ig')).utmSource,
+    ).toBe('instagram')
+  })
 })
