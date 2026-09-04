@@ -171,33 +171,21 @@ describe('publishMissing idempotency', () => {
 })
 
 describe('release git state', () => {
-  it('checks out the one commit shared by all release tags, then restores scripts/ from the dispatched commit', () => {
-    childProcess.execFileSync.mockImplementation((_executable, arguments_: string[] = []) => {
-      if (arguments_[0] === 'rev-list') return 'abc123\n'
-      if (arguments_[0] === 'rev-parse') return 'dispatched789\n'
-      return Buffer.from('')
-    })
+  it('restores packages/ from the one commit shared by all release tags', () => {
+    childProcess.execFileSync.mockImplementation((_executable, arguments_: string[] = []) =>
+      arguments_[0] === 'rev-list' ? 'abc123\n' : Buffer.from(''),
+    )
 
     checkoutReleaseCommit(plan)
 
-    const gitCalls = childProcess.execFileSync.mock.calls.filter(
-      ([executable]) => executable === 'git',
-    )
-    const orderedVerbs = gitCalls
-      .map(([, arguments_]) => (arguments_ as string[])[0])
-      .filter((verb) => verb === 'rev-parse' || verb === 'checkout' || verb === 'restore')
-    expect(orderedVerbs).toEqual(['rev-parse', 'checkout', 'restore'])
-
-    expect(gitCalls).toContainEqual(['git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }])
-    expect(gitCalls).toContainEqual([
-      'git',
-      ['checkout', '--detach', 'abc123'],
-      { stdio: 'inherit' },
-    ])
-    expect(gitCalls).toContainEqual([
-      'git',
-      ['restore', '--source', 'dispatched789', '--worktree', 'scripts'],
-      { stdio: 'inherit' },
+    expect(childProcess.execFileSync.mock.calls).toEqual([
+      ['git', ['rev-list', '-n', '1', 'base-v2.0.0'], { encoding: 'utf8' }],
+      ['git', ['rev-list', '-n', '1', 'dependent-v2.0.0'], { encoding: 'utf8' }],
+      [
+        'git',
+        ['restore', '--source', 'abc123', '--worktree', '--no-overlay', 'packages'],
+        { stdio: 'inherit' },
+      ],
     ])
   })
 

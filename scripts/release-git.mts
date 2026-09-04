@@ -6,14 +6,19 @@ export function checkoutReleaseCommit(plan: StoredReleasePlan): void {
   const commits = new Set(plan.releases.map((release) => tagCommit(tagName(release))))
   if (commits.has(undefined)) throw new Error('Pending release plan has a missing tag')
   if (commits.size !== 1) throw new Error('Pending release tags do not share one commit')
-  const dispatchedCommit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
-  execFileSync('git', ['checkout', '--detach', [...commits][0]!], { stdio: 'inherit' })
-  // The release commit's own scripts/ may predate fixes to the release orchestration itself, which
-  // would trap a resumed run on the same bug forever. Only packages/ needs to stay pinned to the
-  // tagged commit for reproducibility; restore scripts/ from the commit this run actually dispatched from.
-  execFileSync('git', ['restore', '--source', dispatchedCommit, '--worktree', 'scripts'], {
-    stdio: 'inherit',
-  })
+  // Only packages/ needs to match the tagged release commit, for build reproducibility. Restoring it
+  // (rather than detaching the whole tree to the release commit and clawing individual paths back) keeps
+  // every other path -- scripts/, test/, vitest.config.mts, root configs -- at whatever the dispatched
+  // commit looks like, so a resumed run picks up fixes to the release tooling itself instead of re-running
+  // whatever was broken when the plan first got stuck.
+  // --no-overlay: without it, a file added under packages/ on the dispatched commit after the release
+  // was tagged (a new file in the same package, or an entirely new package) would survive the restore,
+  // so the resumed run could pack/publish content the tagged commit never actually contained.
+  execFileSync(
+    'git',
+    ['restore', '--source', [...commits][0]!, '--worktree', '--no-overlay', 'packages'],
+    { stdio: 'inherit' },
+  )
 }
 
 export function tagPlan(plan: StoredReleasePlan): void {
