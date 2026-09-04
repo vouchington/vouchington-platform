@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/queue-errors/package.json"],
+  "changedManifests": ["packages/auth/package.json"],
   "releases": [
     {
-      "bump": "patch",
-      "directory": "queue-errors",
-      "fromVersion": "0.1.0",
-      "name": "@vouchington/queue-errors",
-      "toVersion": "0.1.1"
+      "bump": "minor",
+      "directory": "auth",
+      "fromVersion": "0.0.1",
+      "name": "@vouchington/auth",
+      "toVersion": "0.1.0"
     }
   ],
-  "selectedPackage": "@vouchington/queue-errors"
+  "selectedPackage": "@vouchington/auth"
 }
