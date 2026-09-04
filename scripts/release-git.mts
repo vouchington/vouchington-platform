@@ -6,7 +6,14 @@ export function checkoutReleaseCommit(plan: StoredReleasePlan): void {
   const commits = new Set(plan.releases.map((release) => tagCommit(tagName(release))))
   if (commits.has(undefined)) throw new Error('Pending release plan has a missing tag')
   if (commits.size !== 1) throw new Error('Pending release tags do not share one commit')
+  const dispatchedCommit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
   execFileSync('git', ['checkout', '--detach', [...commits][0]!], { stdio: 'inherit' })
+  // The release commit's own scripts/ may predate fixes to the release orchestration itself, which
+  // would trap a resumed run on the same bug forever. Only packages/ needs to stay pinned to the
+  // tagged commit for reproducibility; restore scripts/ from the commit this run actually dispatched from.
+  execFileSync('git', ['restore', '--source', dispatchedCommit, '--worktree', 'scripts'], {
+    stdio: 'inherit',
+  })
 }
 
 export function tagPlan(plan: StoredReleasePlan): void {
