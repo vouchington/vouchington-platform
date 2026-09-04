@@ -23,6 +23,7 @@
         "src/env-contract.mts!",
         "src/cookies.mts!",
         "src/hashtags.mts!",
+        "src/utm.mts!",
         "src/fetch-ports.mts!",
         "src/observability.mts!",
       ],
