@@ -129,10 +129,15 @@ describe('resumable release operations', () => {
 })
 
 describe('publishMissing idempotency', () => {
-  it('treats a "previously published" conflict on stdout as an idempotent success', () => {
+  it('treats a "previously published" conflict as an idempotent success when the version now exists', () => {
+    let publishAttempted = false
     childProcess.execFileSync.mockImplementation((executable, arguments_: string[] = []) => {
-      if (executable === 'npm') throw commandError('npm error code E404')
+      if (executable === 'npm') {
+        if (!publishAttempted) throw commandError('npm error code E404')
+        return Buffer.from('2.0.0')
+      }
       if (executable === 'pnpm' && arguments_[0] === 'publish') {
+        publishAttempted = true
         throw commandErrorOnStdout(
           'You cannot publish over the previously published versions: 2.0.0.',
         )
@@ -143,7 +148,24 @@ describe('publishMissing idempotency', () => {
     expect(() => publishMissing(plan)).not.toThrow()
   })
 
-  it('treats a "previously published" conflict on stderr as an idempotent success', () => {
+  it('treats a "previously published" conflict on stderr as an idempotent success when the version now exists', () => {
+    let publishAttempted = false
+    childProcess.execFileSync.mockImplementation((executable, arguments_: string[] = []) => {
+      if (executable === 'npm') {
+        if (!publishAttempted) throw commandError('npm error code E404')
+        return Buffer.from('2.0.0')
+      }
+      if (executable === 'pnpm' && arguments_[0] === 'publish') {
+        publishAttempted = true
+        throw commandError('You cannot publish over the previously published versions: 2.0.0.')
+      }
+      return Buffer.from('2.0.0')
+    })
+
+    expect(() => publishMissing(plan)).not.toThrow()
+  })
+
+  it('throws when a "previously published" conflict is actually a permanently unpublished (tombstoned) version', () => {
     childProcess.execFileSync.mockImplementation((executable, arguments_: string[] = []) => {
       if (executable === 'npm') throw commandError('npm error code E404')
       if (executable === 'pnpm' && arguments_[0] === 'publish') {
@@ -152,7 +174,7 @@ describe('publishMissing idempotency', () => {
       return Buffer.from('2.0.0')
     })
 
-    expect(() => publishMissing(plan)).not.toThrow()
+    expect(() => publishMissing(plan)).toThrow('permanently blocks republishing')
   })
 
   it('rethrows a genuine publish failure such as an authentication error', () => {
