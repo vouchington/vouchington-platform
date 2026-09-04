@@ -6,6 +6,7 @@ import semver from 'semver'
 
 import { checkoutReleaseCommit, tagPlan } from './release-git.mts'
 import {
+  planMatchesRequest,
   planWorkspaceRelease,
   releaseTypes,
   type ReleaseType,
@@ -68,7 +69,10 @@ function prepare(
     throw new Error(`Unsupported release type: ${releaseTypeValue}`)
   if (existsSync(persistedPath)) {
     const persisted = readPlan(persistedPath)
-    if (!remoteReleaseComplete(persisted)) {
+    if (
+      planMatchesRequest(persisted, selectedPackage, releaseTypeValue as ReleaseType) &&
+      !remoteReleaseComplete(persisted)
+    ) {
       checkoutReleaseCommit(persisted)
       assertPlanMatchesWorkspace(persisted)
       writeJson(resolve(planPath), { ...persisted, resumed: true })

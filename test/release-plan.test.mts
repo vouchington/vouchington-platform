@@ -7,7 +7,9 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import {
   loadWorkspacePackages,
+  planMatchesRequest,
   planWorkspaceRelease,
+  type StoredReleasePlan,
   type WorkspacePackage,
 } from '../scripts/release-plan.mts'
 
@@ -324,6 +326,86 @@ describe('workspace release planning', () => {
         { name: '@vouchington/typed-entities', toVersion: '0.2.0' },
       ],
     })
+  })
+
+  it('recomputes a fresh plan instead of resuming a persisted plan for a different bump', () => {
+    const root = temporaryWorkspace()
+    const planPath = join(root, 'release-plan.json')
+    const persistedPath = join(root, '.github-release-plan.json')
+    writeManifest(root, 'utils', { name: '@vouchington/utils', version: '0.1.0' })
+    writeFileSync(
+      persistedPath,
+      `${JSON.stringify(
+        {
+          changedManifests: ['packages/utils/package.json'],
+          releases: [
+            {
+              bump: 'minor',
+              directory: 'utils',
+              fromVersion: '0.0.0',
+              name: '@vouchington/utils',
+              toVersion: '0.1.0',
+            },
+          ],
+          selectedPackage: '@vouchington/utils',
+        },
+        undefined,
+        2,
+      )}\n`,
+    )
+
+    execFileSync(
+      process.execPath,
+      [
+        join(process.cwd(), 'scripts/release.mts'),
+        'prepare',
+        '@vouchington/utils',
+        'patch',
+        planPath,
+        persistedPath,
+      ],
+      { cwd: root },
+    )
+
+    expect(readManifest(root, 'utils').version).toBe('0.1.1')
+    expect(JSON.parse(readFileSync(planPath, 'utf8'))).toMatchObject({
+      selectedPackage: '@vouchington/utils',
+      releases: [{ name: '@vouchington/utils', bump: 'patch', toVersion: '0.1.1' }],
+    })
+    expect(JSON.parse(readFileSync(planPath, 'utf8'))).not.toHaveProperty('resumed')
+  })
+})
+
+describe('planMatchesRequest', () => {
+  const plan: StoredReleasePlan = {
+    changedManifests: ['packages/utils/package.json'],
+    releases: [
+      {
+        bump: 'minor',
+        directory: 'utils',
+        fromVersion: '0.0.0',
+        name: '@vouchington/utils',
+        toVersion: '0.1.0',
+      },
+    ],
+    selectedPackage: '@vouchington/utils',
+  }
+
+  it('matches when the selected package and bump are unchanged', () => {
+    expect(planMatchesRequest(plan, '@vouchington/utils', 'minor')).toBe(true)
+  })
+
+  it('does not match when the requested bump differs from the persisted plan', () => {
+    expect(planMatchesRequest(plan, '@vouchington/utils', 'patch')).toBe(false)
+  })
+
+  it('does not match when the requested package differs from the persisted plan', () => {
+    expect(planMatchesRequest(plan, '@vouchington/other', 'minor')).toBe(false)
+  })
+
+  it('does not match when the selected package is absent from the persisted releases', () => {
+    const mismatched: StoredReleasePlan = { ...plan, selectedPackage: '@vouchington/missing' }
+    expect(planMatchesRequest(mismatched, '@vouchington/missing', 'minor')).toBe(false)
   })
 })
 

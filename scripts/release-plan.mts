@@ -32,6 +32,17 @@ export interface WorkspaceReleasePlan {
 
 export type StoredReleasePlan = Omit<WorkspaceReleasePlan, 'packages'> & { resumed?: true }
 
+export function planMatchesRequest(
+  plan: StoredReleasePlan,
+  selectedPackage: string,
+  releaseType: ReleaseType,
+): boolean {
+  return (
+    plan.selectedPackage === selectedPackage &&
+    plan.releases.find((release) => release.name === selectedPackage)?.bump === releaseType
+  )
+}
+
 const bumpStrength: Record<ReleaseType, number> = { patch: 1, minor: 2, major: 3 }
 
 export function planWorkspaceRelease(
