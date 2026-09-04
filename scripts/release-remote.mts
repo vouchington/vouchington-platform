@@ -5,11 +5,11 @@ import type { StoredReleasePlan } from './release-plan.mts'
 export function remoteReleaseComplete(plan: StoredReleasePlan): boolean {
   assertGitHubRepositoryAccessible()
   return plan.releases.every(
-    (release) => versionExists(release.name, release.toVersion) || githubReleaseExists(release),
+    (release) => versionExists(release.name, release.toVersion) && githubReleaseExists(release),
   )
 }
 
-const ALREADY_PUBLISHED_PATTERN = /previously published/iu
+const ALREADY_PUBLISHED_PATTERN = /cannot publish over the previously published versions/iu
 
 export function publishMissing(plan: StoredReleasePlan): void {
   for (const release of plan.releases) {

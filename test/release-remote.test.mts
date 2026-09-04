@@ -35,11 +35,11 @@ const plan: StoredReleasePlan = {
 beforeEach(() => childProcess.execFileSync.mockReset())
 
 describe('resumable release operations', () => {
-  it('recognizes a fully published and announced plan, short-circuiting the GitHub lookup once npm confirms the version', () => {
+  it('recognizes a fully published and announced plan', () => {
     childProcess.execFileSync.mockReturnValue(Buffer.from('2.0.0'))
 
     expect(remoteReleaseComplete(plan)).toBe(true)
-    expect(childProcess.execFileSync).toHaveBeenCalledTimes(3)
+    expect(childProcess.execFileSync).toHaveBeenCalledTimes(5)
     expect(childProcess.execFileSync).toHaveBeenCalledWith(
       'gh',
       ['api', 'repos/{owner}/{repo}', '--silent'],
@@ -50,33 +50,26 @@ describe('resumable release operations', () => {
       ['view', '@vouchington/base@2.0.0', 'version', '--json'],
       expect.objectContaining({ encoding: 'utf8' }),
     )
+    expect(childProcess.execFileSync).toHaveBeenCalledWith(
+      'gh',
+      ['api', 'repos/{owner}/{repo}/releases/tags/base-v2.0.0', '--silent'],
+      expect.objectContaining({ encoding: 'utf8' }),
+    )
   })
 
-  it('treats a release as complete when only the GitHub release exists', () => {
+  it('recognizes an incomplete plan when the npm version is missing', () => {
     childProcess.execFileSync.mockImplementation((executable, arguments_: string[]) => {
       if (executable === 'npm' && arguments_[1] === '@vouchington/dependent@2.0.0')
         throw commandError('npm error code E404')
       return Buffer.from('2.0.0')
     })
 
-    expect(remoteReleaseComplete(plan)).toBe(true)
+    expect(remoteReleaseComplete(plan)).toBe(false)
   })
 
-  it('treats a release as complete when only the npm version exists, after confirming repository access', () => {
+  it('recognizes a missing GitHub release after confirming repository access', () => {
     childProcess.execFileSync.mockImplementation((executable, arguments_: string[] = []) => {
       if (executable === 'gh' && arguments_[1]?.endsWith('base-v2.0.0'))
-        throw commandError('gh: Not Found (HTTP 404)')
-      return Buffer.from('2.0.0')
-    })
-
-    expect(remoteReleaseComplete(plan)).toBe(true)
-  })
-
-  it('recognizes a genuinely incomplete plan where neither marker exists for a release', () => {
-    childProcess.execFileSync.mockImplementation((executable, arguments_: string[] = []) => {
-      if (executable === 'npm' && arguments_[1] === '@vouchington/dependent@2.0.0')
-        throw commandError('npm error code E404')
-      if (executable === 'gh' && arguments_[1]?.endsWith('dependent-v2.0.0'))
         throw commandError('gh: Not Found (HTTP 404)')
       return Buffer.from('2.0.0')
     })
