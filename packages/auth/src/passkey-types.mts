@@ -1,6 +1,6 @@
 import type {
   AuthenticatorAttachment,
-  AuthenticatorTransportFuture,
+  AuthenticatorTransport,
   COSEAlgorithmIdentifier,
   VerifiedRegistrationResponse,
 } from '@simplewebauthn/server'
@@ -22,7 +22,7 @@ export interface StoredPasskey<UserId = string, PasskeyId = string> {
   credentialId: string
   publicKey: Uint8Array
   counter: number
-  transports?: readonly AuthenticatorTransportFuture[]
+  transports?: readonly AuthenticatorTransport[]
 }
 
 export interface PasskeyRepository<
