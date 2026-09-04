@@ -171,16 +171,25 @@ describe('publishMissing idempotency', () => {
 })
 
 describe('release git state', () => {
-  it('checks out the one commit shared by all release tags', () => {
-    childProcess.execFileSync.mockImplementation((_executable, arguments_: string[] = []) =>
-      arguments_[0] === 'rev-list' ? 'abc123\n' : Buffer.from(''),
-    )
+  it('checks out the one commit shared by all release tags, then restores scripts/ from the dispatched commit', () => {
+    childProcess.execFileSync.mockImplementation((_executable, arguments_: string[] = []) => {
+      if (arguments_[0] === 'rev-list') return 'abc123\n'
+      if (arguments_[0] === 'rev-parse') return 'dispatched789\n'
+      return Buffer.from('')
+    })
 
     checkoutReleaseCommit(plan)
 
     expect(childProcess.execFileSync).toHaveBeenCalledWith(
       'git',
       ['checkout', '--detach', 'abc123'],
+      {
+        stdio: 'inherit',
+      },
+    )
+    expect(childProcess.execFileSync).toHaveBeenCalledWith(
+      'git',
+      ['restore', '--source', 'dispatched789', '--worktree', 'scripts'],
       {
         stdio: 'inherit',
       },
