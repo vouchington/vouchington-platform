@@ -22,9 +22,16 @@ export function publishMissing(plan: StoredReleasePlan): void {
       })
     } catch (error) {
       const output = commandOutput(error)
-      if (!ALREADY_PUBLISHED_PATTERN.test(output)) {
-        console.error(output)
-        throw error
+      console.error(output)
+      if (!ALREADY_PUBLISHED_PATTERN.test(output)) throw error
+      if (!versionExists(release.name, release.toVersion)) {
+        throw new Error(
+          `npm rejected ${release.name}@${release.toVersion} as "previously published", but ` +
+            `it does not currently exist on the registry. This version was likely published and ` +
+            `then unpublished, which permanently blocks republishing it under the same number. ` +
+            `A new version number is required.`,
+          { cause: error },
+        )
       }
       console.log(
         `${release.name}@${release.toVersion} is already published on npm; treating as complete.`,
