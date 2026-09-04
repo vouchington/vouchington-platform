@@ -178,11 +178,15 @@ describe('release git state', () => {
 
     checkoutReleaseCommit(plan)
 
-    expect(childProcess.execFileSync).toHaveBeenCalledWith(
-      'git',
-      ['restore', '--source', 'abc123', '--worktree', 'packages'],
-      { stdio: 'inherit' },
-    )
+    expect(childProcess.execFileSync.mock.calls).toEqual([
+      ['git', ['rev-list', '-n', '1', 'base-v2.0.0'], { encoding: 'utf8' }],
+      ['git', ['rev-list', '-n', '1', 'dependent-v2.0.0'], { encoding: 'utf8' }],
+      [
+        'git',
+        ['restore', '--source', 'abc123', '--worktree', '--no-overlay', 'packages'],
+        { stdio: 'inherit' },
+      ],
+    ])
   })
 
   it('rejects release tags from different commits', () => {

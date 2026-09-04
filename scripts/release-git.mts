@@ -11,9 +11,14 @@ export function checkoutReleaseCommit(plan: StoredReleasePlan): void {
   // every other path -- scripts/, test/, vitest.config.mts, root configs -- at whatever the dispatched
   // commit looks like, so a resumed run picks up fixes to the release tooling itself instead of re-running
   // whatever was broken when the plan first got stuck.
-  execFileSync('git', ['restore', '--source', [...commits][0]!, '--worktree', 'packages'], {
-    stdio: 'inherit',
-  })
+  // --no-overlay: without it, a file added under packages/ on the dispatched commit after the release
+  // was tagged (a new file in the same package, or an entirely new package) would survive the restore,
+  // so the resumed run could pack/publish content the tagged commit never actually contained.
+  execFileSync(
+    'git',
+    ['restore', '--source', [...commits][0]!, '--worktree', '--no-overlay', 'packages'],
+    { stdio: 'inherit' },
+  )
 }
 
 export function tagPlan(plan: StoredReleasePlan): void {
