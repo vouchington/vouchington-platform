@@ -180,20 +180,25 @@ describe('release git state', () => {
 
     checkoutReleaseCommit(plan)
 
-    expect(childProcess.execFileSync).toHaveBeenCalledWith(
+    const gitCalls = childProcess.execFileSync.mock.calls.filter(
+      ([executable]) => executable === 'git',
+    )
+    const orderedVerbs = gitCalls
+      .map(([, arguments_]) => (arguments_ as string[])[0])
+      .filter((verb) => verb === 'rev-parse' || verb === 'checkout' || verb === 'restore')
+    expect(orderedVerbs).toEqual(['rev-parse', 'checkout', 'restore'])
+
+    expect(gitCalls).toContainEqual(['git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }])
+    expect(gitCalls).toContainEqual([
       'git',
       ['checkout', '--detach', 'abc123'],
-      {
-        stdio: 'inherit',
-      },
-    )
-    expect(childProcess.execFileSync).toHaveBeenCalledWith(
+      { stdio: 'inherit' },
+    ])
+    expect(gitCalls).toContainEqual([
       'git',
       ['restore', '--source', 'dispatched789', '--worktree', 'scripts'],
-      {
-        stdio: 'inherit',
-      },
-    )
+      { stdio: 'inherit' },
+    ])
   })
 
   it('rejects release tags from different commits', () => {
