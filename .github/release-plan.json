@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/utils/package.json"],
+  "changedManifests": ["packages/html-utils/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "utils",
-      "fromVersion": "0.5.0",
-      "name": "@vouchington/utils",
-      "toVersion": "0.5.1"
+      "directory": "html-utils",
+      "fromVersion": "0.1.0",
+      "name": "@vouchington/html-utils",
+      "toVersion": "0.1.1"
     }
   ],
-  "selectedPackage": "@vouchington/utils"
+  "selectedPackage": "@vouchington/html-utils"
 }
