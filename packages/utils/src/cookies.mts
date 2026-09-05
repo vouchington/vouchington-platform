@@ -35,3 +35,18 @@ export function serializeCookie(name: string, value: string, attributes: CookieA
   if (attributes.secure) parts.push('Secure')
   return parts.join('; ')
 }
+
+const COOKIE_SPLIT_REGEX = /;\s*/
+
+export function parseCookies(cookieHeader?: string | null): Map<string, string> {
+  const cookies = new Map<string, string>()
+  if (!cookieHeader) return cookies
+  for (const part of cookieHeader.split(COOKIE_SPLIT_REGEX)) {
+    const separatorIndex = part.indexOf('=')
+    if (separatorIndex <= 0) continue
+    const name = part.slice(0, separatorIndex).trim()
+    const value = part.slice(separatorIndex + 1).trim()
+    if (name.length > 0) cookies.set(name, value)
+  }
+  return cookies
+}

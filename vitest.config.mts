@@ -22,6 +22,7 @@ export default defineConfig({
       exclude: [
         'packages/*/src/**/*.test.mts',
         'packages/*/src/**/test-helpers.mts',
+        'packages/*/src/**/*-test-helpers.mts',
         'packages/*/src/**/types.mts',
         'packages/*/src/**/*-types.mts',
         'packages/*/src/**/*.d.ts',

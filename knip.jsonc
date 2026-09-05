@@ -26,8 +26,13 @@
         "src/utm.mts!",
         "src/fetch-ports.mts!",
         "src/observability.mts!",
+        "src/http-signatures.mts!",
       ],
-      "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
+      "project": [
+        "src/**/*.mts!",
+        "!src/**/*.test.mts!",
+        "!src/**/http-signatures-test-helpers.mts!",
+      ],
     },
     "packages/session-jwt": {
       "entry": ["src/index.mts!"],

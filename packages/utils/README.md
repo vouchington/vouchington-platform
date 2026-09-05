@@ -6,7 +6,8 @@ export: import the capability you use from an explicit subpath.
 ```ts
 import { createTokenSecrets } from '@vouchington/utils/token-secrets'
 import { createMoneyCatalog } from '@vouchington/utils/money'
-import { serializeCookie } from '@vouchington/utils/cookies'
+import { parseCookies, serializeCookie } from '@vouchington/utils/cookies'
+import { buildSignatureHeaders, verifySignature } from '@vouchington/utils/http-signatures'
 import { bestAcceptLanguageMatch } from '@vouchington/utils/language-tags'
 import { createMessageTranslator } from '@vouchington/utils/message-catalog'
 import { createReportInputParser } from '@vouchington/utils/moderation'
@@ -30,6 +31,10 @@ import { createReportInputParser } from '@vouchington/utils/moderation'
   metadata keys and surface/sensitivity lookups.
 - `cookies`: `serializeCookie(name, value, attributes)` validates cookie grammar and requires the
   caller to supply every policy attribute. `SameSite=None` requires `Secure`.
+  `parseCookies(header)` splits a `Cookie` request header into a name/value `Map`.
+- `http-signatures`: Node-only (`node:crypto`) Cavage-12 HTTP Signatures. Callers pass signed
+  headers, allowed algorithms, and `maxAgeSeconds` on both sign and verify. The package has no
+  default header set or product keyId policy.
 - `collections`, `async`, and `stable-json`: collection deduplication/merging, bounded async mapping,
   and deterministic JSON serialization.
 - `feature-flags`: base64 JSON feature-flag cookie parsing and serialization with caller-injected

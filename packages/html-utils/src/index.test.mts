@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   decodeHtmlEntities,
   escapeHtml,
+  escapeInlineScriptJson,
   isInsideCode,
   isInsideHtmlElement,
   isInsideHtmlTag,
@@ -51,5 +52,15 @@ describe('HTML entity and text helpers', () => {
     expect(isInsideCode('<pre>hi', 6)).toBe(true)
     expect(isInsideCode('<pre>hi</pre> hello', 18)).toBe(false)
     expect(isInsideCode('hello world', 5)).toBe(false)
+  })
+  it('escapes inline-script JSON breakout characters', () => {
+    expect(escapeInlineScriptJson('{"key":"value"}')).toBe('{"key":"value"}')
+    expect(escapeInlineScriptJson('')).toBe('')
+    const lineSeparator = String.fromCodePoint(0x20_28)
+    const paragraphSeparator = String.fromCodePoint(0x20_29)
+    expect(escapeInlineScriptJson(`{"test":"<${lineSeparator}${paragraphSeparator}"}`)).toBe(
+      String.raw`{"test":"\u003c\u2028\u2029"}`,
+    )
+    expect(escapeInlineScriptJson('<<<')).toBe(String.raw`\u003c\u003c\u003c`)
   })
 })
