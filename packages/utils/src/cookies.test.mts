@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { serializeCookie } from './cookies.mts'
+import { parseCookies, serializeCookie } from './cookies.mts'
 
 const safeAttributes = {
   httpOnly: true,
@@ -68,5 +68,23 @@ describe('cookie serialization', () => {
     expect(
       serializeCookie('state', 'ok', { ...safeAttributes, sameSite: 'none', secure: true }),
     ).toContain('SameSite=None')
+  })
+})
+
+describe('cookie parsing', () => {
+  it('parses cookie headers into a map and ignores malformed segments', () => {
+    const parsed = parseCookies('foo=bar; st=token; dt=abc')
+    expect(parsed.get('foo')).toBe('bar')
+    expect(parsed.get('st')).toBe('token')
+    expect(parsed.get('dt')).toBe('abc')
+    const messy = parseCookies('foo=bar; missing-equals; =empty;  =blank; spaced = value ')
+    expect(messy.get('foo')).toBe('bar')
+    expect(messy.get('spaced')).toBe('value')
+    expect(messy.has('missing-equals')).toBe(false)
+    expect(messy.has('')).toBe(false)
+    expect(parseCookies(' =blank').size).toBe(0)
+    expect(parseCookies(null).size).toBe(0)
+    expect(parseCookies(undefined).size).toBe(0)
+    expect(parseCookies('').size).toBe(0)
   })
 })

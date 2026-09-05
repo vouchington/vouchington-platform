@@ -61,6 +61,10 @@ third-party dependencies.
 
 Record the source SHA and path list in the commit body when copying from the product monorepo.
 
+`@vouchington/utils/http-signatures` is a Node-only Cavage-12 engine. Callers inject signed
+headers, algorithms, and maxAge on both sign and verify. Applications own keyId URIs, PEM
+decrypt, persistence, and delivery.
+
 `@vouchington/typed-entities` is the exception to the normal explicit-subpath utility convention:
 its cohesive public API is root-export-only. Applications own entity type strings, schema, policy,
 authorization, and transaction implementation; the package owns only generic semantic invariants.

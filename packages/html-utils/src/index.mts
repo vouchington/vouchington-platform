@@ -69,6 +69,14 @@ export function isInsideHtmlTag(value: string, position: number): boolean {
 export function isInsideCode(value: string, position: number): boolean {
   return isInsideHtmlElement(value, position, CODE_ELEMENT_NAMES)
 }
+
+/** Escapes characters that would break out of an inline `<script>` JSON payload. */
+export function escapeInlineScriptJson(json: string): string {
+  return json
+    .replaceAll('<', String.raw`\u003c`)
+    .replaceAll('\u2028', String.raw`\u2028`)
+    .replaceAll('\u2029', String.raw`\u2029`)
+}
 function isValidCodePoint(point: number): boolean {
   return (
     point > 0 &&
