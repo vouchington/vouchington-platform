@@ -187,6 +187,18 @@ describe('HTTP Signature signing', () => {
         algorithm: 'rsa-sha256',
       }),
     ).toThrow('Unknown signed header: content-type')
+    expect(() =>
+      buildSignatureHeaders({
+        method: 'POST',
+        url: 'https://mastodon.example/inbox',
+        body: '{}',
+        keyId: KEY_ID,
+        privateKeyPem,
+        signedHeaders: [...defaultSignPolicy.signedHeaders, 'content-type'],
+        algorithm: 'rsa-sha256',
+        additionalHeaders: { 'x-other': 'nope' },
+      }),
+    ).toThrow('Unknown signed header: content-type')
     const digest = computeDigest('hello')
     expect(verifyDigest('hello', digest)).toBe(true)
     expect(verifyDigest('other', digest)).toBe(false)
