@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/auth/package.json"],
+  "changedManifests": ["packages/utils/package.json"],
   "releases": [
     {
-      "bump": "minor",
-      "directory": "auth",
-      "fromVersion": "0.0.1",
-      "name": "@vouchington/auth",
-      "toVersion": "0.1.0"
+      "bump": "patch",
+      "directory": "utils",
+      "fromVersion": "0.5.0",
+      "name": "@vouchington/utils",
+      "toVersion": "0.5.1"
     }
   ],
-  "selectedPackage": "@vouchington/auth"
+  "selectedPackage": "@vouchington/utils"
 }
