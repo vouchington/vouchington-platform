@@ -95,7 +95,7 @@ describe('verifySignature', () => {
     ).toBe('Signature must cover (request-target), host, date, digest (missing: host, date)')
   })
 
-  it('accepts injected algorithms, omitted algorithm, extra headers, and referenceTime', () => {
+  it('accepts injected algorithms, extra headers, and referenceTime', () => {
     const { privateKeyPem, publicKeyPem } = generateRsaSha256KeyPair()
     const { digestHeader, dateHeader } = digestAndDate()
     expect(
@@ -141,8 +141,50 @@ describe('verifySignature', () => {
           }),
           { digestHeader, dateHeader },
         ),
-      ).valid,
-    ).toBe(true)
+      ),
+    ).toEqual({ valid: false, error: 'Signature algorithm is required' })
+    expect(
+      verifySignature(
+        verifyArgs(
+          publicKeyPem,
+          buildManualSignature({
+            privateKeyPem,
+            dateHeader,
+            digestHeader,
+            headerNames: FULL_HEADERS,
+            algorithm: 'rsa-sha512',
+          }),
+          { digestHeader, dateHeader, allowedAlgorithms: ['rsa-sha512', 'rsa-sha256'] },
+        ),
+      ),
+    ).toEqual({ valid: false, error: 'Unsupported signature algorithm: rsa-sha512' })
+    expect(
+      verifySignature(
+        verifyArgs(publicKeyPem, 'headers="(request-target) host date digest",signature="abc"', {
+          digestHeader,
+          dateHeader,
+          maxAgeSeconds: Number.NaN,
+        }),
+      ),
+    ).toEqual({ valid: false, error: 'maxAgeSeconds must be a finite non-negative number' })
+    expect(
+      verifySignature(
+        verifyArgs(publicKeyPem, 'headers="(request-target) host date digest",signature="abc"', {
+          digestHeader,
+          dateHeader,
+          maxAgeSeconds: -1,
+        }),
+      ),
+    ).toEqual({ valid: false, error: 'maxAgeSeconds must be a finite non-negative number' })
+    expect(
+      verifySignature(
+        verifyArgs(publicKeyPem, 'headers="(request-target) host date digest",signature="abc"', {
+          digestHeader,
+          dateHeader,
+          maxAgeSeconds: Number.POSITIVE_INFINITY,
+        }),
+      ),
+    ).toEqual({ valid: false, error: 'maxAgeSeconds must be a finite non-negative number' })
     const contentType = 'application/activity+json'
     expect(
       verifySignature(

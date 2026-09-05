@@ -231,6 +231,30 @@ describe('HTTP Signature signing', () => {
       additionalHeaders: { 'Content-Type': 'application/activity+json' },
     })
     expect(signed.signature).toContain('headers="(request-target) host date digest content-type"')
+    const mixedExtra = buildSignatureHeaders({
+      method: 'POST',
+      url,
+      body: '{}',
+      keyId: KEY_ID,
+      privateKeyPem: keypair.privateKeyPem,
+      signedHeaders: [...FULL_HEADERS, 'content-type'],
+      algorithm: 'rsa-sha256',
+      additionalHeaders: { 'Content-Type': 'application/activity+json' },
+    })
+    expect(
+      verifySignature({
+        method: 'POST',
+        path: '/inbox',
+        host: 'mastodon.example',
+        body: '{}',
+        signatureHeader: mixedExtra.signature,
+        digestHeader: mixedExtra.digest,
+        dateHeader: mixedExtra.date,
+        publicKeyPem: keypair.publicKeyPem,
+        ...defaultVerifyPolicy,
+        additionalHeaders: { 'Content-Type': 'application/activity+json' },
+      }).valid,
+    ).toBe(true)
     expect(
       verifySignature({
         method: 'POST',

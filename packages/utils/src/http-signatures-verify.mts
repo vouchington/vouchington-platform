@@ -1,7 +1,7 @@
 import { verify } from 'node:crypto'
 import { verifyDigest } from './http-signatures-digest.mts'
 import { assertPublicKeyPem } from './http-signatures-keys.mts'
-import { buildSigningString } from './http-signatures-string.mts'
+import { buildSigningString, isSha256SignatureAlgorithm } from './http-signatures-string.mts'
 
 export type VerifySignatureOptions = {
   method: string
@@ -63,6 +63,9 @@ function verifySignatureBody(options: VerifySignatureOptions): SignatureVerifica
   if (Number.isNaN(requestDate.getTime())) return { valid: false, error: 'Invalid date header' }
   const ageSeconds =
     ((options.referenceTime?.getTime() ?? Date.now()) - requestDate.getTime()) / 1000
+  if (!Number.isFinite(options.maxAgeSeconds) || options.maxAgeSeconds < 0) {
+    return { valid: false, error: 'maxAgeSeconds must be a finite non-negative number' }
+  }
   if (Math.abs(ageSeconds) > options.maxAgeSeconds) {
     return {
       valid: false,
@@ -75,8 +78,18 @@ function verifySignatureBody(options: VerifySignatureOptions): SignatureVerifica
   const sigParts = parseSignatureHeader(options.signatureHeader)
   if (!sigParts) return { valid: false, error: 'Invalid signature header format' }
   const { signature, headers, algorithm } = sigParts
-  if (algorithm !== null && !options.allowedAlgorithms.includes(algorithm)) {
-    return { valid: false, error: `Unsupported signature algorithm: ${algorithm}` }
+  if (
+    algorithm === null ||
+    !options.allowedAlgorithms.includes(algorithm) ||
+    !isSha256SignatureAlgorithm(algorithm)
+  ) {
+    return {
+      valid: false,
+      error:
+        algorithm === null
+          ? 'Signature algorithm is required'
+          : `Unsupported signature algorithm: ${algorithm}`,
+    }
   }
   const covered = new Set(headers)
   const missingRequired = options.requiredHeaders

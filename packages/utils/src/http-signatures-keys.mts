@@ -1,4 +1,4 @@
-import { generateKeyPairSync } from 'node:crypto'
+import { createPrivateKey, createPublicKey, generateKeyPairSync } from 'node:crypto'
 
 export type RsaSha256KeyPair = {
   publicKeyPem: string
@@ -14,16 +14,19 @@ export function generateRsaSha256KeyPair(): RsaSha256KeyPair {
   return { publicKeyPem: publicKey, privateKeyPem: privateKey }
 }
 
-function assertPemFormat(pem: string, label: string): void {
-  if (!pem.includes('-----BEGIN') || !pem.includes('-----END')) {
-    throw new Error(`Invalid ${label} PEM format`)
+export function assertPublicKeyPem(pem: string): void {
+  if (pem.includes('PRIVATE')) throw new Error('Invalid public key PEM format')
+  try {
+    createPublicKey(pem)
+  } catch {
+    throw new Error('Invalid public key PEM format')
   }
 }
 
-export function assertPublicKeyPem(pem: string): void {
-  assertPemFormat(pem, 'public key')
-}
-
 export function assertPrivateKeyPem(pem: string): void {
-  assertPemFormat(pem, 'private key')
+  try {
+    createPrivateKey(pem)
+  } catch {
+    throw new Error('Invalid private key PEM format')
+  }
 }
