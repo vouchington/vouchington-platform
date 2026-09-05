@@ -51,7 +51,7 @@ export function buildSignatureHeaders(options: BuildSignatureHeadersOptions): Si
   const signatureHeaderValue = [
     `keyId="${options.keyId}"`,
     `algorithm="${options.algorithm}"`,
-    `headers="${options.signedHeaders.join(' ')}"`,
+    `headers="${options.signedHeaders.map((name) => name.toLowerCase()).join(' ')}"`,
     `signature="${signature}"`,
   ].join(',')
   return { digest, signature: signatureHeaderValue, date }

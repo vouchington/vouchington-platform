@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { computeDigest, verifyDigest } from './http-signatures-digest.mts'
 import { generateRsaSha256KeyPair } from './http-signatures-keys.mts'
 import { buildSignatureHeaders } from './http-signatures-sign.mts'
+import { verifySignature } from './http-signatures-verify.mts'
 import {
   defaultSignPolicy,
   defaultVerifyPolicy,
   FULL_HEADERS,
   KEY_ID,
 } from './http-signatures-test-helpers.mts'
-import { verifySignature } from './http-signatures-verify.mts'
 
 function verifyUrl(
   method: string,
@@ -215,5 +215,37 @@ describe('HTTP Signature signing', () => {
       additionalHeaders: { 'content-type': 'application/activity+json' },
     })
     expect(withContentType.signature).toContain('content-type')
+  })
+
+  it('lowercases signed header names per Cavage-12 and matches mixed-case extras', () => {
+    const keypair = generateRsaSha256KeyPair()
+    const url = 'https://mastodon.example/inbox'
+    const signed = buildSignatureHeaders({
+      method: 'POST',
+      url,
+      body: '{}',
+      keyId: KEY_ID,
+      privateKeyPem: keypair.privateKeyPem,
+      signedHeaders: ['(request-target)', 'Host', 'Date', 'Digest', 'Content-Type'],
+      algorithm: 'rsa-sha256',
+      additionalHeaders: { 'Content-Type': 'application/activity+json' },
+    })
+    expect(signed.signature).toContain('headers="(request-target) host date digest content-type"')
+    expect(
+      verifySignature({
+        method: 'POST',
+        path: '/inbox',
+        host: 'mastodon.example',
+        body: '{}',
+        signatureHeader: signed.signature,
+        digestHeader: signed.digest,
+        dateHeader: signed.date,
+        publicKeyPem: keypair.publicKeyPem,
+        requiredHeaders: ['(request-target)', 'HOST', 'Date', 'digest'],
+        allowedAlgorithms: ['rsa-sha256', 'hs2019'],
+        maxAgeSeconds: 3600,
+        additionalHeaders: { 'content-type': 'application/activity+json' },
+      }).valid,
+    ).toBe(true)
   })
 })

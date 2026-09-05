@@ -41,7 +41,7 @@ function parseSignatureHeader(
   if (!signatureMatch?.[1] || !headersMatch?.[1]) return null
   return {
     signature: signatureMatch[1],
-    headers: headersMatch[1].split(' '),
+    headers: headersMatch[1].split(' ').map((name) => name.toLowerCase()),
     algorithm: ALGORITHM_VALUE_PATTERN.exec(header)?.[1] ?? null,
   }
 }
@@ -78,7 +78,10 @@ function verifySignatureBody(options: VerifySignatureOptions): SignatureVerifica
   if (algorithm !== null && !options.allowedAlgorithms.includes(algorithm)) {
     return { valid: false, error: `Unsupported signature algorithm: ${algorithm}` }
   }
-  const missingRequired = options.requiredHeaders.filter((name) => !headers.includes(name))
+  const covered = new Set(headers)
+  const missingRequired = options.requiredHeaders
+    .map((name) => name.toLowerCase())
+    .filter((name) => !covered.has(name))
   if (missingRequired.length > 0) {
     return {
       valid: false,
