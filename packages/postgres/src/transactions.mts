@@ -57,7 +57,7 @@ async function withOwnedTransaction<Result>(
   return runTransactionHandler(transaction, handler)
 }
 
-async function beginOwnedPoolTransaction(
+export async function beginOwnedPoolTransaction(
   runtime: PsqlRuntime,
   client: pg.PoolClient,
   annotation: string,

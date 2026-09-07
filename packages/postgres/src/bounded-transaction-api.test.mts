@@ -4,6 +4,11 @@ import { createBoundedTransactionApi } from './bounded-transaction-api.mts'
 import { withPsql } from './test-helpers.mts'
 import type { PsqlRuntime } from './types.mts'
 
+function rejectIdlePoolProbe(input: { text?: string } | string): void {
+  if ((typeof input === 'string' ? input : (input.text ?? '')).includes('SAVEPOINT'))
+    throw Object.assign(new Error('idle'), { code: '25P01' })
+}
+
 describe('withBoundedTransaction', () => {
   it('commits a bounded transaction', async () => {
     await withPsql(async (psql) => {
@@ -75,6 +80,7 @@ describe('withBoundedTransaction', () => {
     const timings: string[] = []
     const client = {
       query: async (input: { text?: string; query_timeout?: number }) => {
+        rejectIdlePoolProbe(input)
         inputs.push(input)
         return { rows: [], rowCount: 0 }
       },
@@ -109,6 +115,7 @@ describe('withBoundedTransaction', () => {
     const reporter = vi.fn()
     const client = {
       query: async (input: { text?: string }) => {
+        rejectIdlePoolProbe(input)
         if (input.text?.includes('ROLLBACK')) throw rollback
         return { rows: [], rowCount: 0 }
       },
@@ -139,6 +146,7 @@ describe('withBoundedTransaction', () => {
     const reporter = vi.fn()
     const client = {
       query: async (input: { text?: string }) => {
+        rejectIdlePoolProbe(input)
         if (input.text?.includes('bad')) throw primary
         return { rows: [], rowCount: 0 }
       },
@@ -171,6 +179,7 @@ describe('withBoundedTransaction', () => {
     const inputs: string[] = []
     const client = {
       query: async (input: { text?: string }) => {
+        rejectIdlePoolProbe(input)
         inputs.push(input.text ?? '')
         if (input.text?.includes('COMMIT')) throw commitFailure
         return { rows: [], rowCount: 0 }
@@ -207,6 +216,7 @@ describe('withBoundedTransaction', () => {
     const reporter = vi.fn()
     const client = {
       query: async (input: { text?: string }) => {
+        rejectIdlePoolProbe(input)
         if (input.text?.includes('bad')) throw primary
         if (input.text?.includes('ROLLBACK')) throw rollback
         return { rows: [], rowCount: 0 }
@@ -233,5 +243,65 @@ describe('withBoundedTransaction', () => {
     ).rejects.toBe(primary)
     expect(client.release).toHaveBeenCalledWith(true)
     expect(reporter.mock.calls[0]?.[0]).toMatchObject({ errors: [primary, rollback] })
+  })
+
+  it('destroys an active pool client before starting a bounded transaction', async () => {
+    const queries: string[] = []
+    const client = {
+      query: async (input: { text?: string } | string) => {
+        queries.push(typeof input === 'string' ? input : (input.text ?? ''))
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    const runtime: PsqlRuntime = {
+      pools: {
+        write: { connect: async () => client } as never,
+        read: { connect: vi.fn() } as never,
+        advisoryLock: { connect: vi.fn() } as never,
+      },
+      env: {},
+      errorHandler: () => {},
+    }
+    await expect(
+      createBoundedTransactionApi(runtime).beginBoundedTransaction({
+        connectionTimeoutMs: 100,
+        statementTimeoutMs: 50,
+      }),
+    ).rejects.toThrow('Cannot create an owned transaction from an active pool client')
+    expect(queries).toEqual([
+      'SAVEPOINT vouchington_transaction_probe',
+      'RELEASE SAVEPOINT vouchington_transaction_probe',
+    ])
+    expect(client.release).toHaveBeenCalledWith(true)
+  })
+
+  it('destroys an unprobeable pool client before bounded callback work', async () => {
+    const probeFailure = Object.assign(new Error('disk full'), { code: '53100' })
+    const queries: string[] = []
+    const client = {
+      query: async (input: { text?: string } | string) => {
+        queries.push(typeof input === 'string' ? input : (input.text ?? ''))
+        throw probeFailure
+      },
+      release: vi.fn(),
+    }
+    const runtime: PsqlRuntime = {
+      pools: {
+        write: { connect: async () => client } as never,
+        read: { connect: vi.fn() } as never,
+        advisoryLock: { connect: vi.fn() } as never,
+      },
+      env: {},
+      errorHandler: () => {},
+    }
+    await expect(
+      createBoundedTransactionApi(runtime).withBoundedTransaction(
+        { connectionTimeoutMs: 100, statementTimeoutMs: 50 },
+        async () => 1,
+      ),
+    ).rejects.toBe(probeFailure)
+    expect(queries).toEqual(['SAVEPOINT vouchington_transaction_probe'])
+    expect(client.release).toHaveBeenCalledWith(true)
   })
 })

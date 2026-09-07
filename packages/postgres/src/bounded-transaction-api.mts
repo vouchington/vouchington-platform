@@ -6,7 +6,7 @@ import {
   type BoundedTransactionOptions,
 } from './bounded-transaction.mts'
 import type { Transaction } from './create-psql-types.mts'
-import { beginOwnedTransaction, runTransactionHandler } from './transactions.mts'
+import { beginOwnedPoolTransaction, runTransactionHandler } from './transactions.mts'
 import type { PsqlRuntime, TransactionQuery } from './types.mts'
 
 export type { BoundedTransactionOptions } from './bounded-transaction.mts'
@@ -16,7 +16,7 @@ export function createBoundedTransactionApi(runtime: PsqlRuntime) {
     options: BoundedTransactionOptions,
     annotation = '/* beginBoundedTransaction */',
   ): Promise<Transaction> =>
-    beginOwnedTransaction(
+    beginOwnedPoolTransaction(
       runtime,
       await acquireClientWithin(runtime.pools.write, options.connectionTimeoutMs),
       annotation,
