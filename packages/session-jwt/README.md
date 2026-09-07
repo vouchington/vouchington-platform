@@ -36,10 +36,11 @@ const payload = await verifyJwt(token, {
 ```
 
 `createJwtKeySet` uses the first private key to sign and every public key to verify, enabling safe
-rotation. Construction completes only after every key imports successfully. JWKs must use RSA
-moduli of at least 2048 bits, `alg: 'RS512'`, role-compatible `key_ops`, and unique non-empty `kid`
-values. Use `JwtKeySetCache` when a long-lived caller wants identity-based memoization with explicit
-`delete` and `clear` lifecycle controls; the default constructor retains no key material globally.
+rotation. Construction completes only after every key imports successfully. JWKs must use two-prime
+RSA moduli of at least 2048 bits (no `oth`), `alg: 'RS512'`, role-compatible `key_ops`, and unique
+non-empty `kid` values. Use `JwtKeySetCache` when a long-lived caller wants identity-based
+memoization with explicit `delete` and `clear` lifecycle controls; the default constructor retains
+no key material globally.
 
 Malformed tokens, unknown keys, invalid signatures, expiry, issuer, audience, and failed payload
 validators make `verifyJwt` return `null`. Invalid configuration throws. Without a payload validator,
