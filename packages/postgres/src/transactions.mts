@@ -65,7 +65,7 @@ export async function beginOwnedPoolTransaction(
   statementTimeoutMs?: number,
 ): Promise<Transaction> {
   try {
-    if (await isInTransaction(client))
+    if (await isInTransaction(client, statementTimeoutMs))
       throw new Error('Cannot create an owned transaction from an active pool client')
   } catch (error) {
     client.release(true)
@@ -167,10 +167,16 @@ function reportBorrowedRollbackFailure(
   }
 }
 
-async function isInTransaction(client: pg.PoolClient): Promise<boolean> {
+async function isInTransaction(client: pg.PoolClient, queryTimeoutMs?: number): Promise<boolean> {
+  const probe = (text: string) =>
+    client.query(
+      queryTimeoutMs === undefined
+        ? text
+        : ({ query_timeout: queryTimeoutMs, text } as pg.QueryConfig),
+    )
   try {
-    await client.query(`SAVEPOINT ${TRANSACTION_PROBE_SAVEPOINT}`)
-    await client.query(`RELEASE SAVEPOINT ${TRANSACTION_PROBE_SAVEPOINT}`)
+    await probe(`SAVEPOINT ${TRANSACTION_PROBE_SAVEPOINT}`)
+    await probe(`RELEASE SAVEPOINT ${TRANSACTION_PROBE_SAVEPOINT}`)
     return true
   } catch (error) {
     if ((error as { code?: string }).code === '25P01') return false
