@@ -41,6 +41,7 @@ describe('transaction probes and rollback', () => {
       query: async (input: { text?: string } | string) => {
         const text = typeof input === 'string' ? input : (input.text ?? '')
         queries.push(text)
+        if (text.includes('SAVEPOINT')) throw Object.assign(new Error('idle'), { code: '25P01' })
         return { rows: [], rowCount: 0 }
       },
       release: vi.fn(),
@@ -59,6 +60,7 @@ describe('transaction probes and rollback', () => {
       query: async (input: { text?: string } | string) => {
         const text = typeof input === 'string' ? input : (input.text ?? '')
         queries.push(text)
+        if (text.includes('SAVEPOINT')) throw Object.assign(new Error('idle'), { code: '25P01' })
         return { rows: [], rowCount: 0 }
       },
       release: vi.fn(),
@@ -72,7 +74,14 @@ describe('transaction probes and rollback', () => {
 
   it('destroys clients after initial or terminal control failures', async () => {
     const beginFailure = new Error('begin failed')
-    const beginClient = { query: async () => Promise.reject(beginFailure), release: vi.fn() }
+    const beginClient = {
+      query: async (input: { text?: string } | string) => {
+        const text = typeof input === 'string' ? input : (input.text ?? '')
+        if (text.includes('SAVEPOINT')) throw Object.assign(new Error('idle'), { code: '25P01' })
+        throw beginFailure
+      },
+      release: vi.fn(),
+    }
     await expect(createTransactionApi(runtime(beginClient)).beginTransaction()).rejects.toBe(
       beginFailure,
     )
@@ -82,6 +91,7 @@ describe('transaction probes and rollback', () => {
     const commitClient = {
       query: async (input: { text?: string } | string) => {
         const text = typeof input === 'string' ? input : (input.text ?? '')
+        if (text.includes('SAVEPOINT')) throw Object.assign(new Error('idle'), { code: '25P01' })
         if (text.includes('COMMIT')) throw commitFailure
         return { rows: [], rowCount: 0 }
       },
@@ -96,7 +106,9 @@ describe('transaction probes and rollback', () => {
     const queries: string[] = []
     const client = {
       query: async (input: { text?: string } | string) => {
-        queries.push(typeof input === 'string' ? input : (input.text ?? ''))
+        const text = typeof input === 'string' ? input : (input.text ?? '')
+        queries.push(text)
+        if (text.includes('SAVEPOINT')) throw Object.assign(new Error('idle'), { code: '25P01' })
         return { rows: [], rowCount: 0 }
       },
       release: vi.fn(),
@@ -111,6 +123,7 @@ describe('transaction probes and rollback', () => {
     const client = {
       query: async (input: { text?: string } | string) => {
         const text = typeof input === 'string' ? input : (input.text ?? '')
+        if (text.includes('SAVEPOINT')) throw Object.assign(new Error('idle'), { code: '25P01' })
         if (text.includes('falsy')) throw undefined
         return { rows: [], rowCount: 0 }
       },
@@ -130,6 +143,7 @@ describe('transaction probes and rollback', () => {
     const client = {
       query: async (input: { text?: string } | string) => {
         const text = typeof input === 'string' ? input : (input.text ?? '')
+        if (text.includes('SAVEPOINT')) throw Object.assign(new Error('idle'), { code: '25P01' })
         if (text.includes('ROLLBACK')) throw rollback
         return { rows: [], rowCount: 0 }
       },
@@ -148,6 +162,7 @@ describe('transaction probes and rollback', () => {
     const client = {
       query: async (input: { text?: string } | string) => {
         const text = typeof input === 'string' ? input : (input.text ?? '')
+        if (text.includes('SAVEPOINT')) throw Object.assign(new Error('idle'), { code: '25P01' })
         if (text.includes('queued')) throw new Error('queued failed')
         if (text.includes('ROLLBACK')) throw new Error('rollback failed')
         return { rows: [], rowCount: 0 }
@@ -347,7 +362,9 @@ describe('transaction probes and rollback', () => {
     const queries: string[] = []
     const client = {
       query: async (input: { text?: string } | string) => {
-        queries.push(typeof input === 'string' ? input : (input.text ?? ''))
+        const text = typeof input === 'string' ? input : (input.text ?? '')
+        queries.push(text)
+        if (text.includes('SAVEPOINT')) throw Object.assign(new Error('idle'), { code: '25P01' })
         return { rows: [], rowCount: 0 }
       },
       release: vi.fn(),
@@ -356,6 +373,7 @@ describe('transaction probes and rollback', () => {
       createTransactionApi(runtime(client)).withTransaction(async () => 1),
     ).resolves.toBe(1)
     expect(queries).toEqual([
+      'SAVEPOINT vouchington_transaction_probe',
       '/* withClientTransaction */ BEGIN',
       '/* withClientTransaction */ COMMIT',
     ])
@@ -368,6 +386,7 @@ describe('transaction probes and rollback', () => {
       const client = {
         query: async (input: { text?: string } | string) => {
           const text = typeof input === 'string' ? input : (input.text ?? '')
+          if (text.includes('SAVEPOINT')) throw Object.assign(new Error('idle'), { code: '25P01' })
           if (text.includes(operation.toUpperCase())) throw failure
           return { rows: [], rowCount: 0 }
         },
@@ -382,6 +401,24 @@ describe('transaction probes and rollback', () => {
       expect(client.release).toHaveBeenCalledWith(true)
     },
   )
+  it('destroys an active pool client rather than committing its preexisting transaction', async () => {
+    const queries: string[] = []
+    const client = {
+      query: async (input: { text?: string } | string) => {
+        queries.push(typeof input === 'string' ? input : (input.text ?? ''))
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    await expect(
+      createTransactionApi(runtime(client)).withTransaction(async () => 1),
+    ).rejects.toThrow('Cannot create an owned transaction from an active pool client')
+    expect(queries).toEqual([
+      'SAVEPOINT vouchington_transaction_probe',
+      'RELEASE SAVEPOINT vouchington_transaction_probe',
+    ])
+    expect(client.release).toHaveBeenCalledWith(true)
+  })
   it('rethrows unexpected savepoint probe errors', async () => {
     const client = {
       query: async () => {

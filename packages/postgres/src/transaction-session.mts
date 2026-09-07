@@ -22,6 +22,50 @@ export function getTransactionCleanupOutcome(transaction: Transaction): CleanupO
   return cleanupOutcomes.get(transaction) ?? { kind: 'none' }
 }
 
+export async function runQueuedTransactionHandler<Result>(
+  runtime: PsqlRuntime,
+  client: pg.PoolClient,
+  handler: (query: TransactionQuery) => Promise<Result>,
+): Promise<Result> {
+  let failed: unknown
+  let hasFailed = false
+  let queue = Promise.resolve()
+  const query = Object.assign(
+    (<Row extends pg.QueryResultRow = pg.QueryResultRow>(
+      input: QueryInput,
+      values?: QueryValues,
+    ) => {
+      const result = queue.then(async () => {
+        if (hasFailed) throwFailure(failed)
+        try {
+          return await executeClientQuery<Row>(client, input, values, 'write', {
+            env: runtime.env,
+            onQueryTiming: runtime.onQueryTiming,
+          })
+        } catch (error) {
+          failed = error
+          hasFailed = true
+          throw error
+        }
+      })
+      queue = result.then(
+        () => undefined,
+        () => undefined,
+      )
+      return result
+    }) as TransactionQuery,
+    { client },
+  )
+  try {
+    const result = await handler(query)
+    await queue
+    if (hasFailed) throwFailure(failed)
+    return result
+  } finally {
+    await queue
+  }
+}
+
 export async function beginTransactionSession(
   runtime: PsqlRuntime,
   client: pg.PoolClient,
