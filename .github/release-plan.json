@@ -1,13 +1,20 @@
 {
-  "changedManifests": ["packages/html-utils/package.json"],
+  "changedManifests": ["packages/crawler-html/package.json", "packages/embeds/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "html-utils",
-      "fromVersion": "0.1.0",
-      "name": "@vouchington/html-utils",
-      "toVersion": "0.1.1"
+      "directory": "crawler-html",
+      "fromVersion": "0.0.0",
+      "name": "@vouchington/crawler-html",
+      "toVersion": "0.0.1"
+    },
+    {
+      "bump": "patch",
+      "directory": "embeds",
+      "fromVersion": "0.0.1",
+      "name": "@vouchington/embeds",
+      "toVersion": "0.0.2"
     }
   ],
-  "selectedPackage": "@vouchington/html-utils"
+  "selectedPackage": "@vouchington/crawler-html"
 }

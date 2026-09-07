@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/embeds",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Policy-injected HTML unfurl and oEmbed resolution with SSRF-safe transport.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/embeds#readme",
   "bugs": {
@@ -41,7 +41,7 @@
     "prepack": "pnpm run build"
   },
   "dependencies": {
-    "@vouchington/crawler-html": "^0.0.0",
+    "@vouchington/crawler-html": "^0.0.1",
     "@vouchington/http-transport": "^0.0.0",
     "parse5": "^8.0.0"
   },
