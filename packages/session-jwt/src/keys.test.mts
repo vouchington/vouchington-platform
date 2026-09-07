@@ -123,7 +123,7 @@ describe('JWT key sets', () => {
     ).toThrow('multi-prime')
     await expect(
       createJwtKeySet({
-        privateJwks: [{ ...privateJwk, p: 'AA' }],
+        privateJwks: [{ ...privateJwk, key_ops: ['sign', 'sign'] }],
       }),
     ).rejects.toThrow('Failed to import privateJwks')
   })
