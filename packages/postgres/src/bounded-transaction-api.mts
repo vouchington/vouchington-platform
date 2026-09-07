@@ -1,7 +1,10 @@
 import type pg from 'pg'
 
 import { connectWithRetry } from './connect-with-retry.mts'
-import type { BoundedTransactionOptions } from './bounded-transaction.mts'
+import {
+  reportBoundedRollbackFailure,
+  type BoundedTransactionOptions,
+} from './bounded-transaction.mts'
 import type { Transaction } from './create-psql-types.mts'
 import { beginOwnedTransaction, runTransactionHandler } from './transactions.mts'
 import type { PsqlRuntime, TransactionQuery } from './types.mts'
@@ -21,7 +24,10 @@ export function createBoundedTransactionApi(runtime: PsqlRuntime) {
   const withBoundedTransaction = async <Result,>(
     options: BoundedTransactionOptions,
     handler: (query: TransactionQuery) => Promise<Result>,
-  ): Promise<Result> => runTransactionHandler(await beginBoundedTransaction(options), handler)
+  ): Promise<Result> =>
+    runTransactionHandler(await beginBoundedTransaction(options), handler, (primary, rollback) =>
+      reportBoundedRollbackFailure(primary, rollback, runtime.errorHandler),
+    )
   return { beginBoundedTransaction, withBoundedTransaction }
 }
 

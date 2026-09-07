@@ -102,4 +102,66 @@ describe('withBoundedTransaction', () => {
       'beginBoundedTransaction',
     ])
   })
+
+  it('reports only the real rollback failure from bounded callbacks', async () => {
+    const rollback = new Error('rollback failed')
+    const primary = new Error('handler failed')
+    const reporter = vi.fn()
+    const client = {
+      query: async (input: { text?: string }) => {
+        if (input.text?.includes('ROLLBACK')) throw rollback
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    const runtime: PsqlRuntime = {
+      pools: {
+        write: { connect: async () => client } as never,
+        read: { connect: vi.fn() } as never,
+        advisoryLock: { connect: vi.fn() } as never,
+      },
+      env: {},
+      errorHandler: reporter,
+    }
+    await expect(
+      createBoundedTransactionApi(runtime).withBoundedTransaction(
+        { connectionTimeoutMs: 100, statementTimeoutMs: 50 },
+        async () => {
+          throw primary
+        },
+      ),
+    ).rejects.toBe(primary)
+    expect(reporter.mock.calls[0]?.[0]).toMatchObject({ errors: [primary, rollback] })
+  })
+
+  it('does not report a synthetic settled error after an internal rollback', async () => {
+    const primary = new Error('query failed')
+    const reporter = vi.fn()
+    const client = {
+      query: async (input: { text?: string }) => {
+        if (input.text?.includes('bad')) throw primary
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    const runtime: PsqlRuntime = {
+      pools: {
+        write: { connect: async () => client } as never,
+        read: { connect: vi.fn() } as never,
+        advisoryLock: { connect: vi.fn() } as never,
+      },
+      env: {},
+      errorHandler: reporter,
+    }
+    await expect(
+      createBoundedTransactionApi(runtime).withBoundedTransaction(
+        { connectionTimeoutMs: 100, statementTimeoutMs: 50 },
+        async (query) => {
+          void query('/* bad */ SELECT 1')
+          return 1
+        },
+      ),
+    ).rejects.toBe(primary)
+    expect(reporter).not.toHaveBeenCalled()
+  })
 })

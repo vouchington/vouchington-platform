@@ -10,6 +10,17 @@ export type TransactionSessionOptions = {
   releaseClient?: boolean
 }
 
+type CleanupOutcome =
+  | { kind: 'none' }
+  | { kind: 'rolled-back' }
+  | { error: unknown; kind: 'rollback-failed' }
+
+const cleanupOutcomes = new WeakMap<object, CleanupOutcome>()
+
+export function getTransactionCleanupOutcome(transaction: Transaction): CleanupOutcome {
+  return cleanupOutcomes.get(transaction) ?? { kind: 'none' }
+}
+
 export async function beginTransactionSession(
   runtime: PsqlRuntime,
   client: pg.PoolClient,
@@ -37,6 +48,7 @@ export async function beginTransactionSession(
   let hasFailed = false
   let queue = Promise.resolve()
   let released = false
+  let transaction!: Transaction
   let settlement: { operation: 'COMMIT' | 'ROLLBACK'; promise: Promise<void> } | undefined
   const release = (destroy = false) => {
     if (!released && options.releaseClient !== false) {
@@ -87,8 +99,10 @@ export async function beginTransactionSession(
       try {
         await control('ROLLBACK')
         release()
-      } catch {
+        cleanupOutcomes.set(transaction, { kind: 'rolled-back' })
+      } catch (error) {
         release(true)
+        cleanupOutcomes.set(transaction, { error, kind: 'rollback-failed' })
       }
       throwFailure(failed)
     }
@@ -100,11 +114,13 @@ export async function beginTransactionSession(
       throw error
     }
   }
-  return Object.assign(query, {
+  transaction = Object.assign(query, {
     commit: () => settle('COMMIT'),
     rollback: () => settle('ROLLBACK'),
     [Symbol.asyncDispose]: () => (settlement ? settlement.promise : settle('ROLLBACK')),
   }) as Transaction
+  cleanupOutcomes.set(transaction, { kind: 'none' })
+  return transaction
 }
 
 function throwFailure(error: unknown): never {

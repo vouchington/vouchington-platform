@@ -2,7 +2,7 @@ import type pg from 'pg'
 
 import { connectWithRetry } from './connect-with-retry.mts'
 import type { Transaction } from './create-psql-types.mts'
-import { beginTransactionSession } from './transaction-session.mts'
+import { beginTransactionSession, getTransactionCleanupOutcome } from './transaction-session.mts'
 import type { PsqlRuntime, QueryOptions, TransactionQuery } from './types.mts'
 
 const TRANSACTION_PROBE_SAVEPOINT = 'vouchington_transaction_probe'
@@ -66,6 +66,12 @@ export async function runTransactionHandler<Result>(
     await transaction.commit()
     return result
   } catch (error) {
+    const cleanup = getTransactionCleanupOutcome(transaction)
+    if (cleanup.kind === 'rolled-back') throw error
+    if (cleanup.kind === 'rollback-failed') {
+      onRollbackError?.(error, cleanup.error)
+      throw error
+    }
     try {
       await transaction.rollback()
     } catch (rollback) {
@@ -82,11 +88,17 @@ async function withPoolTransaction<Result>(
   handler: (query: TransactionQuery) => Promise<Result>,
 ): Promise<Result> {
   const client = await connectWithRetry(pool)
-  try {
-    return await withBorrowedTransaction(runtime, client, handler)
-  } finally {
-    client.release()
+  if (await isInTransaction(client)) {
+    try {
+      return await handler(Object.assign(client.query.bind(client), { client }))
+    } finally {
+      client.release()
+    }
   }
+  return runTransactionHandler(
+    await beginTransactionSession(runtime, client, { annotation: '/* withClientTransaction */' }),
+    handler,
+  )
 }
 
 async function withBorrowedTransaction<Result>(

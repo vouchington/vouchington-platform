@@ -189,6 +189,26 @@ describe('transaction probes and rollback', () => {
     )
     expect(query).toHaveBeenCalledWith(expect.objectContaining({ query_timeout: 12 }))
   })
+
+  it('destroys a pool-acquired client when callback commit fails', async () => {
+    const client = {
+      query: async (input: { text?: string } | string) => {
+        const text = typeof input === 'string' ? input : (input.text ?? '')
+        if (text.includes('SAVEPOINT')) throw Object.assign(new Error('idle'), { code: '25P01' })
+        if (text.includes('COMMIT')) throw new Error('commit failed')
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    const pool = { connect: async () => client }
+    await expect(
+      createTransactionApi(runtime(client)).withTransactionOptions(
+        { client: pool as never },
+        async () => 1,
+      ),
+    ).rejects.toThrow('commit failed')
+    expect(client.release).toHaveBeenCalledWith(true)
+  })
   it('rethrows unexpected savepoint probe errors', async () => {
     const client = {
       query: async () => {

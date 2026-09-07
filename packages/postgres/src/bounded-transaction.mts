@@ -24,11 +24,11 @@ export async function runBoundedTransactionWithClient<Result>(
     options.statementTimeoutMs,
   )
   return runTransactionHandler(transaction, handler, (primary, rollback) =>
-    reportRollbackFailure(primary, rollback, runtime?.errorHandler),
+    reportBoundedRollbackFailure(primary, rollback, runtime?.errorHandler),
   )
 }
 
-function reportRollbackFailure(
+export function reportBoundedRollbackFailure(
   primary: unknown,
   rollback: unknown,
   reportError?: ErrorHandler,
