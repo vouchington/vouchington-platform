@@ -1,39 +1,27 @@
 import type pg from 'pg'
 
 import { connectWithRetry } from './connect-with-retry.mts'
-import {
-  runBoundedTransactionWithClient,
-  type BoundedTransactionOptions,
-} from './bounded-transaction.mts'
-import type { PsqlRuntime, TransactionQuery } from './types.mts'
-import { beginClientTransaction } from './transactions.mts'
+import type { BoundedTransactionOptions } from './bounded-transaction.mts'
 import type { Transaction } from './create-psql-types.mts'
+import { beginOwnedTransaction, runTransactionHandler } from './transactions.mts'
+import type { PsqlRuntime, TransactionQuery } from './types.mts'
 
-export type { BoundedTransactionOptions }
+export type { BoundedTransactionOptions } from './bounded-transaction.mts'
 
 export function createBoundedTransactionApi(runtime: PsqlRuntime) {
-  async function beginBoundedTransaction(options: BoundedTransactionOptions): Promise<Transaction> {
-    const client = await acquireClientWithin(runtime.pools.write, options.connectionTimeoutMs)
-    try {
-      const transaction = await beginClientTransaction(runtime, client)
-      await client.query({
-        text: "/* beginBoundedTransaction */ SELECT set_config('statement_timeout', $1, true)",
-        values: [`${options.statementTimeoutMs}ms`],
-        query_timeout: options.statementTimeoutMs,
-      } as never)
-      return transaction
-    } catch (error) {
-      client.release(true)
-      throw error
-    }
-  }
-  async function withBoundedTransaction<Result>(
+  const beginBoundedTransaction = async (
+    options: BoundedTransactionOptions,
+  ): Promise<Transaction> =>
+    beginOwnedTransaction(
+      runtime,
+      await acquireClientWithin(runtime.pools.write, options.connectionTimeoutMs),
+      '/* beginBoundedTransaction */',
+      options.statementTimeoutMs,
+    )
+  const withBoundedTransaction = async <Result,>(
     options: BoundedTransactionOptions,
     handler: (query: TransactionQuery) => Promise<Result>,
-  ): Promise<Result> {
-    const client = await acquireClientWithin(runtime.pools.write, options.connectionTimeoutMs)
-    return runBoundedTransactionWithClient(options, client, handler, runtime)
-  }
+  ): Promise<Result> => runTransactionHandler(await beginBoundedTransaction(options), handler)
   return { beginBoundedTransaction, withBoundedTransaction }
 }
 

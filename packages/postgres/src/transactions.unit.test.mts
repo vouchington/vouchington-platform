@@ -53,6 +53,80 @@ describe('transaction probes and rollback', () => {
     expect(queries).toContain('/* beginTransaction */ ROLLBACK')
     expect(client.release).toHaveBeenCalledOnce()
   })
+
+  it('destroys clients after initial or terminal control failures', async () => {
+    const beginFailure = new Error('begin failed')
+    const beginClient = { query: async () => Promise.reject(beginFailure), release: vi.fn() }
+    await expect(createTransactionApi(runtime(beginClient)).beginTransaction()).rejects.toBe(
+      beginFailure,
+    )
+    expect(beginClient.release).toHaveBeenCalledWith(true)
+
+    const commitFailure = new Error('commit failed')
+    const commitClient = {
+      query: async (input: { text?: string } | string) => {
+        const text = typeof input === 'string' ? input : (input.text ?? '')
+        if (text.includes('COMMIT')) throw commitFailure
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    const transaction = await createTransactionApi(runtime(commitClient)).beginTransaction()
+    await expect(transaction.commit()).rejects.toBe(commitFailure)
+    expect(commitClient.release).toHaveBeenCalledWith(true)
+  })
+
+  it('shares concurrent settlement and rejects an opposite operation', async () => {
+    const queries: string[] = []
+    const client = {
+      query: async (input: { text?: string } | string) => {
+        queries.push(typeof input === 'string' ? input : (input.text ?? ''))
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    const transaction = await createTransactionApi(runtime(client)).beginTransaction()
+    await Promise.all([transaction.commit(), transaction.commit()])
+    await expect(transaction.rollback()).rejects.toThrow('already settled')
+    expect(queries.filter((query) => query.includes('COMMIT'))).toHaveLength(1)
+  })
+
+  it('tracks falsy query failures without treating the transaction as healthy', async () => {
+    const client = {
+      query: async (input: { text?: string } | string) => {
+        const text = typeof input === 'string' ? input : (input.text ?? '')
+        if (text.includes('falsy')) throw undefined
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    const transaction = await createTransactionApi(runtime(client)).beginTransaction()
+    await expect(transaction('/* falsy */ SELECT 1')).rejects.toBeUndefined()
+    await expect(transaction('/* later */ SELECT 1')).rejects.toThrow(
+      'Transaction failed: undefined',
+    )
+    await expect(transaction.commit()).rejects.toThrow('Transaction failed: undefined')
+  })
+
+  it('keeps native await-using cleanup failure as a SuppressedError', async () => {
+    const body = new Error('body failed')
+    const rollback = new Error('rollback failed')
+    const client = {
+      query: async (input: { text?: string } | string) => {
+        const text = typeof input === 'string' ? input : (input.text ?? '')
+        if (text.includes('ROLLBACK')) throw rollback
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    await expect(
+      (async () => {
+        await using _transaction = await createTransactionApi(runtime(client)).beginTransaction()
+        throw body
+      })(),
+    ).rejects.toMatchObject({ error: rollback, suppressed: body })
+    expect(client.release).toHaveBeenCalledWith(true)
+  })
   it('rethrows unexpected savepoint probe errors', async () => {
     const client = {
       query: async () => {

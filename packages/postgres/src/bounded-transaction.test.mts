@@ -61,7 +61,7 @@ describe('bounded transaction cleanup', () => {
     ).rejects.toThrow('Transaction failed: nope')
   })
 
-  it('does not roll back when BEGIN fails', async () => {
+  it('destroys the client when BEGIN fails before transaction state is known', async () => {
     const primaryError = new Error('begin failed')
     const fixture = createClientFixture()
     fixture.failNextQuery(primaryError)
@@ -69,7 +69,7 @@ describe('bounded transaction cleanup', () => {
       runBoundedTransactionWithClient(options, fixture.client, async () => 1),
     ).rejects.toBe(primaryError)
     expect(fixture.queries.some((query) => query.includes('ROLLBACK'))).toBe(false)
-    expect(fixture.release).toHaveBeenCalledWith()
+    expect(fixture.release).toHaveBeenCalledWith(true)
   })
 
   it('destroys the client when rollback fails without a reporter', async () => {

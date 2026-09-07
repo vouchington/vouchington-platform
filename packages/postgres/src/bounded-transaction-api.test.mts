@@ -69,4 +69,37 @@ describe('withBoundedTransaction', () => {
     resolveConnect?.({ release })
     await vi.waitFor(() => expect(release).toHaveBeenCalled())
   })
+
+  it('times and bounds every control query on the resource API', async () => {
+    const inputs: Array<{ text?: string; query_timeout?: number }> = []
+    const timings: string[] = []
+    const client = {
+      query: async (input: { text?: string; query_timeout?: number }) => {
+        inputs.push(input)
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    const runtime: PsqlRuntime = {
+      pools: {
+        write: { connect: async () => client } as never,
+        read: { connect: vi.fn() } as never,
+        advisoryLock: { connect: vi.fn() } as never,
+      },
+      env: {},
+      errorHandler: () => {},
+      onQueryTiming: ({ annotation }) => timings.push(annotation ?? ''),
+    }
+    const transaction = await createBoundedTransactionApi(runtime).beginBoundedTransaction({
+      connectionTimeoutMs: 100,
+      statementTimeoutMs: 50,
+    })
+    await transaction.rollback()
+    expect(inputs.every((input) => input.query_timeout === 50)).toBe(true)
+    expect(timings).toEqual([
+      'beginBoundedTransaction',
+      'beginBoundedTransaction',
+      'beginBoundedTransaction',
+    ])
+  })
 })
