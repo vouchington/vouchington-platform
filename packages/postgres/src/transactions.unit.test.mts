@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { executeClientQuery } from './execute-client-query.mts'
-import { createTransactionApi } from './transactions.mts'
+import { createTransactionApi, runTransactionHandler } from './transactions.mts'
 import type { PsqlRuntime } from './types.mts'
 
 function runtime(client: {
@@ -20,6 +20,21 @@ function runtime(client: {
 }
 
 describe('transaction probes and rollback', () => {
+  it('rolls back a transaction supplied by another adapter without recorded cleanup', async () => {
+    const primary = new Error('handler failed')
+    const rollback = vi.fn()
+    const transaction = Object.assign(vi.fn(), {
+      commit: vi.fn(),
+      rollback,
+    })
+    await expect(
+      runTransactionHandler(transaction as never, async () => {
+        throw primary
+      }),
+    ).rejects.toBe(primary)
+    expect(rollback).toHaveBeenCalledOnce()
+  })
+
   it('commits an explicitly settled transaction and rejects later queries', async () => {
     const queries: string[] = []
     const client = {
@@ -208,6 +223,92 @@ describe('transaction probes and rollback', () => {
       ),
     ).rejects.toThrow('commit failed')
     expect(client.release).toHaveBeenCalledWith(true)
+  })
+
+  it('destroys a pool-acquired client when its transaction probe fails', async () => {
+    const probeFailure = Object.assign(new Error('disk full'), { code: '53100' })
+    const client = {
+      query: async () => {
+        throw probeFailure
+      },
+      release: vi.fn(),
+    }
+    const pool = { connect: async () => client }
+    await expect(
+      createTransactionApi(runtime(client)).withTransactionOptions(
+        { client: pool as never },
+        async () => 1,
+      ),
+    ).rejects.toBe(probeFailure)
+    expect(client.release).toHaveBeenCalledWith(true)
+  })
+
+  it('delegates an existing pool transaction and releases its borrowed client', async () => {
+    const queries: string[] = []
+    const client = {
+      query: async (input: { text?: string } | string) => {
+        const text = typeof input === 'string' ? input : (input.text ?? '')
+        queries.push(text)
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    const pool = { connect: async () => client }
+    await expect(
+      createTransactionApi(runtime(client)).withTransactionOptions(
+        { client: pool as never },
+        async (query) => {
+          await query('/* existing */ SELECT 1')
+          return 1
+        },
+      ),
+    ).resolves.toBe(1)
+    expect(queries).toEqual([
+      'SAVEPOINT vouchington_transaction_probe',
+      'RELEASE SAVEPOINT vouchington_transaction_probe',
+      '/* existing */ SELECT 1',
+    ])
+    expect(client.release).toHaveBeenCalledOnce()
+  })
+
+  it('commits a borrowed client transaction without releasing the caller-owned client', async () => {
+    const queries: string[] = []
+    const client = {
+      query: async (input: { text?: string } | string) => {
+        const text = typeof input === 'string' ? input : (input.text ?? '')
+        queries.push(text)
+        if (text.includes('SAVEPOINT')) throw Object.assign(new Error('idle'), { code: '25P01' })
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    await expect(
+      createTransactionApi(runtime(client)).withTransactionOptions(
+        { client: client as never },
+        async () => 1,
+      ),
+    ).resolves.toBe(1)
+    expect(queries).toContain('/* withClientTransaction */ BEGIN')
+    expect(queries).toContain('/* withClientTransaction */ COMMIT')
+    expect(client.release).not.toHaveBeenCalled()
+  })
+
+  it('uses the client callback annotation for an owned transaction', async () => {
+    const queries: string[] = []
+    const client = {
+      query: async (input: { text?: string } | string) => {
+        queries.push(typeof input === 'string' ? input : (input.text ?? ''))
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    await expect(
+      createTransactionApi(runtime(client)).withTransaction(async () => 1),
+    ).resolves.toBe(1)
+    expect(queries).toEqual([
+      '/* withClientTransaction */ BEGIN',
+      '/* withClientTransaction */ COMMIT',
+    ])
   })
   it('rethrows unexpected savepoint probe errors', async () => {
     const client = {
