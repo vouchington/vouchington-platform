@@ -1,12 +1,18 @@
 import type pg from 'pg'
 
 import { connectWithRetry } from './connect-with-retry.mts'
+import { executeClientQuery } from './execute-client-query.mts'
 import type { Transaction } from './create-psql-types.mts'
 import { beginTransactionSession, getTransactionCleanupOutcome } from './transaction-session.mts'
-import type { PsqlRuntime, QueryOptions, TransactionQuery } from './types.mts'
+import type {
+  PsqlRuntime,
+  QueryInput,
+  QueryOptions,
+  QueryValues,
+  TransactionQuery,
+} from './types.mts'
 
 const TRANSACTION_PROBE_SAVEPOINT = 'vouchington_transaction_probe'
-
 export function createTransactionApi(runtime: PsqlRuntime) {
   const beginTransaction = async (): Promise<Transaction> =>
     beginOwnedTransaction(
@@ -28,7 +34,6 @@ export function createTransactionApi(runtime: PsqlRuntime) {
   }
   return { beginTransaction, withTransaction, withTransactionOptions }
 }
-
 export async function beginOwnedTransaction(
   runtime: PsqlRuntime,
   client: pg.PoolClient,
@@ -40,7 +45,6 @@ export async function beginOwnedTransaction(
     ...(statementTimeoutMs === undefined ? {} : { statementTimeoutMs }),
   })
 }
-
 async function withOwnedTransaction<Result>(
   runtime: PsqlRuntime,
   handler: (query: TransactionQuery) => Promise<Result>,
@@ -98,7 +102,7 @@ async function withPoolTransaction<Result>(
   }
   if (alreadyInTransaction) {
     try {
-      return await handler(Object.assign(client.query.bind(client), { client }))
+      return await runQueuedTransactionHandler(runtime, client, handler)
     } finally {
       client.release()
     }
@@ -114,13 +118,56 @@ async function withBorrowedTransaction<Result>(
   client: pg.PoolClient,
   handler: (query: TransactionQuery) => Promise<Result>,
 ): Promise<Result> {
-  if (await isInTransaction(client))
-    return handler(Object.assign(client.query.bind(client), { client }))
+  if (await isInTransaction(client)) return runQueuedTransactionHandler(runtime, client, handler)
   const transaction = await beginTransactionSession(runtime, client, {
     annotation: '/* withClientTransaction */',
     releaseClient: false,
   })
   return runTransactionHandler(transaction, handler)
+}
+
+async function runQueuedTransactionHandler<Result>(
+  runtime: PsqlRuntime,
+  client: pg.PoolClient,
+  handler: (query: TransactionQuery) => Promise<Result>,
+): Promise<Result> {
+  let failed: unknown
+  let hasFailed = false
+  let queue = Promise.resolve()
+  const query = Object.assign(
+    (<Row extends pg.QueryResultRow = pg.QueryResultRow>(
+      input: QueryInput,
+      values?: QueryValues,
+    ) => {
+      const result = queue.then(async () => {
+        if (hasFailed) throwFailure(failed)
+        try {
+          return await executeClientQuery<Row>(client, input, values, 'write', {
+            env: runtime.env,
+            onQueryTiming: runtime.onQueryTiming,
+          })
+        } catch (error) {
+          failed = error
+          hasFailed = true
+          throw error
+        }
+      })
+      queue = result.then(
+        () => undefined,
+        () => undefined,
+      )
+      return result
+    }) as TransactionQuery,
+    { client },
+  )
+  try {
+    const result = await handler(query)
+    await queue
+    if (hasFailed) throwFailure(failed)
+    return result
+  } finally {
+    await queue
+  }
 }
 
 async function isInTransaction(client: pg.PoolClient): Promise<boolean> {
@@ -144,4 +191,9 @@ function isPoolClient(client: QueryOptions['client']): client is pg.PoolClient {
 
 function isPool(client: QueryOptions['client']): client is pg.Pool {
   return Boolean(client && 'connect' in client && !('release' in client))
+}
+
+function throwFailure(error: unknown): never {
+  if (error instanceof Error) throw error
+  throw new Error(`Transaction failed: ${String(error)}`)
 }

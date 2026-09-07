@@ -271,6 +271,56 @@ describe('transaction probes and rollback', () => {
     expect(client.release).toHaveBeenCalledOnce()
   })
 
+  it('waits for unawaited failures in an existing borrowed transaction', async () => {
+    const failure = 'queued failed'
+    const client = {
+      query: async (input: { text?: string } | string) => {
+        const text = typeof input === 'string' ? input : (input.text ?? '')
+        if (text.includes('SAVEPOINT')) return { rows: [], rowCount: 0 }
+        if (text.includes('queued')) throw failure
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    await expect(
+      createTransactionApi(runtime(client)).withTransactionOptions(
+        { client: client as never },
+        async (query) => {
+          void query('/* queued */ SELECT 1')
+          await expect(query('/* later */ SELECT 1')).rejects.toThrow(
+            'Transaction failed: queued failed',
+          )
+          return 1
+        },
+      ),
+    ).rejects.toThrow('Transaction failed: queued failed')
+    expect(client.release).not.toHaveBeenCalled()
+  })
+
+  it('preserves Error identities from unawaited existing pool queries', async () => {
+    const failure = new Error('queued failed')
+    const client = {
+      query: async (input: { text?: string } | string) => {
+        const text = typeof input === 'string' ? input : (input.text ?? '')
+        if (text.includes('SAVEPOINT')) return { rows: [], rowCount: 0 }
+        if (text.includes('queued')) throw failure
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    const pool = { connect: async () => client }
+    await expect(
+      createTransactionApi(runtime(client)).withTransactionOptions(
+        { client: pool as never },
+        async (query) => {
+          void query('/* queued */ SELECT 1')
+          return 1
+        },
+      ),
+    ).rejects.toBe(failure)
+    expect(client.release).toHaveBeenCalledOnce()
+  })
+
   it('commits a borrowed client transaction without releasing the caller-owned client', async () => {
     const queries: string[] = []
     const client = {
@@ -310,6 +360,28 @@ describe('transaction probes and rollback', () => {
       '/* withClientTransaction */ COMMIT',
     ])
   })
+
+  it.each(['commit', 'rollback'] as const)(
+    'preserves a failed explicit %s as the top-level disposal error',
+    async (operation) => {
+      const failure = Object.assign(new Error(`${operation} failed`), { code: '40001' })
+      const client = {
+        query: async (input: { text?: string } | string) => {
+          const text = typeof input === 'string' ? input : (input.text ?? '')
+          if (text.includes(operation.toUpperCase())) throw failure
+          return { rows: [], rowCount: 0 }
+        },
+        release: vi.fn(),
+      }
+      await expect(
+        (async () => {
+          await using transaction = await createTransactionApi(runtime(client)).beginTransaction()
+          await transaction[operation]()
+        })(),
+      ).rejects.toBe(failure)
+      expect(client.release).toHaveBeenCalledWith(true)
+    },
+  )
   it('rethrows unexpected savepoint probe errors', async () => {
     const client = {
       query: async () => {

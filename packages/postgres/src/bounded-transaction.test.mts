@@ -126,6 +126,22 @@ describe('bounded transaction cleanup', () => {
     ).rejects.toBe(primaryError)
     expect(reportError).toHaveBeenCalled()
   })
+
+  it('uses process environment validation when no runtime is supplied', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('VITEST', '')
+    const fixture = createClientFixture()
+    try {
+      await expect(
+        runBoundedTransactionWithClient(options, fixture.client, async (query) => {
+          await query('SELECT 1')
+          return 1
+        }),
+      ).rejects.toThrow('PostgreSQL query must start with an annotation comment')
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
 })
 
 function createClientFixture(options?: { rollbackError?: unknown }) {

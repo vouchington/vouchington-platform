@@ -119,7 +119,14 @@ export async function beginTransactionSession(
   transaction = Object.assign(query, {
     commit: () => settle('COMMIT'),
     rollback: () => settle('ROLLBACK'),
-    [Symbol.asyncDispose]: () => (settlement ? settlement.promise : settle('ROLLBACK')),
+    [Symbol.asyncDispose]: async () => {
+      if (!settlement) return settle('ROLLBACK')
+      try {
+        await settlement.promise
+      } catch {
+        // An explicit settlement reports its own failure.
+      }
+    },
   }) as Transaction
   cleanupOutcomes.set(transaction, { kind: 'none' })
   return transaction

@@ -16,7 +16,7 @@ export async function runBoundedTransactionWithClient<Result>(
 ): Promise<Result> {
   const transaction = await beginOwnedTransaction(
     {
-      env: runtime?.env ?? {},
+      env: runtime?.env ?? process.env,
       onQueryTiming: runtime?.onQueryTiming,
     } as PsqlRuntime,
     client,
