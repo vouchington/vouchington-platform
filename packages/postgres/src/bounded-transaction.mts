@@ -19,7 +19,7 @@ export async function runBoundedTransactionWithClient<Result>(
       pools: {} as PsqlRuntime['pools'],
       env: runtime?.env ?? {},
       onQueryTiming: runtime?.onQueryTiming,
-      errorHandler: runtime?.errorHandler ?? (() => {}),
+      errorHandler: () => {},
     },
     client,
     '/* withBoundedTransaction */',
