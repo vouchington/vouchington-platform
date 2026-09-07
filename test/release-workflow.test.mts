@@ -26,8 +26,8 @@ describe('release workflow', () => {
     const publish = position('node scripts/release.mts publish')
     const release = position('node scripts/release.mts github-release')
 
-    expect(formatPlan).toBeGreaterThan(prepare)
-    expect(lockfile).toBeGreaterThan(formatPlan)
+    expect(lockfile).toBeGreaterThan(prepare)
+    expect(formatPlan).toBeGreaterThan(lockfile)
     for (const validation of [typecheck, build, lint, tests, actionlint, verify, pack]) {
       expect(validation).toBeGreaterThan(lockfile)
       expect(tag).toBeGreaterThan(validation)
