@@ -19,6 +19,40 @@ function runtime(client: {
 }
 
 describe('transaction probes and rollback', () => {
+  it('commits an explicitly settled transaction and rejects later queries', async () => {
+    const queries: string[] = []
+    const client = {
+      query: async (input: { text?: string } | string) => {
+        const text = typeof input === 'string' ? input : (input.text ?? '')
+        queries.push(text)
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    const transaction = await createTransactionApi(runtime(client)).beginTransaction()
+    await transaction('/* resource */ SELECT 1')
+    await transaction.commit()
+    await expect(transaction('/* after */ SELECT 1')).rejects.toThrow('already settled')
+    expect(queries).toContain('/* beginTransaction */ COMMIT')
+    expect(client.release).toHaveBeenCalledOnce()
+  })
+
+  it('rolls back and releases an uncommitted async-disposed transaction', async () => {
+    const queries: string[] = []
+    const client = {
+      query: async (input: { text?: string } | string) => {
+        const text = typeof input === 'string' ? input : (input.text ?? '')
+        queries.push(text)
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    const transaction = await createTransactionApi(runtime(client)).beginTransaction()
+    await transaction[Symbol.asyncDispose]()
+    await transaction[Symbol.asyncDispose]()
+    expect(queries).toContain('/* beginTransaction */ ROLLBACK')
+    expect(client.release).toHaveBeenCalledOnce()
+  })
   it('rethrows unexpected savepoint probe errors', async () => {
     const client = {
       query: async () => {

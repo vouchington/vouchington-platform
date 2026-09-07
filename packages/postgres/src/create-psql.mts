@@ -1,12 +1,12 @@
 import pg from 'pg'
 
-import { createBoundedTransactionApi } from './bounded-transaction-api.mts'
 import { createQueryApi } from './clients.mts'
 import { withLibpqCompat } from './connection-string.mts'
 import { createCursorApi } from './cursors.mts'
 import { createPipelineBatch } from './pipeline-batch.mts'
 import { getPsqlPoolConfiguration } from './pool-config.mts'
 import { createTransactionApi } from './transactions.mts'
+import { createBoundedTransactionApi } from './bounded-transaction-api.mts'
 import { installPgTypeParsers } from './type-parsers.mts'
 import type { CreatePsqlOptions, Psql } from './create-psql-types.mts'
 import { ignoreMissingVectorType, registerPgVectorTypes } from './vector.mts'
@@ -81,7 +81,7 @@ export async function createPsql(options: CreatePsqlOptions): Promise<Psql> {
     advisoryLockPool,
     ...queryApi,
     ...transactionApi,
-    withBoundedTransaction: createBoundedTransactionApi(runtime),
+    ...createBoundedTransactionApi(runtime),
     pipelineBatch: createPipelineBatch(runtime),
     ...cursorApi,
     runMigrations: createMigrationRunner(runtime, options.migrationExtensions),

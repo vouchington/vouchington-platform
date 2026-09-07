@@ -48,6 +48,8 @@ export interface Psql {
   withTransaction: <Result>(
     handler: (query: TransactionQuery) => Promise<Result>,
   ) => Promise<Result>
+  beginTransaction: () => Promise<Transaction>
+  beginBoundedTransaction: (options: BoundedTransactionOptions) => Promise<Transaction>
   withTransactionOptions: <Result>(
     options: QueryOptions,
     handler: (query: TransactionQuery) => Promise<Result>,
@@ -76,6 +78,12 @@ export interface Psql {
   ) => Promise<Result>
   close: () => Promise<void>
 }
+
+export type Transaction = TransactionQuery &
+  AsyncDisposable & {
+    commit: () => Promise<void>
+    rollback: () => Promise<void>
+  }
 
 type QueryMethod = <Row extends pg.QueryResultRow = pg.QueryResultRow>(
   input: QueryInput,

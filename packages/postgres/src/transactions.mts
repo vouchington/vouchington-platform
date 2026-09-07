@@ -9,10 +9,15 @@ import type {
   QueryValues,
   TransactionQuery,
 } from './types.mts'
+import type { Transaction } from './create-psql-types.mts'
 
 const TRANSACTION_PROBE_SAVEPOINT = 'vouchington_transaction_probe'
 
 export function createTransactionApi(runtime: PsqlRuntime) {
+  async function beginTransaction(): Promise<Transaction> {
+    const client = await connectWithRetry(runtime.pools.write)
+    return beginClientTransaction(runtime, client)
+  }
   async function withTransaction<Result>(
     handler: (query: TransactionQuery) => Promise<Result>,
   ): Promise<Result> {
@@ -34,7 +39,66 @@ export function createTransactionApi(runtime: PsqlRuntime) {
     return withTransaction(handler)
   }
 
-  return { withTransaction, withTransactionOptions }
+  return { beginTransaction, withTransaction, withTransactionOptions }
+}
+
+export async function beginClientTransaction(runtime: PsqlRuntime, client: pg.PoolClient): Promise<Transaction> {
+  await executeClientQuery(client, '/* beginTransaction */ BEGIN', undefined, 'client', {
+    env: runtime.env,
+    onQueryTiming: runtime.onQueryTiming,
+  })
+  const queued = createQueuedTransactionQuery(runtime, client)
+  let settled: 'committed' | 'rolled_back' | undefined
+  let settling = false
+  let released = false
+  const release = (destroy = false) => {
+    if (!released) client.release(destroy)
+    released = true
+  }
+  const settle = async (operation: 'COMMIT' | 'ROLLBACK'): Promise<void> => {
+    if (settled === (operation === 'COMMIT' ? 'committed' : 'rolled_back')) return
+    if (settled || settling) throw new Error('Transaction is already settled')
+    settling = true
+    try {
+      await queued.awaitQueue()
+      if (operation === 'COMMIT') queued.throwIfFailed()
+      await executeClientQuery(client, `/* beginTransaction */ ${operation}`, undefined, 'client', {
+        env: runtime.env,
+        onQueryTiming: runtime.onQueryTiming,
+      })
+      settled = operation === 'COMMIT' ? 'committed' : 'rolled_back'
+    } catch (error) {
+      if (operation === 'COMMIT') {
+        try {
+          await executeClientQuery(client, '/* beginTransaction */ ROLLBACK', undefined, 'client', {
+            env: runtime.env,
+            onQueryTiming: runtime.onQueryTiming,
+          })
+        } catch {}
+      }
+      settled = 'rolled_back'
+      release(true)
+      throw error
+    } finally {
+      settling = false
+      if (settled && !released) release()
+    }
+  }
+  const query = Object.assign(
+    ((input: QueryInput, values?: QueryValues) => {
+      if (settled || settling) return Promise.reject(new Error('Transaction is already settled'))
+      return queued.query(input, values)
+    }) as TransactionQuery,
+    {
+      client,
+      commit: () => settle('COMMIT'),
+      rollback: () => settle('ROLLBACK'),
+      [Symbol.asyncDispose]: async () => {
+        if (!settled) await settle('ROLLBACK')
+      },
+    },
+  ) as Transaction
+  return query
 }
 
 async function withPoolTransaction<Result>(

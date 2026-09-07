@@ -35,7 +35,7 @@ describe('withBoundedTransaction', () => {
       env: {},
       errorHandler: () => {},
     }
-    const pending = createBoundedTransactionApi(runtime)(
+    const pending = createBoundedTransactionApi(runtime).withBoundedTransaction(
       { connectionTimeoutMs: 20, statementTimeoutMs: 20 },
       async () => 1,
     )
@@ -61,7 +61,7 @@ describe('withBoundedTransaction', () => {
       env: {},
       errorHandler: () => {},
     }
-    const pending = createBoundedTransactionApi(runtime)(
+    const pending = createBoundedTransactionApi(runtime).withBoundedTransaction(
       { connectionTimeoutMs: 20, statementTimeoutMs: 20 },
       async () => 1,
     )

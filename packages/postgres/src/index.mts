@@ -1,5 +1,5 @@
 export { createPsql } from './create-psql.mts'
-export type { CreatePsqlOptions, Psql } from './create-psql-types.mts'
+export type { CreatePsqlOptions, Psql, Transaction } from './create-psql-types.mts'
 export { getPsqlPoolConfiguration } from './pool-config.mts'
 export {
   connectWithRetry,
