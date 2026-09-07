@@ -15,7 +15,7 @@ export function createTransactionApi(runtime: PsqlRuntime) {
       '/* beginTransaction */',
     )
   const withTransaction = <Result,>(handler: (query: TransactionQuery) => Promise<Result>) =>
-    withOwnedTransaction(runtime, handler, '/* withTransaction */')
+    withOwnedTransaction(runtime, handler, '/* withClientTransaction */')
   const withTransactionOptions = <Result,>(
     options: QueryOptions,
     handler: (query: TransactionQuery) => Promise<Result>,
@@ -72,6 +72,7 @@ export async function runTransactionHandler<Result>(
       onRollbackError?.(error, cleanup.error)
       throw error
     }
+    if (cleanup.kind === 'control-failed') throw error
     try {
       await transaction.rollback()
     } catch (rollback) {
@@ -88,7 +89,14 @@ async function withPoolTransaction<Result>(
   handler: (query: TransactionQuery) => Promise<Result>,
 ): Promise<Result> {
   const client = await connectWithRetry(pool)
-  if (await isInTransaction(client)) {
+  let alreadyInTransaction: boolean
+  try {
+    alreadyInTransaction = await isInTransaction(client)
+  } catch (error) {
+    client.release(true)
+    throw error
+  }
+  if (alreadyInTransaction) {
     try {
       return await handler(Object.assign(client.query.bind(client), { client }))
     } finally {

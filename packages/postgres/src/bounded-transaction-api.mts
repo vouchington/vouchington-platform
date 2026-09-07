@@ -14,19 +14,22 @@ export type { BoundedTransactionOptions } from './bounded-transaction.mts'
 export function createBoundedTransactionApi(runtime: PsqlRuntime) {
   const beginBoundedTransaction = async (
     options: BoundedTransactionOptions,
+    annotation = '/* beginBoundedTransaction */',
   ): Promise<Transaction> =>
     beginOwnedTransaction(
       runtime,
       await acquireClientWithin(runtime.pools.write, options.connectionTimeoutMs),
-      '/* beginBoundedTransaction */',
+      annotation,
       options.statementTimeoutMs,
     )
   const withBoundedTransaction = async <Result,>(
     options: BoundedTransactionOptions,
     handler: (query: TransactionQuery) => Promise<Result>,
   ): Promise<Result> =>
-    runTransactionHandler(await beginBoundedTransaction(options), handler, (primary, rollback) =>
-      reportBoundedRollbackFailure(primary, rollback, runtime.errorHandler),
+    runTransactionHandler(
+      await beginBoundedTransaction(options, '/* withBoundedTransaction */'),
+      handler,
+      (primary, rollback) => reportBoundedRollbackFailure(primary, rollback, runtime.errorHandler),
     )
   return { beginBoundedTransaction, withBoundedTransaction }
 }

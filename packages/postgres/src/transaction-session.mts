@@ -13,6 +13,7 @@ export type TransactionSessionOptions = {
 type CleanupOutcome =
   | { kind: 'none' }
   | { kind: 'rolled-back' }
+  | { error: unknown; kind: 'control-failed' }
   | { error: unknown; kind: 'rollback-failed' }
 
 const cleanupOutcomes = new WeakMap<object, CleanupOutcome>()
@@ -111,6 +112,7 @@ export async function beginTransactionSession(
       release()
     } catch (error) {
       release(true)
+      cleanupOutcomes.set(transaction, { error, kind: 'control-failed' })
       throw error
     }
   }
