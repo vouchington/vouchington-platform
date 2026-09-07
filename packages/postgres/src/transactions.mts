@@ -5,6 +5,7 @@ import type { Transaction } from './create-psql-types.mts'
 import {
   beginTransactionSession,
   getTransactionCleanupOutcome,
+  rollbackFailedCommit,
   runQueuedTransactionHandler,
 } from './transaction-session.mts'
 import type { PsqlRuntime, QueryOptions, TransactionQuery } from './types.mts'
@@ -136,7 +137,34 @@ async function withBorrowedTransaction<Result>(
     annotation: '/* withClientTransaction */',
     releaseClient: false,
   })
-  return runTransactionHandler(transaction, handler)
+  try {
+    return await runTransactionHandler(transaction, handler)
+  } catch (error) {
+    try {
+      await rollbackFailedCommit(transaction)
+    } catch (rollback) {
+      reportBorrowedRollbackFailure(runtime, error, rollback)
+    }
+    throw error
+  }
+}
+
+function reportBorrowedRollbackFailure(
+  runtime: PsqlRuntime,
+  primary: unknown,
+  rollback: unknown,
+): void {
+  try {
+    runtime.errorHandler(
+      new AggregateError(
+        [primary, rollback],
+        'PostgreSQL borrowed transaction commit failed and rollback did not complete',
+        { cause: primary },
+      ),
+    )
+  } catch {
+    // Cleanup reporting must not replace the commit failure.
+  }
 }
 
 async function isInTransaction(client: pg.PoolClient): Promise<boolean> {

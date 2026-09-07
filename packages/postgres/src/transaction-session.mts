@@ -13,13 +13,20 @@ export type TransactionSessionOptions = {
 type CleanupOutcome =
   | { kind: 'none' }
   | { kind: 'rolled-back' }
-  | { error: unknown; kind: 'control-failed' }
+  | { error: unknown; kind: 'control-failed'; rollback?: () => Promise<void> }
   | { error: unknown; kind: 'rollback-failed' }
 
 const cleanupOutcomes = new WeakMap<object, CleanupOutcome>()
 
 export function getTransactionCleanupOutcome(transaction: Transaction): CleanupOutcome {
   return cleanupOutcomes.get(transaction) ?? { kind: 'none' }
+}
+
+export async function rollbackFailedCommit(transaction: Transaction): Promise<void> {
+  const cleanup = getTransactionCleanupOutcome(transaction)
+  if (cleanup.kind === 'control-failed' && cleanup.rollback !== undefined) {
+    await cleanup.rollback()
+  }
 }
 
 export async function runQueuedTransactionHandler<Result>(
@@ -95,6 +102,7 @@ export async function beginTransactionSession(
   let released = false
   let transaction!: Transaction
   let settlement: { operation: 'COMMIT' | 'ROLLBACK'; promise: Promise<void> } | undefined
+  let compensatingRollback: Promise<void> | undefined
   const release = (destroy = false) => {
     if (!released && options.releaseClient !== false) {
       if (destroy) client.release(true)
@@ -156,7 +164,13 @@ export async function beginTransactionSession(
       release()
     } catch (error) {
       release(true)
-      cleanupOutcomes.set(transaction, { error, kind: 'control-failed' })
+      cleanupOutcomes.set(transaction, {
+        error,
+        kind: 'control-failed',
+        ...(operation === 'COMMIT'
+          ? { rollback: () => (compensatingRollback ??= control('ROLLBACK').then(() => undefined)) }
+          : {}),
+      })
       throw error
     }
   }
