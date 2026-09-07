@@ -107,6 +107,8 @@ export class JwtKeySetCache {
 }
 
 function assertRsaPublicMembers(jwk: jose.JWK, label: string, index: number): void {
+  if (jwk.oth !== undefined)
+    throw new Error(`${label}[${index}] must not contain multi-prime RSA other primes`)
   if (typeof jwk.n !== 'string' || jwk.n.length === 0 || typeof jwk.e !== 'string' || !jwk.e)
     throw new Error(`${label}[${index}] must contain RSA modulus and exponent values`)
   if (jwk.e !== 'AQAB') throw new Error(`${label}[${index}] must use RSA exponent 65537`)
