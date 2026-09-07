@@ -4,6 +4,11 @@ import { createBoundedTransactionApi } from './bounded-transaction-api.mts'
 import { withPsql } from './test-helpers.mts'
 import type { PsqlRuntime } from './types.mts'
 
+function rejectIdlePoolProbe(input: { text?: string } | string): void {
+  if ((typeof input === 'string' ? input : (input.text ?? '')).includes('SAVEPOINT'))
+    throw Object.assign(new Error('idle'), { code: '25P01' })
+}
+
 describe('withBoundedTransaction', () => {
   it('commits a bounded transaction', async () => {
     await withPsql(async (psql) => {
@@ -35,7 +40,7 @@ describe('withBoundedTransaction', () => {
       env: {},
       errorHandler: () => {},
     }
-    const pending = createBoundedTransactionApi(runtime)(
+    const pending = createBoundedTransactionApi(runtime).withBoundedTransaction(
       { connectionTimeoutMs: 20, statementTimeoutMs: 20 },
       async () => 1,
     )
@@ -61,12 +66,242 @@ describe('withBoundedTransaction', () => {
       env: {},
       errorHandler: () => {},
     }
-    const pending = createBoundedTransactionApi(runtime)(
+    const pending = createBoundedTransactionApi(runtime).withBoundedTransaction(
       { connectionTimeoutMs: 20, statementTimeoutMs: 20 },
       async () => 1,
     )
     await expect(pending).rejects.toThrow('timed out after 20ms')
     resolveConnect?.({ release })
     await vi.waitFor(() => expect(release).toHaveBeenCalled())
+  })
+
+  it('times and bounds every control query on the resource API', async () => {
+    const inputs: Array<{ text?: string; query_timeout?: number }> = []
+    const timings: string[] = []
+    const client = {
+      query: async (input: { text?: string; query_timeout?: number }) => {
+        rejectIdlePoolProbe(input)
+        inputs.push(input)
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    const runtime: PsqlRuntime = {
+      pools: {
+        write: { connect: async () => client } as never,
+        read: { connect: vi.fn() } as never,
+        advisoryLock: { connect: vi.fn() } as never,
+      },
+      env: {},
+      errorHandler: () => {},
+      onQueryTiming: ({ annotation }) => timings.push(annotation ?? ''),
+    }
+    const transaction = await createBoundedTransactionApi(runtime).beginBoundedTransaction({
+      connectionTimeoutMs: 100,
+      statementTimeoutMs: 50,
+    })
+    await transaction.rollback()
+    expect(inputs.every((input) => input.query_timeout === 50)).toBe(true)
+    expect(timings).toEqual([
+      'beginBoundedTransaction',
+      'beginBoundedTransaction',
+      'beginBoundedTransaction',
+    ])
+  })
+
+  it('reports only the real rollback failure from bounded callbacks', async () => {
+    const rollback = new Error('rollback failed')
+    const primary = new Error('handler failed')
+    const reporter = vi.fn()
+    const client = {
+      query: async (input: { text?: string }) => {
+        rejectIdlePoolProbe(input)
+        if (input.text?.includes('ROLLBACK')) throw rollback
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    const runtime: PsqlRuntime = {
+      pools: {
+        write: { connect: async () => client } as never,
+        read: { connect: vi.fn() } as never,
+        advisoryLock: { connect: vi.fn() } as never,
+      },
+      env: {},
+      errorHandler: reporter,
+    }
+    await expect(
+      createBoundedTransactionApi(runtime).withBoundedTransaction(
+        { connectionTimeoutMs: 100, statementTimeoutMs: 50 },
+        async () => {
+          throw primary
+        },
+      ),
+    ).rejects.toBe(primary)
+    expect(reporter.mock.calls[0]?.[0]).toMatchObject({ errors: [primary, rollback] })
+  })
+
+  it('does not report a synthetic settled error after an internal rollback', async () => {
+    const primary = new Error('query failed')
+    const reporter = vi.fn()
+    const client = {
+      query: async (input: { text?: string }) => {
+        rejectIdlePoolProbe(input)
+        if (input.text?.includes('bad')) throw primary
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    const runtime: PsqlRuntime = {
+      pools: {
+        write: { connect: async () => client } as never,
+        read: { connect: vi.fn() } as never,
+        advisoryLock: { connect: vi.fn() } as never,
+      },
+      env: {},
+      errorHandler: reporter,
+    }
+    await expect(
+      createBoundedTransactionApi(runtime).withBoundedTransaction(
+        { connectionTimeoutMs: 100, statementTimeoutMs: 50 },
+        async (query) => {
+          void query('/* bad */ SELECT 1')
+          return 1
+        },
+      ),
+    ).rejects.toBe(primary)
+    expect(reporter).not.toHaveBeenCalled()
+  })
+
+  it('preserves a commit failure without reporting a synthetic settled cleanup error', async () => {
+    const commitFailure = new Error('commit failed')
+    const reporter = vi.fn()
+    const inputs: string[] = []
+    const client = {
+      query: async (input: { text?: string }) => {
+        rejectIdlePoolProbe(input)
+        inputs.push(input.text ?? '')
+        if (input.text?.includes('COMMIT')) throw commitFailure
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    const runtime: PsqlRuntime = {
+      pools: {
+        write: { connect: async () => client } as never,
+        read: { connect: vi.fn() } as never,
+        advisoryLock: { connect: vi.fn() } as never,
+      },
+      env: {},
+      errorHandler: reporter,
+    }
+    await expect(
+      createBoundedTransactionApi(runtime).withBoundedTransaction(
+        { connectionTimeoutMs: 100, statementTimeoutMs: 50 },
+        async () => 1,
+      ),
+    ).rejects.toBe(commitFailure)
+    expect(inputs).toEqual([
+      '/* withBoundedTransaction */ BEGIN',
+      "/* withBoundedTransaction */ SELECT set_config('statement_timeout', $1, true)",
+      '/* withBoundedTransaction */ COMMIT',
+    ])
+    expect(client.release).toHaveBeenCalledWith(true)
+    expect(reporter).not.toHaveBeenCalled()
+  })
+
+  it('reports the actual rollback failure after a queued callback query fails', async () => {
+    const primary = new Error('query failed')
+    const rollback = new Error('rollback failed')
+    const reporter = vi.fn()
+    const client = {
+      query: async (input: { text?: string }) => {
+        rejectIdlePoolProbe(input)
+        if (input.text?.includes('bad')) throw primary
+        if (input.text?.includes('ROLLBACK')) throw rollback
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    const runtime: PsqlRuntime = {
+      pools: {
+        write: { connect: async () => client } as never,
+        read: { connect: vi.fn() } as never,
+        advisoryLock: { connect: vi.fn() } as never,
+      },
+      env: {},
+      errorHandler: reporter,
+    }
+    await expect(
+      createBoundedTransactionApi(runtime).withBoundedTransaction(
+        { connectionTimeoutMs: 100, statementTimeoutMs: 50 },
+        async (query) => {
+          void query('/* bad */ SELECT 1')
+          return 1
+        },
+      ),
+    ).rejects.toBe(primary)
+    expect(client.release).toHaveBeenCalledWith(true)
+    expect(reporter.mock.calls[0]?.[0]).toMatchObject({ errors: [primary, rollback] })
+  })
+
+  it('destroys an active pool client before starting a bounded transaction', async () => {
+    const queries: string[] = []
+    const client = {
+      query: async (input: { text?: string } | string) => {
+        queries.push(typeof input === 'string' ? input : (input.text ?? ''))
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    const runtime: PsqlRuntime = {
+      pools: {
+        write: { connect: async () => client } as never,
+        read: { connect: vi.fn() } as never,
+        advisoryLock: { connect: vi.fn() } as never,
+      },
+      env: {},
+      errorHandler: () => {},
+    }
+    await expect(
+      createBoundedTransactionApi(runtime).beginBoundedTransaction({
+        connectionTimeoutMs: 100,
+        statementTimeoutMs: 50,
+      }),
+    ).rejects.toThrow('Cannot create an owned transaction from an active pool client')
+    expect(queries).toEqual([
+      'SAVEPOINT vouchington_transaction_probe',
+      'RELEASE SAVEPOINT vouchington_transaction_probe',
+    ])
+    expect(client.release).toHaveBeenCalledWith(true)
+  })
+
+  it('destroys an unprobeable pool client before bounded callback work', async () => {
+    const probeFailure = Object.assign(new Error('disk full'), { code: '53100' })
+    const queries: string[] = []
+    const client = {
+      query: async (input: { text?: string } | string) => {
+        queries.push(typeof input === 'string' ? input : (input.text ?? ''))
+        throw probeFailure
+      },
+      release: vi.fn(),
+    }
+    const runtime: PsqlRuntime = {
+      pools: {
+        write: { connect: async () => client } as never,
+        read: { connect: vi.fn() } as never,
+        advisoryLock: { connect: vi.fn() } as never,
+      },
+      env: {},
+      errorHandler: () => {},
+    }
+    await expect(
+      createBoundedTransactionApi(runtime).withBoundedTransaction(
+        { connectionTimeoutMs: 100, statementTimeoutMs: 50 },
+        async () => 1,
+      ),
+    ).rejects.toBe(probeFailure)
+    expect(queries).toEqual(['SAVEPOINT vouchington_transaction_probe'])
+    expect(client.release).toHaveBeenCalledWith(true)
   })
 })

@@ -29,8 +29,15 @@ await psql.read(sql`/* listUsers */ SELECT id FROM users LIMIT 1`)
 await psql.withTransaction(async (query) => {
   await query(sql`/* insertUser */ INSERT INTO users (id) VALUES (${id})`)
 })
+await using transaction = await psql.beginTransaction()
+await transaction(sql`/* insertUser */ INSERT INTO users (id) VALUES (${id})`)
+await transaction.commit()
 await psql.close()
 ```
+
+`beginTransaction()` and `beginBoundedTransaction()` return an explicitly owned transaction. Call
+`commit()` to persist it; leaving the scope without committing rolls it back. Transaction resources
+cannot be nested or borrowed: pass their callable query to nested work instead.
 
 ## Connection model
 

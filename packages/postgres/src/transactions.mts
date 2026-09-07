@@ -1,40 +1,104 @@
 import type pg from 'pg'
 
 import { connectWithRetry } from './connect-with-retry.mts'
-import { executeClientQuery } from './execute-client-query.mts'
-import type {
-  PsqlRuntime,
-  QueryInput,
-  QueryOptions,
-  QueryValues,
-  TransactionQuery,
-} from './types.mts'
+import type { Transaction } from './create-psql-types.mts'
+import {
+  beginTransactionSession,
+  getTransactionCleanupOutcome,
+  rollbackFailedCommit,
+  runQueuedTransactionHandler,
+} from './transaction-session.mts'
+import type { PsqlRuntime, QueryOptions, TransactionQuery } from './types.mts'
 
 const TRANSACTION_PROBE_SAVEPOINT = 'vouchington_transaction_probe'
-
 export function createTransactionApi(runtime: PsqlRuntime) {
-  async function withTransaction<Result>(
-    handler: (query: TransactionQuery) => Promise<Result>,
-  ): Promise<Result> {
-    const client = await connectWithRetry(runtime.pools.write)
-    try {
-      return await withClientTransaction(runtime, client, handler)
-    } finally {
-      client.release()
-    }
-  }
-
-  function withTransactionOptions<Result>(
+  const beginTransaction = async (): Promise<Transaction> =>
+    beginOwnedPoolTransaction(
+      runtime,
+      await connectWithRetry(runtime.pools.write),
+      '/* beginTransaction */',
+    )
+  const withTransaction = <Result,>(handler: (query: TransactionQuery) => Promise<Result>) =>
+    withOwnedTransaction(runtime, handler, '/* withClientTransaction */')
+  const withTransactionOptions = <Result,>(
     options: QueryOptions,
     handler: (query: TransactionQuery) => Promise<Result>,
-  ): Promise<Result> {
+  ): Promise<Result> => {
     if (isTransactionQuery(options.query)) return handler(options.query)
-    if (isPoolClient(options.client)) return withClientTransaction(runtime, options.client, handler)
+    if (isPoolClient(options.client))
+      return withBorrowedTransaction(runtime, options.client, handler)
     if (isPool(options.client)) return withPoolTransaction(runtime, options.client, handler)
     return withTransaction(handler)
   }
+  return { beginTransaction, withTransaction, withTransactionOptions }
+}
+export async function beginOwnedTransaction(
+  runtime: PsqlRuntime,
+  client: pg.PoolClient,
+  annotation: string,
+  statementTimeoutMs?: number,
+): Promise<Transaction> {
+  return beginTransactionSession(runtime, client, {
+    annotation,
+    ...(statementTimeoutMs === undefined ? {} : { statementTimeoutMs }),
+  })
+}
+async function withOwnedTransaction<Result>(
+  runtime: PsqlRuntime,
+  handler: (query: TransactionQuery) => Promise<Result>,
+  annotation: string,
+  statementTimeoutMs?: number,
+): Promise<Result> {
+  const transaction = await beginOwnedPoolTransaction(
+    runtime,
+    await connectWithRetry(runtime.pools.write),
+    annotation,
+    statementTimeoutMs,
+  )
+  return runTransactionHandler(transaction, handler)
+}
 
-  return { withTransaction, withTransactionOptions }
+export async function beginOwnedPoolTransaction(
+  runtime: PsqlRuntime,
+  client: pg.PoolClient,
+  annotation: string,
+  statementTimeoutMs?: number,
+): Promise<Transaction> {
+  try {
+    if (await isInTransaction(client, statementTimeoutMs))
+      throw new Error('Cannot create an owned transaction from an active pool client')
+  } catch (error) {
+    client.release(true)
+    throw error
+  }
+  return beginOwnedTransaction(runtime, client, annotation, statementTimeoutMs)
+}
+
+export async function runTransactionHandler<Result>(
+  transaction: Transaction,
+  handler: (query: TransactionQuery) => Promise<Result>,
+  onRollbackError?: (primary: unknown, rollback: unknown) => void,
+): Promise<Result> {
+  try {
+    const result = await handler(transaction)
+    await transaction.commit()
+    return result
+  } catch (error) {
+    const cleanup = getTransactionCleanupOutcome(transaction)
+    if (cleanup.kind === 'rolled-back') throw error
+    if (cleanup.kind === 'rollback-failed') {
+      onRollbackError?.(error, cleanup.error)
+      throw error
+    }
+    if (cleanup.kind === 'control-failed') throw error
+    try {
+      await transaction.rollback()
+    } catch (rollback) {
+      // Callback APIs preserve the handler or commit failure as the primary error.
+      onRollbackError?.(error, rollback)
+    }
+    throw error
+  }
 }
 
 async function withPoolTransaction<Result>(
@@ -43,107 +107,76 @@ async function withPoolTransaction<Result>(
   handler: (query: TransactionQuery) => Promise<Result>,
 ): Promise<Result> {
   const client = await connectWithRetry(pool)
+  let alreadyInTransaction: boolean
   try {
-    return await withClientTransaction(runtime, client, handler)
-  } finally {
-    client.release()
+    alreadyInTransaction = await isInTransaction(client)
+  } catch (error) {
+    client.release(true)
+    throw error
   }
+  if (alreadyInTransaction) {
+    try {
+      return await runQueuedTransactionHandler(runtime, client, handler)
+    } finally {
+      client.release()
+    }
+  }
+  return runTransactionHandler(
+    await beginTransactionSession(runtime, client, { annotation: '/* withClientTransaction */' }),
+    handler,
+  )
 }
 
-async function withClientTransaction<Result>(
+async function withBorrowedTransaction<Result>(
   runtime: PsqlRuntime,
   client: pg.PoolClient,
   handler: (query: TransactionQuery) => Promise<Result>,
 ): Promise<Result> {
-  const alreadyInTransaction = await isInTransaction(client)
-  let transactionStarted = false
-  const { query, awaitQueue, throwIfFailed } = createQueuedTransactionQuery(runtime, client)
-
+  if (await isInTransaction(client)) return runQueuedTransactionHandler(runtime, client, handler)
+  const transaction = await beginTransactionSession(runtime, client, {
+    annotation: '/* withClientTransaction */',
+    releaseClient: false,
+  })
   try {
-    if (!alreadyInTransaction) {
-      await executeClientQuery(client, '/* withClientTransaction */ BEGIN', undefined, 'client', {
-        env: runtime.env,
-        onQueryTiming: runtime.onQueryTiming,
-      })
-      transactionStarted = true
-    }
-
-    const result = await handler(query)
-    await awaitQueue()
-    throwIfFailed()
-
-    if (transactionStarted) {
-      await executeClientQuery(client, '/* withClientTransaction */ COMMIT', undefined, 'client', {
-        env: runtime.env,
-        onQueryTiming: runtime.onQueryTiming,
-      })
-    }
-
-    return result
+    return await runTransactionHandler(transaction, handler)
   } catch (error) {
-    await awaitQueue()
-    if (transactionStarted) {
-      try {
-        await executeClientQuery(
-          client,
-          '/* withClientTransaction */ ROLLBACK',
-          undefined,
-          'client',
-          { env: runtime.env, onQueryTiming: runtime.onQueryTiming },
-        )
-      } catch {
-        // Ignore rollback errors so the original failure is preserved.
-      }
+    try {
+      await rollbackFailedCommit(transaction)
+    } catch (rollback) {
+      reportBorrowedRollbackFailure(runtime, error, rollback)
     }
     throw error
   }
 }
 
-function createQueuedTransactionQuery(runtime: PsqlRuntime, client: pg.PoolClient) {
-  let transactionFailed: unknown
-  let queue = Promise.resolve()
-
-  function runTransactionQuery<Row extends pg.QueryResultRow = pg.QueryResultRow>(
-    input: QueryInput,
-    values?: QueryValues,
-  ): Promise<pg.QueryResult<Row>> {
-    const result = queue.then(async () => {
-      if (transactionFailed) throwTransactionFailure(transactionFailed)
-      try {
-        return await executeClientQuery<Row>(client, input, values, 'write', {
-          env: runtime.env,
-          onQueryTiming: runtime.onQueryTiming,
-        })
-      } catch (error) {
-        transactionFailed = error
-        throw error
-      }
-    })
-    queue = result.then(
-      () => undefined,
-      () => undefined,
-    )
-    return result
-  }
-
-  return {
-    query: Object.assign(runTransactionQuery, { client }) as TransactionQuery,
-    awaitQueue: () => queue,
-    throwIfFailed: () => {
-      if (transactionFailed) throwTransactionFailure(transactionFailed)
-    },
-  }
-}
-
-function throwTransactionFailure(error: unknown): never {
-  if (error instanceof Error) throw error
-  throw new Error(`Transaction failed: ${String(error)}`)
-}
-
-async function isInTransaction(client: pg.PoolClient): Promise<boolean> {
+function reportBorrowedRollbackFailure(
+  runtime: PsqlRuntime,
+  primary: unknown,
+  rollback: unknown,
+): void {
   try {
-    await client.query(`SAVEPOINT ${TRANSACTION_PROBE_SAVEPOINT}`)
-    await client.query(`RELEASE SAVEPOINT ${TRANSACTION_PROBE_SAVEPOINT}`)
+    runtime.errorHandler(
+      new AggregateError(
+        [primary, rollback],
+        'PostgreSQL borrowed transaction commit failed and rollback did not complete',
+        { cause: primary },
+      ),
+    )
+  } catch {
+    // Cleanup reporting must not replace the commit failure.
+  }
+}
+
+async function isInTransaction(client: pg.PoolClient, queryTimeoutMs?: number): Promise<boolean> {
+  const probe = (text: string) =>
+    client.query(
+      queryTimeoutMs === undefined
+        ? text
+        : ({ query_timeout: queryTimeoutMs, text } as pg.QueryConfig),
+    )
+  try {
+    await probe(`SAVEPOINT ${TRANSACTION_PROBE_SAVEPOINT}`)
+    await probe(`RELEASE SAVEPOINT ${TRANSACTION_PROBE_SAVEPOINT}`)
     return true
   } catch (error) {
     if ((error as { code?: string }).code === '25P01') return false

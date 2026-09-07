@@ -18,6 +18,7 @@ import type {
 export type ClientQueryTimingExtras = Pick<QueryTimingInput, 'pipelined' | 'batchSize'> & {
   onQueryTiming?: QueryTimingHandler | undefined
   env?: NodeJS.ProcessEnv | undefined
+  queryTimeoutMs?: number | undefined
 }
 
 export async function executeClientQuery<Row extends pg.QueryResultRow = pg.QueryResultRow>(
@@ -27,7 +28,12 @@ export async function executeClientQuery<Row extends pg.QueryResultRow = pg.Quer
   poolLabel: QueryPoolLabel,
   extras?: ClientQueryTimingExtras,
 ): Promise<pg.QueryResult<Row>> {
-  const { config, annotation } = buildQueryConfig(input, values, extras?.env)
+  const { config, annotation } = buildQueryConfig(
+    input,
+    values,
+    extras?.env,
+    extras?.queryTimeoutMs,
+  )
   const start = performance.now()
   const pipelined = extras?.pipelined
   const batchSize = extras?.batchSize
@@ -65,11 +71,15 @@ function buildQueryConfig(
   input: QueryInput,
   values: QueryValues,
   env?: NodeJS.ProcessEnv,
+  queryTimeoutMs?: number,
 ): { config: pg.QueryConfig; annotation: string | null } {
   if (typeof input === 'string') {
     assertLeadingQueryAnnotation(input, env)
     const annotation = extractLeadingQueryAnnotation(input)
-    const config: pg.QueryConfig = { text: input }
+    const config: pg.QueryConfig = {
+      text: input,
+      ...(queryTimeoutMs === undefined ? {} : { query_timeout: queryTimeoutMs }),
+    }
     if (values !== undefined) config.values = [...values]
     if (annotation) config.name = buildPreparedStatementName(input)
     return { config, annotation }
@@ -81,6 +91,7 @@ function buildQueryConfig(
     text: input.text,
     values: input.values,
     name: buildPreparedStatementName(input.text, input.name),
+    ...(queryTimeoutMs === undefined ? {} : { query_timeout: queryTimeoutMs }),
   }
   return { config, annotation }
 }

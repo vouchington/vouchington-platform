@@ -61,7 +61,7 @@ describe('bounded transaction cleanup', () => {
     ).rejects.toThrow('Transaction failed: nope')
   })
 
-  it('does not roll back when BEGIN fails', async () => {
+  it('destroys the client when BEGIN fails before transaction state is known', async () => {
     const primaryError = new Error('begin failed')
     const fixture = createClientFixture()
     fixture.failNextQuery(primaryError)
@@ -69,7 +69,7 @@ describe('bounded transaction cleanup', () => {
       runBoundedTransactionWithClient(options, fixture.client, async () => 1),
     ).rejects.toBe(primaryError)
     expect(fixture.queries.some((query) => query.includes('ROLLBACK'))).toBe(false)
-    expect(fixture.release).toHaveBeenCalledWith()
+    expect(fixture.release).toHaveBeenCalledWith(true)
   })
 
   it('destroys the client when rollback fails without a reporter', async () => {
@@ -125,6 +125,22 @@ describe('bounded transaction cleanup', () => {
       ),
     ).rejects.toBe(primaryError)
     expect(reportError).toHaveBeenCalled()
+  })
+
+  it('uses process environment validation when no runtime is supplied', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('VITEST', '')
+    const fixture = createClientFixture()
+    try {
+      await expect(
+        runBoundedTransactionWithClient(options, fixture.client, async (query) => {
+          await query('SELECT 1')
+          return 1
+        }),
+      ).rejects.toThrow('PostgreSQL query must start with an annotation comment')
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 })
 

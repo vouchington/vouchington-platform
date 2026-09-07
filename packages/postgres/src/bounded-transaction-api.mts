@@ -2,21 +2,36 @@ import type pg from 'pg'
 
 import { connectWithRetry } from './connect-with-retry.mts'
 import {
-  runBoundedTransactionWithClient,
+  reportBoundedRollbackFailure,
   type BoundedTransactionOptions,
 } from './bounded-transaction.mts'
+import type { Transaction } from './create-psql-types.mts'
+import { beginOwnedPoolTransaction, runTransactionHandler } from './transactions.mts'
 import type { PsqlRuntime, TransactionQuery } from './types.mts'
 
-export type { BoundedTransactionOptions }
+export type { BoundedTransactionOptions } from './bounded-transaction.mts'
 
 export function createBoundedTransactionApi(runtime: PsqlRuntime) {
-  return async function withBoundedTransaction<Result>(
+  const beginBoundedTransaction = async (
+    options: BoundedTransactionOptions,
+    annotation = '/* beginBoundedTransaction */',
+  ): Promise<Transaction> =>
+    beginOwnedPoolTransaction(
+      runtime,
+      await acquireClientWithin(runtime.pools.write, options.connectionTimeoutMs),
+      annotation,
+      options.statementTimeoutMs,
+    )
+  const withBoundedTransaction = async <Result,>(
     options: BoundedTransactionOptions,
     handler: (query: TransactionQuery) => Promise<Result>,
-  ): Promise<Result> {
-    const client = await acquireClientWithin(runtime.pools.write, options.connectionTimeoutMs)
-    return runBoundedTransactionWithClient(options, client, handler, runtime)
-  }
+  ): Promise<Result> =>
+    runTransactionHandler(
+      await beginBoundedTransaction(options, '/* withBoundedTransaction */'),
+      handler,
+      (primary, rollback) => reportBoundedRollbackFailure(primary, rollback, runtime.errorHandler),
+    )
+  return { beginBoundedTransaction, withBoundedTransaction }
 }
 
 async function acquireClientWithin(pool: pg.Pool, timeoutMs: number): Promise<pg.PoolClient> {

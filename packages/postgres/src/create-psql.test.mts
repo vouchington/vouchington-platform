@@ -35,10 +35,17 @@ describe('createPsql', () => {
       await psql.withTransaction(async (query) => {
         await query(`/* insert */ INSERT INTO ${table} (id) VALUES (1)`)
       })
+      await using transaction = await psql.beginTransaction()
+      await transaction(`/* insertResource */ INSERT INTO ${table} (id) VALUES (2)`)
+      await transaction.commit()
+      await (async () => {
+        await using rollback = await psql.beginTransaction()
+        await rollback(`/* insertRollback */ INSERT INTO ${table} (id) VALUES (3)`)
+      })()
       await expect(
         psql.read(`/* count */ SELECT count(*)::int AS n FROM ${table}`),
       ).resolves.toMatchObject({
-        rows: [{ n: 1 }],
+        rows: [{ n: 2 }],
       })
       await expect(
         psql.withTransaction(async (query) => {
