@@ -163,7 +163,7 @@ describe('beginTransaction resource options', () => {
 
   it('reports failed caller-managed commit recovery without replacing the commit failure', async () => {
     const commit = new Error('commit failed')
-    const rollback = new Error('rollback failed')
+    const rollback = 'rollback failed'
     const errors: Error[] = []
     const { client } = idleClient()
     client.query = async (input) => {
@@ -184,7 +184,10 @@ describe('beginTransaction resource options', () => {
     ).rejects.toBe(commit)
 
     expect(errors).toHaveLength(1)
-    expect(errors[0]).toMatchObject({ cause: commit, errors: [commit, rollback] })
+    expect(errors[0]).toMatchObject({
+      cause: commit,
+      errors: [commit, new Error('Transaction failed: rollback failed')],
+    })
     expect(client.release).not.toHaveBeenCalled()
   })
 
