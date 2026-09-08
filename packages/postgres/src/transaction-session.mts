@@ -1,32 +1,25 @@
 import type pg from 'pg'
 
 import { executeClientQuery } from './execute-client-query.mts'
+import {
+  reportFailedCompensatingRollback,
+  rollbackFailedCommit,
+  setTransactionCleanupOutcome,
+} from './transaction-cleanup.mts'
 import type { Transaction } from './create-psql-types.mts'
-import type { PsqlRuntime, QueryInput, QueryValues, TransactionQuery } from './types.mts'
+import type {
+  PsqlRuntime,
+  QueryInput,
+  QueryPoolLabel,
+  QueryValues,
+  TransactionQuery,
+} from './types.mts'
 
 export type TransactionSessionOptions = {
   annotation: string
   statementTimeoutMs?: number
   releaseClient?: boolean
-}
-
-type CleanupOutcome =
-  | { kind: 'none' }
-  | { kind: 'rolled-back' }
-  | { error: unknown; kind: 'control-failed'; rollback?: () => Promise<void> }
-  | { error: unknown; kind: 'rollback-failed' }
-
-const cleanupOutcomes = new WeakMap<object, CleanupOutcome>()
-
-export function getTransactionCleanupOutcome(transaction: Transaction): CleanupOutcome {
-  return cleanupOutcomes.get(transaction) ?? { kind: 'none' }
-}
-
-export async function rollbackFailedCommit(transaction: Transaction): Promise<void> {
-  const cleanup = getTransactionCleanupOutcome(transaction)
-  if (cleanup.kind === 'control-failed' && cleanup.rollback !== undefined) {
-    await cleanup.rollback()
-  }
+  queryPool?: QueryPoolLabel
 }
 
 export async function runQueuedTransactionHandler<Result>(
@@ -119,10 +112,16 @@ export async function beginTransactionSession(
       const result = queue.then(async () => {
         if (hasFailed) throwFailure(failed)
         try {
-          return await executeClientQuery<Row>(client, input, values, 'write', {
-            env: runtime.env,
-            onQueryTiming: runtime.onQueryTiming,
-          })
+          return await executeClientQuery<Row>(
+            client,
+            input,
+            values,
+            options.queryPool ?? 'write',
+            {
+              env: runtime.env,
+              onQueryTiming: runtime.onQueryTiming,
+            },
+          )
         } catch (error) {
           failed = error
           hasFailed = true
@@ -152,10 +151,10 @@ export async function beginTransactionSession(
       try {
         await control('ROLLBACK')
         release()
-        cleanupOutcomes.set(transaction, { kind: 'rolled-back' })
+        setTransactionCleanupOutcome(transaction, { kind: 'rolled-back' })
       } catch (error) {
         release(true)
-        cleanupOutcomes.set(transaction, { error, kind: 'rollback-failed' })
+        setTransactionCleanupOutcome(transaction, { error, kind: 'rollback-failed' })
       }
       throwFailure(failed)
     }
@@ -164,7 +163,7 @@ export async function beginTransactionSession(
       release()
     } catch (error) {
       release(true)
-      cleanupOutcomes.set(transaction, {
+      setTransactionCleanupOutcome(transaction, {
         error,
         kind: 'control-failed',
         ...(operation === 'COMMIT'
@@ -181,12 +180,17 @@ export async function beginTransactionSession(
       if (!settlement) return settle('ROLLBACK')
       try {
         await settlement.promise
-      } catch {
+      } catch (error) {
         // An explicit settlement reports its own failure.
+        try {
+          await rollbackFailedCommit(transaction)
+        } catch (rollback) {
+          reportFailedCompensatingRollback(runtime.errorHandler, error, rollback)
+        }
       }
     },
   }) as Transaction
-  cleanupOutcomes.set(transaction, { kind: 'none' })
+  setTransactionCleanupOutcome(transaction, { kind: 'none' })
   return transaction
 }
 

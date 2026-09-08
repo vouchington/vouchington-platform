@@ -10,7 +10,7 @@ type Client = {
   release: ReturnType<typeof vi.fn>
 }
 
-function runtime(client: Client): PsqlRuntime {
+function runtime(client: Client, overrides: Partial<PsqlRuntime> = {}): PsqlRuntime {
   return {
     pools: {
       write: { connect: async () => client } as never,
@@ -19,6 +19,7 @@ function runtime(client: Client): PsqlRuntime {
     },
     env: { NODE_ENV: 'test' },
     errorHandler: () => {},
+    ...overrides,
   }
 }
 
@@ -74,6 +75,24 @@ describe('beginTransaction resource options', () => {
     expect(client.release).toHaveBeenCalledOnce()
   })
 
+  it('reports selected read-pool queries with the read timing label', async () => {
+    const { client } = idleClient()
+    const timings: string[] = []
+    const selectedPool = { connect: vi.fn(async () => client) }
+    const psqlRuntime = runtime(client, {
+      onQueryTiming: (input) => timings.push(`${input.annotation}:${input.pool}`),
+    })
+    psqlRuntime.pools.read = selectedPool as never
+
+    const transaction = await createTransactionApi(psqlRuntime).beginTransaction({
+      client: selectedPool as never,
+    })
+    await transaction('/* selectedRead */ SELECT 1')
+    await transaction.commit()
+
+    expect(timings).toContain('selectedRead:read')
+  })
+
   it.each(['commit', 'rollback'] as const)(
     'settles an inactive caller-managed client with %s without releasing it',
     async (operation) => {
@@ -100,6 +119,82 @@ describe('beginTransaction resource options', () => {
     expect(queries).toContain('/* beginTransaction */ ROLLBACK')
     expect(client.release).not.toHaveBeenCalled()
   })
+
+  it('preserves a caller-managed commit failure after compensating rollback', async () => {
+    const commit = new Error('commit failed')
+    const { client, queries } = idleClient()
+    client.query = async (input) => {
+      const text = typeof input === 'string' ? input : (input.text ?? '')
+      queries.push(text)
+      if (text.includes('SAVEPOINT')) throw Object.assign(new Error('idle'), { code: '25P01' })
+      if (text.includes('COMMIT')) throw commit
+      return { rows: [], rowCount: 0 }
+    }
+
+    await expect(
+      (async () => {
+        await using transaction = await createTransactionApi(runtime(client)).beginTransaction({
+          client: client as never,
+        })
+        await transaction.commit()
+      })(),
+    ).rejects.toBe(commit)
+
+    expect(queries).toContain('/* beginTransaction */ ROLLBACK')
+    expect(client.release).not.toHaveBeenCalled()
+  })
+
+  it('reports failed caller-managed commit recovery without replacing the commit failure', async () => {
+    const commit = new Error('commit failed')
+    const rollback = new Error('rollback failed')
+    const errors: Error[] = []
+    const { client } = idleClient()
+    client.query = async (input) => {
+      const text = typeof input === 'string' ? input : (input.text ?? '')
+      if (text.includes('SAVEPOINT')) throw Object.assign(new Error('idle'), { code: '25P01' })
+      if (text.includes('COMMIT')) throw commit
+      if (text.includes('ROLLBACK')) throw rollback
+      return { rows: [], rowCount: 0 }
+    }
+
+    await expect(
+      (async () => {
+        await using transaction = await createTransactionApi(
+          runtime(client, { errorHandler: (error) => errors.push(error) }),
+        ).beginTransaction({ client: client as never })
+        await transaction.commit()
+      })(),
+    ).rejects.toBe(commit)
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toMatchObject({ cause: commit, errors: [commit, rollback] })
+    expect(client.release).not.toHaveBeenCalled()
+  })
+
+  it.each(['explicit rollback', 'async disposal'] as const)(
+    'keeps a caller-managed client owned by the caller when %s rollback fails',
+    async (mode) => {
+      const rollback = new Error('rollback failed')
+      const { client } = idleClient()
+      client.query = async (input) => {
+        const text = typeof input === 'string' ? input : (input.text ?? '')
+        if (text.includes('SAVEPOINT')) throw Object.assign(new Error('idle'), { code: '25P01' })
+        if (text.includes('ROLLBACK')) throw rollback
+        return { rows: [], rowCount: 0 }
+      }
+
+      await expect(
+        (async () => {
+          await using transaction = await createTransactionApi(runtime(client)).beginTransaction({
+            client: client as never,
+          })
+          if (mode === 'explicit rollback') await transaction.rollback()
+        })(),
+      ).rejects.toBe(rollback)
+
+      expect(client.release).not.toHaveBeenCalled()
+    },
+  )
 
   it('rejects an active caller-managed client without releasing or settling it', async () => {
     const queries: string[] = []

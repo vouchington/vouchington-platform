@@ -43,6 +43,11 @@ caller-managed `pg.PoolClient`, pass `{ client }`; the resource settles the tran
 releases the caller's client. Active caller-managed clients are rejected rather than nested. Pass a
 transaction's callable query to nested work.
 
+If a caller-managed resource's `commit()` fails, disposal makes one compensating `ROLLBACK` attempt
+without releasing the client and preserves the commit error. If `ROLLBACK` itself fails, including
+from async disposal, the caller still owns the client and must destroy it with `client.release(true)`
+before it can return to a pool.
+
 ## Connection model
 
 `createPsql()` creates three `pg` pools:

@@ -2,12 +2,8 @@ import type pg from 'pg'
 
 import { connectWithRetry } from './connect-with-retry.mts'
 import type { Transaction } from './create-psql-types.mts'
-import {
-  beginTransactionSession,
-  getTransactionCleanupOutcome,
-  rollbackFailedCommit,
-  runQueuedTransactionHandler,
-} from './transaction-session.mts'
+import { getTransactionCleanupOutcome, rollbackFailedCommit } from './transaction-cleanup.mts'
+import { beginTransactionSession, runQueuedTransactionHandler } from './transaction-session.mts'
 import { beginOwnedPoolTransaction, beginTransactionResource } from './transaction-resource.mts'
 import { isInTransaction } from './transaction-probe.mts'
 import type {
