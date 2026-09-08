@@ -3,6 +3,7 @@ import type pg from 'pg'
 import {
   hasUnprovableIndexClause,
   OnlineIndexConflictError,
+  requireIndexName,
   type OnlineIndexRow,
 } from './online-index-errors.mts'
 
@@ -21,12 +22,7 @@ export async function recoverOnlineIndex(
   )
   const target = table.rows[0]
   if (!target) throw new OnlineIndexConflictError('target relation does not resolve', { migration })
-  const name = requested.idxname
-  if (typeof name !== 'string' || !name)
-    throw new OnlineIndexConflictError('index name is not provable', {
-      migration,
-      table: target.relname,
-    })
+  const name = requireIndexName(requested, { migration, table: target.relname })
   if (requested.tableSpace)
     throw new OnlineIndexConflictError('explicit tablespace is unproven', {
       migration,

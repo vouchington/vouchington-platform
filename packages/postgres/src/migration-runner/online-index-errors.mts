@@ -50,3 +50,13 @@ export function hasUnprovableIndexClause(statement: Record<string, unknown>): bo
     return Boolean(element?.opclass || element?.collation)
   })
 }
+
+export function requireIndexName(
+  statement: Record<string, unknown>,
+  context: Pick<OnlineIndexContext, 'migration' | 'table'>,
+): string {
+  const index = statement.idxname
+  if (typeof index !== 'string' || !index)
+    throw new OnlineIndexConflictError('index name is not provable', context)
+  return index
+}

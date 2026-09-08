@@ -1,6 +1,10 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 
-import { hasUnprovableIndexClause, OnlineIndexConflictError } from './online-index-errors.mts'
+import {
+  hasUnprovableIndexClause,
+  OnlineIndexConflictError,
+  requireIndexName,
+} from './online-index-errors.mts'
 import { parseIndex, recoverOnlineIndex, relationName } from './online-index-recovery.mts'
 import { loadSqlParserModule } from './sql-statements.mts'
 
@@ -17,6 +21,15 @@ describe('online index recovery decisions', () => {
     expect(error.table).toBe('<unknown>')
     expect(error.index).toBe('<unknown>')
     expect(hasUnprovableIndexClause({})).toBe(false)
+    try {
+      requireIndexName({}, { migration: '001-index.sql', table: 'widgets' })
+    } catch (error) {
+      expect(error).toMatchObject({
+        migration: '001-index.sql',
+        table: 'widgets',
+        index: '<unknown>',
+      })
+    }
   })
 
   it('rejects non-replay-safe SQL and invalid target shapes', () => {
