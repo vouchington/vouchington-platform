@@ -42,6 +42,20 @@ describe('online index recovery decisions', () => {
     expect(() => relationName('001-index.sql', {})).toThrow('target relation name is not provable')
   })
 
+  it('does not touch an unresolved target relation', async () => {
+    const calls: string[] = []
+    await expect(
+      recoverOnlineIndex(fakeClient(calls, [{ rows: [] }]), '001-index.sql', sql),
+    ).rejects.toMatchObject({
+      reason: 'target relation does not resolve',
+      migration: '001-index.sql',
+      table: '<unknown>',
+      index: '<unknown>',
+    })
+    expect(calls).toHaveLength(1)
+    expect(calls.some((query) => /DROP|CREATE INDEX CONCURRENTLY/i.test(query))).toBe(false)
+  })
+
   it.each(['active', 'non-live'] as const)(
     'does not touch an unsafe %s invalid index',
     async (state) => {
