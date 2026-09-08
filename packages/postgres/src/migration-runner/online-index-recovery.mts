@@ -100,7 +100,7 @@ async function readIndex(
   return result.rows[0]
 }
 
-function parseIndex(migration: string, sql: string): Statement {
+export function parseIndex(migration: string, sql: string): Statement {
   const value = (
     parseSync(sql).stmts?.[0]?.stmt as unknown as { IndexStmt?: Statement } | undefined
   )?.IndexStmt
@@ -110,7 +110,7 @@ function parseIndex(migration: string, sql: string): Statement {
     })
   return value
 }
-function relationName(migration: string, value: Record<string, unknown>): string {
+export function relationName(migration: string, value: Record<string, unknown>): string {
   if (typeof value.relname !== 'string')
     throw new OnlineIndexConflictError('target relation name is not provable', { migration })
   return typeof value.schemaname === 'string'

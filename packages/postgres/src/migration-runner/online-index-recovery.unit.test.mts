@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 
-import { recoverOnlineIndex } from './online-index-recovery.mts'
+import { hasUnprovableIndexClause, OnlineIndexConflictError } from './online-index-errors.mts'
+import { parseIndex, recoverOnlineIndex, relationName } from './online-index-recovery.mts'
 import { loadSqlParserModule } from './sql-statements.mts'
 
 const sql = 'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx ON widgets (id)'
@@ -8,6 +9,25 @@ const definition = 'CREATE INDEX idx ON public.widgets USING btree (id)'
 
 describe('online index recovery decisions', () => {
   beforeAll(loadSqlParserModule)
+
+  it('formats absent error context and accepts an empty clause shape', () => {
+    const error = new OnlineIndexConflictError('missing context')
+    expect(error.message).toContain('migration=<unknown> table=<unknown> index=<unknown>')
+    expect(error.migration).toBe('<unknown>')
+    expect(error.table).toBe('<unknown>')
+    expect(error.index).toBe('<unknown>')
+    expect(hasUnprovableIndexClause({})).toBe(false)
+  })
+
+  it('rejects non-replay-safe SQL and invalid target shapes', () => {
+    for (const invalid of [
+      'CREATE INDEX idx ON widgets (id)',
+      'CREATE INDEX CONCURRENTLY idx ON widgets (id)',
+    ]) {
+      expect(() => parseIndex('001-index.sql', invalid)).toThrow('replay-safe')
+    }
+    expect(() => relationName('001-index.sql', {})).toThrow('target relation name is not provable')
+  })
 
   it.each(['active', 'non-live'] as const)(
     'does not touch an unsafe %s invalid index',
@@ -44,6 +64,28 @@ describe('online index recovery decisions', () => {
     expect(calls).toHaveLength(4)
     expect(calls[2]).toBe(sql)
     expect(calls.some((query) => query.includes('INSERT INTO migrations'))).toBe(false)
+  })
+
+  it.each([
+    [
+      'malformed catalog definition',
+      { ...indexRow('active'), active: false, definition: 'not sql' },
+      'existing index definition does not exactly match the requested definition',
+    ],
+    [
+      'non-index collision',
+      { ...indexRow('active'), active: false, relkind: 'r' },
+      'same-schema name belongs to a non-index relation',
+    ],
+  ])('does not touch a %s', async (_name, row, reason) => {
+    const calls: string[] = []
+    const client = fakeClient(calls, [
+      { rows: [{ oid: 42, nspname: 'public', relname: 'widgets' }] },
+      { rows: [row] },
+    ])
+    await expect(recoverOnlineIndex(client, '001-index.sql', sql)).rejects.toMatchObject({ reason })
+    expect(calls).toHaveLength(2)
+    expect(calls.some((query) => /DROP|CREATE INDEX CONCURRENTLY/i.test(query))).toBe(false)
   })
 })
 
