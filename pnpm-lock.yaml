@@ -36,8 +36,8 @@ importers:
         specifier: ^7.0.2001
         version: 7.0.2001
       pr-shepherd:
-        specifier: ^0.47.0
-        version: 0.47.0(supports-color@7.2.0)
+        specifier: ^0.49.0
+        version: 0.49.0(supports-color@7.2.0)
       semver:
         specifier: ^7.8.5
         version: 7.8.5
@@ -63,8 +63,8 @@ importers:
   packages/crawler-html:
     dependencies:
       '@jongleberry/vurst-html':
-        specifier: ^0.4.0
-        version: 0.4.0(supports-color@7.2.0)
+        specifier: ^0.4.3
+        version: 0.4.3
 
   packages/csv:
     dependencies:
@@ -560,8 +560,34 @@ packages:
     resolution: {integrity: sha512-L3lddxsqp6doNDowrsEweK1hJBQhfzhXxNmE4V1ofMCxCEwOVC+MSC+xRfKvsdhhW6+XpsgQVxufoEW9WB32ZA==}
     engines: {node: '>=24.0.0'}
 
-  '@jongleberry/vurst-html@0.4.0':
-    resolution: {integrity: sha512-SEE4ZmKyHSUiWxFS3bwA3g/8HrSOudH7BXIr2SetLHSieCfZzo+bnIyPQi9RhJ8cw2GqGDxqC7beQb2bdYaS2A==}
+  '@jongleberry/vurst-html-darwin-arm64@0.4.3':
+    resolution: {integrity: sha512-PbBW99JrpD4WJS3wu/tK+56B2Vj7rx2QC6bFwb+aGQeR/GTspX5iNnYrmcn/HtDcJ+tADULc/0t9o9n6d8cRIg==}
+    engines: {node: '>= 18'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@jongleberry/vurst-html-darwin-x64@0.4.3':
+    resolution: {integrity: sha512-mscDFMbzy23DiLFmlDbb6gEq1y4+5If7SdeGNb5a8Z0mlYbOxdPBmMD+A60C4LTdjTh6Nk//DMZxs804UiWsNQ==}
+    engines: {node: '>= 18'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@jongleberry/vurst-html-linux-arm64-gnu@0.4.3':
+    resolution: {integrity: sha512-XyPbRZUuPUoW5rq18zPueuNMBq9chDjjJ1wd3RC+LKoxNWk2UMsZIitaT6Qx2JiTlSYb5j6QBFFRqBW5i7qCBw==}
+    engines: {node: '>= 18'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  '@jongleberry/vurst-html-linux-x64-gnu@0.4.3':
+    resolution: {integrity: sha512-+f0oBSXSCK2K47DxmSXwCWEEj4pThMwI/rr/t8hNxpdQpRRS/A2cX0dgF17UW9hKdPPeUmScbKz5VIoZrgPH/A==}
+    engines: {node: '>= 18'}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@jongleberry/vurst-html@0.4.3':
+    resolution: {integrity: sha512-Q2q177AD2xYVJjMwdblNcZI+CDbyma71x567+Y41+t55XFgtluc2VLFqZVnD8WkFRN2PmC0K/r4HeDN6tlkw+g==}
     engines: {node: '>= 18'}
 
   '@jridgewell/resolve-uri@3.1.2':
@@ -1526,10 +1552,6 @@ packages:
     resolution: {integrity: sha512-ufJnssQGbxzLNS1Ho9bCtX4rQKCCvoVuDLHoJyc3F9dOGDB4BkWs2Ci0kv53lqocAEQ/Cbi+I2XCsNYGqVYqng==}
     engines: {node: '>=12.0'}
 
-  agent-base@7.1.4:
-    resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
-    engines: {node: '>= 14'}
-
   ajv-formats@3.0.1:
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
     peerDependencies:
@@ -1871,10 +1893,6 @@ packages:
   http-errors@2.0.1:
     resolution: {integrity: sha512-4FbRdAX+bSdmo4AUFuS0WNiPz8NgFt+r8ThgNWmlrjQjt1Q7ZR9+zTlce2859x4KSXrwIsaeTqDoKQmtP8pLmQ==}
     engines: {node: '>= 0.8'}
-
-  https-proxy-agent@7.0.6:
-    resolution: {integrity: sha512-vK9P5/iUfdl95AI+JVyUuIcVtd4ofvtrOr3HNtM2yxC9bnMbEdp3x01OhQNnjb8IJYi38VlTE3mBXwcfvywuSw==}
-    engines: {node: '>= 14'}
 
   iconv-lite@0.7.3:
     resolution: {integrity: sha512-IKXpvIzjnC9XTAUbVBcMfGS0EPaIXtW6v+zr+RRp+hqULEpo0owZax6wyRwPOJbWbzjYspQwusTsfVr0ifh4uQ==}
@@ -2251,8 +2269,8 @@ packages:
     resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
     engines: {node: '>=0.10.0'}
 
-  pr-shepherd@0.47.0:
-    resolution: {integrity: sha512-VRVa57FbOLgmrjXJ/nRd5iZdTYDfpREJm683tSTIZQdJeW7r761NUA/b6EWCIIuuIKvYzQcqWqhjpW+Z5BxZTA==}
+  pr-shepherd@0.49.0:
+    resolution: {integrity: sha512-5aadrB9sjVtcQF7WD7t6PNavLhOiHvfB6nPyZC4KGEvDU6qNqLIsY6HxbryWw9ok+EuH7q2WJym8gReVm8iSIQ==}
     engines: {node: '>=22.18.0'}
     hasBin: true
 
@@ -3024,11 +3042,24 @@ snapshots:
       negotiator: 1.1.0
       type-is: 2.1.0
 
-  '@jongleberry/vurst-html@0.4.0(supports-color@7.2.0)':
-    dependencies:
-      https-proxy-agent: 7.0.6(supports-color@7.2.0)
-    transitivePeerDependencies:
-      - supports-color
+  '@jongleberry/vurst-html-darwin-arm64@0.4.3':
+    optional: true
+
+  '@jongleberry/vurst-html-darwin-x64@0.4.3':
+    optional: true
+
+  '@jongleberry/vurst-html-linux-arm64-gnu@0.4.3':
+    optional: true
+
+  '@jongleberry/vurst-html-linux-x64-gnu@0.4.3':
+    optional: true
+
+  '@jongleberry/vurst-html@0.4.3':
+    optionalDependencies:
+      '@jongleberry/vurst-html-darwin-arm64': 0.4.3
+      '@jongleberry/vurst-html-darwin-x64': 0.4.3
+      '@jongleberry/vurst-html-linux-arm64-gnu': 0.4.3
+      '@jongleberry/vurst-html-linux-x64-gnu': 0.4.3
 
   '@jridgewell/resolve-uri@3.1.2': {}
 
@@ -3694,8 +3725,6 @@ snapshots:
 
   adm-zip@0.5.18: {}
 
-  agent-base@7.1.4: {}
-
   ajv-formats@3.0.1(ajv@8.20.0):
     optionalDependencies:
       ajv: 8.20.0
@@ -4064,13 +4093,6 @@ snapshots:
       statuses: 2.0.2
       toidentifier: 1.0.1
 
-  https-proxy-agent@7.0.6(supports-color@7.2.0):
-    dependencies:
-      agent-base: 7.1.4
-      debug: 4.4.3(supports-color@7.2.0)
-    transitivePeerDependencies:
-      - supports-color
-
   iconv-lite@0.7.3:
     dependencies:
       safer-buffer: 2.1.2
@@ -4426,7 +4448,7 @@ snapshots:
     dependencies:
       xtend: 4.0.2
 
-  pr-shepherd@0.47.0(supports-color@7.2.0):
+  pr-shepherd@0.49.0(supports-color@7.2.0):
     dependencies:
       '@modelcontextprotocol/sdk': 1.30.0(supports-color@7.2.0)(zod@4.5.4)
       picomatch: 4.0.7
