@@ -25,6 +25,7 @@ export async function runQueuedTransactionHandler<Result>(
   runtime: PsqlRuntime,
   client: pg.PoolClient,
   handler: (query: TransactionQuery) => Promise<Result>,
+  queryPool: QueryPoolLabel,
 ): Promise<Result> {
   let failed: unknown
   let hasFailed = false
@@ -37,7 +38,7 @@ export async function runQueuedTransactionHandler<Result>(
       const result = queue.then(async () => {
         if (hasFailed) throwFailure(failed)
         try {
-          return await executeClientQuery<Row>(client, input, values, 'write', {
+          return await executeClientQuery<Row>(client, input, values, queryPool, {
             env: runtime.env,
             onQueryTiming: runtime.onQueryTiming,
           })

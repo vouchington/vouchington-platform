@@ -87,7 +87,12 @@ async function withPoolTransaction<Result>(
   }
   if (alreadyInTransaction) {
     try {
-      return await runQueuedTransactionHandler(runtime, client, handler)
+      return await runQueuedTransactionHandler(
+        runtime,
+        client,
+        handler,
+        getPoolLabel(runtime, pool),
+      )
     } finally {
       client.release()
     }
@@ -106,7 +111,8 @@ async function withBorrowedTransaction<Result>(
   client: pg.PoolClient,
   handler: (query: TransactionQuery) => Promise<Result>,
 ): Promise<Result> {
-  if (await isInTransaction(client)) return runQueuedTransactionHandler(runtime, client, handler)
+  if (await isInTransaction(client))
+    return runQueuedTransactionHandler(runtime, client, handler, 'client')
   const transaction = await beginTransactionSession(runtime, client, {
     annotation: '/* withClientTransaction */',
     releaseClient: false,
