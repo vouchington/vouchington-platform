@@ -76,6 +76,17 @@ builds use `-- migration-mode: online`. Extensions default to `pgcrypto`; pass
 `migrationExtensions` to `createPsql()` to change that. pgvector type parsers are opt-in via
 `vector: true`.
 
+If an online `CREATE INDEX CONCURRENTLY IF NOT EXISTS` previously failed and left an invalid
+index, the runner verifies its complete PostgreSQL definition and catalog safety state before
+dropping and rebuilding only that exact ordinary index. Valid matching indexes are preserved;
+anything ambiguous, protected, active, or mismatched fails closed and does not record the
+migration. The advisory lock coordinates runners, not external DBA DDL, so concurrent manual DDL
+remains an operator boundary.
+Explicit `TABLESPACE` clauses are rejected before DDL because a catalog-equivalent default
+tablespace cannot be proven from deparsed SQL.
+Explicit opclass and collation clauses are likewise rejected before DDL because PostgreSQL may
+omit their default forms from `pg_get_indexdef()`.
+
 To run product views or config-driven steps in the same advisory lock as SQL migrations:
 
 ```ts

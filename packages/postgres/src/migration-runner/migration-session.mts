@@ -8,6 +8,8 @@ import {
   type MigrationTimeouts,
 } from './migration-options.mts'
 import type { PreparedMigration } from './migration-mode.mts'
+import { recoverOnlineIndex } from './online-index-recovery.mts'
+import { stripLeadingSqlComments } from './strip-leading-sql-comments.mts'
 
 const migrationAdvisoryLockNamespace = 1_447_904_065
 
@@ -53,7 +55,7 @@ export async function executePreparedMigration(
   checksum: string,
 ): Promise<void> {
   if (prepared.mode === 'online') {
-    await runOnlineStatements(client, prepared.statements)
+    await runOnlineStatements(client, migration, prepared.statements)
     await client.query(
       '/* executePreparedMigration */ INSERT INTO migrations (id, checksum) VALUES ($1, $2)',
       [migration, checksum],
@@ -81,13 +83,20 @@ export async function executePreparedMigration(
 
 async function runOnlineStatements(
   client: pg.PoolClient,
+  migration: string,
   statements: readonly string[],
   index = 0,
 ): Promise<void> {
   const statement = statements[index]
   if (!statement) return
-  await client.query(statement)
-  await runOnlineStatements(client, statements, index + 1)
+  if (
+    /^CREATE\s+(?:UNIQUE\s+)?INDEX\s+CONCURRENTLY\s+IF\s+NOT\s+EXISTS\b/i.test(
+      stripLeadingSqlComments(statement),
+    )
+  )
+    await recoverOnlineIndex(client, migration, statement)
+  else await client.query(statement)
+  await runOnlineStatements(client, migration, statements, index + 1)
 }
 
 async function cleanupMigrationRunnerSession(
