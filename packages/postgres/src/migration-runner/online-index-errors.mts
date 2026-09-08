@@ -6,6 +6,7 @@ export interface OnlineIndexContext {
 
 export interface OnlineIndexRow {
   definition: string
+  predicate: string | null
   indisprimary: boolean
   indisready: boolean
   indisvalid: boolean

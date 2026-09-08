@@ -56,6 +56,64 @@ describe('online index recovery decisions', () => {
     expect(calls.some((query) => /DROP|CREATE INDEX CONCURRENTLY/i.test(query))).toBe(false)
   })
 
+  it('fails closed when predicate statement bounds are ambiguous', async () => {
+    const calls: string[] = []
+    const predicateSql = `${sql} WHERE id > 0; SELECT 1`
+    await expect(
+      recoverOnlineIndex(
+        fakeClient(calls, [{ rows: [{ oid: 42, nspname: 'public', relname: 'widgets' }] }]),
+        '001-index.sql',
+        predicateSql,
+      ),
+    ).rejects.toMatchObject({ reason: 'predicate source is not provable' })
+    expect(calls).toHaveLength(1)
+  })
+
+  it('rejects missing TEMPORARY privilege before index DDL', async () => {
+    const calls: string[] = []
+    const predicateSql = `${sql} WHERE id > 0`
+    const client = {
+      query: async (query: string) => {
+        calls.push(query)
+        if (query.includes('to_regclass'))
+          return { rows: [{ oid: 42, nspname: 'public', relname: 'widgets' }] }
+        if (query.startsWith('SAVEPOINT'))
+          throw Object.assign(new Error('no active transaction'), { code: '25P01' })
+        return { rows: [{ allowed: false }] }
+      },
+    } as never
+    await expect(recoverOnlineIndex(client, '001-index.sql', predicateSql)).rejects.toThrow(
+      'TEMPORARY privilege',
+    )
+    expect(calls).toHaveLength(3)
+    expect(calls).not.toContain(predicateSql)
+    expect(calls.some((query) => query.includes('pg_get_indexdef'))).toBe(false)
+  })
+
+  it('propagates predicate catalog query failures', async () => {
+    const calls: string[] = []
+    const failure = new Error('catalog unavailable')
+    const row = {
+      ...indexRow('active'),
+      active: false,
+      definition: `${definition} WHERE (id > 0)`,
+      indisready: true,
+      indisvalid: true,
+      predicate: '(id > 0)',
+    }
+    const client = fakeClient(calls, [
+      { rows: [{ oid: 42, nspname: 'public', relname: 'widgets' }] },
+      { rows: [row] },
+      { rows: [] },
+      failure,
+      { rows: [] },
+    ])
+    await expect(recoverOnlineIndex(client, '001-index.sql', `${sql} WHERE id > 0`)).rejects.toBe(
+      failure,
+    )
+    expect(calls.at(-1)).toBe('ROLLBACK')
+  })
+
   it.each(['active', 'non-live'] as const)(
     'does not touch an unsafe %s invalid index',
     async (state) => {
@@ -116,11 +174,16 @@ describe('online index recovery decisions', () => {
   })
 })
 
-function fakeClient(calls: string[], replies: { rows: unknown[] }[]) {
+function fakeClient(calls: string[], replies: ({ rows: unknown[] } | Error)[]) {
   return {
     query: async (query: string) => {
       calls.push(query)
-      return replies.shift() ?? { rows: [] }
+      if (query.startsWith('SAVEPOINT'))
+        throw Object.assign(new Error('no active transaction'), { code: '25P01' })
+      if (query.includes('has_database_privilege')) return { rows: [{ allowed: true }] }
+      const reply = replies.shift()
+      if (reply instanceof Error) throw reply
+      return reply ?? { rows: [] }
     },
   } as never
 }
@@ -128,6 +191,7 @@ function fakeClient(calls: string[], replies: { rows: unknown[] }[]) {
 function indexRow(state: 'active' | 'non-live') {
   return {
     definition,
+    predicate: null,
     indisprimary: false,
     indisready: false,
     indisvalid: false,
