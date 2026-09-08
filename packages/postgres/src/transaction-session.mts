@@ -2,8 +2,7 @@ import type pg from 'pg'
 
 import { executeClientQuery } from './execute-client-query.mts'
 import {
-  reportFailedCompensatingRollback,
-  rollbackFailedCommit,
+  recoverFailedCallerTransaction,
   setTransactionCleanupOutcome,
 } from './transaction-cleanup.mts'
 import type { Transaction } from './create-psql-types.mts'
@@ -166,7 +165,7 @@ export async function beginTransactionSession(
       setTransactionCleanupOutcome(transaction, {
         error,
         kind: 'control-failed',
-        ...(operation === 'COMMIT'
+        ...(operation === 'COMMIT' && options.releaseClient === false
           ? { rollback: () => (compensatingRollback ??= control('ROLLBACK').then(() => undefined)) }
           : {}),
       })
@@ -182,11 +181,8 @@ export async function beginTransactionSession(
         await settlement.promise
       } catch (error) {
         // An explicit settlement reports its own failure.
-        try {
-          await rollbackFailedCommit(transaction)
-        } catch (rollback) {
-          reportFailedCompensatingRollback(runtime.errorHandler, error, rollback)
-        }
+        if (options.releaseClient === false)
+          await recoverFailedCallerTransaction(transaction, runtime.errorHandler, error)
       }
     },
   }) as Transaction

@@ -27,7 +27,24 @@ export async function rollbackFailedCommit(transaction: Transaction): Promise<vo
   }
 }
 
-export function reportFailedCompensatingRollback(
+export async function recoverFailedCallerTransaction(
+  transaction: Transaction,
+  reportError: ErrorHandler,
+  primary: unknown,
+): Promise<void> {
+  const cleanup = getTransactionCleanupOutcome(transaction)
+  if (cleanup.kind === 'rollback-failed') {
+    reportFailedTransactionCleanup(reportError, primary, cleanup.error)
+    return
+  }
+  try {
+    await rollbackFailedCommit(transaction)
+  } catch (rollback) {
+    reportFailedTransactionCleanup(reportError, primary, rollback)
+  }
+}
+
+function reportFailedTransactionCleanup(
   reportError: ErrorHandler,
   primary: unknown,
   rollback: unknown,
@@ -36,7 +53,7 @@ export function reportFailedCompensatingRollback(
     reportError(
       new AggregateError(
         [normalizeError(primary), normalizeError(rollback)],
-        'PostgreSQL transaction commit failed and compensating rollback did not complete',
+        'PostgreSQL transaction failed and cleanup did not complete',
         { cause: primary },
       ),
     )

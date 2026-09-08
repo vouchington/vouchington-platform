@@ -171,6 +171,59 @@ describe('beginTransaction resource options', () => {
     expect(client.release).not.toHaveBeenCalled()
   })
 
+  it('does not run compensating cleanup after destroying an owned client on commit failure', async () => {
+    const commit = new Error('commit failed')
+    let released = false
+    const { client } = idleClient()
+    client.release = vi.fn(() => {
+      released = true
+    })
+    client.query = async (input) => {
+      const text = typeof input === 'string' ? input : (input.text ?? '')
+      if (text.includes('SAVEPOINT')) throw Object.assign(new Error('idle'), { code: '25P01' })
+      if (text.includes('COMMIT')) throw commit
+      if (text.includes('ROLLBACK') && released) throw new Error('query after release')
+      return { rows: [], rowCount: 0 }
+    }
+
+    await expect(
+      (async () => {
+        await using transaction = await createTransactionApi(runtime(client)).beginTransaction()
+        await transaction.commit()
+      })(),
+    ).rejects.toBe(commit)
+
+    expect(client.release).toHaveBeenCalledWith(true)
+  })
+
+  it('reports caller-managed automatic rollback failure without replacing a queued query failure', async () => {
+    const queryFailure = new Error('queued query failed')
+    const rollback = new Error('rollback failed')
+    const errors: Error[] = []
+    const { client } = idleClient()
+    client.query = async (input) => {
+      const text = typeof input === 'string' ? input : (input.text ?? '')
+      if (text.includes('SAVEPOINT')) throw Object.assign(new Error('idle'), { code: '25P01' })
+      if (text.includes('queuedFailure')) throw queryFailure
+      if (text.includes('ROLLBACK')) throw rollback
+      return { rows: [], rowCount: 0 }
+    }
+
+    await expect(
+      (async () => {
+        await using transaction = await createTransactionApi(
+          runtime(client, { errorHandler: (error) => errors.push(error) }),
+        ).beginTransaction({ client: client as never })
+        void transaction('/* queuedFailure */ SELECT 1')
+        await transaction.commit()
+      })(),
+    ).rejects.toBe(queryFailure)
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toMatchObject({ cause: queryFailure, errors: [queryFailure, rollback] })
+    expect(client.release).not.toHaveBeenCalled()
+  })
+
   it.each(['explicit rollback', 'async disposal'] as const)(
     'keeps a caller-managed client owned by the caller when %s rollback fails',
     async (mode) => {
