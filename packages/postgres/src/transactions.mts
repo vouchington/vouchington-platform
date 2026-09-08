@@ -93,7 +93,10 @@ async function withPoolTransaction<Result>(
     }
   }
   return runTransactionHandler(
-    await beginTransactionSession(runtime, client, { annotation: '/* withClientTransaction */' }),
+    await beginTransactionSession(runtime, client, {
+      annotation: '/* withClientTransaction */',
+      queryPool: getPoolLabel(runtime, pool),
+    }),
     handler,
   )
 }
@@ -148,4 +151,10 @@ function isPoolClient(client: QueryOptions['client']): client is pg.PoolClient {
 
 function isPool(client: QueryOptions['client']): client is pg.Pool {
   return Boolean(client && 'connect' in client && !('release' in client))
+}
+
+function getPoolLabel(runtime: PsqlRuntime, pool: pg.Pool): 'client' | 'read' | 'write' {
+  if (pool === runtime.pools.read) return 'read'
+  if (pool === runtime.pools.write) return 'write'
+  return 'client'
 }

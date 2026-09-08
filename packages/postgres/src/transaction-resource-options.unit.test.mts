@@ -93,6 +93,23 @@ describe('beginTransaction resource options', () => {
     expect(timings).toContain('selectedRead:read')
   })
 
+  it('reports selected read-pool callback queries with the read timing label', async () => {
+    const { client } = idleClient()
+    const timings: string[] = []
+    const selectedPool = { connect: vi.fn(async () => client) }
+    const psqlRuntime = runtime(client, {
+      onQueryTiming: (input) => timings.push(`${input.annotation}:${input.pool}`),
+    })
+    psqlRuntime.pools.read = selectedPool as never
+
+    await createTransactionApi(psqlRuntime).withTransactionOptions(
+      { client: selectedPool as never },
+      async (transaction) => transaction('/* selectedCallbackRead */ SELECT 1'),
+    )
+
+    expect(timings).toContain('selectedCallbackRead:read')
+  })
+
   it.each(['commit', 'rollback'] as const)(
     'settles an inactive caller-managed client with %s without releasing it',
     async (operation) => {
