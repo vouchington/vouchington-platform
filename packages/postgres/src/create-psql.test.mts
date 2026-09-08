@@ -56,6 +56,35 @@ describe('createPsql', () => {
     })
   })
 
+  it('supports selected pools and inactive caller-managed clients for transaction resources', async () => {
+    const table = `tx_options_${crypto.randomUUID().replaceAll('-', '')}`
+    await withPsql(async (psql) => {
+      await psql.write(`/* create */ CREATE TABLE ${table} (id int PRIMARY KEY)`)
+
+      await using selectedPoolTransaction = await psql.beginTransaction({ client: psql.writePool })
+      await selectedPoolTransaction(`/* insertSelectedPool */ INSERT INTO ${table} (id) VALUES (1)`)
+      await selectedPoolTransaction.commit()
+
+      const client = await psql.writePool.connect()
+      const release = vi.spyOn(client, 'release')
+      try {
+        await using callerManagedTransaction = await psql.beginTransaction({ client })
+        await callerManagedTransaction(
+          `/* insertCallerClient */ INSERT INTO ${table} (id) VALUES (2)`,
+        )
+        await callerManagedTransaction.commit()
+        expect(release).not.toHaveBeenCalled()
+      } finally {
+        client.release()
+      }
+
+      await expect(
+        psql.read(`/* count */ SELECT count(*)::int AS n FROM ${table}`),
+      ).resolves.toMatchObject({ rows: [{ n: 2 }] })
+      await psql.write(`/* drop */ DROP TABLE ${table}`)
+    })
+  })
+
   it('pipelines independent selects and runs migrations', async () => {
     const folder = await mkdtemp(join(tmpdir(), 'vouchington-pg-migrate-'))
     dirs.push(folder)

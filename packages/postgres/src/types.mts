@@ -23,6 +23,10 @@ export interface QueryOptions {
   readOnly?: boolean
 }
 
+export interface BeginTransactionOptions {
+  client?: pg.PoolClient | pg.Pool
+}
+
 export type QueryPoolLabel = 'read' | 'write' | 'client'
 
 export interface QueryTimingInput {
