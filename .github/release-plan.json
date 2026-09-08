@@ -4,9 +4,9 @@
     {
       "bump": "patch",
       "directory": "postgres",
-      "fromVersion": "0.0.3",
+      "fromVersion": "0.0.4",
       "name": "@vouchington/postgres",
-      "toVersion": "0.0.4"
+      "toVersion": "0.0.5"
     }
   ],
   "selectedPackage": "@vouchington/postgres"
