@@ -86,6 +86,9 @@ Explicit `TABLESPACE` clauses are rejected before DDL because a catalog-equivale
 tablespace cannot be proven from deparsed SQL.
 Explicit opclass and collation clauses are likewise rejected before DDL because PostgreSQL may
 omit their default forms from `pg_get_indexdef()`.
+Exact partial-index predicate verification uses a transaction-local temporary view so PostgreSQL
+can resolve casts and operators in the target table's type context. The migration role therefore
+requires the database's `TEMPORARY` privilege when an unledgered partial index is verified.
 
 To run product views or config-driven steps in the same advisory lock as SQL migrations:
 

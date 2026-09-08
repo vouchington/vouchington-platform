@@ -7,7 +7,11 @@ import {
   type OnlineIndexRow,
 } from './online-index-errors.mts'
 import { normalizeIndex } from './index-normalization.mts'
-import { extractIndexPredicate, predicatesEquivalent } from './predicate-resolution.mts'
+import {
+  assertPredicateResolutionAvailable,
+  extractIndexPredicate,
+  predicatesEquivalent,
+} from './predicate-resolution.mts'
 
 type Statement = Record<string, unknown>
 export async function recoverOnlineIndex(
@@ -43,6 +47,7 @@ export async function recoverOnlineIndex(
       table: target.relname,
       index: name,
     })
+  if (requestedPredicate) await assertPredicateResolutionAvailable(client)
   const expected = normalizeIndex(requested, target),
     found = await readIndex(client, target, name)
   if (!found)

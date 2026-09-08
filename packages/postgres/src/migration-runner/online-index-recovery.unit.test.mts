@@ -69,6 +69,27 @@ describe('online index recovery decisions', () => {
     expect(calls).toHaveLength(1)
   })
 
+  it('rejects missing TEMPORARY privilege before index DDL', async () => {
+    const calls: string[] = []
+    const predicateSql = `${sql} WHERE id > 0`
+    const client = {
+      query: async (query: string) => {
+        calls.push(query)
+        if (query.includes('to_regclass'))
+          return { rows: [{ oid: 42, nspname: 'public', relname: 'widgets' }] }
+        if (query.startsWith('SAVEPOINT'))
+          throw Object.assign(new Error('no active transaction'), { code: '25P01' })
+        return { rows: [{ allowed: false }] }
+      },
+    } as never
+    await expect(recoverOnlineIndex(client, '001-index.sql', predicateSql)).rejects.toThrow(
+      'TEMPORARY privilege',
+    )
+    expect(calls).toHaveLength(3)
+    expect(calls).not.toContain(predicateSql)
+    expect(calls.some((query) => query.includes('pg_get_indexdef'))).toBe(false)
+  })
+
   it('propagates predicate catalog query failures', async () => {
     const calls: string[] = []
     const failure = new Error('catalog unavailable')
@@ -159,6 +180,7 @@ function fakeClient(calls: string[], replies: ({ rows: unknown[] } | Error)[]) {
       calls.push(query)
       if (query.startsWith('SAVEPOINT'))
         throw Object.assign(new Error('no active transaction'), { code: '25P01' })
+      if (query.includes('has_database_privilege')) return { rows: [{ allowed: true }] }
       const reply = replies.shift()
       if (reply instanceof Error) throw reply
       return reply ?? { rows: [] }

@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { withPsql } from '../test-helpers.mts'
-import { predicatesEquivalent } from './predicate-resolution.mts'
+import { assertPredicateResolutionAvailable } from './predicate-resolution.mts'
 
 describe('online index predicate recovery', () => {
   const dirs: string[] = []
@@ -63,15 +63,29 @@ describe('online index predicate recovery', () => {
       try {
         await client.query('CREATE TEMP TABLE caller_work (value integer)')
         await client.query('INSERT INTO caller_work VALUES (1)')
-        await expect(
-          predicatesEquivalent(client, 'caller_work', 'value > 0', 'value > 0'),
-        ).rejects.toThrow('outside a transaction')
+        await expect(assertPredicateResolutionAvailable(client)).rejects.toThrow(
+          'outside a transaction',
+        )
         const result = await client.query<{ count: string }>('SELECT count(*) FROM caller_work')
         expect(result.rows[0]?.count).toBe('1')
       } finally {
         await client.query('ROLLBACK')
         client.release()
       }
+    })
+  })
+
+  it('does not accept a partial unique index for a full index request', async () => {
+    const fixture = await migrationFixture('state text NOT NULL', undefined, 'value', true)
+    await withPsql(async (psql) => {
+      await setupTable(psql, fixture, 'state text NOT NULL')
+      await psql.write(
+        `/* setup */ CREATE UNIQUE INDEX ${fixture.index} ON ${fixture.table} (value) WHERE value > 0`,
+      )
+      const preserved = await indexOid(psql, fixture.index)
+      await expect(psql.runMigrations(fixture.folder)).rejects.toThrow('Online index conflict')
+      expect(await indexOid(psql, fixture.index)).toBe(preserved)
+      await expectLedger(psql, fixture.migration, false)
     })
   })
 
@@ -207,7 +221,7 @@ describe('online index predicate recovery', () => {
 
   async function migrationFixture(
     column: string,
-    predicate: string,
+    predicate: string | undefined,
     key = 'value',
     unique = false,
   ) {
@@ -219,7 +233,7 @@ describe('online index predicate recovery', () => {
     const migration = `${suffix}-index.sql`
     await writeFile(
       join(folder, migration),
-      `-- migration-mode: online\nCREATE ${unique ? 'UNIQUE ' : ''}INDEX CONCURRENTLY IF NOT EXISTS ${index} ON ${table} (${key}) WHERE ${predicate};`,
+      `-- migration-mode: online\nCREATE ${unique ? 'UNIQUE ' : ''}INDEX CONCURRENTLY IF NOT EXISTS ${index} ON ${table} (${key})${predicate ? ` WHERE ${predicate}` : ''};`,
     )
     return { enumType: `${table}_status`, folder, index, migration, table }
   }

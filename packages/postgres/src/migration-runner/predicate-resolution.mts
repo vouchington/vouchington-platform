@@ -28,17 +28,14 @@ export async function predicatesEquivalent(
   requested: string | undefined,
   catalog: string | null,
 ): Promise<boolean> {
-  if (!requested && !catalog) return true
-  if (await isInTransaction(client))
-    throw new Error('Online index predicate resolution requires a client outside a transaction')
+  if (!requested) return catalog === null
   const name = `vouchington_predicates_${randomUUID().replaceAll('-', '')}`
   const view = `pg_temp.${quote(name)}`
-  const requestedPredicate = requested ?? 'true'
   const catalogPredicate = catalog ?? 'true'
   await client.query('BEGIN')
   try {
     await client.query(
-      `/* resolveOnlineIndexPredicate */ CREATE TEMP VIEW ${view} AS SELECT 1 AS marker FROM ${relation} WHERE (\n${requestedPredicate}\n) UNION ALL SELECT 2 AS marker FROM ${relation} WHERE (\n${catalogPredicate}\n)`,
+      `/* resolveOnlineIndexPredicate */ CREATE TEMP VIEW ${view} AS SELECT 1 AS marker FROM ${relation} WHERE (\n${requested}\n) UNION ALL SELECT 2 AS marker FROM ${relation} WHERE (\n${catalogPredicate}\n)`,
     )
     const result = await client.query<{ definition: string }>(
       '/* resolveOnlineIndexPredicate */ SELECT pg_get_viewdef($1::regclass, false) definition',
@@ -50,6 +47,16 @@ export async function predicatesEquivalent(
   } catch (error) {
     return rollbackAfterFailure(client, error)
   }
+}
+
+export async function assertPredicateResolutionAvailable(client: pg.PoolClient): Promise<void> {
+  if (await isInTransaction(client))
+    throw new Error('Online index predicate resolution requires a client outside a transaction')
+  const privilege = await client.query<{ allowed: boolean }>(
+    `/* resolveOnlineIndexPredicate */ SELECT has_database_privilege(current_user, current_database(), 'TEMP') allowed`,
+  )
+  if (!privilege.rows[0]?.allowed)
+    throw new Error('Online index predicate resolution requires database TEMPORARY privilege')
 }
 
 async function rollbackAfterFailure(client: pg.PoolClient, error: unknown): Promise<never> {

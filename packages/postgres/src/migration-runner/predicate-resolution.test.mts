@@ -1,7 +1,11 @@
 import { parseSync } from '@libpg-query/parser'
 import { beforeAll, describe, expect, it } from 'vitest'
 
-import { extractIndexPredicate, predicatesEquivalent } from './predicate-resolution.mts'
+import {
+  assertPredicateResolutionAvailable,
+  extractIndexPredicate,
+  predicatesEquivalent,
+} from './predicate-resolution.mts'
 import { loadSqlParserModule } from './sql-statements.mts'
 
 describe('online index predicate extraction', () => {
@@ -54,20 +58,29 @@ describe('online index predicate extraction', () => {
     )
   })
 
-  it('resolves a missing requested predicate as true', async () => {
-    const client = fakeClient([
-      { rows: [] },
-      { rows: [] },
-      { rows: [{ definition: 'SELECT 1 WHERE true UNION ALL SELECT 2 WHERE true' }] },
-      { rows: [] },
-    ])
-    await expect(predicatesEquivalent(client, 'widgets', undefined, 'true')).resolves.toBe(true)
+  it('keeps an absent requested predicate distinct from a catalog partial index', async () => {
+    await expect(predicatesEquivalent(fakeClient([]), 'widgets', undefined, 'true')).resolves.toBe(
+      false,
+    )
+  })
+
+  it('rejects missing database TEMPORARY privilege before BEGIN', async () => {
+    const calls: string[] = []
+    const client = {
+      query: async (query: string) => {
+        calls.push(query)
+        if (query.startsWith('SAVEPOINT')) throw noTransactionError()
+        return { rows: [{ allowed: false }] }
+      },
+    } as never
+    await expect(assertPredicateResolutionAvailable(client)).rejects.toThrow('TEMPORARY privilege')
+    expect(calls.some((query) => query === 'BEGIN')).toBe(false)
   })
 
   it('rejects a client already inside a transaction', async () => {
     const calls: string[] = []
     const client = { query: async (query: string) => (calls.push(query), { rows: [] }) } as never
-    await expect(predicatesEquivalent(client, 'widgets', 'id > 0', 'id > 0')).rejects.toThrow(
+    await expect(assertPredicateResolutionAvailable(client)).rejects.toThrow(
       'outside a transaction',
     )
     expect(calls).toHaveLength(2)
@@ -82,7 +95,6 @@ describe('online index predicate extraction', () => {
       const client = {
         query: async (query: string) => {
           calls.push(query)
-          if (query.startsWith('SAVEPOINT')) throw noTransactionError()
           if (query.includes('pg_get_viewdef')) throw failure
           if (query === 'ROLLBACK' && rollbackFails) throw new Error('rollback unavailable')
           return { rows: [] }
@@ -103,10 +115,7 @@ function parseWhere(sql: string): unknown {
 
 function fakeClient(replies: { rows: unknown[] }[]) {
   return {
-    query: async (query: string) => {
-      if (query.startsWith('SAVEPOINT')) throw noTransactionError()
-      return replies.shift() ?? { rows: [] }
-    },
+    query: async () => replies.shift() ?? { rows: [] },
   } as never
 }
 
