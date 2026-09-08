@@ -129,7 +129,7 @@ describe('migration session', () => {
     await executePreparedMigration(
       fixture.client,
       '001.sql',
-      { mode: 'online', statements: ['CREATE INDEX CONCURRENTLY IF NOT EXISTS idx ON t (id)'] },
+      { mode: 'online', statements: ['DROP INDEX CONCURRENTLY IF EXISTS idx'] },
       'abc',
     )
     await executePreparedMigration(
