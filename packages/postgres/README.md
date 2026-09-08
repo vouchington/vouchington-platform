@@ -36,8 +36,18 @@ await psql.close()
 ```
 
 `beginTransaction()` and `beginBoundedTransaction()` return an explicitly owned transaction. Call
-`commit()` to persist it; leaving the scope without committing rolls it back. Transaction resources
-cannot be nested or borrowed: pass their callable query to nested work instead.
+`commit()` to persist it; leaving the scope without committing rolls it back. By default,
+`beginTransaction()` acquires and releases a write-pool client. To select a pool, pass it as
+`{ client: pool }`; the resource acquires and releases that pool's client. To use an inactive
+caller-managed `pg.PoolClient`, pass `{ client }`; the resource settles the transaction but never
+releases the caller's client. Active caller-managed clients are rejected rather than nested. Pass a
+transaction's callable query to nested work.
+
+If a caller-managed resource's `commit()` fails, disposal makes one compensating `ROLLBACK` attempt
+without releasing the client and preserves the commit error. Explicit resource rollback failures,
+including async disposal, surface directly to the caller; callback transaction cleanup failures are
+reported through the configured `errorHandler`. The caller still owns the client and must destroy it
+with `client.release(true)` before it can return to a pool.
 
 ## Connection model
 

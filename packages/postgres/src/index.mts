@@ -36,6 +36,7 @@ export { loadSqlParserModule, splitSqlStatements } from './migration-runner/sql-
 export { getFilesFromFolder, readMigrationFile } from './migration-runner/files.mts'
 export type {
   PoolClient,
+  BeginTransactionOptions,
   QueryInput,
   QueryOptions,
   QueryValues,

@@ -1,6 +1,7 @@
 import type pg from 'pg'
 
-import { beginOwnedTransaction, runTransactionHandler } from './transactions.mts'
+import { beginOwnedTransaction } from './transaction-resource.mts'
+import { runTransactionHandler } from './transactions.mts'
 import type { ErrorHandler, PsqlRuntime, TransactionQuery } from './types.mts'
 
 export type BoundedTransactionOptions = {

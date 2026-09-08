@@ -6,7 +6,8 @@ import {
   type BoundedTransactionOptions,
 } from './bounded-transaction.mts'
 import type { Transaction } from './create-psql-types.mts'
-import { beginOwnedPoolTransaction, runTransactionHandler } from './transactions.mts'
+import { beginOwnedPoolTransaction } from './transaction-resource.mts'
+import { runTransactionHandler } from './transactions.mts'
 import type { PsqlRuntime, TransactionQuery } from './types.mts'
 
 export type { BoundedTransactionOptions } from './bounded-transaction.mts'

@@ -13,6 +13,7 @@ import type { MigrationTimeouts } from './migration-runner/migration-options.mts
 import type { PipelineBatchOptions } from './pipeline-batch.mts'
 import type {
   BeforeQueryHandler,
+  BeginTransactionOptions,
   ErrorHandler,
   QueryInput,
   QueryOptions,
@@ -48,7 +49,7 @@ export interface Psql {
   withTransaction: <Result>(
     handler: (query: TransactionQuery) => Promise<Result>,
   ) => Promise<Result>
-  beginTransaction: () => Promise<Transaction>
+  beginTransaction: (options?: BeginTransactionOptions) => Promise<Transaction>
   beginBoundedTransaction: (options: BoundedTransactionOptions) => Promise<Transaction>
   withTransactionOptions: <Result>(
     options: QueryOptions,

@@ -2,22 +2,20 @@ import type pg from 'pg'
 
 import { connectWithRetry } from './connect-with-retry.mts'
 import type { Transaction } from './create-psql-types.mts'
-import {
-  beginTransactionSession,
-  getTransactionCleanupOutcome,
-  rollbackFailedCommit,
-  runQueuedTransactionHandler,
-} from './transaction-session.mts'
-import type { PsqlRuntime, QueryOptions, TransactionQuery } from './types.mts'
+import { getTransactionCleanupOutcome, rollbackFailedCommit } from './transaction-cleanup.mts'
+import { beginTransactionSession, runQueuedTransactionHandler } from './transaction-session.mts'
+import { beginOwnedPoolTransaction, beginTransactionResource } from './transaction-resource.mts'
+import { isInTransaction } from './transaction-probe.mts'
+import type {
+  BeginTransactionOptions,
+  PsqlRuntime,
+  QueryOptions,
+  TransactionQuery,
+} from './types.mts'
 
-const TRANSACTION_PROBE_SAVEPOINT = 'vouchington_transaction_probe'
 export function createTransactionApi(runtime: PsqlRuntime) {
-  const beginTransaction = async (): Promise<Transaction> =>
-    beginOwnedPoolTransaction(
-      runtime,
-      await connectWithRetry(runtime.pools.write),
-      '/* beginTransaction */',
-    )
+  const beginTransaction = (options: BeginTransactionOptions = {}): Promise<Transaction> =>
+    beginTransactionResource(runtime, options, '/* beginTransaction */')
   const withTransaction = <Result,>(handler: (query: TransactionQuery) => Promise<Result>) =>
     withOwnedTransaction(runtime, handler, '/* withClientTransaction */')
   const withTransactionOptions = <Result,>(
@@ -32,17 +30,6 @@ export function createTransactionApi(runtime: PsqlRuntime) {
   }
   return { beginTransaction, withTransaction, withTransactionOptions }
 }
-export async function beginOwnedTransaction(
-  runtime: PsqlRuntime,
-  client: pg.PoolClient,
-  annotation: string,
-  statementTimeoutMs?: number,
-): Promise<Transaction> {
-  return beginTransactionSession(runtime, client, {
-    annotation,
-    ...(statementTimeoutMs === undefined ? {} : { statementTimeoutMs }),
-  })
-}
 async function withOwnedTransaction<Result>(
   runtime: PsqlRuntime,
   handler: (query: TransactionQuery) => Promise<Result>,
@@ -56,22 +43,6 @@ async function withOwnedTransaction<Result>(
     statementTimeoutMs,
   )
   return runTransactionHandler(transaction, handler)
-}
-
-export async function beginOwnedPoolTransaction(
-  runtime: PsqlRuntime,
-  client: pg.PoolClient,
-  annotation: string,
-  statementTimeoutMs?: number,
-): Promise<Transaction> {
-  try {
-    if (await isInTransaction(client, statementTimeoutMs))
-      throw new Error('Cannot create an owned transaction from an active pool client')
-  } catch (error) {
-    client.release(true)
-    throw error
-  }
-  return beginOwnedTransaction(runtime, client, annotation, statementTimeoutMs)
 }
 
 export async function runTransactionHandler<Result>(
@@ -116,13 +87,21 @@ async function withPoolTransaction<Result>(
   }
   if (alreadyInTransaction) {
     try {
-      return await runQueuedTransactionHandler(runtime, client, handler)
+      return await runQueuedTransactionHandler(
+        runtime,
+        client,
+        handler,
+        getPoolLabel(runtime, pool),
+      )
     } finally {
       client.release()
     }
   }
   return runTransactionHandler(
-    await beginTransactionSession(runtime, client, { annotation: '/* withClientTransaction */' }),
+    await beginTransactionSession(runtime, client, {
+      annotation: '/* withClientTransaction */',
+      queryPool: getPoolLabel(runtime, pool),
+    }),
     handler,
   )
 }
@@ -132,7 +111,8 @@ async function withBorrowedTransaction<Result>(
   client: pg.PoolClient,
   handler: (query: TransactionQuery) => Promise<Result>,
 ): Promise<Result> {
-  if (await isInTransaction(client)) return runQueuedTransactionHandler(runtime, client, handler)
+  if (await isInTransaction(client))
+    return runQueuedTransactionHandler(runtime, client, handler, 'client')
   const transaction = await beginTransactionSession(runtime, client, {
     annotation: '/* withClientTransaction */',
     releaseClient: false,
@@ -167,23 +147,6 @@ function reportBorrowedRollbackFailure(
   }
 }
 
-async function isInTransaction(client: pg.PoolClient, queryTimeoutMs?: number): Promise<boolean> {
-  const probe = (text: string) =>
-    client.query(
-      queryTimeoutMs === undefined
-        ? text
-        : ({ query_timeout: queryTimeoutMs, text } as pg.QueryConfig),
-    )
-  try {
-    await probe(`SAVEPOINT ${TRANSACTION_PROBE_SAVEPOINT}`)
-    await probe(`RELEASE SAVEPOINT ${TRANSACTION_PROBE_SAVEPOINT}`)
-    return true
-  } catch (error) {
-    if ((error as { code?: string }).code === '25P01') return false
-    throw error
-  }
-}
-
 function isTransactionQuery(query: QueryOptions['query']): query is TransactionQuery {
   return typeof query === 'function' && 'client' in query
 }
@@ -194,4 +157,10 @@ function isPoolClient(client: QueryOptions['client']): client is pg.PoolClient {
 
 function isPool(client: QueryOptions['client']): client is pg.Pool {
   return Boolean(client && 'connect' in client && !('release' in client))
+}
+
+function getPoolLabel(runtime: PsqlRuntime, pool: pg.Pool): 'client' | 'read' | 'write' {
+  if (pool === runtime.pools.read) return 'read'
+  if (pool === runtime.pools.write) return 'write'
+  return 'client'
 }
