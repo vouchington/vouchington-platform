@@ -2,6 +2,7 @@
   "compilerOptions": {
     "paths": {
       "@vouchington/crawler-html": ["./packages/crawler-html/src/index.mts"],
+      "@vouchington/csv": ["./packages/csv/src/index.mts"],
       "@vouchington/http-transport": ["./packages/http-transport/src/index.mts"],
       "@vouchington/localization": ["./packages/localization/src/index.mts"],
       "@vouchington/pagination": ["./packages/pagination/src/index.mts"],
