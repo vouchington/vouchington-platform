@@ -28,6 +28,8 @@ on:
           - '@vouchington/phone-validation'
           - '@vouchington/uuid-v7'
           - '@vouchington/frontmatter'
+          - '@vouchington/localization'
+          - '@vouchington/localization-compiler'
           - '@vouchington/http-transport'
           - '@vouchington/image-resize'
           - '@vouchington/media'

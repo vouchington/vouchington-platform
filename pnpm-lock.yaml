@@ -116,6 +116,17 @@ importers:
         specifier: ^0.6.4
         version: 0.6.5
 
+  packages/localization: {}
+
+  packages/localization-compiler:
+    dependencies:
+      '@vouchington/csv':
+        specifier: ^0.0.1
+        version: link:../csv
+      '@vouchington/localization':
+        specifier: ^0.0.0
+        version: link:../localization
+
   packages/media:
     dependencies:
       '@aws-sdk/client-s3':
