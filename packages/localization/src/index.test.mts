@@ -60,6 +60,8 @@ describe('localization runtime', () => {
   it('parses exact and terminal-prefix selectors and collapses overlap', () => {
     expect(isMessageId('nav.home')).toBe(true)
     expect(isMessageId('nav')).toBe(false)
+    expect(isMessageId('extracted.communityBanDialog.7Days_7f920bb6')).toBe(true)
+    expect(isMessageId('posts.0_5feceb66')).toBe(true)
     expect(parseSelector('nav.home')).toEqual({ kind: 'exact', id: 'nav.home' })
     expect(parseSelector('landing-page.*')).toEqual({ kind: 'prefix', prefix: 'landing-page' })
     expect(prefixRange('nav')).toEqual(['nav.', 'nav/'])

@@ -1,7 +1,7 @@
 import { compareCodePoints } from './compare.mts'
 import type { ExactSelector, LocalizationSelector, PrefixSelector } from './types.mts'
 
-const SEGMENT = '[A-Za-z][A-Za-z0-9_-]*'
+const SEGMENT = '[A-Za-z0-9][A-Za-z0-9_-]*'
 const MESSAGE_ID = new RegExp(`^${SEGMENT}(?:\\.${SEGMENT})+$`)
 const PREFIX_SELECTOR = new RegExp(`^${SEGMENT}(?:\\.${SEGMENT})*\\.\\*$`)
 
