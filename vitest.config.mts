@@ -4,6 +4,9 @@ import { fileURLToPath } from 'node:url'
 export default defineConfig({
   resolve: {
     alias: {
+      '@vouchington/localization': fileURLToPath(
+        new URL('./packages/localization/src/index.mts', import.meta.url),
+      ),
       '@vouchington/crawler-html': fileURLToPath(
         new URL('./packages/crawler-html/src/index.mts', import.meta.url),
       ),
@@ -26,6 +29,7 @@ export default defineConfig({
         'packages/*/src/**/types.mts',
         'packages/*/src/**/*-types.mts',
         'packages/*/src/**/*.d.ts',
+        'packages/*/src/bin.mts',
       ],
       thresholds: {
         lines: 100,

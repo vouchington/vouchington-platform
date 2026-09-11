@@ -11,6 +11,8 @@ const caretSemverRange =
 const packages = [
   'csv',
   'html-utils',
+  'localization',
+  'localization-compiler',
   'phone-validation',
   'uuid-v7',
   'frontmatter',

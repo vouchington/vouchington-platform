@@ -45,6 +45,8 @@ docker run --rm -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:18
 - `@vouchington/typed-entities` — injected transaction-scoped typed entity semantics
 
 - `@vouchington/csv` — BOM-safe CSV parsing and spreadsheet-safe serialization
+- `@vouchington/localization` — browser-safe catalog contracts, selectors, and fallback
+- `@vouchington/localization-compiler` — SQLite compiler, CLI resolver, and native resource helpers
 - `@vouchington/html-utils` — HTML entity and text helpers
 - `@vouchington/phone-validation` — E.164 normalization and predicates
 - `@vouchington/uuid-v7` — UUIDv7 creation, validation, date bounds, and base36 suffixes
