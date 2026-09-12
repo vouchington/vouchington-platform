@@ -16,6 +16,7 @@ import {
   serializeLocalizationBatch,
   uniquePlaceholders,
   assertSamePlaceholders,
+  translationMatchesDescriptor,
 } from './index.mts'
 
 describe('catalog serialization and descriptors', () => {
@@ -91,6 +92,24 @@ describe('catalog serialization and descriptors', () => {
     expect(isSelectPluralCases({})).toBe(false)
     expect(isTranslationValue('Home')).toBe(true)
     expect(isTranslationValue({ foo: 'bar' })).toBe(false)
+    expect(translationMatchesDescriptor(null, 'Save')).toBe(true)
+    expect(translationMatchesDescriptor(null, { other: 'x' })).toBe(false)
+    expect(
+      translationMatchesDescriptor({ kind: 'plural', valueParameter: 'count' }, { other: 'x' }),
+    ).toBe(true)
+    expect(translationMatchesDescriptor({ kind: 'plural', valueParameter: 'count' }, 'Save')).toBe(
+      false,
+    )
+    const select = {
+      kind: 'select-plural' as const,
+      valueParameter: 'count',
+      selectParameter: 'unit',
+      cases: ['day'],
+    }
+    expect(translationMatchesDescriptor(select, { day: { other: '{count} days' } })).toBe(true)
+    expect(translationMatchesDescriptor(select, 'Save')).toBe(false)
+    expect(translationMatchesDescriptor(select, { other: 'x' })).toBe(false)
+    expect(translationMatchesDescriptor(select, { hour: { other: 'x' } })).toBe(false)
     expect(descriptorSignature({ kind: 'plural', valueParameter: 'n' })).toContain('plural')
     expect(
       descriptorSignature({

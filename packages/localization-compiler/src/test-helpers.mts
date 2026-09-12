@@ -1,7 +1,7 @@
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { CatalogMessage } from '@vouchington/localization'
+import { serializeCatalogShard, type CatalogMessage } from '@vouchington/localization'
 
 export function sampleMessages(): CatalogMessage[] {
   return [
@@ -46,7 +46,12 @@ export function writeCatalog(files: Record<string, unknown>): string {
   const directory = mkdtempSync(join(tmpdir(), 'catalog-'))
   mkdirSync(directory, { recursive: true })
   for (const [name, value] of Object.entries(files)) {
-    writeFileSync(join(directory, name), `${JSON.stringify(value, null, 2)}\n`)
+    writeFileSync(
+      join(directory, name),
+      name === 'tags.json' || !Array.isArray(value)
+        ? `${JSON.stringify(value, null, 2)}\n`
+        : serializeCatalogShard(value as CatalogMessage[]),
+    )
   }
   return directory
 }

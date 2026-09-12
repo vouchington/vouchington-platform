@@ -7,12 +7,23 @@ import { exportLocalizationCsv, importLocalizationCsv } from './csv.mts'
 import { loadCatalogDirectory } from './load.mts'
 import { openLocalizationDatabase, type LocalizationDatabase } from './open.mts'
 import { explainLocalizationPlan, resolveLocalizationBatch } from './resolve.mts'
+import { runShardCli, shardUsage } from './cli-shard.mts'
 
 export async function runLocalizationCli(
   argv: readonly string[],
   write: (value: string) => void = console.log,
 ): Promise<void> {
   const [command, ...rest] = argv
+  if (
+    command === 'upsert' ||
+    command === 'remove' ||
+    command === 'git-merge' ||
+    command === 'format'
+  ) {
+    const result = runShardCli(command, rest)
+    if (typeof result === 'string') write(result)
+    return
+  }
   if (command === 'compile') {
     const loaded = await loadCatalogDirectory(required(rest, '--source'))
     write(compileLocalizationSqlite(loaded.messages, required(rest, '--output'), loaded.tags))
@@ -88,5 +99,6 @@ function usage(): string {
     'Usage: vouchington-localization inspect --db <file>',
     'Usage: vouchington-localization csv-export --source <dir> [--output <file>]',
     'Usage: vouchington-localization csv-import --input <file> --output <dir>',
+    shardUsage(),
   ].join('\n')
 }

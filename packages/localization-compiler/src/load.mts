@@ -1,7 +1,11 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { compareCodePoints, type CatalogMessage } from '@vouchington/localization'
-import { parseCatalogFile, validateCatalogMessages } from './validate.mts'
+import {
+  compareCodePoints,
+  parseCatalogShardText,
+  type CatalogMessage,
+} from '@vouchington/localization'
+import { validateCatalogMessages } from './validate.mts'
 
 export type EditorialTags = Readonly<Record<string, readonly string[]>>
 
@@ -16,12 +20,12 @@ export async function loadCatalogDirectory(directory: string): Promise<{
   const messages: CatalogMessage[] = []
   let tags: EditorialTags = {}
   for (const name of names) {
-    const parsed: unknown = JSON.parse(await readFile(join(directory, name), 'utf8'))
+    const text = await readFile(join(directory, name), 'utf8')
     if (name === 'tags.json') {
-      tags = parseTags(parsed)
+      tags = parseTags(JSON.parse(text) as unknown)
       continue
     }
-    messages.push(...parseCatalogFile(parsed))
+    messages.push(...parseCatalogShardText(text))
   }
   if (messages.length === 0) throw new TypeError(`No catalog messages in "${directory}"`)
   validateCatalogMessages(messages)
