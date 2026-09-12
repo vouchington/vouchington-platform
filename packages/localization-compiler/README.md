@@ -13,7 +13,9 @@ vouchington-localization remove --file localization/catalog/common.json --id com
 vouchington-localization format --source localization/catalog
 ```
 
-Git merge by message id (configure once per clone):
+Git merge is 3-way by message id, then by field (configure once per clone). Adding `es` on one
+branch and `fr` on the other auto-merges. Both sides changing the same locale, descriptor, or
+deleting vs editing the same id is a conflict.
 
 ```gitattributes
 localization/catalog/*.json merge=vouchington-localization
@@ -21,7 +23,7 @@ localization/catalog/*.json merge=vouchington-localization
 
 ```gitconfig
 [merge "vouchington-localization"]
-  name = Merge localization catalog shards by message id
+  name = Merge localization catalog shards by message id and locale
   driver = vouchington-localization git-merge %O %A %B
 ```
 

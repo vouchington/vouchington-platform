@@ -55,6 +55,26 @@ describe('localization shard CLI', () => {
     await expect(runLocalizationCli(['git-merge', ancestor, ours, theirs])).rejects.toThrow(
       CatalogMergeConflict,
     )
+    writeFileSync(ancestor, serializeCatalogShard([save]))
+    writeFileSync(
+      ours,
+      serializeCatalogShard([{ ...save, translations: { ...save.translations, es: 'Guardar' } }]),
+    )
+    writeFileSync(
+      theirs,
+      serializeCatalogShard([
+        { ...save, translations: { ...save.translations, fr: 'Enregistrer' } },
+      ]),
+    )
+    await runLocalizationCli(['git-merge', ancestor, ours, theirs])
+    expect(readFileSync(ours, 'utf8')).toBe(
+      serializeCatalogShard([
+        {
+          ...save,
+          translations: { ...save.translations, es: 'Guardar', fr: 'Enregistrer' },
+        },
+      ]),
+    )
   })
 
   it('prints shard usage for missing flags', async () => {
