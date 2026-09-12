@@ -14,11 +14,13 @@ vouchington-localization format --source localization/catalog
 ```
 
 Git merge is 3-way by message id, then by field (configure once per clone). Adding `es` on one
-branch and `fr` on the other auto-merges. Both sides changing the same locale, descriptor, or
-deleting vs editing the same id is a conflict.
+branch and `fr` on the other auto-merges when both sides keep a compile-valid shape. An empty
+`%O` (add/add of a new shard) is treated as `[]`. Both sides changing the same locale,
+descriptor, or deleting vs editing the same id is a conflict.
 
 ```gitattributes
 localization/catalog/*.json merge=vouchington-localization text eol=lf
+localization/catalog/tags.json merge=text
 ```
 
 ```gitconfig

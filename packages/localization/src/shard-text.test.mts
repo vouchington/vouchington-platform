@@ -34,6 +34,7 @@ describe('catalog shard text', () => {
     expect(parseCatalogShardText(text)).toEqual([save, home])
     expect(serializeCatalogShard([])).toBe('[]\n')
     expect(parseCatalogShardText('[]\n')).toEqual([])
+    expect(parseCatalogShardText('')).toEqual([])
     expect(catalogLineId(`${serializeCatalogLine(home)},`)).toBe('nav.home')
     expect(() => catalogLineId('{"id":"nav.home')).toThrow(/missing a message id/)
     expect(() => catalogLineId('{"consumers":[]}')).toThrow(/must start with/)

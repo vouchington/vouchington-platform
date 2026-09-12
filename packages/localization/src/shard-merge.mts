@@ -8,6 +8,7 @@ import { compareCodePoints } from './compare.mts'
 import { uniqueConsumers } from './consumers.mts'
 import { canonicalJson } from './serialize.mts'
 import { catalogShardLines } from './shard-text.mts'
+import { translationMatchesDescriptor } from './descriptors.mts'
 import { LOCALIZATION_CONSUMERS, type CatalogMessage, type LocalizationConsumer } from './types.mts'
 
 const CONFLICT = Symbol('conflict')
@@ -105,6 +106,11 @@ function mergeEditedLines(
   const descriptor = mergeValue(base.descriptor, left.descriptor, right.descriptor)
   const translations = mergeTranslations(base.translations, left.translations, right.translations)
   if (descriptor === CONFLICT || translations === CONFLICT) return false
+  if (
+    !Object.values(translations).every((value) => translationMatchesDescriptor(descriptor, value))
+  ) {
+    return false
+  }
   try {
     return serializeCatalogLine(
       catalogMessageFromRecord({ id: left.id, consumers, descriptor, translations }),

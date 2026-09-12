@@ -57,6 +57,7 @@ export {
   isSelectPluralCases,
   isTranslationValue,
   parseDescriptor,
+  translationMatchesDescriptor,
 } from './descriptors.mts'
 export { canonicalJson } from './serialize.mts'
 export { compareCodePoints } from './compare.mts'

@@ -44,6 +44,14 @@ describe('catalog shard line edits', () => {
     expect(upsertCatalogLine(unsorted, JSON.stringify(cancel))).toBe(
       serializeCatalogShard([cancel, save, home]),
     )
+    expect(
+      upsertCatalogLine(unsorted, JSON.stringify({ ...save, translations: { 'en-US': 'Store' } })),
+    ).toBe(
+      serializeCatalogShard([
+        catalogMessageFromRecord({ ...save, translations: { 'en-US': 'Store' } }),
+        home,
+      ]),
+    )
     expect(() => removeCatalogLine(empty, 'nav.home')).toThrow(/does not contain/)
   })
 })

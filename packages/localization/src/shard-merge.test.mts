@@ -52,6 +52,7 @@ describe('catalog shard three-way merge', () => {
     expect(mergeCatalogShards(ancestor, ancestor, theirs)).toBe(theirs)
     expect(mergeCatalogShards(ancestor, shard([]), shard([]))).toBe('[]\n')
     expect(mergeCatalogShards(ancestor, shard([]), ancestor)).toBe('[]\n')
+    expect(mergeCatalogShards('', shard([save]), shard([home]))).toBe(shard([save, home]))
   })
 
   it('merges es and fr added on the same id and conflicts when both edit the same locale', () => {
@@ -204,20 +205,49 @@ describe('catalog shard three-way merge', () => {
   it('merges descriptors and equal plural objects, and conflicts on descriptor or locale edits', () => {
     const ancestor = shard([save])
     const described = message(save, { descriptor: { kind: 'plural', valueParameter: 'count' } })
-    expect(
+    expect(() =>
       mergeCatalogShards(
         ancestor,
         shard([described]),
         shard([message(save, { translations: { 'en-US': 'Save', es: 'Guardar' } })]),
       ),
-    ).toBe(shard([message(described, { translations: { 'en-US': 'Save', es: 'Guardar' } })]))
-    expect(
+    ).toThrow(CatalogMergeConflict)
+    expect(() =>
       mergeCatalogShards(
         ancestor,
         shard([message(save, { translations: { 'en-US': 'Save', es: 'Guardar' } })]),
         shard([described]),
       ),
-    ).toBe(shard([message(described, { translations: { 'en-US': 'Save', es: 'Guardar' } })]))
+    ).toThrow(CatalogMergeConflict)
+    const select = catalogMessageFromRecord({
+      id: 'common.save',
+      consumers: ['web'],
+      descriptor: {
+        kind: 'select-plural',
+        valueParameter: 'count',
+        selectParameter: 'unit',
+        cases: ['day'],
+      },
+      translations: { 'en-US': { day: { one: '{count} day', other: '{count} days' } } },
+    })
+    expect(() =>
+      mergeCatalogShards(
+        ancestor,
+        shard([select]),
+        shard([message(save, { translations: { 'en-US': 'Save', es: 'Guardar' } })]),
+      ),
+    ).toThrow(CatalogMergeConflict)
+    expect(() =>
+      mergeCatalogShards(
+        ancestor,
+        shard([select]),
+        shard([
+          message(save, {
+            translations: { 'en-US': 'Save', es: { hour: { other: '{count} hours' } } },
+          }),
+        ]),
+      ),
+    ).toThrow(CatalogMergeConflict)
     expect(() =>
       mergeCatalogShards(
         ancestor,

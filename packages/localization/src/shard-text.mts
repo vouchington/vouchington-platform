@@ -3,7 +3,7 @@ import { compareCodePoints } from './compare.mts'
 import type { CatalogMessage } from './types.mts'
 
 export function catalogShardLines(text: string): string[] {
-  if (text === '[]\n') return []
+  if (text === '[]\n' || text === '') return []
   if (!text.startsWith('[\n') || !text.endsWith('\n]\n')) {
     throw new TypeError(
       text.includes('\r')

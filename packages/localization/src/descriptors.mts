@@ -29,6 +29,19 @@ export function isTranslationValue(value: unknown): value is TranslationValue {
   return typeof value === 'string' || isPluralForms(value) || isSelectPluralCases(value)
 }
 
+export function translationMatchesDescriptor(
+  descriptor: MessageDescriptor | null,
+  value: unknown,
+): boolean {
+  if (descriptor === null) return typeof value === 'string'
+  if (descriptor.kind === 'plural') return isPluralForms(value)
+  return (
+    isSelectPluralCases(value) &&
+    descriptorSignature({ ...descriptor, cases: Object.keys(value) }) ===
+      descriptorSignature(descriptor)
+  )
+}
+
 export function descriptorSignature(descriptor: MessageDescriptor): string {
   return JSON.stringify({
     kind: descriptor.kind,
