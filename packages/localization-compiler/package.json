@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/localization-compiler",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Node compiler for localization JSON catalogs, immutable SQLite artifacts, and CLI resolution.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/localization-compiler#readme",
   "bugs": {
