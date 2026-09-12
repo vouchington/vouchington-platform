@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -22,7 +22,7 @@ afterEach(() => {
 describe('sqlite compile and resolve', () => {
   it('compiles a shared revision and resolves overlapping selectors with locale fallback', async () => {
     const source = writeCatalog({
-      'nav.json': { messages: sampleMessages().slice(0, 2) },
+      'nav.json': sampleMessages().slice(0, 2),
       'settings.json': sampleMessages().slice(2),
       'tags.json': { 'nav.home': ['chrome', 'chrome'] },
     })
@@ -135,6 +135,13 @@ describe('sqlite compile and resolve', () => {
     const none = writeCatalog({ 'readme.txt': 'nope' })
     paths.push(none)
     await expect(loadCatalogDirectory(none)).rejects.toThrow(/No catalog JSON/)
+    const wrapped = writeCatalog({ 'nav.json': [sampleMessages()[0]] })
+    paths.push(wrapped)
+    writeFileSync(
+      join(wrapped, 'nav.json'),
+      `${JSON.stringify({ messages: [sampleMessages()[0]] })}\n`,
+    )
+    await expect(loadCatalogDirectory(wrapped)).rejects.toThrow(/one message per line/)
   })
 })
 

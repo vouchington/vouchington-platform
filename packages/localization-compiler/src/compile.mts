@@ -6,6 +6,7 @@ import {
   canonicalJson,
   compareCodePoints,
   LOCALIZATION_WIRE_CONTRACT,
+  serializeCatalogShard,
   type CatalogMessage,
 } from '@vouchington/localization'
 import type { EditorialTags } from './load.mts'
@@ -42,7 +43,7 @@ export function compileLocalizationSqlite(
 }
 
 export function writeJsonCatalog(messages: readonly CatalogMessage[], path: string): void {
-  writeFileSync(path, `${JSON.stringify({ messages }, null, 2)}\n`)
+  writeFileSync(path, serializeCatalogShard(messages))
 }
 
 function insertMetadata(database: DatabaseSync, revision: string): void {
@@ -59,7 +60,9 @@ function insertMessages(database: DatabaseSync, messages: readonly CatalogMessag
   const insertConsumer = database.prepare(
     'INSERT INTO consumer_membership (consumer, message_id) VALUES (?, ?)',
   )
-  for (const message of [...messages].toSorted((left, right) => (left.id < right.id ? -1 : 1))) {
+  for (const message of [...messages].toSorted((left, right) =>
+    compareCodePoints(left.id, right.id),
+  )) {
     insertMessage.run(message.id, canonicalJson(message.descriptor))
     for (const consumer of message.consumers) insertConsumer.run(consumer, message.id)
     for (const locale of Object.keys(message.translations).toSorted(compareCodePoints)) {

@@ -5,5 +5,10 @@ normalization (`en` aliases `en-US`), exact and terminal-prefix selector validat
 fallback, consumer membership, and deterministic catalog serialization. It does not load catalogs,
 open SQLite, or interpolate message text.
 
-`@vouchington/localization-compiler` compiles namespace-sharded JSON into an immutable SQLite
-artifact and resolves the same selectors locally.
+Catalog shards on disk are a JSON array with **one compact message object per line**. `id` is the
+first key so git and line editors can add, remove, or update a message without parsing the file.
+`parseCatalogShardText` rejects pretty-printed JSON, `{ messages }` wrappers, and unsorted ids.
+
+`@vouchington/localization-compiler` compiles those shards into an immutable SQLite artifact,
+resolves the same selectors locally, and ships `upsert` / `remove` / `git-merge` for the line
+format.

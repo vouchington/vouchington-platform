@@ -60,7 +60,17 @@ export {
 } from './descriptors.mts'
 export { canonicalJson } from './serialize.mts'
 export { compareCodePoints } from './compare.mts'
-export { catalogMessageFromRecord, serializeCatalogMessages } from './catalog.mts'
+export {
+  catalogLineId,
+  catalogMessageFromRecord,
+  serializeCatalogLine,
+  serializeCatalogMessages,
+  serializeCatalogShard,
+  serializeCatalogShardFromLines,
+} from './catalog.mts'
+export { catalogShardLines, parseCatalogShardText } from './shard-text.mts'
+export { removeCatalogLine, upsertCatalogLine } from './shard-edit.mts'
+export { CatalogMergeConflict, mergeCatalogShards } from './shard-merge.mts'
 export {
   createLocalizationBatch,
   etagMatches,
