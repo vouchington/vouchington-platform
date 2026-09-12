@@ -5,6 +5,7 @@ import {
   parseCatalogShardText,
   serializeCatalogLine,
   serializeCatalogShard,
+  serializeCatalogShardFromLines,
 } from './index.mts'
 
 const home = catalogMessageFromRecord({
@@ -55,6 +56,15 @@ describe('catalog shard text', () => {
       /exactly one line/,
     )
     const extra = `[\n${serializeCatalogLine(home).slice(0, -1)},"x":1}\n]\n`
-    expect(() => parseCatalogShardText(extra)).toThrow(/not canonical/)
+    expect(() => parseCatalogShardText(extra)).toThrow(/not canonical; expected/)
+    expect(() => parseCatalogShardText(extra)).toThrow(/Run format to rewrite/)
+    expect(() => parseCatalogShardText('[\n]\n')).toThrow(/Empty catalog shard must be written/)
+    expect(() => parseCatalogShardText('[\r\n]\r\n')).toThrow(/LF line endings/)
+    expect(() => serializeCatalogShardFromLines([`${serializeCatalogLine(home)}\n`])).toThrow(
+      /must not contain newlines/,
+    )
+    expect(() => serializeCatalogShardFromLines([`${serializeCatalogLine(home)}\r`])).toThrow(
+      /must not contain newlines/,
+    )
   })
 })

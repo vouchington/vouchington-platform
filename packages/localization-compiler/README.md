@@ -18,7 +18,7 @@ branch and `fr` on the other auto-merges. Both sides changing the same locale, d
 deleting vs editing the same id is a conflict.
 
 ```gitattributes
-localization/catalog/*.json merge=vouchington-localization
+localization/catalog/*.json merge=vouchington-localization text eol=lf
 ```
 
 ```gitconfig
@@ -26,6 +26,10 @@ localization/catalog/*.json merge=vouchington-localization
   name = Merge localization catalog shards by message id and locale
   driver = vouchington-localization git-merge %O %A %B
 ```
+
+On conflict the driver writes conflict markers into `%A` (`<<<<<<< ours` / `=======` /
+`>>>>>>> theirs`) and exits non-zero. Resolve the markers, then `format` or `compile` — a
+conflicted shard is not canonical.
 
 CSV import/export is interchange only: never source of truth and never compiled directly to
 SQLite. Native resource helpers emit strings, RESX, and typed key/descriptor files from the

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   catalogMessageFromRecord,
   removeCatalogLine,
+  serializeCatalogLine,
   serializeCatalogShard,
   upsertCatalogLine,
 } from './index.mts'
@@ -38,6 +39,10 @@ describe('catalog shard line edits', () => {
     expect(removeCatalogLine(replaced, 'nav.home')).not.toContain('nav.home')
     expect(upsertCatalogLine(withSave, JSON.stringify(cancel))).toBe(
       serializeCatalogShard([cancel, save]),
+    )
+    const unsorted = `[\n${serializeCatalogLine(home)},\n${serializeCatalogLine(save)}\n]\n`
+    expect(upsertCatalogLine(unsorted, JSON.stringify(cancel))).toBe(
+      serializeCatalogShard([cancel, save, home]),
     )
     expect(() => removeCatalogLine(empty, 'nav.home')).toThrow(/does not contain/)
   })

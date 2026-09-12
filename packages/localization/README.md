@@ -12,4 +12,5 @@ first key so git and line editors can add, remove, or update a message without p
 `@vouchington/localization-compiler` compiles those shards into an immutable SQLite artifact,
 resolves the same selectors locally, and ships `upsert` / `remove` / `git-merge` for the line
 format. `git-merge` is 3-way: union independent ids, then merge consumers, descriptor, and
-each locale. Same-locale edits conflict; adding `es` on one side and `fr` on the other does not.
+each locale. Same-locale edits conflict and write `<<<<<<< ours` markers; adding `es` on one
+side and `fr` on the other does not.

@@ -55,6 +55,15 @@ describe('localization shard CLI', () => {
     await expect(runLocalizationCli(['git-merge', ancestor, ours, theirs])).rejects.toThrow(
       CatalogMergeConflict,
     )
+    expect(readFileSync(ours, 'utf8')).toContain('<<<<<<< ours')
+    const beforeInvalid = serializeCatalogShard([home])
+    writeFileSync(ancestor, 'not a shard\n')
+    writeFileSync(ours, beforeInvalid)
+    writeFileSync(theirs, serializeCatalogShard([home]))
+    await expect(runLocalizationCli(['git-merge', ancestor, ours, theirs])).rejects.toThrow(
+      /one message per line/,
+    )
+    expect(readFileSync(ours, 'utf8')).toBe(beforeInvalid)
     writeFileSync(ancestor, serializeCatalogShard([save]))
     writeFileSync(
       ours,
@@ -84,5 +93,14 @@ describe('localization shard CLI', () => {
     ).rejects.toThrow(/upsert --file/)
     await expect(runLocalizationCli(['git-merge', 'a'])).rejects.toThrow(/git-merge/)
     expect(() => runShardCli('nope', [])).toThrow(/upsert --file/)
+  })
+
+  it('names the file and keeps the shard error when format cannot parse', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'shard-format-'))
+    paths.push(root)
+    writeFileSync(join(root, 'broken.json'), '{\n')
+    await expect(runLocalizationCli(['format', '--source', root])).rejects.toThrow(
+      /broken.json: Catalog shard must be a JSON array with one message per line/,
+    )
   })
 })

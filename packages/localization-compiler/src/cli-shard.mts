@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import {
+  CatalogMergeConflict,
   mergeCatalogShards,
   parseCatalogShardText,
   removeCatalogLine,
@@ -26,14 +27,19 @@ export function runShardCli(command: string, args: readonly string[]): string | 
     if (ancestor === undefined || ours === undefined || theirs === undefined) {
       throw new TypeError(shardUsage())
     }
-    writeFileSync(
-      ours,
-      mergeCatalogShards(
-        readFileSync(ancestor, 'utf8'),
-        readFileSync(ours, 'utf8'),
-        readFileSync(theirs, 'utf8'),
-      ),
-    )
+    try {
+      writeFileSync(
+        ours,
+        mergeCatalogShards(
+          readFileSync(ancestor, 'utf8'),
+          readFileSync(ours, 'utf8'),
+          readFileSync(theirs, 'utf8'),
+        ),
+      )
+    } catch (error) {
+      if (error instanceof CatalogMergeConflict) writeFileSync(ours, error.text)
+      throw error
+    }
     return undefined
   }
   if (command === 'format') return formatCatalogDirectory(required(args, '--source'))
@@ -55,7 +61,14 @@ function formatCatalogDirectory(directory: string): string {
   )
   for (const name of names) {
     const path = join(directory, name)
-    writeFileSync(path, serializeCatalogShard(messagesFromUnknownText(readFileSync(path, 'utf8'))))
+    try {
+      writeFileSync(
+        path,
+        serializeCatalogShard(messagesFromUnknownText(readFileSync(path, 'utf8'))),
+      )
+    } catch (error) {
+      throw new TypeError(`${path}: ${(error as Error).message}`)
+    }
   }
   return `${names.length} files`
 }
@@ -74,8 +87,12 @@ function requiredPath(args: readonly string[], flag: string): string {
 function messagesFromUnknownText(text: string) {
   try {
     return parseCatalogShardText(text)
-  } catch {
-    return parseCatalogFile(JSON.parse(text) as unknown)
+  } catch (shardError) {
+    try {
+      return parseCatalogFile(JSON.parse(text) as unknown)
+    } catch {
+      throw shardError
+    }
   }
 }
 

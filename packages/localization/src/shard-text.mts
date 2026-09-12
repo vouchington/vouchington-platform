@@ -5,9 +5,16 @@ import type { CatalogMessage } from './types.mts'
 export function catalogShardLines(text: string): string[] {
   if (text === '[]\n') return []
   if (!text.startsWith('[\n') || !text.endsWith('\n]\n')) {
-    throw new TypeError('Catalog shard must be a JSON array with one message per line')
+    throw new TypeError(
+      text.includes('\r')
+        ? 'Catalog shard must use LF line endings'
+        : 'Catalog shard must be a JSON array with one message per line',
+    )
   }
   const raw = text.slice(2, -3).split('\n')
+  if (raw.length === 1 && raw[0] === '') {
+    throw new TypeError('Empty catalog shard must be written []\n')
+  }
   return raw.map((line, index) => {
     const needsComma = index < raw.length - 1
     if (line.endsWith(',') !== needsComma) {
@@ -26,8 +33,11 @@ export function parseCatalogShardText(text: string): CatalogMessage[] {
   const lines = catalogShardLines(text)
   const messages = lines.map((line) => {
     const message = catalogMessageFromRecord(JSON.parse(line) as unknown)
-    if (serializeCatalogLine(message) !== line) {
-      throw new TypeError(`Catalog line for "${message.id}" is not canonical`)
+    const canonical = serializeCatalogLine(message)
+    if (canonical !== line) {
+      throw new TypeError(
+        `Catalog line for "${message.id}" is not canonical; expected ${canonical}. Run format to rewrite.`,
+      )
     }
     return message
   })

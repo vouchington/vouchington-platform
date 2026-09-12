@@ -12,13 +12,18 @@ import { LOCALIZATION_CONSUMERS, type CatalogMessage, type LocalizationConsumer 
 
 const CONFLICT = Symbol('conflict')
 
+type ConflictSides = { ours: string | undefined; theirs: string | undefined }
+type MergeEntry = string | ConflictSides
+
 export class CatalogMergeConflict extends Error {
   readonly ids: readonly string[]
+  readonly text: string
 
-  constructor(ids: readonly string[]) {
+  constructor(ids: readonly string[], text: string) {
     super(`Catalog merge conflict for ${ids.map((id) => `"${id}"`).join(', ')}`)
     this.name = 'CatalogMergeConflict'
     this.ids = ids
+    this.text = text
   }
 }
 
@@ -29,19 +34,51 @@ export function mergeCatalogShards(ancestor: string, ours: string, theirs: strin
   const ids = [...new Set([...base.keys(), ...left.keys(), ...right.keys()])].toSorted(
     compareCodePoints,
   )
-  const merged: string[] = []
+  const lines: string[] = []
+  const entries: MergeEntry[] = []
   const conflicts: string[] = []
   for (const id of ids) {
-    const kept = mergeLine(base.get(id), left.get(id), right.get(id))
-    if (kept === false) conflicts.push(id)
-    else if (kept !== undefined) merged.push(kept)
+    const oursLine = left.get(id)
+    const theirsLine = right.get(id)
+    const kept = mergeLine(base.get(id), oursLine, theirsLine)
+    if (kept === false) {
+      conflicts.push(id)
+      entries.push({ ours: oursLine, theirs: theirsLine })
+    } else if (kept !== undefined) {
+      lines.push(kept)
+      entries.push(kept)
+    }
   }
-  if (conflicts.length > 0) throw new CatalogMergeConflict(conflicts)
-  return serializeCatalogShardFromLines(merged)
+  if (conflicts.length > 0) throw new CatalogMergeConflict(conflicts, serializeConflicted(entries))
+  return serializeCatalogShardFromLines(lines)
 }
 
 function lineMap(text: string): Map<string, string> {
-  return new Map(catalogShardLines(text).map((line) => [catalogLineId(line), line]))
+  const map = new Map<string, string>()
+  for (const line of catalogShardLines(text)) {
+    const id = catalogLineId(line)
+    if (map.has(id)) throw new TypeError(`Duplicate message id "${id}"`)
+    map.set(id, line)
+  }
+  return map
+}
+
+function serializeConflicted(entries: readonly MergeEntry[]): string {
+  const chunks = ['[']
+  for (const [index, entry] of entries.entries()) {
+    const suffix = index < entries.length - 1 ? ',' : ''
+    if (typeof entry === 'string') {
+      chunks.push(`${entry}${suffix}`)
+      continue
+    }
+    chunks.push('<<<<<<< ours')
+    if (entry.ours !== undefined) chunks.push(`${entry.ours}${suffix}`)
+    chunks.push('=======')
+    if (entry.theirs !== undefined) chunks.push(`${entry.theirs}${suffix}`)
+    chunks.push('>>>>>>> theirs')
+  }
+  chunks.push(']')
+  return `${chunks.join('\n')}\n`
 }
 
 function mergeLine(

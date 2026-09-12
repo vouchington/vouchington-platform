@@ -22,6 +22,7 @@ export function serializeCatalogMessages(messages: readonly CatalogMessage[]): s
 
 export function serializeCatalogLine(message: CatalogMessage): string {
   const normalized = catalogMessageFromRecord(message)
+  // id first for line edits; not canonicalJson key order (revision hashing uses that).
   return `{"id":${canonicalJson(normalized.id)},"consumers":${canonicalJson(normalized.consumers)},"descriptor":${canonicalJson(normalized.descriptor)},"translations":${canonicalJson(normalized.translations)}}`
 }
 
@@ -35,6 +36,11 @@ export function serializeCatalogShard(messages: readonly CatalogMessage[]): stri
 
 export function serializeCatalogShardFromLines(lines: readonly string[]): string {
   if (lines.length === 0) return '[]\n'
+  for (const line of lines) {
+    if (line.includes('\n') || line.includes('\r')) {
+      throw new TypeError('Catalog line must not contain newlines')
+    }
+  }
   return `[\n${lines.map((line, index) => (index < lines.length - 1 ? `${line},` : line)).join('\n')}\n]\n`
 }
 

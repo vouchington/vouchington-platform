@@ -78,6 +78,9 @@ describe('catalog shard three-way merge', () => {
     } catch (error) {
       expect(error).toBeInstanceOf(CatalogMergeConflict)
       expect((error as CatalogMergeConflict).ids).toEqual(['common.save'])
+      expect((error as CatalogMergeConflict).text).toContain('<<<<<<< ours')
+      expect((error as CatalogMergeConflict).text).toContain('"Keep"')
+      expect((error as CatalogMergeConflict).text).toContain('"Other"')
     }
   })
 
@@ -154,6 +157,48 @@ describe('catalog shard three-way merge', () => {
         shard([]),
       ),
     ).toThrow(CatalogMergeConflict)
+    try {
+      mergeCatalogShards(
+        shard([cancel, save]),
+        shard([cancel, message(save, { translations: { 'en-US': 'Keep' } })]),
+        shard([cancel, message(save, { translations: { 'en-US': 'Other' } })]),
+      )
+      throw new Error('expected conflict')
+    } catch (error) {
+      expect((error as CatalogMergeConflict).text).toContain(serializeCatalogLine(cancel) + ',')
+      expect((error as CatalogMergeConflict).text).toContain('<<<<<<< ours')
+    }
+    try {
+      mergeCatalogShards(
+        shard([save]),
+        shard([]),
+        shard([message(save, { translations: { 'en-US': 'Keep' } })]),
+      )
+      throw new Error('expected conflict')
+    } catch (error) {
+      expect((error as CatalogMergeConflict).text).toMatch(
+        /<<<<<<< ours\n=======\n\{"id":"common.save"/,
+      )
+    }
+    try {
+      mergeCatalogShards(
+        shard([save]),
+        shard([message(save, { translations: { 'en-US': 'Keep' } })]),
+        shard([]),
+      )
+      throw new Error('expected conflict')
+    } catch (error) {
+      expect((error as CatalogMergeConflict).text).toMatch(
+        /<<<<<<< ours\n\{"id":"common.save"[^\n]+\n=======\n>>>>>>> theirs/,
+      )
+    }
+    expect(() =>
+      mergeCatalogShards(
+        `[\n${serializeCatalogLine(save)},\n${serializeCatalogLine(save)}\n]\n`,
+        shard([save]),
+        shard([save]),
+      ),
+    ).toThrow(/Duplicate message id/)
   })
 
   it('merges descriptors and equal plural objects, and conflicts on descriptor or locale edits', () => {
