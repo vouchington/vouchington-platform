@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/localization",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Browser-safe localization catalog contracts, locale fallback, and selector validation.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/localization#readme",
   "bugs": {
