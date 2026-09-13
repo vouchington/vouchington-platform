@@ -78,12 +78,7 @@ export function serializeCatalogTable(rows: readonly unknown[]): string {
 
 function rowKey(value: unknown): string {
   if (!object(value)) return ''
-  return [
-    String(value.consumer ?? ''),
-    String(value.selectorId ?? ''),
-    String(value.alias ?? ''),
-    String(value.id ?? ''),
-  ].join('\t')
+  return ['consumer', 'selectorId', 'alias', 'id'].map((key) => typeof value[key] === 'string' ? value[key] : '').join('\t')
 }
 function object(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)

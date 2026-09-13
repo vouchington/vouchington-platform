@@ -1,7 +1,6 @@
 import {
   CANONICAL_SOURCE_LOCALE,
   ENGLISH_LOCALE_ALIAS,
-  catalogCopyFromRecord,
   compareCodePoints,
   consumerAliasFromRecord,
   isMessageId,

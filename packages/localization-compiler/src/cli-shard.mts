@@ -11,7 +11,6 @@ import {
   canonicalJson,
 } from '@vouchington/localization'
 import { parseCatalogFile } from './validate.mts'
-
 export function runShardCli(command: string, args: readonly string[]): string | undefined {
   if (command === 'upsert') {
     const path = requiredPath(args, '--file')
@@ -55,7 +54,6 @@ export function runShardCli(command: string, args: readonly string[]): string | 
   if (command === 'format') return formatCatalogDirectory(required(args, '--source'))
   throw new TypeError(shardUsage())
 }
-
 function mergeTableFiles(ancestor: string, ours: string, theirs: string): void {
   const base = new Map(readTable(ancestor).map((row) => [tableKey(row), row]))
   const left = new Map(readTable(ours).map((row) => [tableKey(row), row]))
@@ -96,15 +94,12 @@ function mergeTableFiles(ancestor: string, ours: string, theirs: string): void {
   }
   writeFileSync(ours, serializeCatalogTable(merged))
 }
-
 function same(left: unknown, right: unknown): boolean {
   return canonicalJson(left) === canonicalJson(right)
 }
-
 function isTablePath(path: string): boolean {
   return /(?:copies|aliases|routes)\.json$/.test(path) || /translations\/[^/]+\.json$/.test(path)
 }
-
 function upsertTable(path: string, rowJson: string): undefined {
   mkdirSync(dirname(path), { recursive: true })
   const row = JSON.parse(rowJson) as Record<string, unknown>
@@ -116,7 +111,6 @@ function upsertTable(path: string, rowJson: string): undefined {
   )
   return undefined
 }
-
 function removeTable(path: string, id: string, consumer: string | undefined): undefined {
   const rows = readTable(path)
   const next = rows.filter(
@@ -130,23 +124,15 @@ function removeTable(path: string, id: string, consumer: string | undefined): un
   writeFileSync(path, serializeCatalogTable(next))
   return undefined
 }
-
 function readTable(path: string): Record<string, unknown>[] {
   if (!existsSync(path)) return []
   const value = JSON.parse(readFileSync(path, 'utf8')) as unknown
   if (!Array.isArray(value)) throw new TypeError(`${path} must be a JSON array`)
   return value as Record<string, unknown>[]
 }
-
 function tableKey(row: Record<string, unknown>): string {
-  return [
-    String(row.consumer ?? ''),
-    String(row.selectorId ?? ''),
-    String(row.alias ?? ''),
-    String(row.id ?? ''),
-  ].join('\t')
+  return ['consumer', 'selectorId', 'alias', 'id'].map((key) => typeof row[key] === 'string' ? row[key] : '').join('\t')
 }
-
 export function shardUsage(): string {
   return [
     'Usage: vouchington-localization upsert --file <file> --message <json>',
@@ -155,7 +141,6 @@ export function shardUsage(): string {
     'Usage: vouchington-localization format --source <dir>',
   ].join('\n')
 }
-
 function formatCatalogDirectory(directory: string): string {
   const names = readdirSync(directory).filter(
     (name) => name.endsWith('.json') && name !== 'tags.json',
@@ -183,24 +168,20 @@ function formatCatalogDirectory(directory: string): string {
     }
   return `${names.length} files`
 }
-
 function required(args: readonly string[], flag: string): string {
   const index = args.indexOf(flag)
   const value = index === -1 ? undefined : args[index + 1]
   if (value === undefined || value.startsWith('--')) throw new TypeError(shardUsage())
   return value
 }
-
 function optional(args: readonly string[], flag: string): string | undefined {
   const index = args.indexOf(flag)
   const value = index === -1 ? undefined : args[index + 1]
   return value === undefined || value.startsWith('--') ? undefined : value
 }
-
 function requiredPath(args: readonly string[], flag: string): string {
   return resolve(required(args, flag))
 }
-
 function messagesFromUnknownText(text: string) {
   try {
     return parseCatalogShardText(text)
@@ -212,7 +193,6 @@ function messagesFromUnknownText(text: string) {
     }
   }
 }
-
 function readShard(path: string): string {
   return existsSync(path) ? readFileSync(path, 'utf8') : '[]\n'
 }

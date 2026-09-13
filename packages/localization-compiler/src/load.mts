@@ -75,11 +75,6 @@ async function translationRows(directory: string): Promise<Record<string, unknow
   return translations
 }
 
-async function rows(directory: string, name: string): Promise<unknown[]> {
-  const loaded = await optionalRows(directory, name)
-  if (loaded === undefined) throw new TypeError(`Catalog is missing ${name}`)
-  return loaded
-}
 async function optionalRows(directory: string, name: string): Promise<unknown[] | undefined> {
   try {
     const value = JSON.parse(await readFile(join(directory, name), 'utf8')) as unknown
