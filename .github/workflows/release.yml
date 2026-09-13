@@ -121,14 +121,23 @@ jobs:
       - name: Prepare reviewed legacy compiler source
         if: inputs.release_line == 'legacy-localization-compiler-0.0'
         env:
-          LEGACY_BASE_TAG: localization-compiler-v0.0.1
-          LEGACY_BASE_SHA: f65d5c119c1ea1c0477552077d5903b9c1cd9503
-          LEGACY_PATCH: releases/localization-compiler/0.0.2.patch
+          LEGACY_BASE_TAG: localization-compiler-v0.0.3
+          LEGACY_BASE_SHA: 8b74473ff4804fa6a81dbbab1d55a96c4a31d7b4
+          LEGACY_PATCH: releases/localization-compiler/0.0.4.patch
           LEGACY_PATCH_SHA256: 29ba30aef8e727601ec47da856b3a12817ddefeb1f6eb3f73c7e271dd312070a
+          LEGACY_RELEASE_BRANCH: release/localization-compiler-0.0.4
         run: |
-          PATCH_FILE="$RUNNER_TEMP/localization-compiler-0.0.2.patch"
+          PATCH_FILE="$RUNNER_TEMP/localization-compiler-0.0.4.patch"
           git show "$GITHUB_SHA:$LEGACY_PATCH" > "$PATCH_FILE"
           echo "$LEGACY_PATCH_SHA256  $PATCH_FILE" | sha256sum --check --status
+          if git ls-remote --exit-code origin "refs/heads/$LEGACY_RELEASE_BRANCH" > /dev/null; then
+            git fetch origin "refs/heads/$LEGACY_RELEASE_BRANCH:refs/remotes/origin/$LEGACY_RELEASE_BRANCH"
+            git checkout --detach "origin/$LEGACY_RELEASE_BRANCH"
+            if git apply --reverse --check "$PATCH_FILE"; then
+              exit 0
+            fi
+            test "$(git rev-parse HEAD)" = "$LEGACY_BASE_SHA"
+          fi
           test "$(git rev-parse "$LEGACY_BASE_TAG^{}")" = "$LEGACY_BASE_SHA"
           git checkout --detach "$LEGACY_BASE_SHA"
           git apply --check "$PATCH_FILE"
@@ -193,7 +202,7 @@ jobs:
           RELEASE_LINE: ${{ inputs.release_line }}
         run: |
           if [ "$RELEASE_LINE" = legacy-localization-compiler-0.0 ]; then
-            RELEASE_BRANCH=release/localization-compiler-0.0
+            RELEASE_BRANCH=release/localization-compiler-0.0.4
           else
             RELEASE_BRANCH=main
           fi
