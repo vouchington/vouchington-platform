@@ -1,15 +1,20 @@
 # @vouchington/localization-compiler
 
-Node-only compiler for `@vouchington/localization`. It validates namespace-sharded JSON catalogs,
-requires complete `en-US` with sparse partial locales, emits an immutable read-only SQLite
-artifact, and exposes the same consumer/locale/selector resolver used by application CLIs.
+Node-only compiler for `@vouchington/localization`. It validates row-based JSON catalogs, requires
+complete `en-US` with sparse partial locales, emits an immutable read-only SQLite artifact, and
+exposes the same consumer/locale/selector resolver used by application CLIs.
 
-Catalog shards must be a JSON array with one compact message per line (`id` first, sorted).
-`compile` rejects any other layout. Line tools never parse the shard as a JSON document:
+Catalog source has three canonical tables: `copies.json` (`{ id, descriptor }`), `aliases.json`
+(`{ consumer, alias, copyId }`), and `translations/<locale>.json` (`{ id, value }`). A generated
+`routes.json` table maps `{ consumer, selectorId, alias }`, allowing route selectors to return the
+existing alias-keyed v1 payload without tying copy ids to source locations. Full plural and
+select-plural translation values remain values in the locale table.
 
 ```bash
-vouchington-localization upsert --file localization/catalog/common.json --message '{"id":"common.ok","consumers":["web"],"descriptor":null,"translations":{"en-US":"OK"}}'
-vouchington-localization remove --file localization/catalog/common.json --id common.ok
+vouchington-localization upsert --file localization/catalog/copies.json --row '{"id":"copy.ok","descriptor":null}'
+vouchington-localization upsert --file localization/catalog/aliases.json --row '{"consumer":"web","alias":"web.common.ok","copyId":"copy.ok"}'
+vouchington-localization upsert --file localization/catalog/translations/en-US.json --row '{"id":"copy.ok","value":"OK"}'
+vouchington-localization remove --file localization/catalog/aliases.json --id web.common.ok --consumer web
 vouchington-localization format --source localization/catalog
 ```
 

@@ -34,6 +34,36 @@ export type CatalogMessage = Readonly<{
   consumers: readonly LocalizationConsumer[]
   translations: Readonly<Record<string, TranslationValue>>
 }>
+/** Canonical, reusable copy. Its id is deliberately unrelated to any rendered slot. */
+export type CatalogCopy = Readonly<{
+  id: string
+  descriptor: MessageDescriptor | null
+}>
+/** A consumer-owned rendered slot pointing at canonical copy. */
+export type ConsumerAlias = Readonly<{
+  consumer: LocalizationConsumer
+  alias: string
+  copyId: string
+}>
+/** One locale value for one canonical copy. */
+export type TranslationRow = Readonly<{
+  id: string
+  value: TranslationValue
+}>
+/** Generated route closure membership. selectorId is not required to resemble an alias. */
+export type RouteSelectorMembership = Readonly<{
+  consumer: LocalizationConsumer
+  selectorId: string
+  alias: string
+}>
+/** The three source tables plus optional generated route membership and editorial tags. */
+export type LocalizationCatalog = Readonly<{
+  copies: readonly CatalogCopy[]
+  aliases: readonly ConsumerAlias[]
+  translations: Readonly<Record<string, readonly TranslationRow[]>>
+  routeMembership?: readonly RouteSelectorMembership[]
+  tags?: Readonly<Record<string, readonly string[]>>
+}>
 export type LocalizationRequest = Readonly<{
   consumer: LocalizationConsumer
   locales: readonly string[]

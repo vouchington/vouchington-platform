@@ -31,7 +31,7 @@ export function resolveLocalizationBatch(
 ) {
   const normalized = normalizeLocalizationRequest(request, options.availableLocales, options.bounds)
   const rows = loadRows(database, normalized.consumer, normalized.selectors)
-  const byId = new Map<
+  const byAlias = new Map<
     string,
     {
       descriptor: ReturnType<typeof parseDescriptor>
@@ -39,19 +39,19 @@ export function resolveLocalizationBatch(
     }
   >()
   for (const row of rows) {
-    const current = byId.get(row.id) ?? {
+    const current = byAlias.get(row.alias) ?? {
       descriptor: parseDescriptor(JSON.parse(row.descriptor_json)),
       translations: {},
     }
     current.translations[row.locale] = JSON.parse(row.value_json) as TranslationValue
-    byId.set(row.id, current)
+    byAlias.set(row.alias, current)
   }
   const messages: Record<string, LocalizationLeaf> = {}
-  for (const id of [...byId.keys()].toSorted(compareCodePoints)) {
-    const entry = byId.get(id)!
+  for (const alias of [...byAlias.keys()].toSorted(compareCodePoints)) {
+    const entry = byAlias.get(alias)!
     const value = firstAvailableTranslation(normalized.locales, entry.translations)
     if (value === undefined) continue
-    messages[id] = leafForTranslation(entry.descriptor, value)
+    messages[alias] = leafForTranslation(entry.descriptor, value)
   }
   assertMessageCount(Object.keys(messages).length, options.bounds ?? DEFAULT_LOCALIZATION_BOUNDS)
   const batch = createLocalizationBatch(
@@ -72,8 +72,8 @@ export function explainLocalizationPlan(
 ): string {
   const sql =
     selector.kind === 'exact'
-      ? `EXPLAIN QUERY PLAN SELECT m.id FROM consumer_membership c JOIN messages m ON m.id = c.message_id WHERE c.consumer = 'web' AND m.id = ?`
-      : `EXPLAIN QUERY PLAN SELECT m.id FROM consumer_membership c JOIN messages m ON m.id = c.message_id WHERE c.consumer = 'web' AND m.id >= ? AND m.id < ?`
+      ? `EXPLAIN QUERY PLAN SELECT a.alias FROM consumer_aliases a WHERE a.consumer = 'web' AND a.alias = ?`
+      : `EXPLAIN QUERY PLAN SELECT r.alias FROM route_membership r WHERE r.consumer = 'web' AND r.selector_id >= ? AND r.selector_id < ?`
   const statement = database.sqlite.prepare(sql)
   const rows =
     selector.kind === 'exact'
@@ -86,28 +86,44 @@ function loadRows(
   database: LocalizationDatabase,
   consumer: string,
   selectors: readonly LocalizationSelector[],
-): Array<{ id: string; locale: string; descriptor_json: string; value_json: string }> {
+): Array<{ alias: string; locale: string; descriptor_json: string; value_json: string }> {
   const exact = database.sqlite.prepare(
-    `SELECT m.id, t.locale, m.descriptor_json, t.value_json
-     FROM consumer_membership c
-     JOIN messages m ON m.id = c.message_id
-     JOIN translations t ON t.message_id = m.id
-     WHERE c.consumer = ? AND m.id = ?`,
+    `SELECT DISTINCT a.alias, t.locale, c.descriptor_json, t.value_json
+     FROM consumer_aliases a JOIN copies c ON c.id = a.copy_id
+     JOIN translations t ON t.copy_id = c.id
+     WHERE a.consumer = ? AND a.alias = ?
+     UNION
+     SELECT a.alias, t.locale, c.descriptor_json, t.value_json
+     FROM route_membership r JOIN consumer_aliases a ON a.consumer = r.consumer AND a.alias = r.alias
+     JOIN copies c ON c.id = a.copy_id JOIN translations t ON t.copy_id = c.id
+     WHERE r.consumer = ? AND r.selector_id = ?`,
   )
   const prefix = database.sqlite.prepare(
-    `SELECT m.id, t.locale, m.descriptor_json, t.value_json
-     FROM consumer_membership c
-     JOIN messages m ON m.id = c.message_id
-     JOIN translations t ON t.message_id = m.id
-     WHERE c.consumer = ? AND m.id >= ? AND m.id < ?`,
+    `SELECT DISTINCT a.alias, t.locale, c.descriptor_json, t.value_json
+     FROM route_membership r JOIN consumer_aliases a ON a.consumer = r.consumer AND a.alias = r.alias
+     JOIN copies c ON c.id = a.copy_id JOIN translations t ON t.copy_id = c.id
+     WHERE r.consumer = ? AND r.selector_id >= ? AND r.selector_id < ?
+     UNION
+     SELECT a.alias, t.locale, c.descriptor_json, t.value_json
+     FROM consumer_aliases a JOIN copies c ON c.id = a.copy_id JOIN translations t ON t.copy_id = c.id
+     WHERE a.consumer = ? AND a.alias >= ? AND a.alias < ?`,
   )
-  const rows: Array<{ id: string; locale: string; descriptor_json: string; value_json: string }> =
-    []
+  const rows: Array<{
+    alias: string
+    locale: string
+    descriptor_json: string
+    value_json: string
+  }> = []
   for (const selector of selectors) {
     const found =
       selector.kind === 'exact'
-        ? exact.all(consumer, selector.id)
-        : prefix.all(consumer, ...prefixRange(selector.prefix))
+        ? exact.all(consumer, selector.id, consumer, selector.id)
+        : prefix.all(
+            consumer,
+            ...prefixRange(selector.prefix),
+            consumer,
+            ...prefixRange(selector.prefix),
+          )
     rows.push(...(found as typeof rows))
   }
   return rows

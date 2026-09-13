@@ -13,5 +13,7 @@ export {
   renderSwiftStrings,
 } from './native.mts'
 export { catalogRevision } from './revision.mts'
+export { validateLocalizationCatalog, sortedCatalog } from './catalog.mts'
+export { exportCatalogCsv, importCatalogCsv } from './catalog-csv.mts'
 export { validateCatalogMessages, parseCatalogFile } from './validate.mts'
 export { runLocalizationCli } from './cli.mts'
