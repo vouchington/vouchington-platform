@@ -165,6 +165,20 @@ describe('sqlite compile and resolve', () => {
     expect(loaded.messages).toEqual([])
     expect(loaded.catalog.routeMembership).toHaveLength(1)
     expect(loaded.catalog.tags).toEqual({ 'copy.save': ['chrome'] })
+    const output = join(source, 'catalog.sqlite')
+    compileLocalizationSqlite(loaded.catalog, output)
+    const database = openLocalizationDatabase(output)
+    try {
+      expect(
+        resolveLocalizationBatch(database, {
+          consumer: 'web',
+          locales: ['en-US'],
+          selectors: ['web.route.feed.*'],
+        }).messages,
+      ).toEqual({ 'web.nav.save': 'Save' })
+    } finally {
+      database.close()
+    }
     const missingTranslations = mkdtempSync(join(tmpdir(), 'catalog-missing-translations-'))
     paths.push(missingTranslations)
     writeFileSync(join(missingTranslations, 'copies.json'), '[]\n')
