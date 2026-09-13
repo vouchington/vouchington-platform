@@ -5,18 +5,18 @@
   ],
   "releases": [
     {
-      "bump": "patch",
+      "bump": "minor",
       "directory": "localization",
-      "fromVersion": "0.0.1",
+      "fromVersion": "0.0.2",
       "name": "@vouchington/localization",
-      "toVersion": "0.0.2"
+      "toVersion": "0.1.0"
     },
     {
-      "bump": "patch",
+      "bump": "minor",
       "directory": "localization-compiler",
-      "fromVersion": "0.0.2",
+      "fromVersion": "0.0.3",
       "name": "@vouchington/localization-compiler",
-      "toVersion": "0.0.3"
+      "toVersion": "0.1.0"
     }
   ],
   "selectedPackage": "@vouchington/localization"
