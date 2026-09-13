@@ -73,7 +73,9 @@ export function catalogFromMessages(messages: readonly CatalogMessage[]): Locali
 }
 
 export function serializeCatalogTable(rows: readonly unknown[]): string {
-  return `${canonicalJson([...rows].toSorted((a, b) => compareCodePoints(rowKey(a), rowKey(b))))}\n`
+  const sorted = [...rows].toSorted((a, b) => compareCodePoints(rowKey(a), rowKey(b)))
+  if (sorted.length === 0) return '[]\n'
+  return `[\n${sorted.map(canonicalJson).join(',\n')}\n]\n`
 }
 
 function rowKey(value: unknown): string {
