@@ -192,6 +192,17 @@ describe('localization shard CLI', () => {
       '--take',
       'theirs',
     ])
+    await expect(
+      runLocalizationCli([
+        'conflict-resolve',
+        '--file',
+        ours,
+        '--id',
+        'copy.a',
+        '--take',
+        'neither',
+      ]),
+    ).rejects.toThrow(/conflict-resolve/)
     expect(readFileSync(ours, 'utf8')).toBe(
       '[\n{"descriptor":{"kind":"plural","valueParameter":"count"},"id":"copy.a"},\n{"descriptor":null,"id":"copy.b"},\n{"descriptor":null,"id":"copy.c"}\n]\n',
     )

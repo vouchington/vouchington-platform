@@ -103,24 +103,27 @@ describe('catalog table CLI', () => {
     const theirs = join(root, 'theirs.json')
     writeFileSync(
       base,
-      '[{"consumer":"web","alias":"web.a","copyId":"copy.a"},{"consumer":"web","alias":"web.b","copyId":"copy.b"}]\n',
+      '[{"consumer":"web","selectorId":"route.a","alias":"web.a","copyId":"copy.a"},{"consumer":"web","selectorId":"route.b","alias":"web.b","copyId":"copy.b"}]\n',
     )
     writeFileSync(
       ours,
-      '[{"consumer":"web","alias":"web.a","copyId":"copy.a-ours"},{"consumer":"web","alias":"web.b","copyId":"copy.b-ours"}]\n',
+      '[{"consumer":"web","selectorId":"route.a","alias":"web.a","copyId":"copy.a-ours"},{"consumer":"web","selectorId":"route.b","alias":"web.b","copyId":"copy.b-ours"}]\n',
     )
     writeFileSync(
       theirs,
-      '[{"consumer":"web","alias":"web.a","copyId":"copy.a-theirs"},{"consumer":"web","alias":"web.b","copyId":"copy.b-theirs"}]\n',
+      '[{"consumer":"web","selectorId":"route.a","alias":"web.a","copyId":"copy.a-theirs"},{"consumer":"web","selectorId":"route.b","alias":"web.b","copyId":"copy.b-theirs"}]\n',
     )
     expect(() => mergeTableFiles(base, ours, theirs)).toThrow(CatalogMergeConflict)
-    resolveTableConflict(ours, 'web.a', 'web', undefined, 'ours')
+    expect(() => resolveTableConflict(ours, 'missing', 'web', undefined, 'ours')).toThrow(
+      /does not uniquely match/,
+    )
+    resolveTableConflict(ours, 'web.a', 'web', 'route.a', 'ours')
     expect(readFileSync(ours, 'utf8')).toContain('web.b')
     expect(readFileSync(ours, 'utf8')).toContain('<<<<<<< ours')
-    resolveTableConflict(ours, 'web.b', 'web', undefined, 'theirs')
+    resolveTableConflict(ours, 'web.b', 'web', 'route.b', 'theirs')
     expect(readTable(ours)).toEqual([
-      { consumer: 'web', alias: 'web.a', copyId: 'copy.a-ours' },
-      { consumer: 'web', alias: 'web.b', copyId: 'copy.b-theirs' },
+      { consumer: 'web', selectorId: 'route.a', alias: 'web.a', copyId: 'copy.a-ours' },
+      { consumer: 'web', selectorId: 'route.b', alias: 'web.b', copyId: 'copy.b-theirs' },
     ])
   })
 })

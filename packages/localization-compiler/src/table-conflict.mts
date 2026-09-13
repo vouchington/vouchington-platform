@@ -38,8 +38,7 @@ export function parseTableConflicts(text: string): {
   const rows: Record<string, unknown>[] = []
   const conflicts: TableConflict[] = []
   while (lines.length > 0) {
-    const line = lines.shift()
-    if (line === undefined) break
+    const line = lines.shift()!
     if (line !== '<<<<<<< ours') {
       rows.push(parseRow(line))
       continue
