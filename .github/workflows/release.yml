@@ -116,6 +116,7 @@ jobs:
           fetch-depth: 0
           ref: main
           token: ${{ secrets.RELEASE_TOKEN }}
+          persist-credentials: false
 
       - name: Prepare reviewed legacy compiler source
         if: inputs.release_line == 'legacy-localization-compiler-0.0'
@@ -188,6 +189,7 @@ jobs:
 
       - name: Push release commit and tags
         env:
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           RELEASE_LINE: ${{ inputs.release_line }}
         run: |
           if [ "$RELEASE_LINE" = legacy-localization-compiler-0.0 ]; then
@@ -196,6 +198,7 @@ jobs:
             RELEASE_BRANCH=main
           fi
           if [ "$(node scripts/release.mts is-resume "$RUNNER_TEMP/release-plan.json")" = "false" ]; then
+            git remote set-url origin "https://x-access-token:${RELEASE_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
             git push --atomic origin "HEAD:refs/heads/$RELEASE_BRANCH" --follow-tags
           fi
 

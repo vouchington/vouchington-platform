@@ -57,6 +57,16 @@ describe('release workflow', () => {
     expect(workflow).toContain('RELEASE_BRANCH=release/localization-compiler-0.0')
   })
 
+  it('only configures the release credential after validation', () => {
+    const checkout = position('persist-credentials: false')
+    const tests = position('pnpm run test:coverage')
+    const authenticatedRemote = position(
+      'git remote set-url origin "https://x-access-token:${RELEASE_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"',
+    )
+    expect(checkout).toBeLessThan(tests)
+    expect(authenticatedRemote).toBeGreaterThan(tests)
+  })
+
   it('does not retain the single-package inline release implementation', () => {
     expect(workflow).not.toContain('pnpm --filter "$PACKAGE" version')
     expect(workflow).not.toContain(
