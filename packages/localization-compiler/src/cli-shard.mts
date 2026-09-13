@@ -87,7 +87,9 @@ function required(args: readonly string[], flag: string): string {
   return value
 }
 function optional(args: readonly string[], flag: string): string | undefined {
-  const value = args[args.indexOf(flag) + 1]
+  const index = args.indexOf(flag)
+  if (index === -1) return undefined
+  const value = args[index + 1]
   return value === undefined || value.startsWith('--') ? undefined : value
 }
 function requiredPath(args: readonly string[], flag: string): string {
