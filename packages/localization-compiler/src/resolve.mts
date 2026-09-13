@@ -87,7 +87,6 @@ function loadRows(
   consumer: string,
   selectors: readonly LocalizationSelector[],
 ): Array<{ alias: string; locale: string; descriptor_json: string; value_json: string }> {
-  if (selectors.length === 0) return []
   const requested = selectors.map(selectorRow).join(', ')
   const parameters = selectors.flatMap(selectorParameters)
   const statement = database.sqlite.prepare(
