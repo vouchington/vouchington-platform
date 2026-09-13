@@ -1,5 +1,5 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { DatabaseSync } from 'node:sqlite'
+import { DatabaseSync, StatementSync } from 'node:sqlite'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -94,6 +94,29 @@ describe('sqlite compile and resolve', () => {
         database.sqlite.prepare('INSERT INTO metadata (key, value) VALUES (?, ?)').run('x', 'y'),
       ).toThrow()
     } finally {
+      database.close()
+    }
+  })
+
+  it('resolves every selector in one SQLite query', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'sqlite-'))
+    paths.push(directory)
+    const database = openLocalizationDatabase(compilePath(directory, sampleMessages()))
+    const all = vi.spyOn(StatementSync.prototype, 'all')
+    try {
+      const batch = resolveLocalizationBatch(database, {
+        consumer: 'web',
+        locales: ['en'],
+        selectors: ['nav.*', 'common.save', 'settings.count'],
+      })
+      expect(batch.messages).toMatchObject({
+        'nav.home': 'Home',
+        'common.save': 'Save "{name}"',
+        'settings.count': { kind: 'plural' },
+      })
+      expect(all).toHaveBeenCalledTimes(1)
+    } finally {
+      all.mockRestore()
       database.close()
     }
   })

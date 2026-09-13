@@ -87,44 +87,43 @@ function loadRows(
   consumer: string,
   selectors: readonly LocalizationSelector[],
 ): Array<{ alias: string; locale: string; descriptor_json: string; value_json: string }> {
-  const exact = database.sqlite.prepare(
-    `SELECT DISTINCT a.alias, t.locale, c.descriptor_json, t.value_json
-     FROM consumer_aliases a JOIN copies c ON c.id = a.copy_id
-     JOIN translations t ON t.copy_id = c.id
-     WHERE a.consumer = ? AND a.alias = ?
-     UNION
+  if (selectors.length === 0) return []
+  const requested = selectors.map(selectorRow).join(', ')
+  const parameters = selectors.flatMap(selectorParameters)
+  const statement = database.sqlite.prepare(
+    `WITH requested(kind, exact_id, lower_bound, upper_bound) AS (VALUES ${requested}),
+     matched_aliases AS (
+       SELECT a.alias FROM consumer_aliases a JOIN requested s
+         ON s.kind = 'exact' AND a.alias = s.exact_id WHERE a.consumer = ?
+       UNION ALL
+       SELECT r.alias FROM route_membership r JOIN requested s
+         ON s.kind = 'exact' AND r.selector_id = s.exact_id WHERE r.consumer = ?
+       UNION ALL
+       SELECT a.alias FROM consumer_aliases a JOIN requested s
+         ON s.kind = 'prefix' AND a.alias >= s.lower_bound AND a.alias < s.upper_bound
+         WHERE a.consumer = ?
+       UNION ALL
+       SELECT r.alias FROM route_membership r JOIN requested s
+         ON s.kind = 'prefix' AND r.selector_id >= s.lower_bound AND r.selector_id < s.upper_bound
+         WHERE r.consumer = ?
+     ), aliases AS (SELECT DISTINCT alias FROM matched_aliases)
      SELECT a.alias, t.locale, c.descriptor_json, t.value_json
-     FROM route_membership r JOIN consumer_aliases a ON a.consumer = r.consumer AND a.alias = r.alias
-     JOIN copies c ON c.id = a.copy_id JOIN translations t ON t.copy_id = c.id
-     WHERE r.consumer = ? AND r.selector_id = ?`,
+     FROM aliases matched JOIN consumer_aliases a ON a.alias = matched.alias AND a.consumer = ?
+     JOIN copies c ON c.id = a.copy_id JOIN translations t ON t.copy_id = c.id`,
   )
-  const prefix = database.sqlite.prepare(
-    `SELECT DISTINCT a.alias, t.locale, c.descriptor_json, t.value_json
-     FROM route_membership r JOIN consumer_aliases a ON a.consumer = r.consumer AND a.alias = r.alias
-     JOIN copies c ON c.id = a.copy_id JOIN translations t ON t.copy_id = c.id
-     WHERE r.consumer = ? AND r.selector_id >= ? AND r.selector_id < ?
-     UNION
-     SELECT a.alias, t.locale, c.descriptor_json, t.value_json
-     FROM consumer_aliases a JOIN copies c ON c.id = a.copy_id JOIN translations t ON t.copy_id = c.id
-     WHERE a.consumer = ? AND a.alias >= ? AND a.alias < ?`,
-  )
-  const rows: Array<{
+  return statement.all(...parameters, consumer, consumer, consumer, consumer, consumer) as Array<{
     alias: string
     locale: string
     descriptor_json: string
     value_json: string
-  }> = []
-  for (const selector of selectors) {
-    const found =
-      selector.kind === 'exact'
-        ? exact.all(consumer, selector.id, consumer, selector.id)
-        : prefix.all(
-            consumer,
-            ...prefixRange(selector.prefix),
-            consumer,
-            ...prefixRange(selector.prefix),
-          )
-    rows.push(...(found as typeof rows))
-  }
-  return rows
+  }>
+}
+
+function selectorRow(): string {
+  return '(?, ?, ?, ?)'
+}
+
+function selectorParameters(selector: LocalizationSelector): readonly string[] {
+  if (selector.kind === 'exact') return ['exact', selector.id, '', '']
+  return ['prefix', '', ...prefixRange(selector.prefix)]
 }
