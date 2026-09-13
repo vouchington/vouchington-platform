@@ -1,13 +1,23 @@
 {
-  "changedManifests": ["packages/postgres/package.json"],
+  "changedManifests": [
+    "packages/localization-compiler/package.json",
+    "packages/localization/package.json"
+  ],
   "releases": [
     {
       "bump": "patch",
-      "directory": "postgres",
-      "fromVersion": "0.0.7",
-      "name": "@vouchington/postgres",
-      "toVersion": "0.0.8"
+      "directory": "localization",
+      "fromVersion": "0.0.1",
+      "name": "@vouchington/localization",
+      "toVersion": "0.0.2"
+    },
+    {
+      "bump": "patch",
+      "directory": "localization-compiler",
+      "fromVersion": "0.0.2",
+      "name": "@vouchington/localization-compiler",
+      "toVersion": "0.0.3"
     }
   ],
-  "selectedPackage": "@vouchington/postgres"
+  "selectedPackage": "@vouchington/localization"
 }
