@@ -5,6 +5,7 @@ import {
   canonicalJson,
   serializeCatalogTable,
 } from '@vouchington/localization'
+import { parseTableConflicts, serializeTableConflicts, tableKey } from './table-conflict.mts'
 
 const CONFLICT = Symbol('conflict')
 
@@ -40,18 +41,52 @@ export function mergeTableFiles(ancestor: string, ours: string, theirs: string):
   const left = new Map(readTable(ours).map((row) => [tableKey(row), row]))
   const right = new Map(readTable(theirs).map((row) => [tableKey(row), row]))
   const merged: Record<string, unknown>[] = []
-  const conflicts: string[] = []
+  const conflicts: {
+    key: string
+    ours: Record<string, unknown> | undefined
+    theirs: Record<string, unknown> | undefined
+  }[] = []
   for (const key of [...new Set([...base.keys(), ...left.keys(), ...right.keys()])].sort()) {
     const value = mergeValue(base.get(key), left.get(key), right.get(key))
-    if (value === CONFLICT) conflicts.push(key)
+    if (value === CONFLICT) conflicts.push({ key, ours: left.get(key), theirs: right.get(key) })
     else if (value !== undefined) merged.push(value)
   }
   if (conflicts.length > 0) {
-    const text = conflicts.map((key) => conflictText(left.get(key), right.get(key))).join('\n')
-    writeFileSync(ours, `${text}\n`)
-    throw new CatalogMergeConflict(conflicts, text)
+    const text = serializeTableConflicts(merged, conflicts)
+    writeFileSync(ours, text)
+    throw new CatalogMergeConflict(
+      conflicts.map((conflict) => conflict.key),
+      text,
+    )
   }
   writeFileSync(ours, serializeCatalogTable(merged))
+}
+export function resolveTableConflict(
+  path: string,
+  id: string,
+  consumer: string | undefined,
+  selectorId: string | undefined,
+  take: 'ours' | 'theirs',
+): void {
+  const { rows, conflicts } = parseTableConflicts(readFileSync(path, 'utf8'))
+  const matching = conflicts.filter((conflict) =>
+    [conflict.ours, conflict.theirs].some(
+      (row) =>
+        row !== undefined &&
+        (row.id === id || row.alias === id) &&
+        (consumer === undefined || row.consumer === consumer) &&
+        (selectorId === undefined || row.selectorId === selectorId),
+    ),
+  )
+  if (matching.length !== 1) throw new TypeError(`Catalog conflict does not uniquely match "${id}"`)
+  const conflict = matching[0]!
+  const selected = conflict[take]
+  const remaining = conflicts.filter((current) => current !== conflict)
+  if (selected !== undefined) rows.push(selected)
+  writeFileSync(
+    path,
+    remaining.length === 0 ? serializeCatalogTable(rows) : serializeTableConflicts(rows, remaining),
+  )
 }
 export function readTable(path: string): Record<string, unknown>[] {
   if (!existsSync(path)) return []
@@ -69,23 +104,7 @@ function mergeValue(
   if (same(theirs, base)) return ours as Record<string, unknown> | undefined
   return CONFLICT
 }
-function conflictText(ours: unknown, theirs: unknown): string {
-  return [
-    '<<<<<<< ours',
-    ours === undefined ? '' : canonicalJson(ours),
-    '=======',
-    theirs === undefined ? '' : canonicalJson(theirs),
-    '>>>>>>> theirs',
-  ]
-    .filter(Boolean)
-    .join('\n')
-}
 function same(left: unknown, right: unknown): boolean {
   if (left === undefined || right === undefined) return left === right
   return canonicalJson(left) === canonicalJson(right)
-}
-function tableKey(row: Record<string, unknown>): string {
-  return ['consumer', 'selectorId', 'alias', 'id']
-    .map((key) => (typeof row[key] === 'string' ? row[key] : ''))
-    .join('\t')
 }

@@ -34,9 +34,17 @@ localization/catalog/tags.json merge=text
   driver = vouchington-localization git-merge %O %A %B --path %P
 ```
 
-On conflict the driver writes conflict markers into `%A` (`<<<<<<< ours` / `=======` /
-`>>>>>>> theirs`) and exits non-zero. Resolve the markers, then `format` or `compile` — a
-conflicted shard is not canonical.
+On conflict the driver retains every automatically merged row plus conflict markers for only the
+conflicting rows, then exits non-zero. Resolve each row without editing JSON directly:
+
+```bash
+vouchington-localization conflict-resolve --file localization/catalog/copies.json --id copy.save --take ours
+vouchington-localization conflict-resolve --file localization/catalog/aliases.json --id web.nav.save --consumer web --take theirs
+vouchington-localization conflict-resolve --file localization/catalog/routes.json --id web.nav.save --consumer web --selector-id web.route.home --take ours
+```
+
+The command leaves any other row conflicts in place. After the final resolution it writes a
+canonical table, ready to stage. A conflicted table must not be compiled.
 
 CSV import/export is interchange only: never source of truth and never compiled directly to
 SQLite. Native resource helpers emit strings, RESX, and typed key/descriptor files from the

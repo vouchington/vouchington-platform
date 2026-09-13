@@ -169,5 +169,42 @@ describe('localization shard CLI', () => {
       'catalog/copies.json',
     ])
     expect(readFileSync(temporaryOurs, 'utf8')).toContain('copy.b')
+    writeFileSync(base, '[{"id":"copy.a","descriptor":null}]\n')
+    writeFileSync(
+      ours,
+      '[{"id":"copy.a","descriptor":{"kind":"plural","valueParameter":"n"}},{"id":"copy.b","descriptor":null}]\n',
+    )
+    writeFileSync(
+      theirs,
+      '[{"id":"copy.a","descriptor":{"kind":"plural","valueParameter":"count"}},{"id":"copy.c","descriptor":null}]\n',
+    )
+    await expect(runLocalizationCli(['git-merge', base, ours, theirs])).rejects.toThrow(
+      CatalogMergeConflict,
+    )
+    expect(readFileSync(ours, 'utf8')).toContain('copy.b')
+    expect(readFileSync(ours, 'utf8')).toContain('copy.c')
+    await runLocalizationCli([
+      'conflict-resolve',
+      '--file',
+      ours,
+      '--id',
+      'copy.a',
+      '--take',
+      'theirs',
+    ])
+    await expect(
+      runLocalizationCli([
+        'conflict-resolve',
+        '--file',
+        ours,
+        '--id',
+        'copy.a',
+        '--take',
+        'neither',
+      ]),
+    ).rejects.toThrow(/conflict-resolve/)
+    expect(readFileSync(ours, 'utf8')).toBe(
+      '[\n{"descriptor":{"kind":"plural","valueParameter":"count"},"id":"copy.a"},\n{"descriptor":null,"id":"copy.b"},\n{"descriptor":null,"id":"copy.c"}\n]\n',
+    )
   })
 })

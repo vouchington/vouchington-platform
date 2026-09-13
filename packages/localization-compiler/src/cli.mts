@@ -1,7 +1,11 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import { serializeLocalizationBatch, type LocalizationConsumer } from '@vouchington/localization'
+import {
+  serializeCatalogTable,
+  serializeLocalizationBatch,
+  type LocalizationConsumer,
+} from '@vouchington/localization'
 import { compileLocalizationSqlite } from './compile.mts'
 import { exportCatalogCsv, importCatalogCsv } from './catalog-csv.mts'
 import { loadCatalogDirectory } from './load.mts'
@@ -18,6 +22,7 @@ export async function runLocalizationCli(
     command === 'upsert' ||
     command === 'remove' ||
     command === 'git-merge' ||
+    command === 'conflict-resolve' ||
     command === 'format'
   ) {
     const result = runShardCli(command, rest)
@@ -71,13 +76,12 @@ function writeCatalogSource(
   output: string,
   catalog: import('@vouchington/localization').LocalizationCatalog,
 ): void {
-  writeFileSync(resolve(output, 'imported.json'), JSON.stringify(catalog))
-  writeFileSync(resolve(output, 'copies.json'), JSON.stringify(catalog.copies))
-  writeFileSync(resolve(output, 'aliases.json'), JSON.stringify(catalog.aliases))
+  writeFileSync(resolve(output, 'copies.json'), serializeCatalogTable(catalog.copies))
+  writeFileSync(resolve(output, 'aliases.json'), serializeCatalogTable(catalog.aliases))
   const translations = resolve(output, 'translations')
   mkdirSync(translations, { recursive: true })
   for (const [locale, rows] of Object.entries(catalog.translations))
-    writeFileSync(resolve(translations, `${locale}.json`), JSON.stringify(rows))
+    writeFileSync(resolve(translations, `${locale}.json`), serializeCatalogTable(rows))
 }
 
 function withDatabase(path: string, run: (database: LocalizationDatabase) => void): void {

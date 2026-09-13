@@ -40,7 +40,7 @@
   },
   "dependencies": {
     "@vouchington/csv": "^0.0.1",
-    "@vouchington/localization": "^0.1.0"
+    "@vouchington/localization": "^0.1.2"
   },
   "engines": {
     "node": ">=24.0.0"
