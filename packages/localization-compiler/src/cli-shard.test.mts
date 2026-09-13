@@ -122,6 +122,11 @@ describe('localization shard CLI', () => {
       '--row',
       '{"consumer":"web","alias":"web.nav.home","copyId":"copy.home"}',
     ])
+    const { mkdirSync } = await import('node:fs')
+    const translations = join(root, 'translations')
+    mkdirSync(translations)
+    writeFileSync(join(translations, 'en-US.json'), '[{"id":"copy.z","value":"Z"}]\n')
+    writeFileSync(join(translations, 'notes.txt'), 'skip\n')
     await runLocalizationCli(['format', '--source', root])
     expect(readFileSync(aliases, 'utf8')).toContain('web.nav.home')
     await runLocalizationCli([
@@ -137,7 +142,6 @@ describe('localization shard CLI', () => {
     const base = join(root, 'base', 'copies.json')
     const ours = join(root, 'ours', 'copies.json')
     const theirs = join(root, 'theirs', 'copies.json')
-    const { mkdirSync } = await import('node:fs')
     mkdirSync(join(root, 'base'))
     mkdirSync(join(root, 'ours'))
     mkdirSync(join(root, 'theirs'))

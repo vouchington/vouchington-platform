@@ -6,6 +6,8 @@ import {
   serializeCatalogTable,
 } from '@vouchington/localization'
 
+const CONFLICT = Symbol('conflict')
+
 export function isTablePath(path: string): boolean {
   return /(?:copies|aliases|routes)\.json$/.test(path) || /translations\/[^/]+\.json$/.test(path)
 }
@@ -41,7 +43,7 @@ export function mergeTableFiles(ancestor: string, ours: string, theirs: string):
   const conflicts: string[] = []
   for (const key of [...new Set([...base.keys(), ...left.keys(), ...right.keys()])].sort()) {
     const value = mergeValue(base.get(key), left.get(key), right.get(key))
-    if (value === undefined && (left.has(key) || right.has(key))) conflicts.push(key)
+    if (value === CONFLICT) conflicts.push(key)
     else if (value !== undefined) merged.push(value)
   }
   if (conflicts.length > 0) {
@@ -61,11 +63,11 @@ function mergeValue(
   base: unknown,
   ours: unknown,
   theirs: unknown,
-): Record<string, unknown> | undefined {
+): Record<string, unknown> | undefined | typeof CONFLICT {
   if (same(ours, theirs)) return ours as Record<string, unknown> | undefined
   if (same(ours, base)) return theirs as Record<string, unknown> | undefined
   if (same(theirs, base)) return ours as Record<string, unknown> | undefined
-  return undefined
+  return CONFLICT
 }
 function conflictText(ours: unknown, theirs: unknown): string {
   return [

@@ -30,6 +30,24 @@ describe('csv interchange', () => {
     expect(() => importCatalogCsv('bad\n')).toThrow(/header/)
   })
 
+  it('rejects malformed canonical CSV rows and mixed revisions', () => {
+    const catalog = {
+      copies: [{ id: 'copy.save', descriptor: null }],
+      aliases: [{ consumer: 'web' as const, alias: 'web.nav.save', copyId: 'copy.save' }],
+      translations: { 'en-US': [{ id: 'copy.save', value: 'Save' }] },
+    }
+    const [header, row] = exportCatalogCsv(catalog).trimEnd().split('\n')
+    expect(() => importCatalogCsv(`${header}\n${row!.split(',').slice(0, 5).join(',')}\n`)).toThrow(
+      /Invalid Record Length/,
+    )
+    expect(() =>
+      importCatalogCsv(`${header}\n${row}\n${row!.replace(/[^,]+$/, 'other')}\n`),
+    ).toThrow(/single catalog_revision/)
+    expect(() =>
+      importCatalogCsv(`${header}\n${row!.replace('copy.save', 'copy.other')}\n`),
+    ).toThrow(/reconstructed catalog/)
+  })
+
   it('rejects header, duplicate, revision, and empty-row contract breaks', () => {
     expect(() => importLocalizationCsv('nope\n')).toThrow(/CSV header/)
     const csv = exportLocalizationCsv(sampleMessages())

@@ -177,6 +177,11 @@ describe('sqlite compile and resolve', () => {
     writeFileSync(join(badTranslations, 'aliases.json'), '[]\n')
     writeFileSync(join(badTranslations, 'translations', 'en-US.json'), '{}\n')
     await expect(loadCatalogDirectory(badTranslations)).rejects.toThrow(/must be a JSON array/)
+    const malformedAliases = mkdtempSync(join(tmpdir(), 'catalog-malformed-aliases-'))
+    paths.push(malformedAliases)
+    writeFileSync(join(malformedAliases, 'copies.json'), '[]\n')
+    writeFileSync(join(malformedAliases, 'aliases.json'), '{\n')
+    await expect(loadCatalogDirectory(malformedAliases)).rejects.toThrow(SyntaxError)
   })
 })
 
