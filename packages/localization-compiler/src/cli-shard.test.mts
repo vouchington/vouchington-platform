@@ -156,7 +156,7 @@ describe('localization shard CLI', () => {
     writeFileSync(base, '[]\n')
     writeFileSync(ours, '[{"id":"copy.a","descriptor":null}]\n')
     writeFileSync(theirs, '[{"id":"copy.b","descriptor":null}]\n')
-    await runLocalizationCli(['git-merge', base, ours, theirs])
+    await runLocalizationCli(['git-merge', base, ours, theirs, '--path', 'catalog/copies.json'])
     expect(readFileSync(ours, 'utf8')).toContain('copy.b')
   })
 })
