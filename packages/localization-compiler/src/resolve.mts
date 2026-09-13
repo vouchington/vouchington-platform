@@ -87,28 +87,34 @@ function loadRows(
   consumer: string,
   selectors: readonly LocalizationSelector[],
 ): Array<{ id: string; locale: string; descriptor_json: string; value_json: string }> {
-  const exact = database.sqlite.prepare(
-    `SELECT m.id, t.locale, m.descriptor_json, t.value_json
-     FROM consumer_membership c
-     JOIN messages m ON m.id = c.message_id
-     JOIN translations t ON t.message_id = m.id
-     WHERE c.consumer = ? AND m.id = ?`,
+  const requested = selectors.map(selectorRow).join(', ')
+  const parameters = selectors.flatMap(selectorParameters)
+  const statement = database.sqlite.prepare(
+    `WITH requested(kind, exact_id, lower_bound, upper_bound) AS (VALUES ${requested}),
+     matched_ids AS (
+       SELECT m.id FROM consumer_membership c JOIN messages m ON m.id = c.message_id
+       JOIN requested s ON s.kind = 'exact' AND m.id = s.exact_id WHERE c.consumer = ?
+       UNION ALL
+       SELECT m.id FROM consumer_membership c JOIN messages m ON m.id = c.message_id
+       JOIN requested s ON s.kind = 'prefix' AND m.id >= s.lower_bound AND m.id < s.upper_bound
+       WHERE c.consumer = ?
+     ), ids AS (SELECT DISTINCT id FROM matched_ids)
+     SELECT m.id, t.locale, m.descriptor_json, t.value_json FROM ids
+     JOIN messages m ON m.id = ids.id JOIN translations t ON t.message_id = m.id`,
   )
-  const prefix = database.sqlite.prepare(
-    `SELECT m.id, t.locale, m.descriptor_json, t.value_json
-     FROM consumer_membership c
-     JOIN messages m ON m.id = c.message_id
-     JOIN translations t ON t.message_id = m.id
-     WHERE c.consumer = ? AND m.id >= ? AND m.id < ?`,
-  )
-  const rows: Array<{ id: string; locale: string; descriptor_json: string; value_json: string }> =
-    []
-  for (const selector of selectors) {
-    const found =
-      selector.kind === 'exact'
-        ? exact.all(consumer, selector.id)
-        : prefix.all(consumer, ...prefixRange(selector.prefix))
-    rows.push(...(found as typeof rows))
-  }
-  return rows
+  return statement.all(...parameters, consumer, consumer) as Array<{
+    id: string
+    locale: string
+    descriptor_json: string
+    value_json: string
+  }>
+}
+
+function selectorRow(): string {
+  return '(?, ?, ?, ?)'
+}
+
+function selectorParameters(selector: LocalizationSelector): readonly string[] {
+  if (selector.kind === 'exact') return ['exact', selector.id, '', '']
+  return ['prefix', '', ...prefixRange(selector.prefix)]
 }
