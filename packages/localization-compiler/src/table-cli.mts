@@ -10,7 +10,11 @@ import { parseTableConflicts, serializeTableConflicts, tableKey } from './table-
 const CONFLICT = Symbol('conflict')
 
 export function isTablePath(path: string): boolean {
-  return /(?:copies|aliases|routes)\.json$/.test(path) || /translations\/[^/]+\.json$/.test(path)
+  const normalized = path.replaceAll('\\', '/')
+  return (
+    /(?:copies|aliases|routes)\.json$/.test(normalized) ||
+    /translations\/[^/]+\.json$/.test(normalized)
+  )
 }
 export function upsertTable(path: string, rowJson: string): undefined {
   mkdirSync(dirname(path), { recursive: true })

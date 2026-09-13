@@ -30,6 +30,7 @@ describe('catalog table CLI', () => {
     expect(() => removeTable(aliases, 'missing.id', 'web')).toThrow(/does not contain/)
     expect(isTablePath(join(root, 'copies.json'))).toBe(true)
     expect(isTablePath(join(root, 'translations', 'es.json'))).toBe(true)
+    expect(isTablePath('catalog\\translations\\es.json')).toBe(true)
     expect(isTablePath(join(root, 'legacy.json'))).toBe(false)
   })
 
