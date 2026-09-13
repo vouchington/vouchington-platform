@@ -31,18 +31,27 @@ export function compileLocalizationSqlite(
   const temporary = join(temporaryDirectory, 'catalog.sqlite')
   const database = new DatabaseSync(temporary)
   try {
-    database.exec('PRAGMA journal_mode = OFF')
-    database.exec(SQLITE_SCHEMA)
-    insertMetadata(database, revision)
-    insertCatalog(database, normalized)
-    database.exec('PRAGMA foreign_keys = ON')
-    assertSqliteIntegrity(database)
+    try {
+      database.exec('PRAGMA foreign_keys = ON')
+      database.exec('BEGIN')
+      try {
+        database.exec(SQLITE_SCHEMA)
+        insertMetadata(database, revision)
+        insertCatalog(database, normalized)
+        assertSqliteIntegrity(database)
+        database.exec('COMMIT')
+      } catch (error) {
+        database.exec('ROLLBACK')
+        throw error
+      }
+    } finally {
+      database.close()
+    }
+    renameSync(temporary, outputPath)
+    return revision
   } finally {
-    database.close()
+    rmSync(temporaryDirectory, { recursive: true, force: true })
   }
-  renameSync(temporary, outputPath)
-  rmSync(temporaryDirectory, { recursive: true, force: true })
-  return revision
 }
 
 function isCatalog(

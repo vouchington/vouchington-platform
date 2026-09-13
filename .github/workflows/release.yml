@@ -45,6 +45,14 @@ on:
           - patch
           - minor
           - major
+      release_line:
+        description: Published source line
+        type: choice
+        required: true
+        default: main
+        options:
+          - main
+          - legacy-localization-compiler-0.0
 
 permissions:
   contents: write
@@ -82,6 +90,24 @@ jobs:
         run: |
           if [ -z "$RELEASE_TOKEN" ]; then
             echo "::error::RELEASE_TOKEN secret is not set. It needs Contents Read & Write on this repository." >&2
+          exit 1
+          fi
+
+      - name: Validate release line
+        env:
+          BUMP: ${{ inputs.bump }}
+          PACKAGE: ${{ inputs.package }}
+          RELEASE_LINE: ${{ inputs.release_line }}
+        run: |
+          case "$RELEASE_LINE" in
+            main|legacy-localization-compiler-0.0) ;;
+            *)
+              echo "::error::Unsupported release line: $RELEASE_LINE" >&2
+              exit 1
+              ;;
+          esac
+          if [ "$RELEASE_LINE" != main ] && { [ "$PACKAGE" != '@vouchington/localization-compiler' ] || [ "$BUMP" != patch ]; }; then
+            echo "::error::Maintenance releases only support @vouchington/localization-compiler patch releases" >&2
             exit 1
           fi
 
@@ -90,6 +116,32 @@ jobs:
           fetch-depth: 0
           ref: main
           token: ${{ secrets.RELEASE_TOKEN }}
+          persist-credentials: false
+
+      - name: Prepare reviewed legacy compiler source
+        if: inputs.release_line == 'legacy-localization-compiler-0.0'
+        env:
+          LEGACY_BASE_TAG: localization-compiler-v0.0.3
+          LEGACY_BASE_SHA: 8b74473ff4804fa6a81dbbab1d55a96c4a31d7b4
+          LEGACY_PATCH: releases/localization-compiler/0.0.4.patch
+          LEGACY_PATCH_SHA256: 29ba30aef8e727601ec47da856b3a12817ddefeb1f6eb3f73c7e271dd312070a
+          LEGACY_RELEASE_BRANCH: release/localization-compiler-0.0.4
+        run: |
+          PATCH_FILE="$RUNNER_TEMP/localization-compiler-0.0.4.patch"
+          git show "$GITHUB_SHA:$LEGACY_PATCH" > "$PATCH_FILE"
+          echo "$LEGACY_PATCH_SHA256  $PATCH_FILE" | sha256sum --check --status
+          if git ls-remote --exit-code origin "refs/heads/$LEGACY_RELEASE_BRANCH" > /dev/null; then
+            git fetch origin "refs/heads/$LEGACY_RELEASE_BRANCH:refs/remotes/origin/$LEGACY_RELEASE_BRANCH"
+            git checkout --detach "origin/$LEGACY_RELEASE_BRANCH"
+            if git apply --reverse --check "$PATCH_FILE"; then
+              exit 0
+            fi
+            test "$(git rev-parse HEAD)" = "$LEGACY_BASE_SHA"
+          fi
+          test "$(git rev-parse "$LEGACY_BASE_TAG^{}")" = "$LEGACY_BASE_SHA"
+          git checkout --detach "$LEGACY_BASE_SHA"
+          git apply --check "$PATCH_FILE"
+          git apply --index "$PATCH_FILE"
 
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
@@ -145,9 +197,18 @@ jobs:
           node scripts/release.mts tag "$RUNNER_TEMP/release-plan.json"
 
       - name: Push release commit and tags
+        env:
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          RELEASE_LINE: ${{ inputs.release_line }}
         run: |
+          if [ "$RELEASE_LINE" = legacy-localization-compiler-0.0 ]; then
+            RELEASE_BRANCH=release/localization-compiler-0.0.4
+          else
+            RELEASE_BRANCH=main
+          fi
           if [ "$(node scripts/release.mts is-resume "$RUNNER_TEMP/release-plan.json")" = "false" ]; then
-            git push --atomic origin HEAD:main --follow-tags
+            git remote set-url origin "https://x-access-token:${RELEASE_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+            git push --atomic origin "HEAD:refs/heads/$RELEASE_BRANCH" --follow-tags
           fi
 
       - name: Publish planned packages with npm OIDC

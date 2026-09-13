@@ -1,0 +1,94 @@
+diff --git a/packages/localization-compiler/src/compile.mts b/packages/localization-compiler/src/compile.mts
+index d0bd34d..05c12da 100644
+--- a/packages/localization-compiler/src/compile.mts
++++ b/packages/localization-compiler/src/compile.mts
+@@ -27,19 +27,28 @@ export function compileLocalizationSqlite(
+   const temporary = join(temporaryDirectory, 'catalog.sqlite')
+   const database = new DatabaseSync(temporary)
+   try {
+-    database.exec('PRAGMA journal_mode = OFF')
+-    database.exec(SQLITE_SCHEMA)
+-    insertMetadata(database, revision)
+-    insertMessages(database, messages)
+-    insertTags(database, tags)
+-    database.exec('PRAGMA foreign_keys = ON')
+-    assertSqliteIntegrity(database)
++    try {
++      database.exec('PRAGMA foreign_keys = ON')
++      database.exec('BEGIN')
++      try {
++        database.exec(SQLITE_SCHEMA)
++        insertMetadata(database, revision)
++        insertMessages(database, messages)
++        insertTags(database, tags)
++        assertSqliteIntegrity(database)
++        database.exec('COMMIT')
++      } catch (error) {
++        database.exec('ROLLBACK')
++        throw error
++      }
++    } finally {
++      database.close()
++    }
++    renameSync(temporary, outputPath)
++    return revision
+   } finally {
+-    database.close()
++    rmSync(temporaryDirectory, { recursive: true, force: true })
+   }
+-  renameSync(temporary, outputPath)
+-  rmSync(temporaryDirectory, { recursive: true, force: true })
+-  return revision
+ }
+ 
+ export function writeJsonCatalog(messages: readonly CatalogMessage[], path: string): void {
+diff --git a/packages/localization-compiler/src/compile.test.mts b/packages/localization-compiler/src/compile.test.mts
+index de65832..beaa6fb 100644
+--- a/packages/localization-compiler/src/compile.test.mts
++++ b/packages/localization-compiler/src/compile.test.mts
+@@ -1,8 +1,8 @@
+-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
++import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+ import { DatabaseSync } from 'node:sqlite'
+ import { tmpdir } from 'node:os'
+ import { join } from 'node:path'
+-import { afterEach, describe, expect, it } from 'vitest'
++import { afterEach, describe, expect, it, vi } from 'vitest'
+ import { LocalizationBoundError, etagMatches, localizationEtag } from '@vouchington/localization'
+ import {
+   compileLocalizationSqlite,
+@@ -20,6 +20,34 @@ afterEach(() => {
+ })
+ 
+ describe('sqlite compile and resolve', () => {
++  it('rolls back the complete SQLite write when committing fails', () => {
++    const directory = mkdtempSync(join(tmpdir(), 'sqlite-'))
++    paths.push(directory)
++    const output = join(directory, 'catalog.sqlite')
++    writeFileSync(output, 'previous artifact')
++    const originalExec = Object.getOwnPropertyDescriptor(DatabaseSync.prototype, 'exec')!.value as (
++      this: DatabaseSync,
++      sql: string,
++    ) => void
++    const commitFailure = new Error('commit failed')
++    const exec = vi
++      .spyOn(DatabaseSync.prototype, 'exec')
++      .mockImplementation(function (this: DatabaseSync, sql) {
++        if (sql === 'COMMIT') throw commitFailure
++        return Reflect.apply(originalExec, this, [sql])
++      })
++    try {
++      expect(() => compileLocalizationSqlite(sampleMessages(), output)).toThrow(commitFailure)
++      const statements = exec.mock.calls.map(([sql]) => sql)
++      expect(statements).toEqual(expect.arrayContaining(['BEGIN', 'COMMIT', 'ROLLBACK']))
++      expect(statements.indexOf('BEGIN')).toBeLessThan(statements.indexOf('COMMIT'))
++      expect(statements.indexOf('COMMIT')).toBeLessThan(statements.indexOf('ROLLBACK'))
++      expect(readFileSync(output, 'utf8')).toBe('previous artifact')
++    } finally {
++      exec.mockRestore()
++    }
++  })
++
+   it('compiles a shared revision and resolves overlapping selectors with locale fallback', async () => {
+     const source = writeCatalog({
+       'nav.json': sampleMessages().slice(0, 2),

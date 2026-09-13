@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
@@ -22,7 +23,9 @@ describe('release workflow', () => {
     const verify = position('node scripts/release.mts verify')
     const pack = position('node scripts/release.mts pack')
     const tag = position('node scripts/release.mts tag')
-    const push = position('git push --atomic origin HEAD:main --follow-tags')
+    const push = position(
+      'git push --atomic origin "HEAD:refs/heads/$RELEASE_BRANCH" --follow-tags',
+    )
     const publish = position('node scripts/release.mts publish')
     const release = position('node scripts/release.mts github-release')
 
@@ -35,6 +38,34 @@ describe('release workflow', () => {
     expect(push).toBeGreaterThan(tag)
     expect(publish).toBeGreaterThan(push)
     expect(release).toBeGreaterThan(publish)
+  })
+
+  it('projects a reviewed legacy compiler patch to its fixed release line', () => {
+    const patch = readFileSync('releases/localization-compiler/0.0.4.patch')
+    const hash = createHash('sha256').update(patch).digest('hex')
+    expect(workflow).toContain('          - legacy-localization-compiler-0.0')
+    expect(workflow).toContain('BUMP: ${{ inputs.bump }}')
+    expect(workflow).toContain(
+      '[ "$PACKAGE" != \'@vouchington/localization-compiler\' ] || [ "$BUMP" != patch ]',
+    )
+    expect(workflow).toContain('LEGACY_BASE_TAG: localization-compiler-v0.0.3')
+    expect(workflow).toContain('LEGACY_BASE_SHA: 8b74473ff4804fa6a81dbbab1d55a96c4a31d7b4')
+    expect(workflow).toContain(`LEGACY_PATCH_SHA256: ${hash}`)
+    expect(workflow).toContain('git show "$GITHUB_SHA:$LEGACY_PATCH" > "$PATCH_FILE"')
+    expect(workflow).toContain('git apply --check "$PATCH_FILE"')
+    expect(workflow).toContain('git apply --index "$PATCH_FILE"')
+    expect(workflow).toContain('git apply --reverse --check "$PATCH_FILE"')
+    expect(workflow).toContain('RELEASE_BRANCH=release/localization-compiler-0.0.4')
+  })
+
+  it('only configures the release credential after validation', () => {
+    const checkout = position('persist-credentials: false')
+    const tests = position('pnpm run test:coverage')
+    const authenticatedRemote = position(
+      'git remote set-url origin "https://x-access-token:${RELEASE_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"',
+    )
+    expect(checkout).toBeLessThan(tests)
+    expect(authenticatedRemote).toBeGreaterThan(tests)
   })
 
   it('does not retain the single-package inline release implementation', () => {
