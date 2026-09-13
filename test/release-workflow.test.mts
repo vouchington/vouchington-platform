@@ -41,21 +41,21 @@ describe('release workflow', () => {
   })
 
   it('projects a reviewed legacy compiler patch to its fixed release line', () => {
-    const patch = readFileSync('releases/localization-compiler/0.0.4.patch')
+    const patch = readFileSync('releases/localization-compiler/0.0.5.patch')
     const hash = createHash('sha256').update(patch).digest('hex')
     expect(workflow).toContain('          - legacy-localization-compiler-0.0')
     expect(workflow).toContain('BUMP: ${{ inputs.bump }}')
     expect(workflow).toContain(
       '[ "$PACKAGE" != \'@vouchington/localization-compiler\' ] || [ "$BUMP" != patch ]',
     )
-    expect(workflow).toContain('LEGACY_BASE_TAG: localization-compiler-v0.0.3')
-    expect(workflow).toContain('LEGACY_BASE_SHA: 8b74473ff4804fa6a81dbbab1d55a96c4a31d7b4')
+    expect(workflow).toContain('LEGACY_BASE_TAG: localization-compiler-v0.0.4')
+    expect(workflow).toContain('LEGACY_BASE_SHA: 724a5402580919bab2935b81e95f08b890fffb1c')
     expect(workflow).toContain(`LEGACY_PATCH_SHA256: ${hash}`)
     expect(workflow).toContain('git show "$GITHUB_SHA:$LEGACY_PATCH" > "$PATCH_FILE"')
     expect(workflow).toContain('git apply --check "$PATCH_FILE"')
     expect(workflow).toContain('git apply --index "$PATCH_FILE"')
     expect(workflow).toContain('git apply --reverse --check "$PATCH_FILE"')
-    expect(workflow).toContain('RELEASE_BRANCH=release/localization-compiler-0.0.4')
+    expect(workflow).toContain('RELEASE_BRANCH=release/localization-compiler-0.0.5')
   })
 
   it('only configures the release credential after validation', () => {
