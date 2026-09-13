@@ -245,7 +245,7 @@ describe('withBoundedTransaction', () => {
     expect(reporter.mock.calls[0]?.[0]).toMatchObject({ errors: [primary, rollback] })
   })
 
-  it('destroys an active pool client before starting a bounded transaction', async () => {
+  it('opens a bounded transaction with BEGIN and never probes the pooled client', async () => {
     const queries: string[] = []
     const client = {
       query: async (input: { text?: string } | string) => {
@@ -263,26 +263,21 @@ describe('withBoundedTransaction', () => {
       env: {},
       errorHandler: () => {},
     }
-    await expect(
-      createBoundedTransactionApi(runtime).beginBoundedTransaction({
-        connectionTimeoutMs: 100,
-        statementTimeoutMs: 50,
-      }),
-    ).rejects.toThrow('Cannot create an owned transaction from an active pool client')
-    expect(queries).toEqual([
-      'SAVEPOINT vouchington_transaction_probe',
-      'RELEASE SAVEPOINT vouchington_transaction_probe',
-    ])
-    expect(client.release).toHaveBeenCalledWith(true)
+    await createBoundedTransactionApi(runtime).beginBoundedTransaction({
+      connectionTimeoutMs: 100,
+      statementTimeoutMs: 50,
+    })
+    expect(queries[0]).toBe('/* beginBoundedTransaction */ BEGIN')
+    expect(queries.some((query) => query.includes('SAVEPOINT'))).toBe(false)
   })
 
-  it('destroys an unprobeable pool client before bounded callback work', async () => {
-    const probeFailure = Object.assign(new Error('disk full'), { code: '53100' })
+  it('destroys a pool client whose bounded BEGIN fails before callback work', async () => {
+    const beginFailure = Object.assign(new Error('disk full'), { code: '53100' })
     const queries: string[] = []
     const client = {
       query: async (input: { text?: string } | string) => {
         queries.push(typeof input === 'string' ? input : (input.text ?? ''))
-        throw probeFailure
+        throw beginFailure
       },
       release: vi.fn(),
     }
@@ -300,8 +295,8 @@ describe('withBoundedTransaction', () => {
         { connectionTimeoutMs: 100, statementTimeoutMs: 50 },
         async () => 1,
       ),
-    ).rejects.toBe(probeFailure)
-    expect(queries).toEqual(['SAVEPOINT vouchington_transaction_probe'])
+    ).rejects.toBe(beginFailure)
+    expect(queries).toEqual(['/* withBoundedTransaction */ BEGIN'])
     expect(client.release).toHaveBeenCalledWith(true)
   })
 })

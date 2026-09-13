@@ -1,10 +1,16 @@
 import type pg from 'pg'
 
-import { connectWithRetry } from './connect-with-retry.mts'
+import { acquireClientWithin, connectWithRetry } from './connect-with-retry.mts'
 import type { Transaction } from './create-psql-types.mts'
 import { isInTransaction } from './transaction-probe.mts'
 import { beginTransactionSession } from './transaction-session.mts'
 import type { BeginTransactionOptions, PsqlRuntime, QueryPoolLabel } from './types.mts'
+
+export type OwnedPoolTransactionOptions = {
+  connectionTimeoutMs?: number
+  queryPool?: QueryPoolLabel
+  statementTimeoutMs?: number
+}
 
 export async function beginTransactionResource(
   runtime: PsqlRuntime,
@@ -12,21 +18,12 @@ export async function beginTransactionResource(
   annotation: string,
 ): Promise<Transaction> {
   const client = options.client
-  if (client === undefined) {
-    return beginOwnedPoolTransaction(
-      runtime,
-      await connectWithRetry(runtime.pools.write),
-      annotation,
-    )
-  }
+  if (client === undefined)
+    return beginOwnedPoolTransaction(runtime, runtime.pools.write, annotation)
   if (isPoolClient(client)) return beginBorrowedTransaction(runtime, client, annotation)
-  return beginOwnedPoolTransaction(
-    runtime,
-    await connectWithRetry(client),
-    annotation,
-    undefined,
-    getPoolLabel(runtime, client),
-  )
+  return beginOwnedPoolTransaction(runtime, client, annotation, {
+    queryPool: getPoolLabel(runtime, client),
+  })
 }
 
 export async function beginOwnedTransaction(
@@ -43,21 +40,32 @@ export async function beginOwnedTransaction(
   })
 }
 
+/**
+ * Begins a transaction on a connection this package acquires from `pool`.
+ *
+ * Accepting the pool instead of a `pg.PoolClient` is the invariant: a connection
+ * returned by `pool.connect()` is idle by construction, so there is no
+ * transaction state left to discover and no probe to run. A caller holding a
+ * client whose state it cannot vouch for cannot reach this function -- passing
+ * one is a type error -- and must use the borrowed path, which probes.
+ */
 export async function beginOwnedPoolTransaction(
   runtime: PsqlRuntime,
-  client: pg.PoolClient,
+  pool: pg.Pool,
   annotation: string,
-  statementTimeoutMs?: number,
-  queryPool?: QueryPoolLabel,
+  options: OwnedPoolTransactionOptions = {},
 ): Promise<Transaction> {
-  try {
-    if (await isInTransaction(client, statementTimeoutMs))
-      throw new Error('Cannot create an owned transaction from an active pool client')
-  } catch (error) {
-    client.release(true)
-    throw error
-  }
-  return beginOwnedTransaction(runtime, client, annotation, statementTimeoutMs, queryPool)
+  const client =
+    options.connectionTimeoutMs === undefined
+      ? await connectWithRetry(pool)
+      : await acquireClientWithin(pool, options.connectionTimeoutMs)
+  return beginOwnedTransaction(
+    runtime,
+    client,
+    annotation,
+    options.statementTimeoutMs,
+    options.queryPool,
+  )
 }
 
 async function beginBorrowedTransaction(

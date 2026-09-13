@@ -21,30 +21,30 @@ function runtime(client: {
 }
 
 describe('bounded transaction preflight', () => {
-  it('bounds both active-transaction probe controls before destroying the client', async () => {
-    const probes: QueryConfig[] = []
+  it('opens with a bounded BEGIN and never probes the pooled connection', async () => {
+    const statements: QueryConfig[] = []
     const client = {
       query: async (input: QueryConfig) => {
-        probes.push(input)
+        statements.push(input)
         return { rows: [], rowCount: 0 }
       },
       release: vi.fn(),
     }
-    await expect(
-      createBoundedTransactionApi(runtime(client)).beginBoundedTransaction({
-        connectionTimeoutMs: 100,
-        statementTimeoutMs: 50,
+    await createBoundedTransactionApi(runtime(client)).beginBoundedTransaction({
+      connectionTimeoutMs: 100,
+      statementTimeoutMs: 50,
+    })
+    expect(statements[0]).toEqual(
+      expect.objectContaining({
+        query_timeout: 50,
+        text: '/* beginBoundedTransaction */ BEGIN',
       }),
-    ).rejects.toThrow('Cannot create an owned transaction from an active pool client')
-    expect(probes).toEqual([
-      { query_timeout: 50, text: 'SAVEPOINT vouchington_transaction_probe' },
-      { query_timeout: 50, text: 'RELEASE SAVEPOINT vouchington_transaction_probe' },
-    ])
-    expect(client.release).toHaveBeenCalledWith(true)
+    )
+    expect(statements.some((statement) => statement.text?.includes('SAVEPOINT'))).toBe(false)
   })
 
-  it('rejects a bounded probe timeout and destroys the pool client before callback work', async () => {
-    const timeout = Object.assign(new Error('probe timed out'), { code: '57014' })
+  it('rejects a bounded BEGIN timeout and destroys the pool client before callback work', async () => {
+    const timeout = Object.assign(new Error('begin timed out'), { code: '57014' })
     const query = vi.fn(async (_input: QueryConfig) => {
       throw timeout
     })
@@ -55,10 +55,12 @@ describe('bounded transaction preflight', () => {
         async () => 1,
       ),
     ).rejects.toBe(timeout)
-    expect(query).toHaveBeenCalledWith({
-      query_timeout: 50,
-      text: 'SAVEPOINT vouchington_transaction_probe',
-    })
+    expect(query).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query_timeout: 50,
+        text: '/* withBoundedTransaction */ BEGIN',
+      }),
+    )
     expect(client.release).toHaveBeenCalledWith(true)
   })
 })

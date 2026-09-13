@@ -1,6 +1,5 @@
 import type pg from 'pg'
 
-import { connectWithRetry } from './connect-with-retry.mts'
 import type { Transaction } from './create-psql-types.mts'
 import { getTransactionCleanupOutcome, rollbackFailedCommit } from './transaction-cleanup.mts'
 import { beginTransactionSession, runQueuedTransactionHandler } from './transaction-session.mts'
@@ -34,15 +33,11 @@ async function withOwnedTransaction<Result>(
   runtime: PsqlRuntime,
   handler: (query: TransactionQuery) => Promise<Result>,
   annotation: string,
-  statementTimeoutMs?: number,
 ): Promise<Result> {
-  const transaction = await beginOwnedPoolTransaction(
-    runtime,
-    await connectWithRetry(runtime.pools.write),
-    annotation,
-    statementTimeoutMs,
+  return runTransactionHandler(
+    await beginOwnedPoolTransaction(runtime, runtime.pools.write, annotation),
+    handler,
   )
-  return runTransactionHandler(transaction, handler)
 }
 
 export async function runTransactionHandler<Result>(
@@ -77,29 +72,8 @@ async function withPoolTransaction<Result>(
   pool: pg.Pool,
   handler: (query: TransactionQuery) => Promise<Result>,
 ): Promise<Result> {
-  const client = await connectWithRetry(pool)
-  let alreadyInTransaction: boolean
-  try {
-    alreadyInTransaction = await isInTransaction(client)
-  } catch (error) {
-    client.release(true)
-    throw error
-  }
-  if (alreadyInTransaction) {
-    try {
-      return await runQueuedTransactionHandler(
-        runtime,
-        client,
-        handler,
-        getPoolLabel(runtime, pool),
-      )
-    } finally {
-      client.release()
-    }
-  }
   return runTransactionHandler(
-    await beginTransactionSession(runtime, client, {
-      annotation: '/* withClientTransaction */',
+    await beginOwnedPoolTransaction(runtime, pool, '/* withClientTransaction */', {
       queryPool: getPoolLabel(runtime, pool),
     }),
     handler,
