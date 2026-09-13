@@ -240,11 +240,11 @@ describe('transaction probes and rollback', () => {
     expect(client.release).toHaveBeenCalledWith(true)
   })
 
-  it('destroys a pool-acquired client when its transaction probe fails', async () => {
-    const probeFailure = Object.assign(new Error('disk full'), { code: '53100' })
+  it('destroys a pool-acquired client when its BEGIN fails', async () => {
+    const beginFailure = Object.assign(new Error('disk full'), { code: '53100' })
     const client = {
       query: async () => {
-        throw probeFailure
+        throw beginFailure
       },
       release: vi.fn(),
     }
@@ -254,11 +254,11 @@ describe('transaction probes and rollback', () => {
         { client: pool as never },
         async () => 1,
       ),
-    ).rejects.toBe(probeFailure)
+    ).rejects.toBe(beginFailure)
     expect(client.release).toHaveBeenCalledWith(true)
   })
 
-  it('delegates an existing pool transaction and releases its borrowed client', async () => {
+  it('opens its own transaction on a pool-acquired client and releases it', async () => {
     const queries: string[] = []
     const client = {
       query: async (input: { text?: string } | string) => {
@@ -279,9 +279,9 @@ describe('transaction probes and rollback', () => {
       ),
     ).resolves.toBe(1)
     expect(queries).toEqual([
-      'SAVEPOINT vouchington_transaction_probe',
-      'RELEASE SAVEPOINT vouchington_transaction_probe',
+      '/* withClientTransaction */ BEGIN',
       '/* existing */ SELECT 1',
+      '/* withClientTransaction */ COMMIT',
     ])
     expect(client.release).toHaveBeenCalledOnce()
   })
@@ -364,7 +364,6 @@ describe('transaction probes and rollback', () => {
       query: async (input: { text?: string } | string) => {
         const text = typeof input === 'string' ? input : (input.text ?? '')
         queries.push(text)
-        if (text.includes('SAVEPOINT')) throw Object.assign(new Error('idle'), { code: '25P01' })
         return { rows: [], rowCount: 0 }
       },
       release: vi.fn(),
@@ -373,7 +372,6 @@ describe('transaction probes and rollback', () => {
       createTransactionApi(runtime(client)).withTransaction(async () => 1),
     ).resolves.toBe(1)
     expect(queries).toEqual([
-      'SAVEPOINT vouchington_transaction_probe',
       '/* withClientTransaction */ BEGIN',
       '/* withClientTransaction */ COMMIT',
     ])
@@ -401,25 +399,7 @@ describe('transaction probes and rollback', () => {
       expect(client.release).toHaveBeenCalledWith(true)
     },
   )
-  it('destroys an active pool client rather than committing its preexisting transaction', async () => {
-    const queries: string[] = []
-    const client = {
-      query: async (input: { text?: string } | string) => {
-        queries.push(typeof input === 'string' ? input : (input.text ?? ''))
-        return { rows: [], rowCount: 0 }
-      },
-      release: vi.fn(),
-    }
-    await expect(
-      createTransactionApi(runtime(client)).withTransaction(async () => 1),
-    ).rejects.toThrow('Cannot create an owned transaction from an active pool client')
-    expect(queries).toEqual([
-      'SAVEPOINT vouchington_transaction_probe',
-      'RELEASE SAVEPOINT vouchington_transaction_probe',
-    ])
-    expect(client.release).toHaveBeenCalledWith(true)
-  })
-  it('rethrows unexpected savepoint probe errors', async () => {
+  it('rethrows a failed BEGIN and destroys the pooled client', async () => {
     const client = {
       query: async () => {
         throw Object.assign(new Error('disk full'), { code: '53100' })
@@ -429,7 +409,7 @@ describe('transaction probes and rollback', () => {
     await expect(
       createTransactionApi(runtime(client)).withTransaction(async () => 1),
     ).rejects.toThrow('disk full')
-    expect(client.release).toHaveBeenCalled()
+    expect(client.release).toHaveBeenCalledWith(true)
   })
 
   it('ignores rollback failures when the handler rejects', async () => {

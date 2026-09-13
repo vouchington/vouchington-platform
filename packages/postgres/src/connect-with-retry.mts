@@ -47,6 +47,34 @@ export function connectWithRetry(
   return withConnectRetry(() => pool.connect(), retry)
 }
 
+export async function acquireClientWithin(
+  pool: Pick<pg.Pool, 'connect'>,
+  timeoutMs: number,
+): Promise<pg.PoolClient> {
+  const pendingClient = connectWithRetry(pool)
+  let rejectTimeout!: (error: Error) => void
+  const timeout = new Promise<never>((_resolve, reject) => {
+    rejectTimeout = reject
+  })
+  const timer = setTimeout(
+    () =>
+      rejectTimeout(new Error(`PostgreSQL connection acquisition timed out after ${timeoutMs}ms`)),
+    timeoutMs,
+  )
+  timer.unref()
+  try {
+    return await Promise.race([pendingClient, timeout])
+  } catch (error) {
+    void pendingClient.then(
+      (client) => client.release(),
+      () => undefined,
+    )
+    throw error
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
