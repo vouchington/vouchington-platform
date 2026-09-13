@@ -185,6 +185,9 @@ describe('localization runtime', () => {
       assertPayloadBytes('abcd', { ...DEFAULT_LOCALIZATION_BOUNDS, maxBytes: 3 }),
     ).toThrow(LocalizationBoundError)
     assertMessageCount(1, DEFAULT_LOCALIZATION_BOUNDS)
+    assertMessageCount(2565, DEFAULT_LOCALIZATION_BOUNDS)
+    expect(DEFAULT_LOCALIZATION_BOUNDS.maxSelectors).toBe(64)
+    expect(DEFAULT_LOCALIZATION_BOUNDS.maxMessages).toBe(3000)
     assertPayloadBytes('ok', DEFAULT_LOCALIZATION_BOUNDS)
   })
 })
