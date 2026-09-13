@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, renameSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
@@ -7,7 +7,6 @@ import {
   catalogFromMessages,
   compareCodePoints,
   LOCALIZATION_WIRE_CONTRACT,
-  serializeCatalogShard,
   type LocalizationCatalog,
   type CatalogMessage,
 } from '@vouchington/localization'
@@ -50,10 +49,6 @@ function isCatalog(
   source: LocalizationCatalog | readonly CatalogMessage[],
 ): source is LocalizationCatalog {
   return !Array.isArray(source) || Object.hasOwn(source, 'copies')
-}
-
-export function writeJsonCatalog(messages: readonly CatalogMessage[], path: string): void {
-  writeFileSync(path, serializeCatalogShard(messages))
 }
 
 function insertMetadata(database: DatabaseSync, revision: string): void {
