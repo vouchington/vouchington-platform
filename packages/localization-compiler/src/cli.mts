@@ -8,6 +8,7 @@ import {
 } from '@vouchington/localization'
 import { compileLocalizationSqlite } from './compile.mts'
 import { exportCatalogCsv, importCatalogCsv } from './catalog-csv.mts'
+import { checkCatalogDirectory } from './catalog-format.mts'
 import { loadCatalogDirectory } from './load.mts'
 import { openLocalizationDatabase, type LocalizationDatabase } from './open.mts'
 import { explainLocalizationPlan, resolveLocalizationBatch } from './resolve.mts'
@@ -23,10 +24,14 @@ export async function runLocalizationCli(
     command === 'remove' ||
     command === 'git-merge' ||
     command === 'conflict-resolve' ||
-    command === 'format'
+    (command === 'format' && !rest.includes('--check'))
   ) {
     const result = runShardCli(command, rest)
     if (typeof result === 'string') write(result)
+    return
+  }
+  if (command === 'format' && rest.includes('--check')) {
+    write(`${await checkCatalogDirectory(required(rest, '--source'))} files`)
     return
   }
   if (command === 'compile') {

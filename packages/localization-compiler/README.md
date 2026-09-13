@@ -16,7 +16,13 @@ vouchington-localization upsert --file localization/catalog/aliases.json --row '
 vouchington-localization upsert --file localization/catalog/translations/en-US.json --row '{"id":"copy.ok","value":"OK"}'
 vouchington-localization remove --file localization/catalog/aliases.json --id web.common.ok --consumer web
 vouchington-localization format --source localization/catalog
+vouchington-localization format --check --source localization/catalog
 ```
+
+`format --check` reads the same managed catalog tables as `format`, validates the complete
+catalog, and exits nonzero when a table needs canonicalization or violates catalog semantics. It
+never writes source files, so use it in CI; use `format` to rewrite rows. `tags.json` remains
+outside formatter ownership.
 
 Git merge is 3-way by message id, then by field (configure once per clone). Adding `es` on one
 branch and `fr` on the other auto-merges when both sides keep a compile-valid shape. An empty

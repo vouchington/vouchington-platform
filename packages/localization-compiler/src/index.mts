@@ -1,6 +1,7 @@
 export { compileLocalizationSqlite } from './compile.mts'
 export { exportLocalizationCsv, importLocalizationCsv } from './csv.mts'
 export { loadCatalogDirectory } from './load.mts'
+export { checkCatalogDirectory } from './catalog-format.mts'
 export { openLocalizationDatabase, type LocalizationDatabase } from './open.mts'
 export { explainLocalizationPlan, resolveLocalizationBatch } from './resolve.mts'
 export {
