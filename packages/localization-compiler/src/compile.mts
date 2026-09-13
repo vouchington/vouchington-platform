@@ -28,18 +28,28 @@ export function compileLocalizationSqlite(
   const database = new DatabaseSync(temporary)
   try {
     database.exec('PRAGMA journal_mode = OFF')
-    database.exec(SQLITE_SCHEMA)
-    insertMetadata(database, revision)
-    insertMessages(database, messages)
-    insertTags(database, tags)
     database.exec('PRAGMA foreign_keys = ON')
-    assertSqliteIntegrity(database)
+    database.exec('BEGIN')
+    try {
+      database.exec(SQLITE_SCHEMA)
+      insertMetadata(database, revision)
+      insertMessages(database, messages)
+      insertTags(database, tags)
+      assertSqliteIntegrity(database)
+      database.exec('COMMIT')
+    } catch (error) {
+      database.exec('ROLLBACK')
+      throw error
+    }
   } finally {
     database.close()
   }
-  renameSync(temporary, outputPath)
-  rmSync(temporaryDirectory, { recursive: true, force: true })
-  return revision
+  try {
+    renameSync(temporary, outputPath)
+    return revision
+  } finally {
+    rmSync(temporaryDirectory, { recursive: true, force: true })
+  }
 }
 
 export function writeJsonCatalog(messages: readonly CatalogMessage[], path: string): void {
