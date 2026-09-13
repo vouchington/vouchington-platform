@@ -1,8 +1,8 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LocalizationBoundError, etagMatches, localizationEtag } from '@vouchington/localization'
 import {
   compileLocalizationSqlite,
@@ -20,6 +20,34 @@ afterEach(() => {
 })
 
 describe('sqlite compile and resolve', () => {
+  it('rolls back the complete SQLite write when committing fails', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'sqlite-'))
+    paths.push(directory)
+    const output = join(directory, 'catalog.sqlite')
+    writeFileSync(output, 'previous artifact')
+    const originalExec = Object.getOwnPropertyDescriptor(DatabaseSync.prototype, 'exec')!.value as (
+      this: DatabaseSync,
+      sql: string,
+    ) => void
+    const commitFailure = new Error('commit failed')
+    const exec = vi
+      .spyOn(DatabaseSync.prototype, 'exec')
+      .mockImplementation(function (this: DatabaseSync, sql) {
+        if (sql === 'COMMIT') throw commitFailure
+        return Reflect.apply(originalExec, this, [sql])
+      })
+    try {
+      expect(() => compileLocalizationSqlite(sampleMessages(), output)).toThrow(commitFailure)
+      const statements = exec.mock.calls.map(([sql]) => sql)
+      expect(statements).toEqual(expect.arrayContaining(['BEGIN', 'COMMIT', 'ROLLBACK']))
+      expect(statements.indexOf('BEGIN')).toBeLessThan(statements.indexOf('COMMIT'))
+      expect(statements.indexOf('COMMIT')).toBeLessThan(statements.indexOf('ROLLBACK'))
+      expect(readFileSync(output, 'utf8')).toBe('previous artifact')
+    } finally {
+      exec.mockRestore()
+    }
+  })
+
   it('compiles a shared revision and resolves overlapping selectors with locale fallback', async () => {
     const source = writeCatalog({
       'nav.json': sampleMessages().slice(0, 2),
