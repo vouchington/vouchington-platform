@@ -79,6 +79,7 @@ function conflictText(ours: unknown, theirs: unknown): string {
     .join('\n')
 }
 function same(left: unknown, right: unknown): boolean {
+  if (left === undefined || right === undefined) return left === right
   return canonicalJson(left) === canonicalJson(right)
 }
 function tableKey(row: Record<string, unknown>): string {

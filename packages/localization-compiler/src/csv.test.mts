@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { catalogRevision, exportLocalizationCsv, importLocalizationCsv } from './index.mts'
+import {
+  catalogRevision,
+  exportCatalogCsv,
+  exportLocalizationCsv,
+  importCatalogCsv,
+  importLocalizationCsv,
+} from './index.mts'
 import { csvRecord } from './csv.mts'
 import { sampleMessages } from './test-helpers.mts'
 
@@ -10,6 +16,18 @@ describe('csv interchange', () => {
     expect(importLocalizationCsv(csv, { expectedRevision: catalogRevision(messages) })).toEqual(
       messages,
     )
+  })
+
+  it('round-trips canonical copy rows and rejects stale revisions', () => {
+    const catalog = {
+      copies: [{ id: 'copy.save', descriptor: null }],
+      aliases: [{ consumer: 'web' as const, alias: 'web.nav.save', copyId: 'copy.save' }],
+      translations: { 'en-US': [{ id: 'copy.save', value: 'Save' }] },
+    }
+    const csv = exportCatalogCsv(catalog)
+    expect(importCatalogCsv(csv)).toMatchObject(catalog)
+    expect(() => importCatalogCsv(csv, 'stale')).toThrow(/source contract hash/)
+    expect(() => importCatalogCsv('bad\n')).toThrow(/header/)
   })
 
   it('rejects header, duplicate, revision, and empty-row contract breaks', () => {

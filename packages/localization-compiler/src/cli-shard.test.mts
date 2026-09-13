@@ -103,4 +103,48 @@ describe('localization shard CLI', () => {
       /broken.json: Catalog shard must be a JSON array with one message per line/,
     )
   })
+
+  it('owns canonical table updates, sorting, and three-way merges', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'table-shard-cli-'))
+    paths.push(root)
+    const aliases = join(root, 'aliases.json')
+    await runLocalizationCli([
+      'upsert',
+      '--file',
+      aliases,
+      '--row',
+      '{"consumer":"web","alias":"web.nav.save","copyId":"copy.save"}',
+    ])
+    await runLocalizationCli([
+      'upsert',
+      '--file',
+      aliases,
+      '--row',
+      '{"consumer":"web","alias":"web.nav.home","copyId":"copy.home"}',
+    ])
+    await runLocalizationCli(['format', '--source', root])
+    expect(readFileSync(aliases, 'utf8')).toContain('web.nav.home')
+    await runLocalizationCli([
+      'remove',
+      '--file',
+      aliases,
+      '--id',
+      'web.nav.save',
+      '--consumer',
+      'web',
+    ])
+    expect(readFileSync(aliases, 'utf8')).not.toContain('web.nav.save')
+    const base = join(root, 'base', 'copies.json')
+    const ours = join(root, 'ours', 'copies.json')
+    const theirs = join(root, 'theirs', 'copies.json')
+    const { mkdirSync } = await import('node:fs')
+    mkdirSync(join(root, 'base'))
+    mkdirSync(join(root, 'ours'))
+    mkdirSync(join(root, 'theirs'))
+    writeFileSync(base, '[]\n')
+    writeFileSync(ours, '[{"id":"copy.a","descriptor":null}]\n')
+    writeFileSync(theirs, '[{"id":"copy.b","descriptor":null}]\n')
+    await runLocalizationCli(['git-merge', base, ours, theirs])
+    expect(readFileSync(ours, 'utf8')).toContain('copy.b')
+  })
 })

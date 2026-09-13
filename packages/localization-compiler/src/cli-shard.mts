@@ -5,6 +5,7 @@ import {
   mergeCatalogShards,
   parseCatalogShardText,
   removeCatalogLine,
+  serializeCatalogTable,
   serializeCatalogShard,
   upsertCatalogLine,
 } from '@vouchington/localization'
@@ -74,7 +75,7 @@ function formatCatalogDirectory(directory: string): string {
 }
 function formatFile(path: string): void {
   try {
-    if (isTablePath(path)) return writeFileSync(path, JSON.stringify(readTable(path)) + '\n')
+    if (isTablePath(path)) return writeFileSync(path, serializeCatalogTable(readTable(path)))
     writeFileSync(path, serializeCatalogShard(messagesFromUnknownText(readFileSync(path, 'utf8'))))
   } catch (error) {
     throw new TypeError(`${path}: ${(error as Error).message}`)

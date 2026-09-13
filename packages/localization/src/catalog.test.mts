@@ -17,6 +17,12 @@ import {
   uniquePlaceholders,
   assertSamePlaceholders,
   translationMatchesDescriptor,
+  catalogCopyFromRecord,
+  consumerAliasFromRecord,
+  translationRowFromRecord,
+  routeSelectorMembershipFromRecord,
+  catalogFromMessages,
+  serializeCatalogTable,
 } from './index.mts'
 
 describe('catalog serialization and descriptors', () => {
@@ -155,5 +161,55 @@ describe('catalog serialization and descriptors', () => {
     expect(() =>
       catalogMessageFromRecord({ id: 'nav.home', consumers: ['web'], translations: {} }),
     ).toThrow(/translations/)
+  })
+
+  it('parses canonical copy, alias, translation, and route rows', () => {
+    expect(catalogCopyFromRecord({ id: 'copy.save', descriptor: null })).toEqual({
+      id: 'copy.save',
+      descriptor: null,
+    })
+    expect(
+      consumerAliasFromRecord({ consumer: 'web', alias: 'web.nav.save', copyId: 'copy.save' }),
+    ).toMatchObject({ consumer: 'web' })
+    expect(translationRowFromRecord({ id: 'copy.save', value: 'Save' })).toEqual({
+      id: 'copy.save',
+      value: 'Save',
+    })
+    expect(
+      routeSelectorMembershipFromRecord({
+        consumer: 'web',
+        selectorId: 'web.route.feed.members',
+        alias: 'web.nav.save',
+      }),
+    ).toMatchObject({ consumer: 'web' })
+    expect(
+      catalogFromMessages([
+        {
+          id: 'copy.save',
+          descriptor: null,
+          consumers: ['web'],
+          translations: { 'en-US': 'Save' },
+        },
+      ]).aliases,
+    ).toEqual([{ consumer: 'web', alias: 'copy.save', copyId: 'copy.save' }])
+    expect(serializeCatalogTable([{ id: 'z.a' }, { id: 'a.z' }])).toContain('a.z')
+    expect(() => catalogCopyFromRecord({ id: 'bad' })).toThrow(/valid id/)
+    expect(() =>
+      consumerAliasFromRecord({ consumer: 'web', alias: 'bad', copyId: 'copy.save' }),
+    ).toThrow(/valid alias/)
+    expect(() =>
+      consumerAliasFromRecord({ consumer: 'web', alias: 'web.save', copyId: 'bad' }),
+    ).toThrow(/copyId/)
+    expect(() => translationRowFromRecord({ id: 'bad' })).toThrow(/valid id/)
+    expect(() =>
+      routeSelectorMembershipFromRecord({ consumer: 'web', selectorId: 'bad', alias: 'web.save' }),
+    ).toThrow(/selectorId/)
+    expect(() =>
+      routeSelectorMembershipFromRecord({
+        consumer: 'web',
+        selectorId: 'web.route.x',
+        alias: 'bad',
+      }),
+    ).toThrow(/alias/)
   })
 })

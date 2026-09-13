@@ -143,6 +143,41 @@ describe('sqlite compile and resolve', () => {
     )
     await expect(loadCatalogDirectory(wrapped)).rejects.toThrow(/one message per line/)
   })
+
+  it('loads row tables and rejects incomplete row-table sources', async () => {
+    const source = mkdtempSync(join(tmpdir(), 'catalog-tables-'))
+    paths.push(source)
+    const translations = join(source, 'translations')
+    const { mkdirSync } = await import('node:fs')
+    mkdirSync(translations)
+    writeFileSync(join(source, 'copies.json'), '[{"id":"copy.save","descriptor":null}]\n')
+    writeFileSync(
+      join(source, 'aliases.json'),
+      '[{"consumer":"web","alias":"web.nav.save","copyId":"copy.save"}]\n',
+    )
+    writeFileSync(
+      join(source, 'routes.json'),
+      '[{"consumer":"web","selectorId":"web.route.feed.members","alias":"web.nav.save"}]\n',
+    )
+    writeFileSync(join(translations, 'en-US.json'), '[{"id":"copy.save","value":"Save"}]\n')
+    writeFileSync(join(source, 'tags.json'), '{"copy.save":["chrome"]}\n')
+    const loaded = await loadCatalogDirectory(source)
+    expect(loaded.messages).toEqual([])
+    expect(loaded.catalog.routeMembership).toHaveLength(1)
+    expect(loaded.catalog.tags).toEqual({ 'copy.save': ['chrome'] })
+    const missingTranslations = mkdtempSync(join(tmpdir(), 'catalog-missing-translations-'))
+    paths.push(missingTranslations)
+    writeFileSync(join(missingTranslations, 'copies.json'), '[]\n')
+    writeFileSync(join(missingTranslations, 'aliases.json'), '[]\n')
+    await expect(loadCatalogDirectory(missingTranslations)).rejects.toThrow(/missing translations/)
+    const badTranslations = mkdtempSync(join(tmpdir(), 'catalog-bad-translations-'))
+    paths.push(badTranslations)
+    mkdirSync(join(badTranslations, 'translations'))
+    writeFileSync(join(badTranslations, 'copies.json'), '[]\n')
+    writeFileSync(join(badTranslations, 'aliases.json'), '[]\n')
+    writeFileSync(join(badTranslations, 'translations', 'en-US.json'), '{}\n')
+    await expect(loadCatalogDirectory(badTranslations)).rejects.toThrow(/must be a JSON array/)
+  })
 })
 
 function compilePath(directory: string, messages: ReturnType<typeof sampleMessages>): string {
