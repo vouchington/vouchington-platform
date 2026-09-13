@@ -4,9 +4,9 @@
     {
       "bump": "patch",
       "directory": "localization",
-      "fromVersion": "0.1.0",
+      "fromVersion": "0.1.1",
       "name": "@vouchington/localization",
-      "toVersion": "0.1.1"
+      "toVersion": "0.1.2"
     }
   ],
   "selectedPackage": "@vouchington/localization"
