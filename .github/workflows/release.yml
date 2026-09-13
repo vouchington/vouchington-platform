@@ -121,13 +121,13 @@ jobs:
       - name: Prepare reviewed legacy compiler source
         if: inputs.release_line == 'legacy-localization-compiler-0.0'
         env:
-          LEGACY_BASE_TAG: localization-compiler-v0.0.3
-          LEGACY_BASE_SHA: 8b74473ff4804fa6a81dbbab1d55a96c4a31d7b4
-          LEGACY_PATCH: releases/localization-compiler/0.0.4.patch
-          LEGACY_PATCH_SHA256: 29ba30aef8e727601ec47da856b3a12817ddefeb1f6eb3f73c7e271dd312070a
-          LEGACY_RELEASE_BRANCH: release/localization-compiler-0.0.4
+          LEGACY_BASE_TAG: localization-compiler-v0.0.4
+          LEGACY_BASE_SHA: 724a5402580919bab2935b81e95f08b890fffb1c
+          LEGACY_PATCH: releases/localization-compiler/0.0.5.patch
+          LEGACY_PATCH_SHA256: 912e6d239041063d63e062ec399e7765f4a8e7e92f649f93a1c73d1eab7d325f
+          LEGACY_RELEASE_BRANCH: release/localization-compiler-0.0.5
         run: |
-          PATCH_FILE="$RUNNER_TEMP/localization-compiler-0.0.4.patch"
+          PATCH_FILE="$RUNNER_TEMP/localization-compiler-0.0.5.patch"
           git show "$GITHUB_SHA:$LEGACY_PATCH" > "$PATCH_FILE"
           echo "$LEGACY_PATCH_SHA256  $PATCH_FILE" | sha256sum --check --status
           if git ls-remote --exit-code origin "refs/heads/$LEGACY_RELEASE_BRANCH" > /dev/null; then
@@ -202,7 +202,7 @@ jobs:
           RELEASE_LINE: ${{ inputs.release_line }}
         run: |
           if [ "$RELEASE_LINE" = legacy-localization-compiler-0.0 ]; then
-            RELEASE_BRANCH=release/localization-compiler-0.0.4
+            RELEASE_BRANCH=release/localization-compiler-0.0.5
           else
             RELEASE_BRANCH=main
           fi
