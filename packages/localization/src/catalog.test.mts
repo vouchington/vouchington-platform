@@ -193,6 +193,7 @@ describe('catalog serialization and descriptors', () => {
       ]).aliases,
     ).toEqual([{ consumer: 'web', alias: 'copy.save', copyId: 'copy.save' }])
     expect(serializeCatalogTable([{ id: 'z.a' }, { id: 'a.z' }])).toContain('a.z')
+    expect(serializeCatalogTable([1, { id: 'copy.save' }])).toContain('copy.save')
     expect(() => catalogCopyFromRecord({ id: 'bad' })).toThrow(/valid id/)
     expect(() =>
       consumerAliasFromRecord({ consumer: 'web', alias: 'bad', copyId: 'copy.save' }),
