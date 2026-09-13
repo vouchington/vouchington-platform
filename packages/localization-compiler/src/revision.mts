@@ -1,6 +1,12 @@
 import { createHash } from 'node:crypto'
-import { serializeCatalogMessages, type CatalogMessage } from '@vouchington/localization'
+import {
+  canonicalJson,
+  catalogFromMessages,
+  type CatalogMessage,
+  type LocalizationCatalog,
+} from '@vouchington/localization'
 
-export function catalogRevision(messages: readonly CatalogMessage[]): string {
-  return createHash('sha256').update(serializeCatalogMessages(messages)).digest('hex')
+export function catalogRevision(source: LocalizationCatalog | readonly CatalogMessage[]): string {
+  const catalog = Array.isArray(source) ? catalogFromMessages(source) : source
+  return createHash('sha256').update(canonicalJson(catalog)).digest('hex')
 }

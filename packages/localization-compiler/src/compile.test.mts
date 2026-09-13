@@ -114,6 +114,9 @@ describe('sqlite compile and resolve', () => {
   })
 
   it('rejects empty catalogs and unknown editorial tags', async () => {
+    const emptyDirectory = mkdtempSync(join(tmpdir(), 'catalog-empty-directory-'))
+    paths.push(emptyDirectory)
+    await expect(loadCatalogDirectory(emptyDirectory)).rejects.toThrow(/No catalog JSON/)
     const empty = writeCatalog({ 'tags.json': {} })
     paths.push(empty)
     await expect(loadCatalogDirectory(empty)).rejects.toThrow(/No catalog messages/)
@@ -142,6 +145,87 @@ describe('sqlite compile and resolve', () => {
       `${JSON.stringify({ messages: [sampleMessages()[0]] })}\n`,
     )
     await expect(loadCatalogDirectory(wrapped)).rejects.toThrow(/one message per line/)
+  })
+
+  it('loads row tables and rejects incomplete row-table sources', async () => {
+    const source = mkdtempSync(join(tmpdir(), 'catalog-tables-'))
+    paths.push(source)
+    const translations = join(source, 'translations')
+    const { mkdirSync } = await import('node:fs')
+    mkdirSync(translations)
+    writeFileSync(join(source, 'copies.json'), '[{"id":"copy.save","descriptor":null}]\n')
+    writeFileSync(
+      join(source, 'aliases.json'),
+      '[{"consumer":"web","alias":"web.nav.save","copyId":"copy.save"}]\n',
+    )
+    writeFileSync(
+      join(source, 'routes.json'),
+      '[{"consumer":"web","selectorId":"web.route.feed.members","alias":"web.nav.save"}]\n',
+    )
+    writeFileSync(join(translations, 'en-US.json'), '[{"id":"copy.save","value":"Save"}]\n')
+    writeFileSync(join(source, 'tags.json'), '{"copy.save":["chrome"]}\n')
+    const loaded = await loadCatalogDirectory(source)
+    expect(loaded.messages).toEqual([])
+    expect(loaded.catalog.routeMembership).toHaveLength(1)
+    expect(loaded.catalog.tags).toEqual({ 'copy.save': ['chrome'] })
+    const output = join(source, 'catalog.sqlite')
+    compileLocalizationSqlite(loaded.catalog, output)
+    const database = openLocalizationDatabase(output)
+    try {
+      expect(
+        resolveLocalizationBatch(database, {
+          consumer: 'web',
+          locales: ['en-US'],
+          selectors: ['web.route.feed.*'],
+        }).messages,
+      ).toEqual({ 'web.nav.save': 'Save' })
+    } finally {
+      database.close()
+    }
+    writeFileSync(join(source, 'ignored.json'), '[]\n')
+    await expect(loadCatalogDirectory(source)).resolves.toMatchObject({
+      catalog: { copies: [{ id: 'copy.save' }] },
+    })
+    const missingTranslations = mkdtempSync(join(tmpdir(), 'catalog-missing-translations-'))
+    paths.push(missingTranslations)
+    writeFileSync(join(missingTranslations, 'copies.json'), '[]\n')
+    writeFileSync(join(missingTranslations, 'aliases.json'), '[]\n')
+    await expect(loadCatalogDirectory(missingTranslations)).rejects.toThrow(/missing translations/)
+    const badTranslations = mkdtempSync(join(tmpdir(), 'catalog-bad-translations-'))
+    paths.push(badTranslations)
+    mkdirSync(join(badTranslations, 'translations'))
+    writeFileSync(join(badTranslations, 'copies.json'), '[]\n')
+    writeFileSync(join(badTranslations, 'aliases.json'), '[]\n')
+    writeFileSync(join(badTranslations, 'translations', 'en-US.json'), '{}\n')
+    await expect(loadCatalogDirectory(badTranslations)).rejects.toThrow(/must be a JSON array/)
+    const malformedAliases = mkdtempSync(join(tmpdir(), 'catalog-malformed-aliases-'))
+    paths.push(malformedAliases)
+    writeFileSync(join(malformedAliases, 'copies.json'), '[]\n')
+    writeFileSync(join(malformedAliases, 'aliases.json'), '{\n')
+    await expect(loadCatalogDirectory(malformedAliases)).rejects.toThrow(SyntaxError)
+    const nonArrayAliases = mkdtempSync(join(tmpdir(), 'catalog-non-array-aliases-'))
+    paths.push(nonArrayAliases)
+    writeFileSync(join(nonArrayAliases, 'copies.json'), '[]\n')
+    writeFileSync(join(nonArrayAliases, 'aliases.json'), '{}\n')
+    await expect(loadCatalogDirectory(nonArrayAliases)).rejects.toThrow(
+      /aliases.json must be a JSON array/,
+    )
+    const translationsFile = mkdtempSync(join(tmpdir(), 'catalog-translations-file-'))
+    paths.push(translationsFile)
+    writeFileSync(join(translationsFile, 'copies.json'), '[]\n')
+    writeFileSync(join(translationsFile, 'aliases.json'), '[]\n')
+    writeFileSync(join(translationsFile, 'translations'), 'not a directory\n')
+    await expect(loadCatalogDirectory(translationsFile)).rejects.toThrow()
+    const partialRows = mkdtempSync(join(tmpdir(), 'catalog-partial-rows-'))
+    paths.push(partialRows)
+    writeFileSync(join(partialRows, 'copies.json'), '[]\n')
+    writeFileSync(
+      join(partialRows, 'nav.json'),
+      '[\n{"id":"nav.home","consumers":["web"],"descriptor":null,"translations":{"en-US":"Home"}}\n]\n',
+    )
+    await expect(loadCatalogDirectory(partialRows)).resolves.toMatchObject({
+      catalog: { copies: [{ id: 'nav.home' }] },
+    })
   })
 })
 

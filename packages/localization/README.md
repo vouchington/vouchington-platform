@@ -2,15 +2,20 @@
 
 Browser-safe localization contracts for Node 24+ and browsers. The package owns locale
 normalization (`en` aliases `en-US`), exact and terminal-prefix selector validation, ordered
-fallback, consumer membership, and deterministic catalog serialization. It does not load catalogs,
-open SQLite, or interpolate message text.
+fallback, and deterministic catalog-table serialization. It does not load catalogs, open SQLite,
+or interpolate message text.
 
-Catalog shards on disk are a JSON array with **one compact message object per line**. `id` is the
-first key so git and line editors can add, remove, or update a message without parsing the file.
-`parseCatalogShardText` rejects pretty-printed JSON, `{ messages }` wrappers, and unsorted ids.
+Catalog source separates reusable copy from where each consumer renders it:
 
-`@vouchington/localization-compiler` compiles those shards into an immutable SQLite artifact,
-resolves the same selectors locally, and ships `upsert` / `remove` / `git-merge` for the line
-format. `git-merge` is 3-way: union independent ids, then merge consumers, descriptor, and
-each locale. Same-locale edits conflict and write `<<<<<<< ours` markers; adding `es` on one
-side and `fr` on the other does not.
+- `copies.json`: `{ id, descriptor }` rows.
+- `aliases.json`: `{ consumer, alias, copyId }` rows.
+- `translations/<locale>.json`: `{ id, value }` rows.
+- `routes.json` (generated): `{ consumer, selectorId, alias }` rows.
+
+A route selector resolves its generated membership independently of alias spelling, then returns
+the existing v1 alias-keyed wire response. Multiple aliases and consumers can therefore share one
+copy and its full translation variants.
+
+`@vouchington/localization-compiler` compiles those tables into an immutable SQLite artifact and
+resolves the same selectors locally. Its CLI owns table updates, formatting, CSV interchange, and
+three-way merges so catalog edits remain deterministic.

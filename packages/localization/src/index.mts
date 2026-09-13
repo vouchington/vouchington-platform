@@ -1,5 +1,7 @@
 export type {
   CatalogMessage,
+  CatalogCopy,
+  ConsumerAlias,
   ExactSelector,
   LocalizationBatch,
   LocalizationBounds,
@@ -18,7 +20,18 @@ export type {
   SelectPluralCases,
   SelectPluralDescriptor,
   TranslationValue,
+  TranslationRow,
+  RouteSelectorMembership,
+  LocalizationCatalog,
 } from './types.mts'
+export {
+  catalogFromMessages,
+  catalogCopyFromRecord,
+  consumerAliasFromRecord,
+  translationRowFromRecord,
+  routeSelectorMembershipFromRecord,
+  serializeCatalogTable,
+} from './tables.mts'
 export {
   CANONICAL_SOURCE_LOCALE,
   ENGLISH_LOCALE_ALIAS,

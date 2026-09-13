@@ -1,12 +1,13 @@
-import { mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, renameSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import {
   canonicalJson,
+  catalogFromMessages,
   compareCodePoints,
   LOCALIZATION_WIRE_CONTRACT,
-  serializeCatalogShard,
+  type LocalizationCatalog,
   type CatalogMessage,
 } from '@vouchington/localization'
 import type { EditorialTags } from './load.mts'
@@ -14,14 +15,17 @@ import { assertSqliteIntegrity } from './integrity.mts'
 import { catalogRevision } from './revision.mts'
 import { SQLITE_SCHEMA } from './schema.mts'
 import { validateCatalogMessages } from './validate.mts'
+import { sortedCatalog } from './catalog.mts'
 
 export function compileLocalizationSqlite(
-  messages: readonly CatalogMessage[],
+  source: LocalizationCatalog | readonly CatalogMessage[],
   outputPath: string,
   tags: EditorialTags = {},
 ): string {
-  validateCatalogMessages(messages)
-  const revision = catalogRevision(messages)
+  const catalog = isCatalog(source) ? source : { ...catalogFromMessages(source), tags }
+  if (!isCatalog(source)) validateCatalogMessages(source)
+  const normalized = sortedCatalog(catalog)
+  const revision = catalogRevision(normalized)
   mkdirSync(dirname(outputPath), { recursive: true })
   const temporaryDirectory = mkdtempSync(join(tmpdir(), 'localization-'))
   const temporary = join(temporaryDirectory, 'catalog.sqlite')
@@ -30,8 +34,7 @@ export function compileLocalizationSqlite(
     database.exec('PRAGMA journal_mode = OFF')
     database.exec(SQLITE_SCHEMA)
     insertMetadata(database, revision)
-    insertMessages(database, messages)
-    insertTags(database, tags)
+    insertCatalog(database, normalized)
     database.exec('PRAGMA foreign_keys = ON')
     assertSqliteIntegrity(database)
   } finally {
@@ -42,8 +45,10 @@ export function compileLocalizationSqlite(
   return revision
 }
 
-export function writeJsonCatalog(messages: readonly CatalogMessage[], path: string): void {
-  writeFileSync(path, serializeCatalogShard(messages))
+function isCatalog(
+  source: LocalizationCatalog | readonly CatalogMessage[],
+): source is LocalizationCatalog {
+  return !Array.isArray(source) || Object.hasOwn(source, 'copies')
 }
 
 function insertMetadata(database: DatabaseSync, revision: string): void {
@@ -52,28 +57,25 @@ function insertMetadata(database: DatabaseSync, revision: string): void {
   insert.run('revision', revision)
 }
 
-function insertMessages(database: DatabaseSync, messages: readonly CatalogMessage[]): void {
-  const insertMessage = database.prepare('INSERT INTO messages (id, descriptor_json) VALUES (?, ?)')
+function insertCatalog(database: DatabaseSync, catalog: LocalizationCatalog): void {
+  const insertCopy = database.prepare('INSERT INTO copies (id, descriptor_json) VALUES (?, ?)')
   const insertTranslation = database.prepare(
-    'INSERT INTO translations (locale, message_id, value_json) VALUES (?, ?, ?)',
+    'INSERT INTO translations (locale, copy_id, value_json) VALUES (?, ?, ?)',
   )
-  const insertConsumer = database.prepare(
-    'INSERT INTO consumer_membership (consumer, message_id) VALUES (?, ?)',
+  const insertAlias = database.prepare(
+    'INSERT INTO consumer_aliases (consumer, alias, copy_id) VALUES (?, ?, ?)',
   )
-  for (const message of [...messages].toSorted((left, right) =>
-    compareCodePoints(left.id, right.id),
-  )) {
-    insertMessage.run(message.id, canonicalJson(message.descriptor))
-    for (const consumer of message.consumers) insertConsumer.run(consumer, message.id)
-    for (const locale of Object.keys(message.translations).toSorted(compareCodePoints)) {
-      insertTranslation.run(locale, message.id, canonicalJson(message.translations[locale]))
-    }
+  const insertRoute = database.prepare(
+    'INSERT INTO route_membership (consumer, selector_id, alias) VALUES (?, ?, ?)',
+  )
+  const insertTag = database.prepare('INSERT INTO editorial_tags (copy_id, tag) VALUES (?, ?)')
+  for (const copy of catalog.copies) insertCopy.run(copy.id, canonicalJson(copy.descriptor))
+  for (const alias of catalog.aliases) insertAlias.run(alias.consumer, alias.alias, alias.copyId)
+  for (const route of catalog.routeMembership!)
+    insertRoute.run(route.consumer, route.selectorId, route.alias)
+  for (const [locale, rows] of Object.entries(catalog.translations)) {
+    for (const row of rows) insertTranslation.run(locale, row.id, canonicalJson(row.value))
   }
-}
-
-function insertTags(database: DatabaseSync, tags: EditorialTags): void {
-  const insert = database.prepare('INSERT INTO editorial_tags (message_id, tag) VALUES (?, ?)')
-  for (const id of Object.keys(tags).toSorted(compareCodePoints)) {
-    for (const tag of tags[id]!) insert.run(id, tag)
-  }
+  for (const id of Object.keys(catalog.tags!).toSorted(compareCodePoints))
+    for (const tag of catalog.tags![id]!) insertTag.run(id, tag)
 }
