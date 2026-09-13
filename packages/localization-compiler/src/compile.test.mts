@@ -114,6 +114,9 @@ describe('sqlite compile and resolve', () => {
   })
 
   it('rejects empty catalogs and unknown editorial tags', async () => {
+    const emptyDirectory = mkdtempSync(join(tmpdir(), 'catalog-empty-directory-'))
+    paths.push(emptyDirectory)
+    await expect(loadCatalogDirectory(emptyDirectory)).rejects.toThrow(/No catalog JSON/)
     const empty = writeCatalog({ 'tags.json': {} })
     paths.push(empty)
     await expect(loadCatalogDirectory(empty)).rejects.toThrow(/No catalog messages/)
@@ -196,12 +199,29 @@ describe('sqlite compile and resolve', () => {
     writeFileSync(join(malformedAliases, 'copies.json'), '[]\n')
     writeFileSync(join(malformedAliases, 'aliases.json'), '{\n')
     await expect(loadCatalogDirectory(malformedAliases)).rejects.toThrow(SyntaxError)
+    const nonArrayAliases = mkdtempSync(join(tmpdir(), 'catalog-non-array-aliases-'))
+    paths.push(nonArrayAliases)
+    writeFileSync(join(nonArrayAliases, 'copies.json'), '[]\n')
+    writeFileSync(join(nonArrayAliases, 'aliases.json'), '{}\n')
+    await expect(loadCatalogDirectory(nonArrayAliases)).rejects.toThrow(
+      /aliases.json must be a JSON array/,
+    )
     const translationsFile = mkdtempSync(join(tmpdir(), 'catalog-translations-file-'))
     paths.push(translationsFile)
     writeFileSync(join(translationsFile, 'copies.json'), '[]\n')
     writeFileSync(join(translationsFile, 'aliases.json'), '[]\n')
     writeFileSync(join(translationsFile, 'translations'), 'not a directory\n')
     await expect(loadCatalogDirectory(translationsFile)).rejects.toThrow()
+    const partialRows = mkdtempSync(join(tmpdir(), 'catalog-partial-rows-'))
+    paths.push(partialRows)
+    writeFileSync(join(partialRows, 'copies.json'), '[]\n')
+    writeFileSync(
+      join(partialRows, 'nav.json'),
+      '[\n{"id":"nav.home","consumers":["web"],"descriptor":null,"translations":{"en-US":"Home"}}\n]\n',
+    )
+    await expect(loadCatalogDirectory(partialRows)).resolves.toMatchObject({
+      catalog: { copies: [{ id: 'nav.home' }] },
+    })
   })
 })
 
