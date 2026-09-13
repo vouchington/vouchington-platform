@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
@@ -22,7 +23,9 @@ describe('release workflow', () => {
     const verify = position('node scripts/release.mts verify')
     const pack = position('node scripts/release.mts pack')
     const tag = position('node scripts/release.mts tag')
-    const push = position('git push --atomic origin "HEAD:refs/heads/$RELEASE_REF" --follow-tags')
+    const push = position(
+      'git push --atomic origin "HEAD:refs/heads/$RELEASE_BRANCH" --follow-tags',
+    )
     const publish = position('node scripts/release.mts publish')
     const release = position('node scripts/release.mts github-release')
 
@@ -37,12 +40,21 @@ describe('release workflow', () => {
     expect(release).toBeGreaterThan(publish)
   })
 
-  it('limits maintenance releases to the legacy compiler patch line', () => {
-    expect(workflow).toContain('          - release/localization-compiler-0.0')
+  it('projects a reviewed legacy compiler patch to its fixed release line', () => {
+    const patch = readFileSync('releases/localization-compiler/0.0.2.patch')
+    const hash = createHash('sha256').update(patch).digest('hex')
+    expect(workflow).toContain('          - legacy-localization-compiler-0.0')
     expect(workflow).toContain('BUMP: ${{ inputs.bump }}')
     expect(workflow).toContain(
       '[ "$PACKAGE" != \'@vouchington/localization-compiler\' ] || [ "$BUMP" != patch ]',
     )
+    expect(workflow).toContain('LEGACY_BASE_TAG: localization-compiler-v0.0.1')
+    expect(workflow).toContain('LEGACY_BASE_SHA: f65d5c119c1ea1c0477552077d5903b9c1cd9503')
+    expect(workflow).toContain(`LEGACY_PATCH_SHA256: ${hash}`)
+    expect(workflow).toContain('git show "$GITHUB_SHA:$LEGACY_PATCH" > "$PATCH_FILE"')
+    expect(workflow).toContain('git apply --check "$PATCH_FILE"')
+    expect(workflow).toContain('git apply --index "$PATCH_FILE"')
+    expect(workflow).toContain('RELEASE_BRANCH=release/localization-compiler-0.0')
   })
 
   it('does not retain the single-package inline release implementation', () => {
