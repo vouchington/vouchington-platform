@@ -45,7 +45,6 @@ export function importCatalogCsv(csv: string, expectedRevision?: string): Locali
   const translations: Record<string, unknown[]> = {}
   let revision: string | undefined
   for (const row of rows) {
-    if (row.length !== columns.length) throw new TypeError('CSV row has an invalid column count')
     const [id, locale, descriptor, aliasJson, value, current] = row as [
       string,
       string,

@@ -196,6 +196,12 @@ describe('sqlite compile and resolve', () => {
     writeFileSync(join(malformedAliases, 'copies.json'), '[]\n')
     writeFileSync(join(malformedAliases, 'aliases.json'), '{\n')
     await expect(loadCatalogDirectory(malformedAliases)).rejects.toThrow(SyntaxError)
+    const translationsFile = mkdtempSync(join(tmpdir(), 'catalog-translations-file-'))
+    paths.push(translationsFile)
+    writeFileSync(join(translationsFile, 'copies.json'), '[]\n')
+    writeFileSync(join(translationsFile, 'aliases.json'), '[]\n')
+    writeFileSync(join(translationsFile, 'translations'), 'not a directory\n')
+    await expect(loadCatalogDirectory(translationsFile)).rejects.toThrow()
   })
 })
 

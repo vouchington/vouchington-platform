@@ -71,11 +71,11 @@ function insertCatalog(database: DatabaseSync, catalog: LocalizationCatalog): vo
   const insertTag = database.prepare('INSERT INTO editorial_tags (copy_id, tag) VALUES (?, ?)')
   for (const copy of catalog.copies) insertCopy.run(copy.id, canonicalJson(copy.descriptor))
   for (const alias of catalog.aliases) insertAlias.run(alias.consumer, alias.alias, alias.copyId)
-  for (const route of catalog.routeMembership ?? [])
+  for (const route of catalog.routeMembership!)
     insertRoute.run(route.consumer, route.selectorId, route.alias)
   for (const [locale, rows] of Object.entries(catalog.translations)) {
     for (const row of rows) insertTranslation.run(locale, row.id, canonicalJson(row.value))
   }
-  for (const id of Object.keys(catalog.tags ?? {}).toSorted(compareCodePoints))
+  for (const id of Object.keys(catalog.tags!).toSorted(compareCodePoints))
     for (const tag of catalog.tags![id]!) insertTag.run(id, tag)
 }

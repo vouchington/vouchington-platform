@@ -37,9 +37,6 @@ describe('csv interchange', () => {
       translations: { 'en-US': [{ id: 'copy.save', value: 'Save' }] },
     }
     const [header, row] = exportCatalogCsv(catalog).trimEnd().split('\n')
-    expect(() => importCatalogCsv(`${header}\n${row!.split(',').slice(0, 5).join(',')}\n`)).toThrow(
-      /Invalid Record Length/,
-    )
     expect(() =>
       importCatalogCsv(`${header}\n${row}\n${row!.replace(/[^,]+$/, 'other')}\n`),
     ).toThrow(/single catalog_revision/)

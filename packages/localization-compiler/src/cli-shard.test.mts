@@ -122,6 +122,14 @@ describe('localization shard CLI', () => {
       '--row',
       '{"consumer":"web","alias":"web.nav.home","copyId":"copy.home"}',
     ])
+    const copies = join(root, 'copies.json')
+    await runLocalizationCli([
+      'upsert',
+      '--file',
+      copies,
+      '--message',
+      '{"id":"copy.save","descriptor":null}',
+    ])
     const { mkdirSync } = await import('node:fs')
     const translations = join(root, 'translations')
     mkdirSync(translations)
