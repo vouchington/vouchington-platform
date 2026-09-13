@@ -158,5 +158,16 @@ describe('localization shard CLI', () => {
     writeFileSync(theirs, '[{"id":"copy.b","descriptor":null}]\n')
     await runLocalizationCli(['git-merge', base, ours, theirs])
     expect(readFileSync(ours, 'utf8')).toContain('copy.b')
+    const temporaryOurs = join(root, '.merge_file_123')
+    writeFileSync(temporaryOurs, '[{"id":"copy.a","descriptor":null}]\n')
+    await runLocalizationCli([
+      'git-merge',
+      base,
+      temporaryOurs,
+      theirs,
+      '--path',
+      'catalog/copies.json',
+    ])
+    expect(readFileSync(temporaryOurs, 'utf8')).toContain('copy.b')
   })
 })

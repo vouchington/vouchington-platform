@@ -31,7 +31,7 @@ localization/catalog/tags.json merge=text
 ```gitconfig
 [merge "vouchington-localization"]
   name = Merge localization catalog shards by message id and locale
-  driver = vouchington-localization git-merge %O %A %B
+  driver = vouchington-localization git-merge %O %A %B --path %P
 ```
 
 On conflict the driver writes conflict markers into `%A` (`<<<<<<< ours` / `=======` /

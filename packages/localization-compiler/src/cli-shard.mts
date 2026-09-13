@@ -36,7 +36,7 @@ function merge(args: readonly string[]): undefined {
   const [ancestor, ours, theirs] = args
   if (ancestor === undefined || ours === undefined || theirs === undefined)
     throw new TypeError(shardUsage())
-  if (isTablePath(ours)) {
+  if (isTablePath(optional(args, '--path') ?? ours)) {
     mergeTableFiles(ancestor, ours, theirs)
     return undefined
   }
@@ -58,7 +58,7 @@ export function shardUsage(): string {
   return [
     'Usage: vouchington-localization upsert --file <file> --row <json>',
     'Usage: vouchington-localization remove --file <file> --id <id> [--consumer <consumer>]',
-    'Usage: vouchington-localization git-merge <ancestor> <ours> <theirs>',
+    'Usage: vouchington-localization git-merge <ancestor> <ours> <theirs> [--path <path>]',
     'Usage: vouchington-localization format --source <dir>',
   ].join('\n')
 }
@@ -87,7 +87,9 @@ function required(args: readonly string[], flag: string): string {
   return value
 }
 function optional(args: readonly string[], flag: string): string | undefined {
-  const value = args[args.indexOf(flag) + 1]
+  const index = args.indexOf(flag)
+  if (index === -1) return undefined
+  const value = args[index + 1]
   return value === undefined || value.startsWith('--') ? undefined : value
 }
 function requiredPath(args: readonly string[], flag: string): string {
