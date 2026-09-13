@@ -22,7 +22,7 @@ describe('release workflow', () => {
     const verify = position('node scripts/release.mts verify')
     const pack = position('node scripts/release.mts pack')
     const tag = position('node scripts/release.mts tag')
-    const push = position('git push --atomic origin HEAD:main --follow-tags')
+    const push = position('git push --atomic origin "HEAD:refs/heads/$RELEASE_REF" --follow-tags')
     const publish = position('node scripts/release.mts publish')
     const release = position('node scripts/release.mts github-release')
 
@@ -35,6 +35,14 @@ describe('release workflow', () => {
     expect(push).toBeGreaterThan(tag)
     expect(publish).toBeGreaterThan(push)
     expect(release).toBeGreaterThan(publish)
+  })
+
+  it('limits maintenance releases to the legacy compiler patch line', () => {
+    expect(workflow).toContain('          - release/localization-compiler-0.0')
+    expect(workflow).toContain('BUMP: ${{ inputs.bump }}')
+    expect(workflow).toContain(
+      '[ "$PACKAGE" != \'@vouchington/localization-compiler\' ] || [ "$BUMP" != patch ]',
+    )
   })
 
   it('does not retain the single-package inline release implementation', () => {

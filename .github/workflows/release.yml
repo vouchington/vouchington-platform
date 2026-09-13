@@ -95,6 +95,7 @@ jobs:
 
       - name: Validate maintenance release target
         env:
+          BUMP: ${{ inputs.bump }}
           PACKAGE: ${{ inputs.package }}
           RELEASE_REF: ${{ inputs.release_ref }}
         run: |
@@ -105,8 +106,8 @@ jobs:
               exit 1
               ;;
           esac
-          if [ "$RELEASE_REF" != main ] && [ "$PACKAGE" != '@vouchington/localization-compiler' ]; then
-            echo "::error::Maintenance releases only support @vouchington/localization-compiler" >&2
+          if [ "$RELEASE_REF" != main ] && { [ "$PACKAGE" != '@vouchington/localization-compiler' ] || [ "$BUMP" != patch ]; }; then
+            echo "::error::Maintenance releases only support @vouchington/localization-compiler patch releases" >&2
             exit 1
           fi
 
