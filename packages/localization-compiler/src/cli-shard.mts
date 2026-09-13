@@ -1,23 +1,19 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
 import {
   CatalogMergeConflict,
   mergeCatalogShards,
-  parseCatalogShardText,
   removeCatalogLine,
-  serializeCatalogTable,
-  serializeCatalogShard,
   upsertCatalogLine,
 } from '@vouchington/localization'
 import {
   isTablePath,
   mergeTableFiles,
-  readTable,
   removeTable,
   resolveTableConflict,
   upsertTable,
 } from './table-cli.mts'
-import { parseCatalogFile } from './validate.mts'
+import { canonicalCatalogFile, catalogFiles } from './catalog-format.mts'
 
 export function runShardCli(command: string, args: readonly string[]): string | undefined {
   if (command === 'upsert') return upsert(args)
@@ -80,27 +76,13 @@ export function shardUsage(): string {
     'Usage: vouchington-localization remove --file <file> --id <id> [--consumer <consumer>]',
     'Usage: vouchington-localization git-merge <ancestor> <ours> <theirs> [--path <path>]',
     'Usage: vouchington-localization conflict-resolve --file <file> --id <id> [--consumer <consumer>] [--selector-id <selectorId>] --take <ours|theirs>',
-    'Usage: vouchington-localization format --source <dir>',
+    'Usage: vouchington-localization format [--check] --source <dir>',
   ].join('\n')
 }
 function formatCatalogDirectory(directory: string): string {
-  const names = readdirSync(directory).filter(
-    (name) => name.endsWith('.json') && name !== 'tags.json',
-  )
-  for (const name of names) formatFile(join(directory, name))
-  const translations = join(directory, 'translations')
-  if (existsSync(translations))
-    for (const name of readdirSync(translations).filter((name) => name.endsWith('.json')))
-      formatFile(join(translations, name))
-  return `${names.length} files`
-}
-function formatFile(path: string): void {
-  try {
-    if (isTablePath(path)) return writeFileSync(path, serializeCatalogTable(readTable(path)))
-    writeFileSync(path, serializeCatalogShard(messagesFromUnknownText(readFileSync(path, 'utf8'))))
-  } catch (error) {
-    throw new TypeError(`${path}: ${(error as Error).message}`)
-  }
+  const files = catalogFiles(directory)
+  for (const path of files) writeFileSync(path, canonicalCatalogFile(path))
+  return `${files.length} files`
 }
 function required(args: readonly string[], flag: string): string {
   const value = optional(args, flag)
@@ -115,17 +97,6 @@ function optional(args: readonly string[], flag: string): string | undefined {
 }
 function requiredPath(args: readonly string[], flag: string): string {
   return resolve(required(args, flag))
-}
-function messagesFromUnknownText(text: string) {
-  try {
-    return parseCatalogShardText(text)
-  } catch (shardError) {
-    try {
-      return parseCatalogFile(JSON.parse(text) as unknown)
-    } catch {
-      throw shardError
-    }
-  }
 }
 function readShard(path: string): string {
   return existsSync(path) ? readFileSync(path, 'utf8') : '[]\n'
