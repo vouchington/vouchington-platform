@@ -182,6 +182,10 @@ describe('sqlite compile and resolve', () => {
     } finally {
       database.close()
     }
+    writeFileSync(join(source, 'ignored.json'), '[]\n')
+    await expect(loadCatalogDirectory(source)).resolves.toMatchObject({
+      catalog: { copies: [{ id: 'copy.save' }] },
+    })
     const missingTranslations = mkdtempSync(join(tmpdir(), 'catalog-missing-translations-'))
     paths.push(missingTranslations)
     writeFileSync(join(missingTranslations, 'copies.json'), '[]\n')
