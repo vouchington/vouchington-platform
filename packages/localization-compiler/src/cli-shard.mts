@@ -9,15 +9,35 @@ import {
   serializeCatalogShard,
   upsertCatalogLine,
 } from '@vouchington/localization'
-import { isTablePath, mergeTableFiles, readTable, removeTable, upsertTable } from './table-cli.mts'
+import {
+  isTablePath,
+  mergeTableFiles,
+  readTable,
+  removeTable,
+  resolveTableConflict,
+  upsertTable,
+} from './table-cli.mts'
 import { parseCatalogFile } from './validate.mts'
 
 export function runShardCli(command: string, args: readonly string[]): string | undefined {
   if (command === 'upsert') return upsert(args)
   if (command === 'remove') return remove(args)
   if (command === 'git-merge') return merge(args)
+  if (command === 'conflict-resolve') return resolveConflict(args)
   if (command === 'format') return formatCatalogDirectory(required(args, '--source'))
   throw new TypeError(shardUsage())
+}
+function resolveConflict(args: readonly string[]): undefined {
+  const take = required(args, '--take')
+  if (take !== 'ours' && take !== 'theirs') throw new TypeError(shardUsage())
+  resolveTableConflict(
+    requiredPath(args, '--file'),
+    required(args, '--id'),
+    optional(args, '--consumer'),
+    optional(args, '--selector-id'),
+    take,
+  )
+  return undefined
 }
 function upsert(args: readonly string[]): undefined {
   const path = requiredPath(args, '--file')
@@ -59,6 +79,7 @@ export function shardUsage(): string {
     'Usage: vouchington-localization upsert --file <file> --row <json>',
     'Usage: vouchington-localization remove --file <file> --id <id> [--consumer <consumer>]',
     'Usage: vouchington-localization git-merge <ancestor> <ours> <theirs> [--path <path>]',
+    'Usage: vouchington-localization conflict-resolve --file <file> --id <id> [--consumer <consumer>] [--selector-id <selectorId>] --take <ours|theirs>',
     'Usage: vouchington-localization format --source <dir>',
   ].join('\n')
 }
