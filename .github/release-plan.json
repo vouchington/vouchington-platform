@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/localization/package.json"],
+  "changedManifests": ["packages/localization-compiler/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "localization",
-      "fromVersion": "0.1.1",
-      "name": "@vouchington/localization",
-      "toVersion": "0.1.2"
+      "directory": "localization-compiler",
+      "fromVersion": "0.1.0",
+      "name": "@vouchington/localization-compiler",
+      "toVersion": "0.1.1"
     }
   ],
-  "selectedPackage": "@vouchington/localization"
+  "selectedPackage": "@vouchington/localization-compiler"
 }
