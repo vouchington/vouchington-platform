@@ -40,6 +40,16 @@ describe('route selector membership', () => {
         resolveLocalizationBatch(database, {
           consumer: 'web',
           locales: ['es'],
+          selectors: ['web.route.channels.members'],
+        }).messages,
+      ).toEqual({
+        'web.nav.posts': 'Publicaciones',
+        'web.sidebar.posts': 'Publicaciones',
+      })
+      expect(
+        resolveLocalizationBatch(database, {
+          consumer: 'web',
+          locales: ['es'],
           selectors: ['web.route.channels.*'],
         }).messages,
       ).toEqual({

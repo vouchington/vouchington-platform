@@ -21,6 +21,8 @@ import {
   consumerAliasFromRecord,
   translationRowFromRecord,
   routeSelectorMembershipFromRecord,
+  routeSelectorPatternMembershipFromRecord,
+  routeSelectorFromRecord,
   catalogFromMessages,
   serializeCatalogTable,
 } from './index.mts'
@@ -183,6 +185,23 @@ describe('catalog serialization and descriptors', () => {
       }),
     ).toMatchObject({ consumer: 'web' })
     expect(
+      routeSelectorPatternMembershipFromRecord({ consumer: 'web', pattern: '/empty' }),
+    ).toEqual({
+      consumer: 'web',
+      pattern: '/empty',
+    })
+    expect(
+      routeSelectorPatternMembershipFromRecord({
+        consumer: 'web',
+        pattern: '/posts',
+        alias: 'web.nav.save',
+      }),
+    ).toEqual({ consumer: 'web', pattern: '/posts', alias: 'web.nav.save' })
+    expect(routeSelectorFromRecord({ consumer: 'web', selectorId: 'web.route.posts' })).toEqual({
+      consumer: 'web',
+      selectorId: 'web.route.posts',
+    })
+    expect(
       catalogFromMessages([
         {
           id: 'copy.save',
@@ -214,5 +233,13 @@ describe('catalog serialization and descriptors', () => {
         alias: 'bad',
       }),
     ).toThrow(/alias/)
+    for (const row of [null, {}, { pattern: '' }, { pattern: 1 }])
+      expect(() => routeSelectorPatternMembershipFromRecord(row)).toThrow(/pattern/)
+    for (const alias of [1, 'bad'])
+      expect(() =>
+        routeSelectorPatternMembershipFromRecord({ consumer: 'web', pattern: '/posts', alias }),
+      ).toThrow(/alias/)
+    for (const row of [null, {}, { selectorId: 1 }, { selectorId: 'bad' }])
+      expect(() => routeSelectorFromRecord(row)).toThrow(/selectorId/)
   })
 })

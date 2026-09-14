@@ -8,7 +8,9 @@ import type {
   CatalogMessage,
   ConsumerAlias,
   LocalizationCatalog,
+  RouteSelector,
   RouteSelectorMembership,
+  RouteSelectorPatternMembership,
   TranslationRow,
 } from './types.mts'
 
@@ -59,6 +61,32 @@ export function routeSelectorMembershipFromRecord(value: unknown): RouteSelector
   }
 }
 
+export function routeSelectorPatternMembershipFromRecord(
+  value: unknown,
+): RouteSelectorPatternMembership {
+  if (!object(value) || typeof value.pattern !== 'string' || value.pattern.length === 0) {
+    throw new TypeError('Route membership is missing a valid pattern')
+  }
+  if ('alias' in value && (typeof value.alias !== 'string' || !isMessageId(value.alias))) {
+    throw new TypeError('Route membership is missing a valid alias')
+  }
+  return {
+    consumer: uniqueConsumers([String(value.consumer)])[0]!,
+    pattern: value.pattern,
+    ...('alias' in value ? { alias: value.alias as string } : {}),
+  }
+}
+
+export function routeSelectorFromRecord(value: unknown): RouteSelector {
+  if (!object(value) || typeof value.selectorId !== 'string' || !isMessageId(value.selectorId)) {
+    throw new TypeError('Route selector is missing a valid selectorId')
+  }
+  return {
+    consumer: uniqueConsumers([String(value.consumer)])[0]!,
+    selectorId: value.selectorId,
+  }
+}
+
 export function catalogFromMessages(messages: readonly CatalogMessage[]): LocalizationCatalog {
   const copies = messages.map(({ id, descriptor }) => ({ id, descriptor }))
   const aliases = messages.flatMap(({ id, consumers }) =>
@@ -80,7 +108,7 @@ export function serializeCatalogTable(rows: readonly unknown[]): string {
 
 function rowKey(value: unknown): string {
   if (!object(value)) return ''
-  return ['consumer', 'selectorId', 'alias', 'id']
+  return ['consumer', 'pattern', 'selectorId', 'alias', 'id']
     .map((key) => (typeof value[key] === 'string' ? value[key] : ''))
     .join('\t')
 }

@@ -67,7 +67,7 @@ function parseRow(line: string): Record<string, unknown> {
   return value as Record<string, unknown>
 }
 export function tableKey(row: Record<string, unknown>): string {
-  return ['consumer', 'selectorId', 'alias', 'id']
+  return ['consumer', 'pattern', 'selectorId', 'alias', 'id']
     .map((key) => (typeof row[key] === 'string' ? row[key] : ''))
     .join('\t')
 }

@@ -56,12 +56,24 @@ export type RouteSelectorMembership = Readonly<{
   selectorId: string
   alias: string
 }>
+/** A generated disk row. `alias` is omitted to retain a known selector with no messages. */
+export type RouteSelectorPatternMembership = Readonly<{
+  consumer: LocalizationConsumer
+  pattern: string
+  alias?: string
+}>
+/** Exact route selectors known to a compiled catalog, including selectors with no aliases. */
+export type RouteSelector = Readonly<{
+  consumer: LocalizationConsumer
+  selectorId: string
+}>
 /** The three source tables plus optional generated route membership and editorial tags. */
 export type LocalizationCatalog = Readonly<{
   copies: readonly CatalogCopy[]
   aliases: readonly ConsumerAlias[]
   translations: Readonly<Record<string, readonly TranslationRow[]>>
   routeMembership?: readonly RouteSelectorMembership[]
+  routeSelectors?: readonly RouteSelector[]
   tags?: Readonly<Record<string, readonly string[]>>
 }>
 export type LocalizationRequest = Readonly<{

@@ -6,9 +6,12 @@ exposes the same consumer/locale/selector resolver used by application CLIs.
 
 Catalog source has three canonical tables: `copies.json` (`{ id, descriptor }`), `aliases.json`
 (`{ consumer, alias, copyId }`), and `translations/<locale>.json` (`{ id, value }`). A generated
-`routes.json` table maps `{ consumer, selectorId, alias }`, allowing route selectors to return the
-existing alias-keyed v1 payload without tying copy ids to source locations. Full plural and
-select-plural translation values remain values in the locale table.
+`routes.json` accepts legacy `{ consumer, selectorId, alias }` rows while generated source moves
+to `{ consumer, pattern, alias? }` rows. A presence-only pattern row records a known empty route;
+the compiler derives stable per-selector IDs from its sorted aliases, expands alias membership,
+and persists the complete exact-selector registry. An unknown exact selector therefore produces
+an empty v1 message batch, while a known empty selector can still resolve requested chrome.
+Full plural and select-plural translation values remain values in the locale table.
 
 ```bash
 vouchington-localization upsert --file localization/catalog/copies.json --row '{"id":"copy.ok","descriptor":null}'
