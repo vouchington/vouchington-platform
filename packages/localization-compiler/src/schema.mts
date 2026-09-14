@@ -30,6 +30,11 @@ CREATE TABLE route_membership (
   PRIMARY KEY (consumer, selector_id, alias),
   FOREIGN KEY (consumer, alias) REFERENCES consumer_aliases(consumer, alias)
 );
+CREATE TABLE route_selectors (
+  consumer TEXT NOT NULL,
+  selector_id TEXT NOT NULL,
+  PRIMARY KEY (consumer, selector_id)
+);
 CREATE TABLE editorial_tags (
   copy_id TEXT NOT NULL,
   tag TEXT NOT NULL,

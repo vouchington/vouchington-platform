@@ -6,8 +6,10 @@ import {
   isMessageId,
   normalizeLocale,
   routeSelectorMembershipFromRecord,
+  routeSelectorFromRecord,
   translationRowFromRecord,
   type LocalizationCatalog,
+  type RouteSelector,
   type TranslationValue,
 } from '@vouchington/localization'
 import { validateCatalogMessages } from './validate.mts'
@@ -68,6 +70,20 @@ export function validateLocalizationCatalog(catalog: LocalizationCatalog): void 
       throw new TypeError(`Duplicate route membership "${row.selectorId}" → "${row.alias}"`)
     membership.add(key)
   }
+  const selectors = new Set<string>()
+  for (const raw of catalog.routeSelectors ?? []) {
+    const selector = routeSelectorFromRecord(raw)
+    const key = `${selector.consumer}\t${selector.selectorId}`
+    if (selectors.has(key)) throw new TypeError(`Duplicate route selector "${selector.selectorId}"`)
+    selectors.add(key)
+  }
+  if (catalog.routeSelectors !== undefined) {
+    for (const raw of catalog.routeMembership ?? []) {
+      const row = routeSelectorMembershipFromRecord(raw)
+      if (!selectors.has(`${row.consumer}\t${row.selectorId}`))
+        throw new TypeError(`Route membership "${row.selectorId}" has no registered selector`)
+    }
+  }
   for (const id of Object.keys(catalog.tags ?? {}))
     if (!copies.has(id) || !isMessageId(id))
       throw new TypeError(`Editorial tag target "${id}" is not in the catalog`)
@@ -92,6 +108,17 @@ export function sortedCatalog(catalog: LocalizationCatalog): LocalizationCatalog
         `${b.consumer}\t${b.selectorId}\t${b.alias}`,
       ),
     ),
+    routeSelectors: [...(catalog.routeSelectors ?? routeSelectorsFromMembership(catalog))].toSorted(
+      (a, b) =>
+        compareCodePoints(`${a.consumer}\t${a.selectorId}`, `${b.consumer}\t${b.selectorId}`),
+    ),
     tags: catalog.tags ?? {},
   }
+}
+
+function routeSelectorsFromMembership(catalog: LocalizationCatalog) {
+  const selectors = new Map<string, RouteSelector>()
+  for (const { consumer, selectorId } of catalog.routeMembership ?? [])
+    selectors.set(`${consumer}\t${selectorId}`, { consumer, selectorId })
+  return [...selectors.values()]
 }

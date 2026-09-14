@@ -5,8 +5,25 @@ const SEGMENT = '[A-Za-z0-9][A-Za-z0-9_-]*'
 const MESSAGE_ID = new RegExp(`^${SEGMENT}(?:\\.${SEGMENT})+$`)
 const PREFIX_SELECTOR = new RegExp(`^${SEGMENT}(?:\\.${SEGMENT})*\\.\\*$`)
 
+const HASH_MASK = (1n << 64n) - 1n
+const HASH_OFFSET = 0xcbf29ce484222325n
+const HASH_PRIME = 0x100000001b3n
+
 export function isMessageId(value: string): boolean {
   return MESSAGE_ID.test(value)
+}
+
+/** Stable generated ID for the shared web chrome selector. */
+export function chromeSelectorId(aliases: readonly string[]): string {
+  return `web.chrome.${selectorHash(aliases)}`
+}
+
+/** Stable generated ID for one route pattern and its route-local aliases. */
+export function routeSelectorId(pattern: string, aliases: readonly string[]): string {
+  if (typeof pattern !== 'string' || pattern.length === 0) {
+    throw new TypeError('Route selector pattern must be a non-empty string')
+  }
+  return `web.route.${stringHash(pattern)}.${selectorHash(aliases)}`
 }
 
 export function parseSelector(value: string): LocalizationSelector {
@@ -61,4 +78,15 @@ function uniquePrefixes(selectors: readonly PrefixSelector[]): PrefixSelector[] 
 
 function isPrefix(selector: LocalizationSelector): selector is PrefixSelector {
   return selector.kind === 'prefix'
+}
+
+function selectorHash(aliases: readonly string[]): string {
+  return stringHash([...new Set(aliases)].toSorted(compareCodePoints).join('\u0000'))
+}
+
+function stringHash(value: string): string {
+  let hash = HASH_OFFSET
+  for (const byte of new TextEncoder().encode(value))
+    hash = ((hash ^ BigInt(byte)) * HASH_PRIME) & HASH_MASK
+  return hash.toString(16).padStart(16, '0')
 }

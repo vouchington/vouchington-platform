@@ -30,6 +30,18 @@ export function resolveLocalizationBatch(
   } = {},
 ) {
   const normalized = normalizeLocalizationRequest(request, options.availableLocales, options.bounds)
+  if (hasUnknownExactSelector(database, normalized.consumer, normalized.selectors)) {
+    const batch = createLocalizationBatch(
+      database.revision,
+      options.ttlSeconds ?? DEFAULT_TTL_SECONDS,
+      {},
+    )
+    assertPayloadBytes(
+      serializeLocalizationBatch(batch),
+      options.bounds ?? DEFAULT_LOCALIZATION_BOUNDS,
+    )
+    return batch
+  }
   const rows = loadRows(database, normalized.consumer, normalized.selectors)
   const byAlias = new Map<
     string,
@@ -64,6 +76,24 @@ export function resolveLocalizationBatch(
     options.bounds ?? DEFAULT_LOCALIZATION_BOUNDS,
   )
   return batch
+}
+
+function hasUnknownExactSelector(
+  database: LocalizationDatabase,
+  consumer: string,
+  selectors: readonly LocalizationSelector[],
+): boolean {
+  const known = database.sqlite.prepare(
+    `SELECT 1 FROM route_selectors WHERE consumer = ? AND selector_id = ?
+     UNION
+     SELECT 1 FROM consumer_aliases WHERE consumer = ? AND alias = ?
+     LIMIT 1`,
+  )
+  return selectors.some(
+    (selector) =>
+      selector.kind === 'exact' &&
+      known.get(consumer, selector.id, consumer, selector.id) === undefined,
+  )
 }
 
 export function explainLocalizationPlan(

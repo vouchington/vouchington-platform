@@ -218,6 +218,9 @@ describe('sqlite compile and resolve', () => {
     const loaded = await loadCatalogDirectory(source)
     expect(loaded.messages).toEqual([])
     expect(loaded.catalog.routeMembership).toHaveLength(1)
+    expect(loaded.catalog.routeSelectors).toEqual([
+      { consumer: 'web', selectorId: 'web.route.feed.members' },
+    ])
     expect(loaded.catalog.tags).toEqual({ 'copy.save': ['chrome'] })
     const output = join(source, 'catalog.sqlite')
     compileLocalizationSqlite(loaded.catalog, output)

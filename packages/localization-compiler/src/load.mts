@@ -8,6 +8,7 @@ import {
   type LocalizationCatalog,
 } from '@vouchington/localization'
 import { sortedCatalog } from './catalog.mts'
+import { expandRouteSelectors } from './route-selectors.mts'
 
 export type EditorialTags = Readonly<Record<string, readonly string[]>>
 
@@ -23,7 +24,7 @@ export async function loadCatalogDirectory(directory: string): Promise<{
     throw new TypeError(`No catalog JSON files in "${directory}"`)
   const copies = await optionalRows(directory, 'copies.json')
   const aliases = await optionalRows(directory, 'aliases.json')
-  const routeMembership: unknown[] = (await optionalRows(directory, 'routes.json')) ?? []
+  const routeRows: unknown[] = (await optionalRows(directory, 'routes.json')) ?? []
   const translations =
     copies !== undefined && aliases !== undefined ? await translationRows(directory) : {}
   let tags: EditorialTags = {}
@@ -46,11 +47,13 @@ export async function loadCatalogDirectory(directory: string): Promise<{
       tags,
     }
   }
+  const routes = expandRouteSelectors(routeRows)
   const catalog = sortedCatalog({
     copies: copies as LocalizationCatalog['copies'],
     aliases: aliases as LocalizationCatalog['aliases'],
     translations: translations as LocalizationCatalog['translations'],
-    routeMembership: routeMembership as NonNullable<LocalizationCatalog['routeMembership']>,
+    routeMembership: routes.routeMembership,
+    routeSelectors: routes.routeSelectors,
     tags,
   })
   return { catalog, messages: [], tags }

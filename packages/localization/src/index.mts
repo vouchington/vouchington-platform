@@ -22,6 +22,8 @@ export type {
   TranslationValue,
   TranslationRow,
   RouteSelectorMembership,
+  RouteSelectorPatternMembership,
+  RouteSelector,
   LocalizationCatalog,
 } from './types.mts'
 export {
@@ -30,6 +32,8 @@ export {
   consumerAliasFromRecord,
   translationRowFromRecord,
   routeSelectorMembershipFromRecord,
+  routeSelectorPatternMembershipFromRecord,
+  routeSelectorFromRecord,
   serializeCatalogTable,
 } from './tables.mts'
 export {
@@ -57,9 +61,11 @@ export {
 export {
   dedupeSelectors,
   isMessageId,
+  chromeSelectorId,
   parseSelector,
   prefixRange,
   selectorMatches,
+  routeSelectorId,
 } from './selectors.mts'
 export { assertMessageCount, assertPayloadBytes, normalizeLocalizationRequest } from './request.mts'
 export { firstAvailableTranslation, leafForTranslation, selectedIds } from './selection.mts'

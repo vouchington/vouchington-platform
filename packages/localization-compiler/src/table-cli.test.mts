@@ -64,6 +64,29 @@ describe('catalog table CLI', () => {
     ])
   })
 
+  it('merges independent aliases for one pattern-keyed route selector', () => {
+    const root = mkdtempSync(join(tmpdir(), 'catalog-route-merge-'))
+    paths.push(root)
+    const base = join(root, 'base.json')
+    const ours = join(root, 'ours.json')
+    const theirs = join(root, 'theirs.json')
+    writeFileSync(base, '[{"consumer":"web","pattern":"/posts"}]\n')
+    writeFileSync(
+      ours,
+      '[{"consumer":"web","pattern":"/posts"},{"consumer":"web","pattern":"/posts","alias":"web.posts.title"}]\n',
+    )
+    writeFileSync(
+      theirs,
+      '[{"consumer":"web","pattern":"/posts"},{"consumer":"web","pattern":"/posts","alias":"web.posts.empty"}]\n',
+    )
+    mergeTableFiles(base, ours, theirs)
+    expect(readTable(ours)).toEqual([
+      { consumer: 'web', pattern: '/posts' },
+      { consumer: 'web', pattern: '/posts', alias: 'web.posts.empty' },
+      { consumer: 'web', pattern: '/posts', alias: 'web.posts.title' },
+    ])
+  })
+
   it('handles deletion merges and rejects malformed tables', () => {
     const root = mkdtempSync(join(tmpdir(), 'catalog-delete-'))
     paths.push(root)
