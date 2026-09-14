@@ -10,6 +10,7 @@ const catalog = {
 describe('canonical catalog validation', () => {
   it('sorts valid tables and rejects every referential contract break', () => {
     expect(sortedCatalog(catalog).copies).toEqual(catalog.copies)
+    expect(sortedCatalog({ ...catalog, routeSelectors: [] }).routeSelectors).toEqual([])
     const invalid: readonly [string, unknown][] = [
       ['Duplicate copy id', { ...catalog, copies: [...catalog.copies, ...catalog.copies] }],
       [
@@ -47,6 +48,24 @@ describe('canonical catalog validation', () => {
             { consumer: 'web', selectorId: 'web.route.x', alias: 'web.nav.save' },
             { consumer: 'web', selectorId: 'web.route.x', alias: 'web.nav.save' },
           ],
+        },
+      ],
+      [
+        'Duplicate route selector',
+        {
+          ...catalog,
+          routeSelectors: [
+            { consumer: 'web', selectorId: 'web.route.x' },
+            { consumer: 'web', selectorId: 'web.route.x' },
+          ],
+        },
+      ],
+      [
+        'has no registered selector',
+        {
+          ...catalog,
+          routeMembership: [{ consumer: 'web', selectorId: 'web.route.x', alias: 'web.nav.save' }],
+          routeSelectors: [],
         },
       ],
       ['Editorial tag target', { ...catalog, tags: { 'copy.nope': ['chrome'] } }],

@@ -9,12 +9,39 @@ import {
   openLocalizationDatabase,
   resolveLocalizationBatch,
 } from './index.mts'
+import { expandRouteSelectors } from './route-selectors.mts'
 
 const paths: string[] = []
 
 afterEach(() => paths.splice(0).forEach((path) => rmSync(path, { recursive: true, force: true })))
 
 describe('pattern route membership', () => {
+  it('deduplicates legacy selector registration and rejects malformed or duplicate rows', () => {
+    expect(
+      expandRouteSelectors([
+        { consumer: 'web', selectorId: 'web.route.legacy', alias: 'web.nav.posts' },
+        { consumer: 'web', selectorId: 'web.route.legacy', alias: 'web.nav.other' },
+      ]),
+    ).toEqual({
+      routeMembership: [
+        { consumer: 'web', selectorId: 'web.route.legacy', alias: 'web.nav.other' },
+        { consumer: 'web', selectorId: 'web.route.legacy', alias: 'web.nav.posts' },
+      ],
+      routeSelectors: [{ consumer: 'web', selectorId: 'web.route.legacy' }],
+    })
+    for (const row of [null, [], 1, {}])
+      expect(() => expandRouteSelectors([row])).toThrow(/pattern/)
+    expect(() =>
+      expandRouteSelectors([{ consumer: 'swift', pattern: '/posts', alias: 'web.nav.posts' }]),
+    ).toThrow(/only supports web/)
+    expect(() =>
+      expandRouteSelectors([
+        { consumer: 'web', pattern: '/posts', alias: 'web.nav.posts' },
+        { consumer: 'web', pattern: '/posts', alias: 'web.nav.posts' },
+      ]),
+    ).toThrow(/Duplicate route membership/)
+  })
+
   it('expands disk rows, preserves empty selectors, and fails closed only for unknown exact selectors', async () => {
     const root = mkdtempSync(join(tmpdir(), 'catalog-route-selectors-'))
     paths.push(root)
