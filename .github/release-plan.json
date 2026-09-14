@@ -1,13 +1,23 @@
 {
-  "changedManifests": ["packages/localization-compiler/package.json"],
+  "changedManifests": [
+    "packages/localization-compiler/package.json",
+    "packages/localization/package.json"
+  ],
   "releases": [
     {
-      "bump": "patch",
+      "bump": "minor",
+      "directory": "localization",
+      "fromVersion": "0.1.2",
+      "name": "@vouchington/localization",
+      "toVersion": "0.2.0"
+    },
+    {
+      "bump": "minor",
       "directory": "localization-compiler",
-      "fromVersion": "0.1.4",
+      "fromVersion": "0.1.5",
       "name": "@vouchington/localization-compiler",
-      "toVersion": "0.1.5"
+      "toVersion": "0.2.0"
     }
   ],
-  "selectedPackage": "@vouchington/localization-compiler"
+  "selectedPackage": "@vouchington/localization"
 }
