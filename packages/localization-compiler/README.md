@@ -56,5 +56,7 @@ The command leaves any other row conflicts in place. After the final resolution 
 canonical table, ready to stage. A conflicted table must not be compiled.
 
 CSV import/export is interchange only: never source of truth and never compiled directly to
-SQLite. Native resource helpers emit strings, RESX, and typed key/descriptor files from the
+SQLite. It covers only the three authoring tables (copies, aliases, translations); generated
+route membership/selectors and editorial tags are excluded, so regenerate them from
+routes.json and tags.json instead of round-tripping them through CSV. Native resource helpers emit strings, RESX, and typed key/descriptor files from the
 same resolved catalog without product path assumptions.
