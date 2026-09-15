@@ -47,6 +47,14 @@ updates:
           - oxfmt
           - oxlint
           - oxlint-tsgolint
+      aws-sdk:
+        applies-to: version-updates
+        patterns:
+          - '@aws-sdk/*'
+      aws-sdk-security:
+        applies-to: security-updates
+        patterns:
+          - '@aws-sdk/*'
   - package-ecosystem: github-actions
     directory: /
     schedule:
