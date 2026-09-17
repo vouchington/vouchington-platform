@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { runBoundedTransactionWithClient } from './bounded-transaction.mts'
+import { withNoticeEvents } from './pool-client-test-helpers.mts'
 
 const options = { connectionTimeoutMs: 100, statementTimeoutMs: 100 }
 
@@ -163,7 +164,7 @@ function createClientFixture(options?: { rollbackError?: unknown }) {
     release,
   }
   return {
-    client: client as never,
+    client: withNoticeEvents(client) as never,
     queries,
     release,
     failNextQuery(value: unknown) {

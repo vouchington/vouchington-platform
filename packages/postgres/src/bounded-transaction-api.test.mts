@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { createBoundedTransactionApi } from './bounded-transaction-api.mts'
+import { withNoticeEvents } from './pool-client-test-helpers.mts'
 import { withPsql } from './test-helpers.mts'
 import type { PsqlRuntime } from './types.mts'
 
@@ -88,7 +89,7 @@ describe('withBoundedTransaction', () => {
     }
     const runtime: PsqlRuntime = {
       pools: {
-        write: { connect: async () => client } as never,
+        write: { connect: async () => withNoticeEvents(client) } as never,
         read: { connect: vi.fn() } as never,
         advisoryLock: { connect: vi.fn() } as never,
       },
@@ -123,7 +124,7 @@ describe('withBoundedTransaction', () => {
     }
     const runtime: PsqlRuntime = {
       pools: {
-        write: { connect: async () => client } as never,
+        write: { connect: async () => withNoticeEvents(client) } as never,
         read: { connect: vi.fn() } as never,
         advisoryLock: { connect: vi.fn() } as never,
       },
@@ -154,7 +155,7 @@ describe('withBoundedTransaction', () => {
     }
     const runtime: PsqlRuntime = {
       pools: {
-        write: { connect: async () => client } as never,
+        write: { connect: async () => withNoticeEvents(client) } as never,
         read: { connect: vi.fn() } as never,
         advisoryLock: { connect: vi.fn() } as never,
       },
@@ -188,7 +189,7 @@ describe('withBoundedTransaction', () => {
     }
     const runtime: PsqlRuntime = {
       pools: {
-        write: { connect: async () => client } as never,
+        write: { connect: async () => withNoticeEvents(client) } as never,
         read: { connect: vi.fn() } as never,
         advisoryLock: { connect: vi.fn() } as never,
       },
@@ -225,7 +226,7 @@ describe('withBoundedTransaction', () => {
     }
     const runtime: PsqlRuntime = {
       pools: {
-        write: { connect: async () => client } as never,
+        write: { connect: async () => withNoticeEvents(client) } as never,
         read: { connect: vi.fn() } as never,
         advisoryLock: { connect: vi.fn() } as never,
       },
@@ -256,7 +257,7 @@ describe('withBoundedTransaction', () => {
     }
     const runtime: PsqlRuntime = {
       pools: {
-        write: { connect: async () => client } as never,
+        write: { connect: async () => withNoticeEvents(client) } as never,
         read: { connect: vi.fn() } as never,
         advisoryLock: { connect: vi.fn() } as never,
       },
@@ -283,7 +284,7 @@ describe('withBoundedTransaction', () => {
     }
     const runtime: PsqlRuntime = {
       pools: {
-        write: { connect: async () => client } as never,
+        write: { connect: async () => withNoticeEvents(client) } as never,
         read: { connect: vi.fn() } as never,
         advisoryLock: { connect: vi.fn() } as never,
       },

@@ -1,6 +1,7 @@
 import type pg from 'pg'
 
 import { executeClientQuery } from './execute-client-query.mts'
+import { beginTransactionBlock } from './transaction-begin.mts'
 import {
   recoverFailedCallerTransaction,
   setTransactionCleanupOutcome,
@@ -78,7 +79,7 @@ export async function beginTransactionSession(
       queryTimeoutMs: options.statementTimeoutMs,
     })
   try {
-    await control('BEGIN')
+    await beginTransactionBlock(client, () => control('BEGIN'))
     if (options.statementTimeoutMs !== undefined) {
       await control("SELECT set_config('statement_timeout', $1, true)", [
         `${options.statementTimeoutMs}ms`,
