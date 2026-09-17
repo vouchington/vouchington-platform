@@ -5,6 +5,7 @@ import {
   exportLocalizationCsv,
   importCatalogCsv,
   importLocalizationCsv,
+  sortedCatalog,
 } from './index.mts'
 import { csvRecord } from './csv.mts'
 import { sampleMessages } from './test-helpers.mts'
@@ -28,6 +29,35 @@ describe('csv interchange', () => {
     expect(importCatalogCsv(csv)).toMatchObject(catalog)
     expect(() => importCatalogCsv(csv, 'stale')).toThrow(/source contract hash/)
     expect(() => importCatalogCsv('bad\n')).toThrow(/header/)
+  })
+
+  it('treats catalog CSV as an authoring interchange excluding generated routes and tags', () => {
+    const catalog = {
+      copies: [{ id: 'copy.save', descriptor: null }],
+      aliases: [{ consumer: 'web' as const, alias: 'web.nav.save', copyId: 'copy.save' }],
+      translations: { 'en-US': [{ id: 'copy.save', value: 'Save' }] },
+      routeMembership: [
+        { consumer: 'web' as const, selectorId: 'web.route.home', alias: 'web.nav.save' },
+      ],
+      routeSelectors: [{ consumer: 'web' as const, selectorId: 'web.route.home' }],
+      tags: { 'copy.save': ['chrome'] },
+    }
+    const imported = importCatalogCsv(exportCatalogCsv(catalog))
+    expect(imported.copies).toEqual(catalog.copies)
+    expect(imported.aliases).toEqual(catalog.aliases)
+    expect(imported.translations).toEqual(catalog.translations)
+    expect(imported.routeMembership ?? []).toEqual([])
+    expect(imported.routeSelectors ?? []).toEqual([])
+    expect(imported.tags ?? {}).toEqual({})
+    expect(catalogRevision(imported)).toBe(
+      catalogRevision(
+        sortedCatalog({
+          copies: catalog.copies,
+          aliases: catalog.aliases,
+          translations: catalog.translations,
+        }),
+      ),
+    )
   })
 
   it('rejects malformed canonical CSV rows and mixed revisions', () => {

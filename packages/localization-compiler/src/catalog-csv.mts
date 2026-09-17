@@ -12,8 +12,22 @@ const columns = [
   'catalog_revision',
 ] as const
 
+/**
+ * Catalog CSV is an authoring interchange covering only the three source tables
+ * (copies, aliases, translations). Generated route membership/selectors and
+ * editorial tags are excluded: regenerate them from routes.json and tags.json
+ * instead of round-tripping them through CSV.
+ */
+function authoringCatalog(catalog: LocalizationCatalog): LocalizationCatalog {
+  return {
+    copies: catalog.copies,
+    aliases: catalog.aliases,
+    translations: catalog.translations,
+  }
+}
+
 export function exportCatalogCsv(catalog: LocalizationCatalog): string {
-  const source = sortedCatalog(catalog)
+  const source = sortedCatalog(authoringCatalog(catalog))
   const revision = catalogRevision(source)
   return stringifyCsvRows(
     Object.entries(source.translations).flatMap(([locale, rows]) =>
@@ -66,6 +80,8 @@ export function importCatalogCsv(csv: string, expectedRevision?: string): Locali
     aliases: [...aliases.values()] as LocalizationCatalog['aliases'],
     translations: translations as LocalizationCatalog['translations'],
   })
+  // The reconstructed catalog carries no route membership/selectors or tags, so this
+  // compares the authoring-subset revision written by exportCatalogCsv.
   if (expectedRevision !== undefined && revision !== expectedRevision)
     throw new TypeError('CSV catalog_revision does not match the source contract hash')
   if (revision !== catalogRevision(catalog))
