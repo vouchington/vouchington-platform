@@ -4,8 +4,10 @@ import { join } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { withPsql } from '../test-helpers.mts'
+import { useIsolatedDatabase } from '../test-helpers.mts'
 import { assertPredicateResolutionAvailable } from './predicate-resolution.mts'
+
+const withPsql = useIsolatedDatabase()
 
 describe('online index predicate recovery', () => {
   const dirs: string[] = []

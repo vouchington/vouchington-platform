@@ -7,7 +7,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { createPsql } from './create-psql.mts'
 import { resetPgTypeParsersForTest } from './type-parsers.mts'
-import { databaseUrl, withPsql } from './test-helpers.mts'
+import { databaseUrl, useIsolatedDatabase } from './test-helpers.mts'
+
+const withPsql = useIsolatedDatabase()
 
 describe('createPsql', () => {
   const dirs: string[] = []
