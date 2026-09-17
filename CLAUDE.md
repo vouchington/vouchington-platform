@@ -21,6 +21,9 @@ Postgres 18 is required for package tests. CI starts `postgres:18`. Locally:
 docker run --rm -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:18
 ```
 
+Test files that run migrations must use `useIsolatedDatabase()` from `packages/postgres/src/test-helpers.mts`:
+the migration advisory lock is per database, and `VITEST_MAX_WORKERS` overrides `fileParallelism: false`.
+
 ## Packages
 
 - `@vouchington/auth` — injected WebAuthn passkey ceremony primitives

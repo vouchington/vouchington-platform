@@ -4,7 +4,9 @@ import { join } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { withPsql } from '../test-helpers.mts'
+import { useIsolatedDatabase } from '../test-helpers.mts'
+
+const withPsql = useIsolatedDatabase()
 
 describe('online index recovery', () => {
   const dirs: string[] = []
@@ -27,7 +29,7 @@ describe('online index recovery', () => {
     await withPsql(async (psql) => {
       await psql.write(`/* setup */ CREATE TABLE ${table} (value integer NOT NULL)`)
       await psql.write(`/* setup */ INSERT INTO ${table} VALUES (1), (1)`)
-      await expect(psql.runMigrations(folder)).rejects.toThrow()
+      await expect(psql.runMigrations(folder)).rejects.toMatchObject({ code: '23505' })
       expect(
         (
           await psql.read<{ id: string }>('/* ledger */ SELECT id FROM migrations WHERE id = $1', [

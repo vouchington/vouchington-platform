@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { createBoundedTransactionApi } from './bounded-transaction-api.mts'
+import { withNoticeEvents } from './pool-client-test-helpers.mts'
 import type { PsqlRuntime } from './types.mts'
 
 type QueryConfig = { query_timeout?: number; text?: string }
@@ -9,6 +10,7 @@ function runtime(client: {
   query: (input: QueryConfig) => Promise<unknown>
   release: () => void
 }): PsqlRuntime {
+  withNoticeEvents(client)
   return {
     pools: {
       write: { connect: async () => client } as never,

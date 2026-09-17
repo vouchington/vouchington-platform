@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { createBoundedTransactionApi } from './bounded-transaction-api.mts'
+import { withNoticeEvents } from './pool-client-test-helpers.mts'
 import { createTransactionApi } from './transactions.mts'
 import type { PsqlRuntime } from './types.mts'
 
@@ -8,6 +9,7 @@ function runtime(client: {
   query: (input: { text?: string } | string) => Promise<unknown>
   release: () => void
 }): PsqlRuntime {
+  withNoticeEvents(client)
   return {
     pools: {
       write: { connect: async () => client } as never,

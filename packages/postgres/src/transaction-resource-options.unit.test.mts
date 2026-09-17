@@ -2,6 +2,7 @@ import type pg from 'pg'
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import type { Psql } from './create-psql-types.mts'
+import { withNoticeEvents } from './pool-client-test-helpers.mts'
 import { createTransactionApi } from './transactions.mts'
 import type { BeginTransactionOptions, PsqlRuntime } from './types.mts'
 
@@ -11,6 +12,7 @@ type Client = {
 }
 
 function runtime(client: Client, overrides: Partial<PsqlRuntime> = {}): PsqlRuntime {
+  withNoticeEvents(client)
   return {
     pools: {
       write: { connect: async () => client } as never,

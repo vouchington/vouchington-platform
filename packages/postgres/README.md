@@ -43,6 +43,12 @@ caller-managed `pg.PoolClient`, pass `{ client }`; the resource settles the tran
 releases the caller's client. Active caller-managed clients are rejected rather than nested. Pass a
 transaction's callable query to nested work.
 
+A pooled connection released while its transaction was still open is never reused silently. When an
+owned transaction's `BEGIN` reports that a transaction is already in progress (SQLSTATE `25001`),
+the transaction is rejected and the connection is destroyed, which rolls back the abandoned work.
+This check adds no round trip, but it relies on the WARNING reaching the client, so keep
+`client_min_messages` at `warning` or lower.
+
 If a caller-managed resource's `commit()` fails, disposal makes one compensating `ROLLBACK` attempt
 without releasing the client and preserves the commit error. Explicit resource rollback failures,
 including async disposal, surface directly to the caller; callback transaction cleanup failures are
