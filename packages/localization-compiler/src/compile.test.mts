@@ -30,12 +30,13 @@ describe('sqlite compile and resolve', () => {
       sql: string,
     ) => void
     const commitFailure = new Error('commit failed')
-    const exec = vi
-      .spyOn(DatabaseSync.prototype, 'exec')
-      .mockImplementation(function (this: DatabaseSync, sql) {
-        if (sql === 'COMMIT') throw commitFailure
-        return Reflect.apply(originalExec, this, [sql])
-      })
+    const exec = vi.spyOn(DatabaseSync.prototype, 'exec').mockImplementation(function (
+      this: DatabaseSync,
+      sql,
+    ) {
+      if (sql === 'COMMIT') throw commitFailure
+      return Reflect.apply(originalExec, this, [sql])
+    })
     try {
       expect(() => compileLocalizationSqlite(sampleMessages(), output)).toThrow(commitFailure)
       const statements = exec.mock.calls.map(([sql]) => sql)
