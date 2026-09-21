@@ -1,13 +1,20 @@
 {
-  "changedManifests": ["packages/localization-compiler/package.json"],
+  "changedManifests": ["packages/rss-crawler/package.json", "packages/rss-parser/package.json"],
   "releases": [
     {
-      "bump": "patch",
-      "directory": "localization-compiler",
-      "fromVersion": "0.2.0",
-      "name": "@vouchington/localization-compiler",
-      "toVersion": "0.2.1"
+      "bump": "minor",
+      "directory": "rss-parser",
+      "fromVersion": "0.0.1",
+      "name": "@vouchington/rss-parser",
+      "toVersion": "0.1.0"
+    },
+    {
+      "bump": "minor",
+      "directory": "rss-crawler",
+      "fromVersion": "0.0.2",
+      "name": "@vouchington/rss-crawler",
+      "toVersion": "0.1.0"
     }
   ],
-  "selectedPackage": "@vouchington/localization-compiler"
+  "selectedPackage": "@vouchington/rss-parser"
 }
