@@ -2,6 +2,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
+import pg from 'pg'
 import sql from 'sql-template-strings'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -163,6 +164,46 @@ describe('createPsql', () => {
     } finally {
       await psql.close()
     }
+  })
+
+  it('reports idle connection termination from every pool and replaces each connection', async () => {
+    const errors: Error[] = []
+    await withPsql(
+      async (psql) => {
+        const admin = new pg.Client({ connectionString: databaseUrl() })
+        await admin.connect()
+        try {
+          for (const [name, pool] of [
+            ['write', psql.writePool],
+            ['read', psql.readPool],
+            ['advisory lock', psql.advisoryLockPool],
+          ] as const) {
+            const client = await pool.connect()
+            const result = await client.query<{ pid: number }>('SELECT pg_backend_pid() AS pid')
+            const pid = result.rows[0]?.pid
+            expect(pid).toBeTypeOf('number')
+            client.release()
+
+            const priorErrorCount = errors.length
+            await admin.query('SELECT pg_terminate_backend($1)', [pid])
+            await vi.waitFor(() => {
+              expect(errors.slice(priorErrorCount)).toContainEqual(
+                expect.objectContaining({ code: '57P01' }),
+              )
+            })
+
+            await expect(
+              pool.query(`SELECT 1 AS ${name.replaceAll(' ', '_')}`),
+            ).resolves.toMatchObject({
+              rows: [{ [name.replaceAll(' ', '_')]: 1 }],
+            })
+          }
+        } finally {
+          await admin.end()
+        }
+      },
+      { errorHandler: (error) => errors.push(error) },
+    )
   })
 
   it('uses the default error handler when vector registration fails on a replica', async () => {

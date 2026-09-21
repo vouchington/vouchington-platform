@@ -63,6 +63,10 @@ with `client.release(true)` before it can return to a pool.
 - `readPool` — replica-safe reads when `readConnectionString` is set
 - `advisoryLockPool` — session advisory locks that must not consume `writePool`
 
+When PostgreSQL closes an idle connection, each pool reports the error to the configured
+`errorHandler`; `pg` removes the connection and opens a replacement on the next query. Failures on
+an active query still reject that query.
+
 Production defaults: `statement_timeout = 30s`, `idle_in_transaction_session_timeout = 10s`,
 `jit=off`. Pool size comes from `PG_READ_POOL_MAX`, `PG_WRITE_POOL_MAX`, and
 `PG_ADVISORY_LOCK_POOL_MAX` (`PG_POOL_MAX` is the compatibility fallback).
