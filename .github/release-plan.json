@@ -1,20 +1,13 @@
 {
-  "changedManifests": ["packages/rss-crawler/package.json", "packages/rss-parser/package.json"],
+  "changedManifests": ["packages/postgres/package.json"],
   "releases": [
     {
-      "bump": "minor",
-      "directory": "rss-parser",
-      "fromVersion": "0.0.1",
-      "name": "@vouchington/rss-parser",
-      "toVersion": "0.1.0"
-    },
-    {
-      "bump": "minor",
-      "directory": "rss-crawler",
-      "fromVersion": "0.0.2",
-      "name": "@vouchington/rss-crawler",
-      "toVersion": "0.1.0"
+      "bump": "patch",
+      "directory": "postgres",
+      "fromVersion": "0.0.8",
+      "name": "@vouchington/postgres",
+      "toVersion": "0.0.9"
     }
   ],
-  "selectedPackage": "@vouchington/rss-parser"
+  "selectedPackage": "@vouchington/postgres"
 }
