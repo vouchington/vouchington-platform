@@ -29,7 +29,7 @@
     "actionlint": "github-actionlint"
   },
   "devDependencies": {
-    "@types/node": "^26.6.1",
+    "@types/node": "^26.6.2",
     "@types/semver": "^7.8.0",
     "@vitest/coverage-v8": "^5.0.1",
     "dependency-cruiser": "^18.3.1",
