@@ -40,6 +40,9 @@ export async function createPsql(options: CreatePsqlOptions): Promise<Psql> {
     connectionString: readConnectionString,
     max: poolConfiguration.readMax,
   })
+  for (const pool of [writePool, readPool, advisoryLockPool]) {
+    pool.on('error', errorHandler)
+  }
 
   const runtime = {
     pools: { write: writePool, read: readPool, advisoryLock: advisoryLockPool },
