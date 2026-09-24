@@ -22,6 +22,10 @@ vouchington-localization format --source localization/catalog
 vouchington-localization format --check --source localization/catalog
 ```
 
+`remove` throws the exported `CatalogRowNotFoundError` (a `TypeError` with
+`code: 'ERR_CATALOG_ROW_NOT_FOUND'`, `id`, and `consumer`) when no row matches. Callers that want
+idempotent removes should catch it by class or `code`, never by message text.
+
 `format --check` reads the same managed catalog tables as `format`, validates the complete
 catalog, and exits nonzero when a table needs canonicalization or violates catalog semantics. It
 never writes source files, so use it in CI; use `format` to rewrite rows. `tags.json` remains

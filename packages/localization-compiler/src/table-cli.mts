@@ -5,6 +5,7 @@ import {
   canonicalJson,
   serializeCatalogTable,
 } from '@vouchington/localization'
+import { CatalogRowNotFoundError } from './catalog-row-not-found.mts'
 import { parseTableConflicts, serializeTableConflicts, tableKey } from './table-conflict.mts'
 
 const CONFLICT = Symbol('conflict')
@@ -36,7 +37,8 @@ export function removeTable(path: string, id: string, consumer: string | undefin
         (row.alias === id && (consumer === undefined || row.consumer === consumer))
       ),
   )
-  if (next.length === rows.length) throw new TypeError(`Catalog table does not contain "${id}"`)
+  if (next.length === rows.length)
+    throw new CatalogRowNotFoundError(id, consumer, `Catalog table does not contain "${id}"`)
   writeFileSync(path, serializeCatalogTable(next))
   return undefined
 }

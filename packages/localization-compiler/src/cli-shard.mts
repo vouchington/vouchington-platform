@@ -2,6 +2,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import {
   CatalogMergeConflict,
+  catalogLineId,
+  catalogShardLines,
   mergeCatalogShards,
   removeCatalogLine,
   upsertCatalogLine,
@@ -14,6 +16,7 @@ import {
   upsertTable,
 } from './table-cli.mts'
 import { canonicalCatalogFile, catalogFiles } from './catalog-format.mts'
+import { CatalogRowNotFoundError } from './catalog-row-not-found.mts'
 
 export function runShardCli(command: string, args: readonly string[]): string | undefined {
   if (command === 'upsert') return upsert(args)
@@ -46,7 +49,11 @@ function remove(args: readonly string[]): undefined {
   const path = requiredPath(args, '--file')
   if (isTablePath(path))
     return removeTable(path, required(args, '--id'), optional(args, '--consumer'))
-  writeFileSync(path, removeCatalogLine(readFileSync(path, 'utf8'), required(args, '--id')))
+  const id = required(args, '--id')
+  const text = readFileSync(path, 'utf8')
+  if (!catalogShardLines(text).some((line) => catalogLineId(line) === id))
+    throw new CatalogRowNotFoundError(id, undefined, `Catalog does not contain "${id}"`)
+  writeFileSync(path, removeCatalogLine(text, id))
 }
 function merge(args: readonly string[]): undefined {
   const [ancestor, ours, theirs] = args

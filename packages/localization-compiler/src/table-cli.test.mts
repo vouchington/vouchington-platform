@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { CatalogMergeConflict } from '@vouchington/localization'
+import { CatalogRowNotFoundError } from './index.mts'
 import {
   isTablePath,
   mergeTableFiles,
@@ -27,7 +28,17 @@ describe('catalog table CLI', () => {
     ])
     removeTable(aliases, 'web.nav.save', 'web')
     expect(readTable(aliases)).toEqual([])
-    expect(() => removeTable(aliases, 'missing.id', 'web')).toThrow(/does not contain/)
+    expect(() => removeTable(aliases, 'missing.id', 'web')).toThrow(
+      expect.objectContaining({
+        name: 'CatalogRowNotFoundError',
+        code: 'ERR_CATALOG_ROW_NOT_FOUND',
+        id: 'missing.id',
+        consumer: 'web',
+        message: 'Catalog table does not contain "missing.id"',
+      }),
+    )
+    expect(() => removeTable(aliases, 'missing.id', undefined)).toThrow(CatalogRowNotFoundError)
+    expect(() => removeTable(aliases, 'missing.id', undefined)).toThrow(TypeError)
     expect(isTablePath(join(root, 'copies.json'))).toBe(true)
     expect(isTablePath(join(root, 'translations', 'es.json'))).toBe(true)
     expect(isTablePath('catalog\\translations\\es.json')).toBe(true)
