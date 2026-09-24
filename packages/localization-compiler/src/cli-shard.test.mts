@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { CatalogMergeConflict, serializeCatalogShard } from '@vouchington/localization'
-import { runLocalizationCli } from './index.mts'
+import { CatalogRowNotFoundError, runLocalizationCli } from './index.mts'
 import { runShardCli } from './cli-shard.mts'
 import { sampleMessages } from './test-helpers.mts'
 
@@ -41,6 +41,20 @@ describe('localization shard CLI', () => {
     expect(readFileSync(tags, 'utf8')).toBe('{"nav.home":["chrome"]}\n')
     await runLocalizationCli(['remove', '--file', file, '--id', 'nav.home'])
     expect(readFileSync(file, 'utf8')).toBe('[]\n')
+    await expect(
+      runLocalizationCli(['remove', '--file', file, '--id', 'nav.home']),
+    ).rejects.toThrow(
+      expect.objectContaining({
+        name: 'CatalogRowNotFoundError',
+        code: 'ERR_CATALOG_ROW_NOT_FOUND',
+        id: 'nav.home',
+        consumer: undefined,
+        message: 'Catalog does not contain "nav.home"',
+      }),
+    )
+    await expect(
+      runLocalizationCli(['remove', '--file', file, '--id', 'nav.home']),
+    ).rejects.toBeInstanceOf(CatalogRowNotFoundError)
     const ancestor = join(root, 'base.json')
     const ours = join(root, 'ours.json')
     const theirs = join(root, 'theirs.json')
