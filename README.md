@@ -40,6 +40,9 @@ SKU names.
 
 ## Commands
 
+pnpm is not pinned: any pnpm 12 works locally. CI installs the newest pnpm 12 that is at least a
+day old.
+
 ```sh
 pnpm install
 pnpm run lint
