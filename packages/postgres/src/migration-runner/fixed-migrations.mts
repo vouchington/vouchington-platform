@@ -22,11 +22,9 @@ export function createMigrationRunner(
 ) {
   return async function runMigrations(
     migrationsFolder: string,
-    loggerOrOptions: MigrationLogger | RunMigrationsOptions = silentMigrationLogger,
+    options: RunMigrationsOptions = {},
   ): Promise<void> {
     await loadSqlParserModule()
-    const options: RunMigrationsOptions =
-      'log' in loggerOrOptions ? { logger: loggerOrOptions } : loggerOrOptions
     const logger = options.logger ?? silentMigrationLogger
     const debugMigrations = runtime.env.DEBUG_MIGRATIONS === 'true'
     const isTest = runtime.env.NODE_ENV === 'test'
@@ -51,12 +49,6 @@ export function createMigrationRunner(
         if (ledger.has(migration)) {
           const recorded = ledger.get(migration) ?? null
           assertMigrationChecksumMatches(migration, recorded, checksum)
-          if (recorded === null) {
-            await client.query(
-              '/* runMigrations */ UPDATE migrations SET checksum = $1 WHERE id = $2',
-              [checksum, migration],
-            )
-          }
           if (debugMigrations && !isTest) {
             logger.log('DEBUG: Skipping already-run migration: %s', migration)
           }
@@ -96,10 +88,9 @@ function buildMigrationSetupCommand(extensions: readonly string[]): string {
 CREATE TABLE IF NOT EXISTS migrations (
   id TEXT PRIMARY KEY,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  checksum TEXT,
+  checksum TEXT NOT NULL,
   CHECK (char_length(id) <= 255),
   CHECK (id = TRIM(id)),
   CHECK (id = LOWER(id))
-);
-ALTER TABLE migrations ADD COLUMN IF NOT EXISTS checksum TEXT;`
+);`
 }

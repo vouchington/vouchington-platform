@@ -3,14 +3,17 @@ import { describe, expect, it } from 'vitest'
 import {
   assertMigrationChecksumMatches,
   computeMigrationChecksum,
+  MigrationChecksumMissingError,
   MigrationChecksumMismatchError,
 } from './migration-checksum.mts'
 
 describe('migration checksums', () => {
-  it('hashes SQL and allows a one-time null ledger value', () => {
+  it('hashes SQL and requires a recorded checksum', () => {
     const checksum = computeMigrationChecksum('SELECT 1;')
     expect(checksum).toHaveLength(64)
-    expect(() => assertMigrationChecksumMatches('001.sql', null, checksum)).not.toThrow()
+    expect(() => assertMigrationChecksumMatches('001.sql', null, checksum)).toThrow(
+      MigrationChecksumMissingError,
+    )
     expect(() => assertMigrationChecksumMatches('001.sql', checksum, checksum)).not.toThrow()
   })
 

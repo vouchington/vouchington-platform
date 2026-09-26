@@ -14,7 +14,7 @@ describe('runMigrations', () => {
     await Promise.all(dirs.splice(0).map((dir) => rm(dir, { force: true, recursive: true })))
   })
 
-  it('skips applied files, backfills null checksums, and logs failures', async () => {
+  it('skips checksummed files and logs failures', async () => {
     const folder = await mkdtemp(join(tmpdir(), 'vouchington-pg-mig-'))
     dirs.push(folder)
     const table = `mig_${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`
@@ -33,10 +33,7 @@ describe('runMigrations', () => {
 
     await withPsql(
       async (psql) => {
-        await psql.runMigrations(folder, logger)
-        await psql.write('/* nullChecksum */ UPDATE migrations SET checksum = NULL WHERE id = $1', [
-          file,
-        ])
+        await psql.runMigrations(folder, { logger })
         await psql.runMigrations(folder, {
           logger,
           lockTimeoutMs: 5_000,
@@ -54,14 +51,43 @@ describe('runMigrations', () => {
     expect(logs.some((line) => line.includes('DEBUG'))).toBe(true)
 
     await writeFile(join(folder, file), 'SELECT 1;')
-    await expect(withPsql(async (psql) => psql.runMigrations(folder, logger))).rejects.toThrow(
+    await expect(withPsql(async (psql) => psql.runMigrations(folder, { logger }))).rejects.toThrow(
       'already applied',
     )
 
     await writeFile(join(folder, file), createSql)
     await writeFile(join(folder, `${table}-fail.sql`), 'SELECT * FROM definitely_missing_relation;')
-    await expect(withPsql(async (psql) => psql.runMigrations(folder, logger))).rejects.toThrow()
+    await expect(withPsql(async (psql) => psql.runMigrations(folder, { logger }))).rejects.toThrow()
     expect(logs.some((line) => line.includes('failed'))).toBe(true)
+  })
+
+  it('rejects a legacy null checksum without changing the ledger', async () => {
+    const folder = await mkdtemp(join(tmpdir(), 'vouchington-pg-null-checksum-'))
+    dirs.push(folder)
+    const file = '001.sql'
+    await writeFile(join(folder, file), 'SELECT 1;')
+
+    await withPsql(async (psql) => {
+      await psql.runMigrations(folder)
+      const { rows: columns } = await psql.read<{ is_nullable: string }>(
+        `/* checksumColumn */ SELECT is_nullable FROM information_schema.columns
+         WHERE table_name = 'migrations' AND column_name = 'checksum'`,
+      )
+      expect(columns[0]?.is_nullable).toBe('NO')
+
+      await psql.write(
+        '/* legacyLedger */ ALTER TABLE migrations ALTER COLUMN checksum DROP NOT NULL',
+      )
+      await psql.write('/* legacyLedger */ UPDATE migrations SET checksum = NULL WHERE id = $1', [
+        file,
+      ])
+      await expect(psql.runMigrations(folder)).rejects.toThrow('no recorded checksum')
+      const { rows } = await psql.read<{ checksum: string | null }>(
+        '/* legacyLedger */ SELECT checksum FROM migrations WHERE id = $1',
+        [file],
+      )
+      expect(rows[0]?.checksum).toBeNull()
+    })
   })
 
   it('runs an empty folder with a custom extension list', async () => {
