@@ -87,6 +87,36 @@ describe('runMigrations', () => {
         [file],
       )
       expect(rows[0]?.checksum).toBeNull()
+      await psql.write('/* legacyLedger */ DELETE FROM migrations WHERE id = $1', [file])
+    })
+  })
+
+  it('rejects a null ledger checksum when its file or folder is missing', async () => {
+    const folder = await mkdtemp(join(tmpdir(), 'vouchington-pg-missing-checksum-file-'))
+    dirs.push(folder)
+    const file = '001.sql'
+    await writeFile(join(folder, file), 'SELECT 1;')
+
+    await withPsql(async (psql) => {
+      await psql.runMigrations(folder)
+      await psql.write(
+        '/* legacyLedger */ ALTER TABLE migrations ALTER COLUMN checksum DROP NOT NULL',
+      )
+      await psql.write('/* legacyLedger */ UPDATE migrations SET checksum = NULL WHERE id = $1', [
+        file,
+      ])
+      await rm(join(folder, file))
+      await writeFile(join(folder, '002.sql'), 'SELECT 2;')
+
+      await expect(psql.runMigrations(folder)).rejects.toThrow('no recorded checksum')
+      const { rows } = await psql.read<{ id: string; checksum: string | null }>(
+        '/* legacyLedger */ SELECT id, checksum FROM migrations WHERE id IN ($1, $2) ORDER BY id',
+        [file, '002.sql'],
+      )
+      expect(rows).toEqual([{ id: file, checksum: null }])
+
+      await expect(psql.runMigrations(`${folder}-missing`)).rejects.toThrow('no recorded checksum')
+      await psql.write('/* legacyLedger */ DELETE FROM migrations WHERE id = $1', [file])
     })
   })
 

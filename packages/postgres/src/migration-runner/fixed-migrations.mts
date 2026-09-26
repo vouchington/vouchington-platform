@@ -2,7 +2,11 @@ import type pg from 'pg'
 
 import type { PsqlRuntime } from '../types.mts'
 import { getFilesFromFolder, readMigrationFile } from './files.mts'
-import { assertMigrationChecksumMatches, computeMigrationChecksum } from './migration-checksum.mts'
+import {
+  assertMigrationChecksumMatches,
+  computeMigrationChecksum,
+  MigrationChecksumMissingError,
+} from './migration-checksum.mts'
 import { silentMigrationLogger, type MigrationLogger } from './migration-logger.mts'
 import { prepareMigration } from './migration-mode.mts'
 import { resolveMigrationTimeouts, type MigrationTimeouts } from './migration-options.mts'
@@ -40,7 +44,9 @@ export function createMigrationRunner(
       const { rows: existingMigrations } = await client.query<{
         id: string
         checksum: string | null
-      }>('/* runMigrations */ SELECT id, checksum FROM migrations')
+      }>('/* runMigrations */ SELECT id, checksum FROM migrations ORDER BY id')
+      const missingChecksum = existingMigrations.find((row) => row.checksum === null)
+      if (missingChecksum) throw new MigrationChecksumMissingError(missingChecksum.id)
       const ledger = new Map(existingMigrations.map((row) => [row.id, row.checksum]))
 
       for (const migration of migrations) {
