@@ -45,15 +45,17 @@ export function createMigrationRunner(
         id: string
         checksum: string | null
       }>('/* runMigrations */ SELECT id, checksum FROM migrations ORDER BY id')
-      const missingChecksum = existingMigrations.find((row) => row.checksum === null)
-      if (missingChecksum) throw new MigrationChecksumMissingError(missingChecksum.id)
-      const ledger = new Map(existingMigrations.map((row) => [row.id, row.checksum]))
+      const ledger = new Map<string, string>()
+      for (const row of existingMigrations) {
+        if (row.checksum === null) throw new MigrationChecksumMissingError(row.id)
+        ledger.set(row.id, row.checksum)
+      }
 
       for (const migration of migrations) {
         const sql = await readMigrationFile(migrationsFolder, migration)
         const checksum = computeMigrationChecksum(sql)
-        if (ledger.has(migration)) {
-          const recorded = ledger.get(migration) ?? null
+        const recorded = ledger.get(migration)
+        if (recorded !== undefined) {
           assertMigrationChecksumMatches(migration, recorded, checksum)
           if (debugMigrations && !isTest) {
             logger.log('DEBUG: Skipping already-run migration: %s', migration)
