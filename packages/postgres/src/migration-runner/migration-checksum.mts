@@ -1,5 +1,17 @@
 import { createHash } from 'node:crypto'
 
+export class MigrationChecksumMissingError extends Error {
+  readonly migration: string
+
+  constructor(migration: string) {
+    super(
+      `Migration "${migration}" was already applied but has no recorded checksum. Its file integrity cannot be verified.`,
+    )
+    this.name = 'MigrationChecksumMissingError'
+    this.migration = migration
+  }
+}
+
 export class MigrationChecksumMismatchError extends Error {
   readonly migration: string
   readonly recordedChecksum: string
@@ -27,7 +39,7 @@ export function assertMigrationChecksumMatches(
   recordedChecksum: string | null,
   fileChecksum: string,
 ): void {
-  if (recordedChecksum === null) return
+  if (recordedChecksum === null) throw new MigrationChecksumMissingError(migration)
   if (recordedChecksum === fileChecksum) return
   throw new MigrationChecksumMismatchError(migration, recordedChecksum, fileChecksum)
 }

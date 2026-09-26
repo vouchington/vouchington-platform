@@ -2,7 +2,11 @@ import type pg from 'pg'
 
 import type { PsqlRuntime } from '../types.mts'
 import { getFilesFromFolder, readMigrationFile } from './files.mts'
-import { assertMigrationChecksumMatches, computeMigrationChecksum } from './migration-checksum.mts'
+import {
+  assertMigrationChecksumMatches,
+  computeMigrationChecksum,
+  MigrationChecksumMissingError,
+} from './migration-checksum.mts'
 import { silentMigrationLogger, type MigrationLogger } from './migration-logger.mts'
 import { prepareMigration } from './migration-mode.mts'
 import { resolveMigrationTimeouts, type MigrationTimeouts } from './migration-options.mts'
@@ -22,11 +26,9 @@ export function createMigrationRunner(
 ) {
   return async function runMigrations(
     migrationsFolder: string,
-    loggerOrOptions: MigrationLogger | RunMigrationsOptions = silentMigrationLogger,
+    options: RunMigrationsOptions = {},
   ): Promise<void> {
     await loadSqlParserModule()
-    const options: RunMigrationsOptions =
-      'log' in loggerOrOptions ? { logger: loggerOrOptions } : loggerOrOptions
     const logger = options.logger ?? silentMigrationLogger
     const debugMigrations = runtime.env.DEBUG_MIGRATIONS === 'true'
     const isTest = runtime.env.NODE_ENV === 'test'
@@ -42,21 +44,19 @@ export function createMigrationRunner(
       const { rows: existingMigrations } = await client.query<{
         id: string
         checksum: string | null
-      }>('/* runMigrations */ SELECT id, checksum FROM migrations')
-      const ledger = new Map(existingMigrations.map((row) => [row.id, row.checksum]))
+      }>('/* runMigrations */ SELECT id, checksum FROM migrations ORDER BY id')
+      const ledger = new Map<string, string>()
+      for (const row of existingMigrations) {
+        if (row.checksum === null) throw new MigrationChecksumMissingError(row.id)
+        ledger.set(row.id, row.checksum)
+      }
 
       for (const migration of migrations) {
         const sql = await readMigrationFile(migrationsFolder, migration)
         const checksum = computeMigrationChecksum(sql)
-        if (ledger.has(migration)) {
-          const recorded = ledger.get(migration) ?? null
+        const recorded = ledger.get(migration)
+        if (recorded !== undefined) {
           assertMigrationChecksumMatches(migration, recorded, checksum)
-          if (recorded === null) {
-            await client.query(
-              '/* runMigrations */ UPDATE migrations SET checksum = $1 WHERE id = $2',
-              [checksum, migration],
-            )
-          }
           if (debugMigrations && !isTest) {
             logger.log('DEBUG: Skipping already-run migration: %s', migration)
           }
@@ -96,10 +96,9 @@ function buildMigrationSetupCommand(extensions: readonly string[]): string {
 CREATE TABLE IF NOT EXISTS migrations (
   id TEXT PRIMARY KEY,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  checksum TEXT,
+  checksum TEXT NOT NULL,
   CHECK (char_length(id) <= 255),
   CHECK (id = TRIM(id)),
   CHECK (id = LOWER(id))
-);
-ALTER TABLE migrations ADD COLUMN IF NOT EXISTS checksum TEXT;`
+);`
 }

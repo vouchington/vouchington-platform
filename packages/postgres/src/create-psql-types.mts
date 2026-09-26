@@ -8,7 +8,6 @@ import type {
   CursorQueryValues,
 } from './cursor-types.mts'
 import type { RunMigrationsOptions } from './migration-runner/fixed-migrations.mts'
-import type { MigrationLogger } from './migration-runner/migration-logger.mts'
 import type { MigrationTimeouts } from './migration-runner/migration-options.mts'
 import type { PipelineBatchOptions } from './pipeline-batch.mts'
 import type {
@@ -69,10 +68,7 @@ export interface Psql {
     valuesOrOptions?: CursorQueryValues | CursorHandlerOptions<Row>,
     options?: CursorHandlerOptions<Row>,
   ) => Promise<void>
-  runMigrations: (
-    folder: string,
-    loggerOrOptions?: RunMigrationsOptions | MigrationLogger,
-  ) => Promise<void>
+  runMigrations: (folder: string, options?: RunMigrationsOptions) => Promise<void>
   withMigrationSession: <Result>(
     handler: (client: pg.PoolClient) => Promise<Result>,
     timeouts?: Partial<MigrationTimeouts>,
