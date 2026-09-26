@@ -11,10 +11,13 @@ import { buildSignatureHeaders, verifySignature } from '@vouchington/utils/http-
 import { bestAcceptLanguageMatch } from '@vouchington/utils/language-tags'
 import { createMessageTranslator } from '@vouchington/utils/message-catalog'
 import { createReportInputParser } from '@vouchington/utils/moderation'
+import { cacheTag, decodeCacheTagPathSegment } from '@vouchington/utils/cache-tags'
 ```
 
 ## Subpaths
 
+- `cache-tags`: canonical printable-ASCII wire encoding, one-segment URL decoding, validation,
+  and escape-boundary truncation. Applications own family names, route recognition, and purge policy.
 - `token-secrets`: Node-only (`node:crypto`) purpose-bound HMAC and AES-256-GCM encryption.
   `createTokenSecrets({ hashSecret, encryptionKeys })` throws for invalid keys or ciphertext.
 - `deploy-environment`: `getDeployEnvironment(source)` classifies explicit environment inputs without

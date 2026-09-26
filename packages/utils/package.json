@@ -20,6 +20,11 @@
   ],
   "type": "module",
   "exports": {
+    "./cache-tags": {
+      "types": "./dist/cache-tags.d.mts",
+      "import": "./dist/cache-tags.mjs",
+      "default": "./dist/cache-tags.mjs"
+    },
     "./token-secrets": {
       "types": "./dist/token-secrets.d.mts",
       "import": "./dist/token-secrets.mjs",
