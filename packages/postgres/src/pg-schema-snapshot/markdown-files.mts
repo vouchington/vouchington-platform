@@ -18,8 +18,7 @@ async function collectMarkdownFiles(directory: string): Promise<string[]> {
   return paths.flat()
 }
 
-export async function markdownFilesOnDisk(root: string): Promise<string[]> {
-  const markdownRoot = join(root, 'markdown')
+export async function markdownFilesOnDisk(markdownRoot: string): Promise<string[]> {
   const markdownRootStats = await lstatOrNull(markdownRoot)
   if (markdownRootStats === null) return []
   if (markdownRootStats.isSymbolicLink() || !markdownRootStats.isDirectory()) {

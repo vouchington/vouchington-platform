@@ -130,6 +130,17 @@ const snapshot = buildSchemaSnapshot(catalog, {
 })
 ```
 
+`writeSchemaSnapshot()` and `generateSchemaSnapshot()` keep JSON at `root/schema.json` and
+Markdown at `root/markdown` by default. Pass `markdownRoot` to place the Markdown tree in a separate,
+dedicated directory; relative roots resolve from the working directory, and Markdown map paths
+remain relative to the chosen directory. Both the JSON
+root and an explicitly supplied Markdown root must already exist. Generated descendants are
+created as needed, and symlinked roots, components, and output files are rejected.
+
+Check mode validates both outputs without writing. Update mode removes orphaned files only from
+the selected Markdown tree, plus the legacy `root/schema.md`; it does not migrate or clean a former
+Markdown location. The application owns moving previously generated files when changing roots.
+
 ## Conventions
 
 - UUIDv7 primary keys

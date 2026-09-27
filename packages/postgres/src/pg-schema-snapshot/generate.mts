@@ -3,6 +3,7 @@ import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { buildSchemaSnapshot } from './build-snapshot.mts'
 import { readSchemaCatalog } from './catalog-queries.mts'
 import {
+  assertSafeDirectory,
   assertSafeExistingFilePath,
   ensureSafeParentDirectory,
   lstatOrNull,
@@ -11,6 +12,8 @@ import {
 import { markdownFilesOnDisk } from './markdown-files.mts'
 import { renderSchemaMarkdown } from './render-markdown.mts'
 import type { CatalogQuery, SchemaGrowthMaps, SchemaSnapshot } from './types.mts'
+
+type SnapshotFile = { root: string; content: string }
 
 export function stableStringify(value: unknown): string {
   return `${JSON.stringify(sortKeys(value), null, 2)}\n`
@@ -52,27 +55,28 @@ async function schemaSnapshotFiles(
   snapshot: SchemaSnapshot,
   markdown: Map<string, string>,
   root: string,
+  markdownRoot: string | undefined,
   format: (path: string, raw: string) => Promise<string>,
   stringify: (value: unknown) => string,
-): Promise<Map<string, string>> {
-  const jsonPath = join(root, 'schema.json')
-  const markdownRoot = join(root, 'markdown')
+): Promise<Map<string, SnapshotFile>> {
+  const jsonPath = resolve(root, 'schema.json')
+  const markdownDirectory = markdownRoot ?? join(root, 'markdown')
   const [json, ...formattedMarkdown] = await Promise.all([
     format(jsonPath, stringify(snapshot)),
     ...[...markdown].map(async ([path, content]) => {
-      const outputPath = assertSafeMarkdownPath(markdownRoot, path)
-      return [outputPath, await format(outputPath, content)] as const
+      const outputPath = assertSafeMarkdownPath(markdownDirectory, path)
+      return [
+        outputPath,
+        { root: markdownRoot ?? root, content: await format(outputPath, content) },
+      ] as const
     }),
   ])
-  return new Map([[jsonPath, json], ...formattedMarkdown])
+  return new Map([[jsonPath, { root, content: json }], ...formattedMarkdown])
 }
 
-async function staleSchemaSnapshotFiles(
-  files: Map<string, string>,
-  root: string,
-): Promise<string[]> {
+async function staleSchemaSnapshotFiles(files: Map<string, SnapshotFile>): Promise<string[]> {
   const results = await Promise.all(
-    [...files].map(async ([path, content]) => {
+    [...files].map(async ([path, { root, content }]) => {
       await assertSafeExistingFilePath(root, path)
       const actual = await readFile(path, 'utf8').catch((err: NodeJS.ErrnoException) =>
         /* v8 ignore next -- non-ENOENT read failures are host-specific */
@@ -84,9 +88,15 @@ async function staleSchemaSnapshotFiles(
   return results.filter((path): path is string => path !== null)
 }
 
-async function extraMarkdownPaths(files: Map<string, string>, root: string): Promise<string[]> {
+async function extraMarkdownPaths(
+  files: Map<string, SnapshotFile>,
+  root: string,
+  markdownRoot: string | undefined,
+): Promise<string[]> {
   const expected = new Set(files.keys())
-  const orphaned = (await markdownFilesOnDisk(root)).filter((path) => !expected.has(path))
+  const orphaned = (
+    await markdownFilesOnDisk(resolve(markdownRoot ?? join(root, 'markdown')))
+  ).filter((path) => !expected.has(path))
   const legacyPath = join(root, 'schema.md')
   const legacyExists = (await lstatOrNull(legacyPath)) !== null
   return [...orphaned, ...(legacyExists ? [legacyPath] : [])]
@@ -96,6 +106,7 @@ export async function writeSchemaSnapshot({
   snapshot,
   markdown,
   root,
+  markdownRoot,
   check = false,
   format = identityFormat,
   stringify = stableStringify,
@@ -103,21 +114,25 @@ export async function writeSchemaSnapshot({
   snapshot: SchemaSnapshot
   markdown: Map<string, string>
   root: string
+  markdownRoot?: string
   check?: boolean
   format?: (path: string, raw: string) => Promise<string>
   stringify?: (value: unknown) => string
 }): Promise<void> {
-  const files = await schemaSnapshotFiles(snapshot, markdown, root, format, stringify)
+  if (markdownRoot !== undefined) await assertSafeDirectory(markdownRoot, false)
+  const files = await schemaSnapshotFiles(snapshot, markdown, root, markdownRoot, format, stringify)
   if (!check) {
-    await Promise.all([...files.keys()].map((path) => ensureSafeParentDirectory(root, path)))
-    await Promise.all([...files].map(([path, content]) => writeGeneratedFile(root, path, content)))
-    await Promise.all((await extraMarkdownPaths(files, root)).map((path) => rm(path)))
+    await Promise.all([...files].map(([path, { root }]) => ensureSafeParentDirectory(root, path)))
+    await Promise.all(
+      [...files].map(([path, { root, content }]) => writeGeneratedFile(root, path, content)),
+    )
+    await Promise.all((await extraMarkdownPaths(files, root, markdownRoot)).map((path) => rm(path)))
     return
   }
 
   const stale = [
-    ...(await staleSchemaSnapshotFiles(files, root)),
-    ...(await extraMarkdownPaths(files, root)),
+    ...(await staleSchemaSnapshotFiles(files)),
+    ...(await extraMarkdownPaths(files, root, markdownRoot)),
   ].toSorted((left, right) => left.localeCompare(right))
   if (stale.length > 0) {
     throw new Error(
@@ -133,6 +148,7 @@ export async function generateSchemaSnapshot({
   query,
   growth,
   root,
+  markdownRoot,
   check = false,
   format = identityFormat,
   stringify = stableStringify,
@@ -140,6 +156,7 @@ export async function generateSchemaSnapshot({
   query: CatalogQuery
   growth: SchemaGrowthMaps
   root: string
+  markdownRoot?: string
   check?: boolean
   format?: (path: string, raw: string) => Promise<string>
   stringify?: (value: unknown) => string
@@ -149,6 +166,7 @@ export async function generateSchemaSnapshot({
     snapshot,
     markdown: renderSchemaMarkdown(snapshot),
     root,
+    ...(markdownRoot === undefined ? {} : { markdownRoot }),
     check,
     format,
     stringify,
