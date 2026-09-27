@@ -35,28 +35,41 @@ afterEach(async () => {
 })
 
 describe('separate schema Markdown output', () => {
-  it('preserves an expected schema.md when Markdown shares the JSON root', async () => {
-    const { root } = await fixture()
-    const options = {
-      snapshot,
-      markdown: new Map([['schema.md', '# Current schema\n']]),
-      root: relative(process.cwd(), root),
-      markdownRoot: relative(process.cwd(), root),
-    }
-    await writeSchemaSnapshot(options)
-    await expect(readFile(join(root, 'schema.md'), 'utf8')).resolves.toBe('# Current schema\n')
-    await expect(writeSchemaSnapshot({ ...options, check: true })).resolves.toBeUndefined()
-  })
+  it.each(['same', 'ancestor', 'alias'] as const)(
+    'rejects a Markdown root containing the JSON root via %s paths before writing',
+    async (kind) => {
+      const { base, root } = await fixture()
+      await writeFile(join(root, 'schema.json'), 'keep JSON\n')
+      await writeFile(join(root, 'schema.md'), 'keep legacy\n')
+      const alias = join(base, 'alias')
+      // Alias the ancestor, so the root itself remains a regular directory under lstat.
+      if (kind === 'alias') await symlink(base, alias)
+      const markdownRoot =
+        kind === 'ancestor' ? base : kind === 'alias' ? join(alias, 'runtime') : root
+      for (const check of [false, true]) {
+        await expect(
+          writeSchemaSnapshot({
+            snapshot,
+            markdown,
+            root: relative(process.cwd(), root),
+            markdownRoot,
+            check,
+          }),
+        ).rejects.toThrow('Markdown output root must not contain the JSON snapshot root')
+        await expect(readFile(join(root, 'schema.json'), 'utf8')).resolves.toBe('keep JSON\n')
+        await expect(readFile(join(root, 'schema.md'), 'utf8')).resolves.toBe('keep legacy\n')
+        await expect(readFile(join(root, 'README.md'))).rejects.toThrow(/ENOENT/)
+      }
+    },
+  )
 
-  it('removes a legacy file only once when Markdown contains the JSON root', async () => {
-    const { base, root } = await fixture()
-    await writeFile(join(root, 'schema.md'), 'legacy\n')
-    const options = { snapshot, markdown, root, markdownRoot: base }
+  it('allows an explicit Markdown directory below the JSON root', async () => {
+    const { root } = await fixture()
+    const markdownRoot = join(root, 'markdown')
+    await mkdir(markdownRoot)
+    const options = { snapshot, markdown, root, markdownRoot }
     await writeSchemaSnapshot(options)
-    await expect(readFile(join(root, 'schema.md'))).rejects.toThrow(/ENOENT/)
-    await expect(readFile(join(root, 'schema.json'), 'utf8')).resolves.toBe(
-      stableStringify(snapshot),
-    )
+    await expect(readFile(join(markdownRoot, 'README.md'), 'utf8')).resolves.toBe('# Schema\n')
     await expect(writeSchemaSnapshot({ ...options, check: true })).resolves.toBeUndefined()
   })
 

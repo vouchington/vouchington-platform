@@ -136,6 +136,8 @@ dedicated directory; relative roots resolve from the working directory, and Mark
 remain relative to the chosen directory. Both the JSON
 root and an explicitly supplied Markdown root must already exist. Generated descendants are
 created as needed, and symlinked roots, components, and output files are rejected.
+The Markdown directory must not equal or contain the JSON root, including through physical
+directory aliases. An explicitly selected `root/markdown` remains valid.
 
 Check mode validates both outputs without writing. Update mode removes orphaned files only from
 the selected Markdown tree, plus the legacy `root/schema.md`; it does not migrate or clean a former

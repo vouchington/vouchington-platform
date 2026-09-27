@@ -1,4 +1,4 @@
-import { readFile, rm } from 'node:fs/promises'
+import { readFile, realpath, rm } from 'node:fs/promises'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { buildSchemaSnapshot } from './build-snapshot.mts'
 import { readSchemaCatalog } from './catalog-queries.mts'
@@ -33,6 +33,23 @@ function sortKeys(value: unknown): unknown {
 
 async function identityFormat(_path: string, raw: string): Promise<string> {
   return raw
+}
+
+async function assertSeparateMarkdownRoot(root: string, markdownRoot: string): Promise<void> {
+  await Promise.all([assertSafeDirectory(root, false), assertSafeDirectory(markdownRoot, false)])
+  const [jsonDirectory, markdownDirectory] = await Promise.all([
+    realpath(root),
+    realpath(markdownRoot),
+  ])
+  const jsonWithinMarkdown = relative(markdownDirectory, jsonDirectory)
+  if (
+    jsonWithinMarkdown === '' ||
+    (jsonWithinMarkdown !== '..' &&
+      !jsonWithinMarkdown.startsWith(`..${sep}`) &&
+      !isAbsolute(jsonWithinMarkdown))
+  ) {
+    throw new Error('Markdown output root must not contain the JSON snapshot root')
+  }
 }
 
 function assertSafeMarkdownPath(markdownRoot: string, path: string): string {
@@ -98,8 +115,8 @@ async function extraMarkdownPaths(
     await markdownFilesOnDisk(resolve(markdownRoot ?? join(root, 'markdown')))
   ).filter((path) => !expected.has(path))
   const legacyPath = resolve(root, 'schema.md')
-  const legacyExists = !expected.has(legacyPath) && (await lstatOrNull(legacyPath)) !== null
-  return [...new Set([...orphaned, ...(legacyExists ? [legacyPath] : [])])]
+  const legacyExists = (await lstatOrNull(legacyPath)) !== null
+  return [...orphaned, ...(legacyExists ? [legacyPath] : [])]
 }
 
 export async function writeSchemaSnapshot({
@@ -119,7 +136,7 @@ export async function writeSchemaSnapshot({
   format?: (path: string, raw: string) => Promise<string>
   stringify?: (value: unknown) => string
 }): Promise<void> {
-  if (markdownRoot !== undefined) await assertSafeDirectory(markdownRoot, false)
+  if (markdownRoot !== undefined) await assertSeparateMarkdownRoot(root, markdownRoot)
   const files = await schemaSnapshotFiles(snapshot, markdown, root, markdownRoot, format, stringify)
   if (!check) {
     await Promise.all([...files].map(([path, { root }]) => ensureSafeParentDirectory(root, path)))
