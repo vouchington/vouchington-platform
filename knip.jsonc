@@ -28,6 +28,8 @@
         "src/observability.mts!",
         "src/http-signatures.mts!",
         "src/cache-tags.mts!",
+        "src/sentry-envelope.mts!",
+        "src/scopes.mts!",
       ],
       "project": [
         "src/**/*.mts!",

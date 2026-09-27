@@ -29,6 +29,7 @@ the migration advisory lock is per database, and `VITEST_MAX_WORKERS` overrides 
 - `@vouchington/auth` — injected WebAuthn passkey ceremony primitives
 - `@vouchington/postgres` — PostgreSQL runtime factory
 - `@vouchington/utils` — dependency-free explicit-subpath utilities
+- `@vouchington/utils/sentry-envelope` and `/scopes` — injected envelope limits and scope catalogs
 - `@vouchington/session-jwt` — portable RS512 JWT primitives
 - `@vouchington/pagination` — cursor codecs, guards, and configurable query parsing
 - `@vouchington/queue-errors` — GlideMQ retry classification and rate-limit helpers
