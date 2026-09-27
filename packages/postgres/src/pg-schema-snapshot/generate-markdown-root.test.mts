@@ -63,6 +63,35 @@ describe('separate schema Markdown output', () => {
     },
   )
 
+  it.each(['schema.json', 'schema.md', 'schema.json/nested', 'schema.md/nested'])(
+    'rejects a Markdown directory under reserved output %s before formatting',
+    async (reservedPath) => {
+      const { root } = await fixture()
+      const markdownRoot = join(root, reservedPath)
+      await mkdir(markdownRoot, { recursive: true })
+      await writeFile(join(markdownRoot, 'sentinel.txt'), 'keep\n')
+      for (const check of [false, true]) {
+        let formatted = false
+        await expect(
+          writeSchemaSnapshot({
+            snapshot,
+            markdown,
+            root,
+            markdownRoot,
+            check,
+            format: async (_path, raw) => {
+              formatted = true
+              return raw
+            },
+          }),
+        ).rejects.toThrow('Markdown output root must not overlap reserved snapshot paths')
+        expect(formatted).toBe(false)
+        await expect(readFile(join(markdownRoot, 'sentinel.txt'), 'utf8')).resolves.toBe('keep\n')
+        await expect(readFile(join(markdownRoot, 'README.md'))).rejects.toThrow(/ENOENT/)
+      }
+    },
+  )
+
   it('allows an explicit Markdown directory below the JSON root', async () => {
     const { root } = await fixture()
     const markdownRoot = join(root, 'markdown')
@@ -94,19 +123,33 @@ describe('separate schema Markdown output', () => {
     await expect(writeSchemaSnapshot({ ...options, check: true })).resolves.toBeUndefined()
   })
 
-  it('passes the separate output through catalog generation and check', async () => {
-    const { root, markdownRoot } = await fixture()
-    const options = { query: async () => ({ rows: [] }), growth: emptyGrowth(), root, markdownRoot }
-    await generateSchemaSnapshot(options)
-    await expect(readFile(join(root, 'schema.json'), 'utf8')).resolves.toBe(
-      stableStringify(snapshot),
-    )
-    await expect(readFile(join(markdownRoot, 'README.md'), 'utf8')).resolves.toContain(
-      '# PostgreSQL Schema Snapshot',
-    )
-    await expect(readFile(join(root, 'markdown/README.md'))).rejects.toThrow(/ENOENT/)
-    await expect(generateSchemaSnapshot({ ...options, check: true })).resolves.toBeUndefined()
-  })
+  it.each(['runtime', 'runtime #notes', 'runtime )notes'])(
+    'links catalog output to JSON root %s and checks it',
+    async (name) => {
+      const { base, root: originalRoot, markdownRoot } = await fixture()
+      const root = name === 'runtime' ? originalRoot : join(base, name)
+      if (root !== originalRoot) await mkdir(root)
+      const options = {
+        query: async () => ({ rows: [] }),
+        growth: emptyGrowth(),
+        root,
+        markdownRoot,
+      }
+      await generateSchemaSnapshot(options)
+      await expect(readFile(join(root, 'schema.json'), 'utf8')).resolves.toBe(
+        stableStringify(snapshot),
+      )
+      await expect(readFile(join(markdownRoot, 'README.md'), 'utf8')).resolves.toContain(
+        name === 'runtime'
+          ? '[`schema.json`](../runtime/schema.json)'
+          : name === 'runtime #notes'
+            ? '[`schema.json`](../runtime%20%23notes/schema.json)'
+            : '[`schema.json`](../runtime%20%29notes/schema.json)',
+      )
+      await expect(readFile(join(root, 'markdown/README.md'))).rejects.toThrow(/ENOENT/)
+      await expect(generateSchemaSnapshot({ ...options, check: true })).resolves.toBeUndefined()
+    },
+  )
 
   it.each(['json', 'markdown', 'orphan'] as const)(
     'checks %s drift without writing',

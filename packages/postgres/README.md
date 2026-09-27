@@ -137,7 +137,13 @@ remain relative to the chosen directory. Both the JSON
 root and an explicitly supplied Markdown root must already exist. Generated descendants are
 created as needed, and symlinked roots, components, and output files are rejected.
 The Markdown directory must not equal or contain the JSON root, including through physical
-directory aliases. An explicitly selected `root/markdown` remains valid.
+directory aliases and mount aliases. It must also stay outside the reserved `root/schema.json`
+and `root/schema.md` paths; these reserved outputs cannot be directories. A preflight traversal
+checks the selected tree by directory identity, skips symlink leaves, and rejects repeated directory
+aliases before any formatting or writing. An explicitly selected `root/markdown` remains valid.
+`generateSchemaSnapshot()` rebases and URL-encodes its index link to the actual JSON file;
+standalone `renderSchemaMarkdown()` accepts an optional `schemaJsonPath` link target and defaults
+to `../schema.json`.
 
 Check mode validates both outputs without writing. Update mode removes orphaned files only from
 the selected Markdown tree, plus the legacy `root/schema.md`; it does not migrate or clean a former

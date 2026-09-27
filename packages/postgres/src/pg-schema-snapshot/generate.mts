@@ -1,14 +1,14 @@
-import { readFile, realpath, rm } from 'node:fs/promises'
+import { readFile, rm } from 'node:fs/promises'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { buildSchemaSnapshot } from './build-snapshot.mts'
 import { readSchemaCatalog } from './catalog-queries.mts'
 import {
-  assertSafeDirectory,
   assertSafeExistingFilePath,
   ensureSafeParentDirectory,
   lstatOrNull,
   writeGeneratedFile,
 } from './file-safety.mts'
+import { assertSeparateMarkdownRoot } from './output-roots.mts'
 import { markdownFilesOnDisk } from './markdown-files.mts'
 import { renderSchemaMarkdown } from './render-markdown.mts'
 import type { CatalogQuery, SchemaGrowthMaps, SchemaSnapshot } from './types.mts'
@@ -33,23 +33,6 @@ function sortKeys(value: unknown): unknown {
 
 async function identityFormat(_path: string, raw: string): Promise<string> {
   return raw
-}
-
-async function assertSeparateMarkdownRoot(root: string, markdownRoot: string): Promise<void> {
-  await Promise.all([assertSafeDirectory(root, false), assertSafeDirectory(markdownRoot, false)])
-  const [jsonDirectory, markdownDirectory] = await Promise.all([
-    realpath(root),
-    realpath(markdownRoot),
-  ])
-  const jsonWithinMarkdown = relative(markdownDirectory, jsonDirectory)
-  if (
-    jsonWithinMarkdown === '' ||
-    (jsonWithinMarkdown !== '..' &&
-      !jsonWithinMarkdown.startsWith(`..${sep}`) &&
-      !isAbsolute(jsonWithinMarkdown))
-  ) {
-    throw new Error('Markdown output root must not contain the JSON snapshot root')
-  }
 }
 
 function assertSafeMarkdownPath(markdownRoot: string, path: string): string {
@@ -181,7 +164,17 @@ export async function generateSchemaSnapshot({
   const snapshot = buildSchemaSnapshot(await readSchemaCatalog(query), growth)
   await writeSchemaSnapshot({
     snapshot,
-    markdown: renderSchemaMarkdown(snapshot),
+    markdown: renderSchemaMarkdown(snapshot, {
+      schemaJsonPath: relative(
+        resolve(markdownRoot ?? join(root, 'markdown')),
+        resolve(root, 'schema.json'),
+      )
+        .split(sep)
+        .map((component) =>
+          encodeURIComponent(component).replaceAll('(', '%28').replaceAll(')', '%29'),
+        )
+        .join('/'),
+    }),
     root,
     ...(markdownRoot === undefined ? {} : { markdownRoot }),
     check,

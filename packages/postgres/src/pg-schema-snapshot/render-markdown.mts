@@ -102,11 +102,11 @@ function markdownTablePath(name: string): string {
   return `tables/${name}.md`
 }
 
-function renderSchemaIndex(tableNames: string[]): string {
+function renderSchemaIndex(tableNames: string[], schemaJsonPath: string): string {
   const lines = [
     '# PostgreSQL Schema Snapshot',
     '',
-    'Generated schema snapshot. Do not hand-edit. Full function bodies live only in the companion [`schema.json`](../schema.json).',
+    `Generated schema snapshot. Do not hand-edit. Full function bodies live only in the companion [\`schema.json\`](${schemaJsonPath}).`,
     '',
     '## Tables',
     '',
@@ -128,12 +128,15 @@ function renderSchemaIndex(tableNames: string[]): string {
  * Each table receives one safe filename and exactly one column table; the index directly links all
  * generated leaves.
  */
-export function renderSchemaMarkdown(snapshot: SchemaSnapshot): SchemaMarkdownFiles {
+export function renderSchemaMarkdown(
+  snapshot: SchemaSnapshot,
+  { schemaJsonPath = '../schema.json' }: { schemaJsonPath?: string } = {},
+): SchemaMarkdownFiles {
   const tableNames = Object.keys(snapshot.tables).toSorted((left, right) =>
     left.localeCompare(right),
   )
   const files: SchemaMarkdownFiles = new Map()
-  files.set('README.md', renderSchemaIndex(tableNames))
+  files.set('README.md', renderSchemaIndex(tableNames, schemaJsonPath))
   for (const name of tableNames) {
     files.set(markdownTablePath(name), renderTableDocument(name, snapshot.tables[name]!))
   }
