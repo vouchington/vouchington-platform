@@ -17,4 +17,5 @@ const error = registry.validateOperation('POST:/items', { body: { name: 'example
 
 Applications supply generated or hand-written contracts and decide authentication, authorization,
 rate limits, request lifecycle, HTTP status, and error mapping. Header names in object inputs are
-lowercased before validation. This package has no generated bundle or shared registry.
+lowercased before validation; case-insensitive duplicates are rejected when a header contract is
+present. This package has no generated bundle or shared registry.

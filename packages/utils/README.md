@@ -18,6 +18,7 @@ import { cacheTag, decodeCacheTagPathSegment } from '@vouchington/utils/cache-ta
 
 - `cache-tags`: canonical printable-ASCII wire encoding, one-segment URL decoding, validation,
   and escape-boundary truncation. Applications own family names, route recognition, and purge policy.
+  Single-tag validation rejects spaces and comma separators; raw commas are percent-encoded.
 - `token-secrets`: Node-only (`node:crypto`) purpose-bound HMAC and AES-256-GCM encryption.
   `createTokenSecrets({ hashSecret, encryptionKeys })` throws for invalid keys or ciphertext.
 - `deploy-environment`: `getDeployEnvironment(source)` classifies explicit environment inputs without

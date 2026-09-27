@@ -45,6 +45,7 @@ describe('cache-tag wire encoding', () => {
   it('checks printable ASCII wire constraints and families', () => {
     expect(isValidCacheTag('')).toBe(false)
     expect(isValidCacheTag('a b')).toBe(false)
+    expect(isValidCacheTag('topic:x,admin')).toBe(false)
     expect(isValidCacheTag('café')).toBe(false)
     expect(isValidCacheTag('a'.repeat(MAX_CACHE_TAG_BYTES + 1))).toBe(false)
     expect(isValidCacheTag('a'.repeat(MAX_CACHE_TAG_BYTES))).toBe(true)

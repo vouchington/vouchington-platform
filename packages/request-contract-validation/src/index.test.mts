@@ -65,6 +65,18 @@ describe('RequestContractValidatorRegistry', () => {
     })
   })
 
+  it('rejects case-insensitive header collisions regardless of insertion order', () => {
+    const entries = [
+      ['Idempotency-Key', 'invalid'],
+      ['idempotency-key', '018f8780-6a0f-7c94-8d6c-b6b6d0b12a41'],
+    ]
+    for (const headers of [Object.fromEntries(entries), Object.fromEntries(entries.toReversed())]) {
+      expect(registry.validate('create', 'header', headers)).toEqual({
+        message: 'Invalid request header',
+      })
+    }
+  })
+
   it('fails closed for unknown operations on both entry points', () => {
     expect(registry.hasOperation('create')).toBe(true)
     expect(registry.hasOperation('missing')).toBe(false)

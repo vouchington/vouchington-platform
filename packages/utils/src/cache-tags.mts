@@ -2,9 +2,9 @@ import { normalizeKey } from './strings.mjs'
 
 /** Maximum accepted Cache-Tag byte length at the wire boundary. */
 export const MAX_CACHE_TAG_BYTES = 1024
-const CACHE_TAG_CHARSET = /^[!-~]+$/
+const CACHE_TAG_CHARSET = /^[\x21-\x2b\x2d-\x7e]+$/
 
-/** Check whether a tag is printable ASCII without spaces and fits the wire limit. */
+/** Check whether one tag is printable ASCII without spaces or commas and fits the wire limit. */
 export function isValidCacheTag(tag: string): boolean {
   return tag.length > 0 && tag.length <= MAX_CACHE_TAG_BYTES && CACHE_TAG_CHARSET.test(tag)
 }

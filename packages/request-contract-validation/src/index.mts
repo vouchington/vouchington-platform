@@ -14,6 +14,7 @@ export type RequestContractsBundle = {
 export type RequestValidationError = { message: string }
 
 const requestCarriers: readonly RequestCarrier[] = ['body', 'header', 'path', 'query']
+const duplicateHeaderNames = Symbol('duplicate header names')
 
 /** Compiles caller-owned request contracts once; callers choose the request boundary and error policy. */
 export class RequestContractValidatorRegistry {
@@ -56,7 +57,9 @@ export class RequestContractValidatorRegistry {
     const validators = this.validators.get(operation)
     if (!validators) throw new Error(`No request contract for ${operation}`)
     const validator = validators[carrier]
-    if (!validator || validator(normalizeCarrierValue(carrier, value))) return null
+    if (!validator) return null
+    const normalized = normalizeCarrierValue(carrier, value)
+    if (normalized !== duplicateHeaderNames && validator(normalized)) return null
     return { message: `Invalid request ${carrier}` }
   }
 
@@ -80,7 +83,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function normalizeCarrierValue(carrier: RequestCarrier, value: unknown): unknown {
   if (carrier !== 'header' || !isRecord(value)) return value
-  return Object.fromEntries(
-    Object.entries(value).map(([name, headerValue]) => [name.toLowerCase(), headerValue]),
-  )
+  const normalized = new Map<string, unknown>()
+  for (const [name, headerValue] of Object.entries(value)) {
+    const key = name.toLowerCase()
+    if (normalized.has(key)) return duplicateHeaderNames
+    normalized.set(key, headerValue)
+  }
+  return Object.fromEntries(normalized)
 }
