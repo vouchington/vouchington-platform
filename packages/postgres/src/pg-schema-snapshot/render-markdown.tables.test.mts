@@ -1,9 +1,64 @@
 import { describe, expect, it } from 'vitest'
+import { format } from 'oxfmt'
 
 import { renderSchemaMarkdown } from './render-markdown.mts'
 import { emptySnapshot, widgetsTable } from './snapshot.test-helpers.mts'
 
 describe('renderSchemaMarkdown — tables', () => {
+  it('preserves multiline constraint SQL in formatter-stable fenced blocks', async () => {
+    const definition =
+      "CHECK (\nCASE\n    WHEN (kind = 'widget') THEN (total >= 0)\n    ELSE false\nEND)"
+    const markdown = renderSchemaMarkdown({
+      ...emptySnapshot(),
+      tables: {
+        widgets: widgetsTable({
+          checkConstraints: {
+            widgets_case_check: definition,
+            widgets_total_check: 'CHECK (total >= 0)',
+          },
+        }),
+      },
+    }).get('tables/widgets.md')!
+    const first = await format('tables/widgets.md', markdown)
+    const second = await format('tables/widgets.md', first.code)
+
+    expect(first.errors).toEqual([])
+    expect(second.errors).toEqual([])
+    expect(second.code).toBe(first.code)
+    expect(first.code).toContain('- `widgets_total_check`: `CHECK (total >= 0)`')
+    const sql = first.code.match(/  ```sql\n([\s\S]*?)\n  ```/u)?.[1]
+    expect(
+      sql
+        ?.split('\n')
+        .map((line) => line.slice(2))
+        .join('\n'),
+    ).toBe(definition)
+  })
+
+  it('preserves SQL backtick runs inside a longer formatter-stable fence', async () => {
+    const definition = 'CHECK (kind <> $literal$\n```\n`````\n$literal$)'
+    const markdown = renderSchemaMarkdown({
+      ...emptySnapshot(),
+      tables: {
+        widgets: widgetsTable({ checkConstraints: { widgets_literal_check: definition } }),
+      },
+    }).get('tables/widgets.md')!
+    const first = await format('tables/widgets.md', markdown)
+    const second = await format('tables/widgets.md', first.code)
+
+    expect(first.errors).toEqual([])
+    expect(second.errors).toEqual([])
+    expect(second.code).toBe(first.code)
+    expect(markdown).toContain('  ``````sql\n')
+    const sql = first.code.match(/  ``````sql\n([\s\S]*?)\n  ``````/u)?.[1]
+    expect(
+      sql
+        ?.split('\n')
+        .map((line) => line.slice(2))
+        .join('\n'),
+    ).toBe(definition)
+  })
+
   it('renders a directly indexable README and every non-table section document for an empty snapshot', () => {
     const files = renderSchemaMarkdown(emptySnapshot())
 

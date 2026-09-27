@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/postgres/package.json"],
+  "changedManifests": ["packages/utils/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "postgres",
-      "fromVersion": "0.0.9",
-      "name": "@vouchington/postgres",
-      "toVersion": "0.0.10"
+      "directory": "utils",
+      "fromVersion": "0.5.1",
+      "name": "@vouchington/utils",
+      "toVersion": "0.5.2"
     }
   ],
-  "selectedPackage": "@vouchington/postgres"
+  "selectedPackage": "@vouchington/utils"
 }

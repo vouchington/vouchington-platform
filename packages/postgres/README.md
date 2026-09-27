@@ -117,6 +117,9 @@ The explicit `@vouchington/postgres/pg-schema-snapshot` subpath reads PostgreSQL
 stable structural snapshot, renders Markdown reference files, and detects index renames. It accepts
 an injected query function, so the application owns its pools and schema policy.
 
+Named table definitions spanning multiple lines render as fenced SQL blocks, preserving their
+SQL through Markdown formatting. Single-line definitions remain inline code.
+
 ```ts
 import { buildSchemaSnapshot, readSchemaCatalog } from '@vouchington/postgres/pg-schema-snapshot'
 
@@ -126,6 +129,28 @@ const snapshot = buildSchemaSnapshot(catalog, {
   unboundedUnpartitionedTables: new Set(),
 })
 ```
+
+`writeSchemaSnapshot()` and `generateSchemaSnapshot()` keep JSON at `root/schema.json` and
+Markdown at `root/markdown` by default. Pass `markdownRoot` to place the Markdown tree in a separate,
+dedicated directory; relative roots resolve from the working directory, and Markdown map paths
+remain relative to the chosen directory. Both the JSON
+root and an explicitly supplied Markdown root must already exist. Generated descendants are
+created as needed, and symlinked roots, components, and output files are rejected.
+The Markdown directory must not equal or contain the JSON root, including through physical
+directory aliases and mount aliases. It must also stay outside the reserved `root/schema.json`
+and `root/schema.md` paths; these reserved outputs cannot be directories. A preflight traversal
+checks the selected tree by directory identity, skips symlink leaves, and rejects repeated directory
+aliases before any formatting or writing. An explicitly selected `root/markdown` remains valid.
+`generateSchemaSnapshot()` rebases and URL-encodes its index link to the actual JSON file,
+and on Windows automatic links require the same drive or share. Cross-drive automatic links
+are rejected before formatting or writing; applications can supply their own cross-volume or remote link target
+through standalone rendering and `writeSchemaSnapshot()`.
+standalone `renderSchemaMarkdown()` accepts an optional `schemaJsonPath` link target and defaults
+to `../schema.json`.
+
+Check mode validates both outputs without writing. Update mode removes orphaned files only from
+the selected Markdown tree, plus the legacy `root/schema.md`; it does not migrate or clean a former
+Markdown location. The application owns moving previously generated files when changing roots.
 
 ## Conventions
 
