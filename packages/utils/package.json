@@ -20,6 +20,16 @@
   ],
   "type": "module",
   "exports": {
+    "./sentry-envelope": {
+      "types": "./dist/sentry-envelope.d.mts",
+      "import": "./dist/sentry-envelope.mjs",
+      "default": "./dist/sentry-envelope.mjs"
+    },
+    "./scopes": {
+      "types": "./dist/scopes.d.mts",
+      "import": "./dist/scopes.mjs",
+      "default": "./dist/scopes.mjs"
+    },
     "./token-secrets": {
       "types": "./dist/token-secrets.d.mts",
       "import": "./dist/token-secrets.mjs",
