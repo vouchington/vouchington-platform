@@ -12,7 +12,7 @@ export async function lstatOrNull(path: string) {
   )
 }
 
-async function assertSafeDirectory(path: string, create: boolean): Promise<void> {
+export async function assertSafeDirectory(path: string, create: boolean): Promise<void> {
   let stats = await lstatOrNull(path)
   if (stats === null && create) {
     await mkdir(path).catch((error: NodeJS.ErrnoException) =>

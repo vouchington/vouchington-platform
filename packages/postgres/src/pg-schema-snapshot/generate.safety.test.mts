@@ -181,7 +181,7 @@ describe('writeSchemaSnapshot path safety', () => {
   it('rejects a markdown tree that is a file rather than a directory', async () => {
     const root = await tempRoot()
     await writeFile(join(root, 'markdown'), 'Not a directory.\n')
-    await expect(markdownFilesOnDisk(root)).rejects.toThrow(
+    await expect(markdownFilesOnDisk(join(root, 'markdown'))).rejects.toThrow(
       'Unsafe generated PostgreSQL schema snapshot path',
     )
   })
@@ -239,7 +239,7 @@ describe('writeSchemaSnapshot path safety', () => {
     const root = await tempRoot()
     await mkdir(join(root, 'markdown'), { recursive: true })
     await promisify(execFile)('mkfifo', [join(root, 'markdown/pipe')])
-    expect(await markdownFilesOnDisk(root)).toEqual([])
+    expect(await markdownFilesOnDisk(join(root, 'markdown'))).toEqual([])
   })
 
   it('collects symlink leaves when scanning generated Markdown', async () => {
@@ -247,7 +247,7 @@ describe('writeSchemaSnapshot path safety', () => {
     await mkdir(join(root, 'markdown'), { recursive: true })
     await writeFile(join(root, 'markdown/real.md'), '# Real\n')
     await symlink(join(root, 'markdown/real.md'), join(root, 'markdown/link.md'))
-    expect(await markdownFilesOnDisk(root)).toEqual([
+    expect(await markdownFilesOnDisk(join(root, 'markdown'))).toEqual([
       join(root, 'markdown/link.md'),
       join(root, 'markdown/real.md'),
     ])
