@@ -68,6 +68,10 @@ describe('release workflow', () => {
     expect(authenticatedRemote).toBeGreaterThan(tests)
   })
 
+  it('can publish request contract validation', () => {
+    expect(workflow).toContain("'@vouchington/request-contract-validation'")
+  })
+
   it('does not retain the single-package inline release implementation', () => {
     expect(workflow).not.toContain('pnpm --filter "$PACKAGE" version')
     expect(workflow).not.toContain(
