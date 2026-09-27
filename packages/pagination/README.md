@@ -21,7 +21,8 @@ const parser = createPaginationParser({
 const options = parser.parse({ after: 'eyJpZCI6Ii4uLiJ9', limit: '10', order: 'recent' })
 ```
 
-Use `encodeCursor` and `decodeCursor` for an opaque base64url JSON envelope. Decode the result with
-one of the exported guards, or use a scoped decoder to validate a UUID key and prevent reuse across
+Use `encodeCursor` and `decodeCursor` for an opaque, canonical, unpadded base64url JSON envelope.
+Decoding rejects padding and the standard base64 `+` and `/` alphabet. Decode the result with one
+of the exported guards, or use a scoped decoder to validate a UUID key and prevent reuse across
 caller-defined scopes. `buildPageInfo` returns camelCase fields; applications choose their own wire
 format.

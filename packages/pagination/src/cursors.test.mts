@@ -49,11 +49,13 @@ describe('cursor envelopes', () => {
     expect(encodeCursor({ id })).not.toContain('=')
     expect(decodeCursor(encodeCursor({ id }))).toEqual({ id })
     expect(decodeCursor('eyJpZCI6IsK-In0')).toEqual({ id: '¾' })
-    expect(decodeCursor(Buffer.from(JSON.stringify({ id })).toString('base64'))).toEqual({ id })
-    expect(
-      decodeCursor(Buffer.from(JSON.stringify({ id })).toString('base64').replace(/=+$/, '')),
-    ).toEqual({ id })
+    expect(decodeCursor('eyJpZCI6IsK_In0')).toEqual({ id: '¿' })
     for (const encoded of [
+      'eyJpZCI6IjEifQ==',
+      'eyJpZCI6IsK+In0=',
+      'eyJpZCI6IsK+In0',
+      'eyJpZCI6IsK/In0=',
+      'eyJpZCI6IsK/In0',
       '%%%',
       'a',
       'a=',
@@ -69,9 +71,9 @@ describe('cursor envelopes', () => {
       'eyJpZCI6IjEifR',
       'eyJpZCI6IjEifR==',
       '=eyJpZCI6IjEifQ',
-      Buffer.from('no json').toString('base64'),
-      Buffer.from('null').toString('base64'),
-      Buffer.from('[]').toString('base64'),
+      Buffer.from('no json').toString('base64url'),
+      Buffer.from('null').toString('base64url'),
+      Buffer.from('[]').toString('base64url'),
     ]) {
       expect(() => decodeCursor(encoded)).toThrow(expect.objectContaining({ status: 400 }))
     }
