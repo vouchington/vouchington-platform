@@ -4,9 +4,9 @@
     {
       "bump": "patch",
       "directory": "utils",
-      "fromVersion": "0.5.1",
+      "fromVersion": "0.5.2",
       "name": "@vouchington/utils",
-      "toVersion": "0.5.2"
+      "toVersion": "0.5.3"
     }
   ],
   "selectedPackage": "@vouchington/utils"
