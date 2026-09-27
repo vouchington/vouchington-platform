@@ -40,11 +40,16 @@ function renderNamedDefinitionList(
     const entry = entries[name]!
     const definition = typeof entry === 'string' ? entry : entry.definition
     if (definition.includes('\n')) {
+      const fenceLength = (definition.match(/`+/g) ?? []).reduce(
+        (length, run) => Math.max(length, run.length + 1),
+        3,
+      )
+      const fence = '`'.repeat(fenceLength)
       const sql = definition
         .split('\n')
         .map((line) => `  ${line}`)
         .join('\n')
-      return `- \`${name}\`:\n\n  \`\`\`sql\n${sql}\n  \`\`\`\n`
+      return `- \`${name}\`:\n\n  ${fence}sql\n${sql}\n  ${fence}\n`
     }
     return `- \`${name}\`: \`${definition}\``
   })
