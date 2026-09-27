@@ -11,10 +11,16 @@ import { buildSignatureHeaders, verifySignature } from '@vouchington/utils/http-
 import { bestAcceptLanguageMatch } from '@vouchington/utils/language-tags'
 import { createMessageTranslator } from '@vouchington/utils/message-catalog'
 import { createReportInputParser } from '@vouchington/utils/moderation'
+import { getSentryEnvelopeDiagnostics } from '@vouchington/utils/sentry-envelope'
+import { createScopeCatalog } from '@vouchington/utils/scopes'
 ```
 
 ## Subpaths
 
+- `sentry-envelope`: bounded UTF-8 envelope record scanning and safe item-type diagnostics.
+  Callers choose the byte and type-list limits; DSN, tunnel, request, and logging policy stay local.
+- `scopes`: caller-owned scope catalog validation, prerequisite expansion, audience and surface
+  filtering, and explicit coverage graph calculation. No default catalog or legacy grants are built in.
 - `token-secrets`: Node-only (`node:crypto`) purpose-bound HMAC and AES-256-GCM encryption.
   `createTokenSecrets({ hashSecret, encryptionKeys })` throws for invalid keys or ciphertext.
 - `deploy-environment`: `getDeployEnvironment(source)` classifies explicit environment inputs without

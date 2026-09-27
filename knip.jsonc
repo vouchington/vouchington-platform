@@ -27,6 +27,8 @@
         "src/fetch-ports.mts!",
         "src/observability.mts!",
         "src/http-signatures.mts!",
+        "src/sentry-envelope.mts!",
+        "src/scopes.mts!",
       ],
       "project": [
         "src/**/*.mts!",
