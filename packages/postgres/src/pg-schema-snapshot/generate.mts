@@ -161,14 +161,20 @@ export async function generateSchemaSnapshot({
   format?: (path: string, raw: string) => Promise<string>
   stringify?: (value: unknown) => string
 }): Promise<void> {
+  const schemaJsonPath = relative(
+    resolve(markdownRoot ?? join(root, 'markdown')),
+    resolve(root, 'schema.json'),
+  )
+  if (isAbsolute(schemaJsonPath)) {
+    throw new Error(
+      'Automatic schema JSON links require output roots on the same filesystem volume',
+    )
+  }
   const snapshot = buildSchemaSnapshot(await readSchemaCatalog(query), growth)
   await writeSchemaSnapshot({
     snapshot,
     markdown: renderSchemaMarkdown(snapshot, {
-      schemaJsonPath: relative(
-        resolve(markdownRoot ?? join(root, 'markdown')),
-        resolve(root, 'schema.json'),
-      )
+      schemaJsonPath: schemaJsonPath
         .split(sep)
         .map((component) =>
           encodeURIComponent(component).replaceAll('(', '%28').replaceAll(')', '%29'),

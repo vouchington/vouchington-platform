@@ -141,7 +141,10 @@ directory aliases and mount aliases. It must also stay outside the reserved `roo
 and `root/schema.md` paths; these reserved outputs cannot be directories. A preflight traversal
 checks the selected tree by directory identity, skips symlink leaves, and rejects repeated directory
 aliases before any formatting or writing. An explicitly selected `root/markdown` remains valid.
-`generateSchemaSnapshot()` rebases and URL-encodes its index link to the actual JSON file;
+`generateSchemaSnapshot()` rebases and URL-encodes its index link to the actual JSON file,
+and on Windows automatic links require the same drive or share. Cross-drive automatic links
+are rejected before formatting or writing; applications can supply their own cross-volume or remote link target
+through standalone rendering and `writeSchemaSnapshot()`.
 standalone `renderSchemaMarkdown()` accepts an optional `schemaJsonPath` link target and defaults
 to `../schema.json`.
 
