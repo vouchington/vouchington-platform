@@ -37,6 +37,10 @@ describe('Agent Blackboard host configuration', () => {
 
   it('pre-authorizes exactly the current eight MCP tools', () => {
     const settings = JSON.parse(readFileSync('.claude/settings.json', 'utf8'))
+    for (const key of ['sandbox', 'model', 'effortLevel', 'advisorModel', 'statusLine']) {
+      expect(settings).not.toHaveProperty(key)
+    }
+    expect(settings.permissions).not.toHaveProperty('defaultMode')
     expect(settings.enabledMcpjsonServers).toEqual(['agent-blackboard'])
     expect(settings.permissions.allow).toEqual(tools)
     expect(settings.permissions.allow.some((tool: string) => tool.includes('*'))).toBe(false)
@@ -66,6 +70,15 @@ describe('Agent Blackboard host configuration', () => {
       'session_search',
       'snapshot_export',
     ])
+    expect(config).not.toMatch(
+      /^\s*(?:sandbox_mode|approval_policy|approvals_reviewer|model|model_reasoning_effort|plan_mode_reasoning_effort|startup_timeout)\s*=/mu,
+    )
+    expect(config).not.toMatch(/^\[(?:sandbox|model)(?:\.|\])/mu)
+    for (const path of ['.claude/README.md', '.codex/README.md']) {
+      expect(readFileSync(path, 'utf8')).toContain(
+        'https://github.com/vouchington/vouchington-machines/blob/main/docs/agent-config.md',
+      )
+    }
   })
 
   it('requires fail-closed, explicit session journaling in root instructions', () => {

@@ -11,3 +11,5 @@ codex plugin add agent-blackboard@agent-blackboard
 Set `AGENT_BLACKBOARD_URL` and `AGENT_BLACKBOARD_TOKEN` before starting Codex. The tracked
 `.codex/config.toml` enables the plugin and auto-approves only the eight current tools. The
 project-scoped Claude registration remains separately pinned to `agent-blackboard@0.5.0`.
+Machine sandbox, model, approval-mode, and startup defaults belong in the host setup described by
+the [agent configuration ownership contract](https://github.com/vouchington/vouchington-machines/blob/main/docs/agent-config.md).
