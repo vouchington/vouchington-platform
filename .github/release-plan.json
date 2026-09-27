@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/utils/package.json"],
+  "changedManifests": ["packages/request-contract-validation/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "utils",
-      "fromVersion": "0.5.2",
-      "name": "@vouchington/utils",
-      "toVersion": "0.5.3"
+      "directory": "request-contract-validation",
+      "fromVersion": "0.0.0",
+      "name": "@vouchington/request-contract-validation",
+      "toVersion": "0.0.1"
     }
   ],
-  "selectedPackage": "@vouchington/utils"
+  "selectedPackage": "@vouchington/request-contract-validation"
 }
