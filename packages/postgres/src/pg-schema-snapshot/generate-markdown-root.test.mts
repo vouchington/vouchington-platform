@@ -35,6 +35,31 @@ afterEach(async () => {
 })
 
 describe('separate schema Markdown output', () => {
+  it('preserves an expected schema.md when Markdown shares the JSON root', async () => {
+    const { root } = await fixture()
+    const options = {
+      snapshot,
+      markdown: new Map([['schema.md', '# Current schema\n']]),
+      root: relative(process.cwd(), root),
+      markdownRoot: relative(process.cwd(), root),
+    }
+    await writeSchemaSnapshot(options)
+    await expect(readFile(join(root, 'schema.md'), 'utf8')).resolves.toBe('# Current schema\n')
+    await expect(writeSchemaSnapshot({ ...options, check: true })).resolves.toBeUndefined()
+  })
+
+  it('removes a legacy file only once when Markdown contains the JSON root', async () => {
+    const { base, root } = await fixture()
+    await writeFile(join(root, 'schema.md'), 'legacy\n')
+    const options = { snapshot, markdown, root, markdownRoot: base }
+    await writeSchemaSnapshot(options)
+    await expect(readFile(join(root, 'schema.md'))).rejects.toThrow(/ENOENT/)
+    await expect(readFile(join(root, 'schema.json'), 'utf8')).resolves.toBe(
+      stableStringify(snapshot),
+    )
+    await expect(writeSchemaSnapshot({ ...options, check: true })).resolves.toBeUndefined()
+  })
+
   it.each(['absolute', 'relative'])('writes separate outputs with %s roots', async (kind) => {
     const { root, markdownRoot } = await fixture()
     const options = {

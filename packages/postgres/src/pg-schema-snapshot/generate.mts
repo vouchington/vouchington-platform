@@ -97,9 +97,9 @@ async function extraMarkdownPaths(
   const orphaned = (
     await markdownFilesOnDisk(resolve(markdownRoot ?? join(root, 'markdown')))
   ).filter((path) => !expected.has(path))
-  const legacyPath = join(root, 'schema.md')
-  const legacyExists = (await lstatOrNull(legacyPath)) !== null
-  return [...orphaned, ...(legacyExists ? [legacyPath] : [])]
+  const legacyPath = resolve(root, 'schema.md')
+  const legacyExists = !expected.has(legacyPath) && (await lstatOrNull(legacyPath)) !== null
+  return [...new Set([...orphaned, ...(legacyExists ? [legacyPath] : [])])]
 }
 
 export async function writeSchemaSnapshot({
