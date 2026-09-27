@@ -108,4 +108,23 @@ describe('RequestContractValidatorRegistry', () => {
         }),
     ).toThrow()
   })
+
+  it('rejects asynchronous validators at construction instead of treating Promises as success', () => {
+    expect(
+      () =>
+        new RequestContractValidatorRegistry({
+          components: {},
+          operations: { create: { body: { $async: true, type: 'string' } } },
+        }),
+    ).toThrow('Asynchronous request contracts are not supported')
+    expect(
+      () =>
+        new RequestContractValidatorRegistry({
+          components: { AsyncName: { $async: true, type: 'string' } },
+          operations: {
+            create: { body: { $async: true, $ref: '#/components/schemas/AsyncName' } },
+          },
+        }),
+    ).toThrow('Asynchronous request contracts are not supported')
+  })
 })

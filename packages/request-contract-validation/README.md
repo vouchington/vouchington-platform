@@ -4,6 +4,7 @@ Compile a caller supplied JSON Schema request bundle once, then validate body, h
 query carriers with Ajv and standard formats. Unknown operations throw; a known operation without
 a schema for a carrier accepts that carrier unchanged. Only supplied carriers are checked by
 `validateOperation`.
+The API is synchronous; asynchronous Ajv validators are rejected during construction.
 
 ```ts
 import { RequestContractValidatorRegistry } from '@vouchington/request-contract-validation'

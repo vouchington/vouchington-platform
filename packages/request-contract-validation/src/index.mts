@@ -34,7 +34,11 @@ export class RequestContractValidatorRegistry {
       const carriers: Partial<Record<RequestCarrier, ValidateFunction>> = {}
       for (const carrier of requestCarriers) {
         if (Object.hasOwn(contract, carrier)) {
-          carriers[carrier] = ajv.compile(contract[carrier] as AnySchema)
+          const validator = ajv.compile(contract[carrier] as AnySchema)
+          if ('$async' in validator && validator.$async) {
+            throw new TypeError('Asynchronous request contracts are not supported')
+          }
+          carriers[carrier] = validator
         }
       }
       this.validators.set(operation, carriers)
