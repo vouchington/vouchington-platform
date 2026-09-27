@@ -11,12 +11,16 @@ import { buildSignatureHeaders, verifySignature } from '@vouchington/utils/http-
 import { bestAcceptLanguageMatch } from '@vouchington/utils/language-tags'
 import { createMessageTranslator } from '@vouchington/utils/message-catalog'
 import { createReportInputParser } from '@vouchington/utils/moderation'
+import { cacheTag, decodeCacheTagPathSegment } from '@vouchington/utils/cache-tags'
 import { getSentryEnvelopeDiagnostics } from '@vouchington/utils/sentry-envelope'
 import { createScopeCatalog } from '@vouchington/utils/scopes'
 ```
 
 ## Subpaths
 
+- `cache-tags`: canonical printable-ASCII wire encoding, one-segment URL decoding, validation,
+  and escape-boundary truncation. Applications own family names, route recognition, and purge policy.
+  Single-tag validation rejects spaces and comma separators; raw commas are percent-encoded.
 - `sentry-envelope`: bounded UTF-8 envelope record scanning and safe item-type diagnostics.
   Callers choose the byte and type-list limits; DSN, tunnel, request, and logging policy stay local.
 - `scopes`: caller-owned scope catalog validation, prerequisite expansion, audience and surface

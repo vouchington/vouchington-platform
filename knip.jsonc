@@ -27,6 +27,7 @@
         "src/fetch-ports.mts!",
         "src/observability.mts!",
         "src/http-signatures.mts!",
+        "src/cache-tags.mts!",
         "src/sentry-envelope.mts!",
         "src/scopes.mts!",
       ],
@@ -37,6 +38,10 @@
       ],
     },
     "packages/session-jwt": {
+      "entry": ["src/index.mts!"],
+      "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
+    },
+    "packages/request-contract-validation": {
       "entry": ["src/index.mts!"],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
     },

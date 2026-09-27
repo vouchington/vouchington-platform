@@ -47,6 +47,7 @@ the migration advisory lock is per database, and `VITEST_MAX_WORKERS` overrides 
 - `@vouchington/wikimedia` — injected Wikimedia search and page-summary client
 - `@vouchington/memberships` — membership catalog, SKU grouping, and status utilities
 - `@vouchington/typed-entities` — injected transaction-scoped typed entity semantics
+- `@vouchington/request-contract-validation` — bundle-injected Ajv request carrier validation
 
 - `@vouchington/csv` — BOM-safe CSV parsing and spreadsheet-safe serialization
 - `@vouchington/localization` — browser-safe catalog contracts, selectors, and fallback

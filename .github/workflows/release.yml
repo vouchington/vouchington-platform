@@ -36,6 +36,7 @@ on:
           - '@vouchington/wikimedia'
           - '@vouchington/memberships'
           - '@vouchington/typed-entities'
+          - '@vouchington/request-contract-validation'
       bump:
         description: Semver bump type
         type: choice
