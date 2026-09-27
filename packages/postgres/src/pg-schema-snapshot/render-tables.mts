@@ -38,7 +38,15 @@ function renderNamedDefinitionList(
   if (names.length === 0) return [emptyText]
   return names.map((name) => {
     const entry = entries[name]!
-    return `- \`${name}\`: \`${typeof entry === 'string' ? entry : entry.definition}\``
+    const definition = typeof entry === 'string' ? entry : entry.definition
+    if (definition.includes('\n')) {
+      const sql = definition
+        .split('\n')
+        .map((line) => `  ${line}`)
+        .join('\n')
+      return `- \`${name}\`:\n\n  \`\`\`sql\n${sql}\n  \`\`\`\n`
+    }
+    return `- \`${name}\`: \`${definition}\``
   })
 }
 

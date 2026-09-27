@@ -117,6 +117,9 @@ The explicit `@vouchington/postgres/pg-schema-snapshot` subpath reads PostgreSQL
 stable structural snapshot, renders Markdown reference files, and detects index renames. It accepts
 an injected query function, so the application owns its pools and schema policy.
 
+Named table definitions spanning multiple lines render as fenced SQL blocks, preserving their
+SQL through Markdown formatting. Single-line definitions remain inline code.
+
 ```ts
 import { buildSchemaSnapshot, readSchemaCatalog } from '@vouchington/postgres/pg-schema-snapshot'
 
