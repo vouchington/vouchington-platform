@@ -33,7 +33,7 @@
     "prepack": "pnpm run build"
   },
   "dependencies": {
-    "csv-parse": "^7.0.2",
+    "csv-parse": "^7.0.3",
     "csv-stringify": "^6.8.3"
   },
   "engines": {
