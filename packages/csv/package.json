@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "csv-parse": "^7.0.3",
-    "csv-stringify": "^6.8.3"
+    "csv-stringify": "^6.9.0"
   },
   "engines": {
     "node": ">=24.0.0"
