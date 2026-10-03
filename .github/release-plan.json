@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/queue-errors/package.json"],
+  "changedManifests": ["packages/worker-runtime/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "queue-errors",
-      "fromVersion": "0.1.1",
-      "name": "@vouchington/queue-errors",
-      "toVersion": "0.1.2"
+      "directory": "worker-runtime",
+      "fromVersion": "0.1.0",
+      "name": "@vouchington/worker-runtime",
+      "toVersion": "0.1.1"
     }
   ],
-  "selectedPackage": "@vouchington/queue-errors"
+  "selectedPackage": "@vouchington/worker-runtime"
 }
