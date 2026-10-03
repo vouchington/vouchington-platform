@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/request-contract-validation/package.json"],
+  "changedManifests": ["packages/queue-errors/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "request-contract-validation",
-      "fromVersion": "0.0.0",
-      "name": "@vouchington/request-contract-validation",
-      "toVersion": "0.0.1"
+      "directory": "queue-errors",
+      "fromVersion": "0.1.1",
+      "name": "@vouchington/queue-errors",
+      "toVersion": "0.1.2"
     }
   ],
-  "selectedPackage": "@vouchington/request-contract-validation"
+  "selectedPackage": "@vouchington/queue-errors"
 }
