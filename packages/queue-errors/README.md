@@ -54,8 +54,9 @@ await handleRateLimitedError(error, worker, {
 ## Provider rate limits
 
 When a provider returns a rate limit, pause the worker for the application-selected cooldown and
-throw GlideMQ's control-flow error so the current job is scheduled after the cooldown. GlideMQ's
-normal retry accounting applies, so applications should configure attempts accordingly.
+throw GlideMQ's control-flow error so the current job is scheduled after the cooldown. GlideMQ 0.16
+requeues the job without consuming a retry attempt, so cooldowns do not count against the job's
+configured `attempts`.
 
 ```ts
 import { handleRateLimitedError } from '@vouchington/queue-errors'

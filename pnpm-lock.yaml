@@ -182,8 +182,8 @@ importers:
   packages/queue-errors:
     devDependencies:
       glide-mq:
-        specifier: ^0.15.5
-        version: 0.15.5(express@5.2.1(supports-color@7.2.0))
+        specifier: ^0.16.0
+        version: 0.16.0(express@5.2.1(supports-color@7.2.0))
 
   packages/request-contract-validation:
     dependencies:
@@ -244,8 +244,8 @@ importers:
   packages/worker-runtime:
     devDependencies:
       glide-mq:
-        specifier: ^0.15.5
-        version: 0.15.5(express@5.2.1(supports-color@7.2.0))
+        specifier: ^0.16.0
+        version: 0.16.0(express@5.2.1(supports-color@7.2.0))
 
 packages:
 
@@ -358,47 +358,47 @@ packages:
   '@emnapi/wasi-threads@1.2.2':
     resolution: {integrity: sha512-c95qOXkHdydNKhscBTebqEC1CVAZpyqOfVfBzQ1qgzyl3gfeldUjIggDbIZgDKsHLgnsM+igH7TJ/eAasaVuMA==}
 
-  '@glidemq/speedkey-darwin-arm64@0.3.0':
-    resolution: {integrity: sha512-9SEAgLDCgfRT+dhO7k+F8QYNvW1IECXp7SC+B2jJap8v9ww8IciFS6Nuh9/K644XmtBCeRssd/hRGc5IZurcAw==}
+  '@glidemq/speedkey-darwin-arm64@0.4.2':
+    resolution: {integrity: sha512-3woTAlnICLzupaa+zeOFRL1LSgUWFixfyG6f0d8z+GYPesnBUpVZnTiE6I0CB9J4ZA3HQCNzWZNcDuTKY+ep/w==}
     cpu: [arm64]
     os: [darwin]
 
-  '@glidemq/speedkey-darwin-x64@0.3.0':
-    resolution: {integrity: sha512-yZj1RfxlZ4Dtw1BdprYtilnEbaPnGrgL9Ew1DRg9c2+sp8R3PzjLm53ksCBDsaDVmOKJb/lgxavLuaAWjQk++A==}
+  '@glidemq/speedkey-darwin-x64@0.4.2':
+    resolution: {integrity: sha512-BQnt/Av36zY74kfAoIUM4/GcDNoqfnXo+uGQFiH7v6NkrzUAIauK2F7tMXJhgen869Skai11H406om6zRiuduA==}
     cpu: [x64]
     os: [darwin]
 
-  '@glidemq/speedkey-linux-arm64-gnu@0.3.0':
-    resolution: {integrity: sha512-/KjI6ftoVl20+G7JOLn/w6B8ykk9/pJ5qbeLui0ZFeQDT4TmZ5S6BEzwDcqvsaXuYa4y68VG2OuSDO6SU1O/MQ==}
+  '@glidemq/speedkey-linux-arm64-gnu@0.4.2':
+    resolution: {integrity: sha512-1Iu4l3Bj3f6pFk7L2Dvuijnho1Q2WX2er3FONwX+WiuA455m49fRcE6zxo3ceSkYG2/+UgfWOX4plS0dl77Qrw==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@glidemq/speedkey-linux-arm64-musl@0.3.0':
-    resolution: {integrity: sha512-HruzPerV2y5nyCrOap3wnKr4z8ck/CEiq5wuOaAuvmgpheE+N4ELCzDXi9XOmy/bEgP+0UHkD+78i114lt3vJg==}
+  '@glidemq/speedkey-linux-arm64-musl@0.4.2':
+    resolution: {integrity: sha512-70ZEMYuX7vgJKKaS3OmepQZy7yrd0wmj9ebvY55FrYryqlpcbJHsYZvBM9LPXW8s2e6SLop+Jt+E84qtJWRGDg==}
     cpu: [arm64]
     os: [linux]
     libc: [musl]
 
-  '@glidemq/speedkey-linux-x64-gnu@0.3.0':
-    resolution: {integrity: sha512-0oFZ5rgz1wwmFJyqLUeEvUn9/8sxiN2sUAf1PDNVqlxNZG+tsO/YheDeDJnKZTjBjoL7yrj7J9vi/OE05MOvDw==}
+  '@glidemq/speedkey-linux-x64-gnu@0.4.2':
+    resolution: {integrity: sha512-kvtvp30PPvs8r/rG1EeGwMvqD4nbQUKvJupJG6hQa3HtsowoJQxw+u7cGl7Iddvz4F+QVz+/EYokdP4O8aOBDA==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@glidemq/speedkey-linux-x64-musl@0.3.0':
-    resolution: {integrity: sha512-3kRd1Wz4+MxycFUDuEqoUPSVcNVcrmA/G1hb15kxHivb/0vd2tXUYOG/9rXoevDf46jyPSnHgjY+QID4UR2sxQ==}
+  '@glidemq/speedkey-linux-x64-musl@0.4.2':
+    resolution: {integrity: sha512-yv78BZThknUUD+lKukoMO+E69aEBqHgbjycP41LG4cF9GMgQ3OSExpR99qeBY3CK/ZYQnWgTA4jsnEFRdO1fAA==}
     cpu: [x64]
     os: [linux]
     libc: [musl]
 
-  '@glidemq/speedkey-win32-x64-msvc@0.3.0':
-    resolution: {integrity: sha512-lGhlYtlWYS9pzavF1KvlQXtb87tVTWkyyIQdG43oQVjL1+FA+mMkm0XgqESciGJNBl5dE7B/RYPS4eLVK94xUQ==}
+  '@glidemq/speedkey-win32-x64-msvc@0.4.2':
+    resolution: {integrity: sha512-j+ApHETDt1ChL88j7Mzp76dMwDqANULzfpAbz/QjChLW4yOaDfr+o18nzz+3WvHvd2N4euPXkD+vPAeSuWhonQ==}
     cpu: [x64]
     os: [win32]
 
-  '@glidemq/speedkey@0.3.0':
-    resolution: {integrity: sha512-LK2zkUopFGxxsZxRcuRF4PzJbvTLn+5qePBrpnp5nyGE4PyVB0PNYlb02pv5462xvynIodtdARFNyadVSrf/Dg==}
+  '@glidemq/speedkey@0.4.2':
+    resolution: {integrity: sha512-O7NB0BpWm8r9jYmGEiFaxLk4OaqYhx4a2dicwUvcfwgLucf5RUWb9xBT/dQeFhuMaccdMtLtytn8I0G9H3u7Ag==}
     engines: {node: '>=20'}
 
   '@hexagon/base64@1.1.28':
@@ -1873,8 +1873,8 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
-  glide-mq@0.15.5:
-    resolution: {integrity: sha512-WosPDk34ng60UBGuJY8oCTxXjMVUKcvUXbREM9QY7JjfYxwQPF/v3fjxEpATu3HQVQSVLfZq/YUsi3ksyGTa8A==}
+  glide-mq@0.16.0:
+    resolution: {integrity: sha512-jXfHl6lieiJ30wH/ml6ClqaeN/y+89tbf5mcQ3iBuGEGRHZ8WLu+1aL11HJSTnsfs1Up/qfI7ePjODQ13dRQ1w==}
     engines: {node: '>=20'}
     peerDependencies:
       '@opentelemetry/api': ^1.0.0
@@ -2900,39 +2900,39 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
-  '@glidemq/speedkey-darwin-arm64@0.3.0':
+  '@glidemq/speedkey-darwin-arm64@0.4.2':
     optional: true
 
-  '@glidemq/speedkey-darwin-x64@0.3.0':
+  '@glidemq/speedkey-darwin-x64@0.4.2':
     optional: true
 
-  '@glidemq/speedkey-linux-arm64-gnu@0.3.0':
+  '@glidemq/speedkey-linux-arm64-gnu@0.4.2':
     optional: true
 
-  '@glidemq/speedkey-linux-arm64-musl@0.3.0':
+  '@glidemq/speedkey-linux-arm64-musl@0.4.2':
     optional: true
 
-  '@glidemq/speedkey-linux-x64-gnu@0.3.0':
+  '@glidemq/speedkey-linux-x64-gnu@0.4.2':
     optional: true
 
-  '@glidemq/speedkey-linux-x64-musl@0.3.0':
+  '@glidemq/speedkey-linux-x64-musl@0.4.2':
     optional: true
 
-  '@glidemq/speedkey-win32-x64-msvc@0.3.0':
+  '@glidemq/speedkey-win32-x64-msvc@0.4.2':
     optional: true
 
-  '@glidemq/speedkey@0.3.0':
+  '@glidemq/speedkey@0.4.2':
     dependencies:
       long: 5.3.2
       protobufjs: 7.6.6
     optionalDependencies:
-      '@glidemq/speedkey-darwin-arm64': 0.3.0
-      '@glidemq/speedkey-darwin-x64': 0.3.0
-      '@glidemq/speedkey-linux-arm64-gnu': 0.3.0
-      '@glidemq/speedkey-linux-arm64-musl': 0.3.0
-      '@glidemq/speedkey-linux-x64-gnu': 0.3.0
-      '@glidemq/speedkey-linux-x64-musl': 0.3.0
-      '@glidemq/speedkey-win32-x64-msvc': 0.3.0
+      '@glidemq/speedkey-darwin-arm64': 0.4.2
+      '@glidemq/speedkey-darwin-x64': 0.4.2
+      '@glidemq/speedkey-linux-arm64-gnu': 0.4.2
+      '@glidemq/speedkey-linux-arm64-musl': 0.4.2
+      '@glidemq/speedkey-linux-x64-gnu': 0.4.2
+      '@glidemq/speedkey-linux-x64-musl': 0.4.2
+      '@glidemq/speedkey-win32-x64-msvc': 0.4.2
 
   '@hexagon/base64@1.1.28': {}
 
@@ -4084,9 +4084,9 @@ snapshots:
       adm-zip: 0.5.18
       tar: 7.5.22
 
-  glide-mq@0.15.5(express@5.2.1(supports-color@7.2.0)):
+  glide-mq@0.16.0(express@5.2.1(supports-color@7.2.0)):
     dependencies:
-      '@glidemq/speedkey': 0.3.0
+      '@glidemq/speedkey': 0.4.2
     optionalDependencies:
       express: 5.2.1(supports-color@7.2.0)
 
