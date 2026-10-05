@@ -43,7 +43,7 @@
   "dependencies": {
     "@libpg-query/parser": "^18.0.0",
     "pg": "^8.23.0",
-    "pg-cursor": "^2.22.0",
+    "pg-cursor": "^2.22.1",
     "pgvector": "^0.3.0",
     "sql-template-strings": "^2.2.2"
   },
