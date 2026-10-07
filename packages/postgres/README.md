@@ -82,7 +82,9 @@ await psql.runMigrations('./migrations')
 ```
 
 Fixed SQL files run in filename order. Every ledger row has a checksum from its first application;
-reruns fail if a recorded checksum is missing or differs from the file. Pass an options object for
+before applying new files, reruns fail if an applied file is absent, its recorded checksum is
+missing, or its checksum differs from the file. `MigrationFileMissingError` identifies the
+missing applied file through its `migration` property. Pass an options object for
 custom logging, for example `{ logger: console }`. Concurrent index builds use
 `-- migration-mode: online`. Extensions default to `pgcrypto`; pass
 `migrationExtensions` to `createPsql()` to change that. pgvector type parsers are opt-in via
