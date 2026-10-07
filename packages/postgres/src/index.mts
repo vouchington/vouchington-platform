@@ -25,6 +25,7 @@ export { runBoundedTransactionWithClient } from './bounded-transaction.mts'
 export type { BoundedTransactionOptions } from './bounded-transaction.mts'
 export { Cursor } from './cursor-support.mts'
 export {
+  MigrationChecksumMissingError,
   MigrationChecksumMismatchError,
   assertMigrationChecksumMatches,
   computeMigrationChecksum,
