@@ -182,8 +182,8 @@ importers:
   packages/queue-errors:
     devDependencies:
       glide-mq:
-        specifier: ^0.16.0
-        version: 0.16.0(express@5.2.1(supports-color@7.2.0))
+        specifier: ^0.17.0
+        version: 0.17.0(express@5.2.1(supports-color@7.2.0))
 
   packages/request-contract-validation:
     dependencies:
@@ -244,8 +244,8 @@ importers:
   packages/worker-runtime:
     devDependencies:
       glide-mq:
-        specifier: ^0.16.0
-        version: 0.16.0(express@5.2.1(supports-color@7.2.0))
+        specifier: ^0.17.0
+        version: 0.17.0(express@5.2.1(supports-color@7.2.0))
 
 packages:
 
@@ -1877,8 +1877,8 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
-  glide-mq@0.16.0:
-    resolution: {integrity: sha512-jXfHl6lieiJ30wH/ml6ClqaeN/y+89tbf5mcQ3iBuGEGRHZ8WLu+1aL11HJSTnsfs1Up/qfI7ePjODQ13dRQ1w==}
+  glide-mq@0.17.0:
+    resolution: {integrity: sha512-zmyi0srdZ1MG5n97AzIBansria1HmO6nRHQjiIinSJE46W7xBlqKfmNYvqT5zepWDr0wEPip0FfmN8QSvSCyJg==}
     engines: {node: '>=20'}
     peerDependencies:
       '@opentelemetry/api': ^1.0.0
@@ -4096,7 +4096,7 @@ snapshots:
       adm-zip: 0.5.18
       tar: 7.5.22
 
-  glide-mq@0.16.0(express@5.2.1(supports-color@7.2.0)):
+  glide-mq@0.17.0(express@5.2.1(supports-color@7.2.0)):
     dependencies:
       '@glidemq/speedkey': 0.4.2
     optionalDependencies:
