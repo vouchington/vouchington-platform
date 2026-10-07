@@ -24,6 +24,7 @@ export type { PipelineBatchOptions } from './pipeline-batch.mts'
 export { runBoundedTransactionWithClient } from './bounded-transaction.mts'
 export type { BoundedTransactionOptions } from './bounded-transaction.mts'
 export { Cursor } from './cursor-support.mts'
+export { MigrationFileMissingError } from './migration-runner/migration-file-missing.mts'
 export {
   MigrationChecksumMismatchError,
   assertMigrationChecksumMatches,

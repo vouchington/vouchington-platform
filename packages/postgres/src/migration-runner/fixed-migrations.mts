@@ -2,6 +2,7 @@ import type pg from 'pg'
 
 import type { PsqlRuntime } from '../types.mts'
 import { getFilesFromFolder, readMigrationFile } from './files.mts'
+import { MigrationFileMissingError } from './migration-file-missing.mts'
 import {
   assertMigrationChecksumMatches,
   computeMigrationChecksum,
@@ -51,18 +52,29 @@ export function createMigrationRunner(
         ledger.set(row.id, row.checksum)
       }
 
+      const files = new Set(migrations)
+      for (const migration of ledger.keys()) {
+        if (!files.has(migration)) throw new MigrationFileMissingError(migration)
+      }
+
       for (const migration of migrations) {
+        const recorded = ledger.get(migration)
+        if (recorded === undefined) continue
         const sql = await readMigrationFile(migrationsFolder, migration)
-        const checksum = computeMigrationChecksum(sql)
+        assertMigrationChecksumMatches(migration, recorded, computeMigrationChecksum(sql))
+      }
+
+      for (const migration of migrations) {
         const recorded = ledger.get(migration)
         if (recorded !== undefined) {
-          assertMigrationChecksumMatches(migration, recorded, checksum)
           if (debugMigrations && !isTest) {
             logger.log('DEBUG: Skipping already-run migration: %s', migration)
           }
           continue
         }
 
+        const sql = await readMigrationFile(migrationsFolder, migration)
+        const checksum = computeMigrationChecksum(sql)
         try {
           await executePreparedMigration(client, migration, prepareMigration(sql), checksum)
           ledger.set(migration, checksum)

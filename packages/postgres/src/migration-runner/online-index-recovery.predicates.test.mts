@@ -12,6 +12,9 @@ const withPsql = useIsolatedDatabase()
 describe('online index predicate recovery', () => {
   const dirs: string[] = []
   afterEach(async () => {
+    await withPsql(async (psql) => {
+      await psql.write('/* resetMigrationLedger */ DROP TABLE IF EXISTS migrations')
+    })
     await Promise.all(dirs.splice(0).map((dir) => rm(dir, { force: true, recursive: true })))
   })
 
