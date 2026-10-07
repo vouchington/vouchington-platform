@@ -59,6 +59,7 @@ export function isScopedTimestampCursor(value: unknown): value is ScopedTimestam
 }
 export function isPreciseTimestampString(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/.test(value)) return false
+  if (value.startsWith('0000-')) return false
   const milliseconds = value.replace(/\.(\d{3})\d{3}Z$/, '.$1Z')
   return (
     !Number.isNaN(Date.parse(milliseconds)) && new Date(milliseconds).toISOString() === milliseconds

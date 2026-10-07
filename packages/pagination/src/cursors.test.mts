@@ -130,6 +130,13 @@ describe('cursor envelopes', () => {
       expect(() => decode(encoded, 'another', invalid)).toThrow(invalid)
     }
     expect(() =>
+      decodeScopedPreciseTimestampCursor(
+        encodeScopedPreciseTimestampCursor('0000-01-01T00:00:00.000000Z', id, scope),
+        scope,
+        invalid,
+      ),
+    ).toThrow(invalid)
+    expect(() =>
       decodeScopedAliasCursor(encodeCursor({ alias: 4, scope }), scope, invalid),
     ).toThrow(invalid)
     expect(() => decodeScopedTierPreciseNameCursor('%%%', scope, invalid)).toThrow(invalid)
@@ -172,6 +179,12 @@ describe('cursor guards', () => {
     expect(isScopedAliasCursor({ alias: 'alias', scope })).toBe(true)
     expect(isScopedTierPreciseNameCursor({ tier: 1, timestamp, name: 'name', scope })).toBe(true)
     expect(isScopedTierPreciseUuidCursor({ tier: 1, timestamp, id, scope })).toBe(true)
+  })
+
+  it('rejects year zero while accepting PostgreSQL timestamp year boundaries', () => {
+    expect(isPreciseTimestampString('0000-01-01T00:00:00.000000Z')).toBe(false)
+    expect(isPreciseTimestampString('0001-01-01T00:00:00.000000Z')).toBe(true)
+    expect(isPreciseTimestampString('9999-12-31T23:59:59.999999Z')).toBe(true)
   })
 
   it('rejects invalid keys, values, and timestamps', () => {
