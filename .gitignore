@@ -10,11 +10,9 @@ coverage/
 .codex/*
 !.codex/
 !.codex/README.md
-!.codex/config.toml
 .claude/*
 !.claude/
 !.claude/README.md
-!.claude/settings.json
 !.claude/skills
 
 # Agent instructions live in AGENTS.md. CLAUDE.md overrides AGENTS.md in Claude Code.

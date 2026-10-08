@@ -87,8 +87,10 @@ For a new package only, a maintainer may bootstrap `0.0.0` before trust configur
 
 ## Agent Blackboard
 
-Use the upstream `agent-blackboard` plugin together with the `vouchington-workflow:blackboard`
-skill for session journaling. Session ids, agent/version identities, and parent-session ids must
+Journal sessions through the machine-registered `vouchington-tooling` MCP server, installed by
+[vouchington-machines](https://github.com/vouchington/vouchington-machines/blob/main/docs/agent-config.md),
+together with the `vouchington-workflow:blackboard` skill. This repository registers no
+blackboard MCP server, plugin, marketplace, or tool grant of its own. Session ids, agent/version identities, and parent-session ids must
 be explicit; never infer or generate them from host state. Use only the client credential supplied
 by `AGENT_BLACKBOARD_TOKEN` with `AGENT_BLACKBOARD_URL`; fail closed when either credential is
 missing, malformed, or unavailable, and never substitute an admin credential.

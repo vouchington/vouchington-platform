@@ -1,90 +1,84 @@
+import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
-const tools = [
-  'entry_append',
-  'entry_get',
-  'session_archive',
-  'session_create',
-  'session_ensure',
-  'session_patch',
-  'session_search',
-  'snapshot_export',
-].map((name) => `mcp__agent-blackboard__${name}`)
+const machineContract =
+  'https://github.com/vouchington/vouchington-machines/blob/main/docs/agent-config.md'
+
+const repoRegistrations = [
+  '.mcp.json',
+  '.claude/settings.json',
+  '.claude/settings.local.json',
+  '.codex/config.toml',
+  '.cursor/mcp.json',
+]
+
+const trackedFiles = (...pathspecs: string[]) =>
+  execFileSync('git', ['ls-files', '-z', '--', ...pathspecs], { encoding: 'utf8' })
+    .split('\0')
+    .filter(Boolean)
 
 describe('Agent Blackboard host configuration', () => {
-  it('keeps Claude MCP registration pinned and environment-only', () => {
-    expect(JSON.parse(readFileSync('.mcp.json', 'utf8'))).toEqual({
-      mcpServers: {
-        'agent-blackboard': {
-          command: 'npx',
-          args: [
-            '-y',
-            expect.stringMatching(
-              /^agent-blackboard@(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/u,
-            ),
-            'mcp',
-          ],
-          env: {
-            AGENT_BLACKBOARD_URL: '${AGENT_BLACKBOARD_URL}',
-            AGENT_BLACKBOARD_TOKEN: '${AGENT_BLACKBOARD_TOKEN}',
-          },
-        },
-      },
-    })
-  })
-
-  it('pre-authorizes exactly the current eight MCP tools', () => {
-    const settings = JSON.parse(readFileSync('.claude/settings.json', 'utf8'))
-    for (const key of ['sandbox', 'model', 'effortLevel', 'advisorModel', 'statusLine']) {
-      expect(settings).not.toHaveProperty(key)
-    }
-    expect(settings.permissions).not.toHaveProperty('defaultMode')
-    expect(settings.enabledMcpjsonServers).toEqual(['agent-blackboard'])
-    expect(settings.permissions.allow).toEqual(tools)
-    expect(settings.permissions.allow.some((tool: string) => tool.includes('*'))).toBe(false)
-  })
-
-  it('documents the upstream Codex plugin registration', () => {
-    const instructions = readFileSync('.codex/README.md', 'utf8')
-    expect(instructions).toMatch(/codex plugin marketplace add jonathanong\/agent-blackboard/u)
-    expect(instructions).toMatch(/codex plugin add agent-blackboard@agent-blackboard/u)
-    const packageSpec = JSON.parse(readFileSync('.mcp.json', 'utf8')).mcpServers['agent-blackboard']
-      .args[1] as string
-    expect(instructions).toContain(packageSpec)
-    expect(readFileSync('.claude/README.md', 'utf8')).toContain(packageSpec)
-    const config = readFileSync('.codex/config.toml', 'utf8')
-    expect(config).toMatch(/\[plugins\."agent-blackboard@agent-blackboard"\]\r?\nenabled = true/u)
-    const approvals = [
-      ...config.matchAll(/\.tools\.([a-z_]+)\]\r?\napproval_mode = "approve"/gu),
-    ].map((match) => match[1])
-    expect(config.match(/approval_mode = "approve"/gu)).toHaveLength(8)
-    expect(approvals).toEqual([
-      'entry_append',
-      'entry_get',
-      'session_archive',
-      'session_create',
-      'session_ensure',
-      'session_patch',
-      'session_search',
-      'snapshot_export',
+  it('tracks no repository-level MCP registration or host settings', () => {
+    expect(trackedFiles(...repoRegistrations)).toEqual([])
+    expect(trackedFiles('.claude', '.codex').toSorted()).toEqual([
+      '.claude/README.md',
+      '.codex/README.md',
     ])
-    expect(config).not.toMatch(
-      /^\s*(?:sandbox_mode|approval_policy|approvals_reviewer|model|model_reasoning_effort|plan_mode_reasoning_effort|startup_timeout)\s*=/mu,
+  })
+
+  it('ignores the removed host configuration paths', () => {
+    const ignored = execFileSync(
+      'git',
+      ['check-ignore', '--no-index', '--', '.claude/settings.json', '.codex/config.toml'],
+      { encoding: 'utf8' },
     )
-    expect(config).not.toMatch(/^\[(?:sandbox|model)(?:\.|\])/mu)
+    expect(ignored.split('\n').filter(Boolean)).toEqual([
+      '.claude/settings.json',
+      '.codex/config.toml',
+    ])
+  })
+
+  it('declares no blackboard server, plugin, marketplace, or tool grant', () => {
+    const files = trackedFiles(
+      ':(glob)*',
+      ':(glob).*',
+      '.claude',
+      '.codex',
+      '.github',
+      ':(exclude)test/agent-blackboard-config.test.mts',
+    ).filter((path) => !path.endsWith('pnpm-lock.yaml'))
+    expect(files).toContain('AGENTS.md')
+    for (const path of files) {
+      const contents = readFileSync(path, 'utf8')
+      for (const pattern of [
+        /agent-blackboard@/u,
+        /enabledMcpjsonServers/u,
+        /mcp__agent[-_]blackboard__/u,
+        /mcp__vouchington[-_]tooling__/u,
+        /plugin marketplace add/u,
+        /\[plugins\./u,
+        /"mcpServers"/u,
+      ]) {
+        expect({ path, match: pattern.test(contents) }).toEqual({ path, match: false })
+      }
+    }
+  })
+
+  it('defers host configuration to the machine ownership contract', () => {
     for (const path of ['.claude/README.md', '.codex/README.md']) {
-      expect(readFileSync(path, 'utf8')).toContain(
-        'https://github.com/vouchington/vouchington-machines/blob/main/docs/agent-config.md',
-      )
+      const instructions = readFileSync(path, 'utf8')
+      expect(instructions).toContain(machineContract)
+      expect(instructions).toMatch(/machine-registered `vouchington-tooling` MCP server/u)
     }
   })
 
   it('requires fail-closed, explicit session journaling in root instructions', () => {
     const instructions = readFileSync('AGENTS.md', 'utf8')
-    expect(instructions).toMatch(/upstream `agent-blackboard` plugin/u)
+    expect(instructions).toMatch(/machine-registered `vouchington-tooling` MCP server/u)
     expect(instructions).toMatch(/`vouchington-workflow:blackboard`/u)
+    expect(instructions).not.toMatch(/upstream `agent-blackboard` plugin/u)
     expect(instructions).toMatch(/Session ids.*must\s+be\s+explicit/isu)
     expect(instructions).toMatch(/fail closed/iu)
   })
