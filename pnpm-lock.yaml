@@ -238,8 +238,8 @@ importers:
   packages/wikimedia:
     dependencies:
       '@jongleberry/api-server':
-        specifier: ^2.1.0
-        version: 2.1.0
+        specifier: ^3.0.1
+        version: 3.0.1
 
   packages/worker-runtime:
     devDependencies:
@@ -576,8 +576,8 @@ packages:
     resolution: {integrity: sha512-wgm9Ehl2jpeqP3zw/7mo3kRHFp5MEDhqAdwy1fTGkHAwnkGOVsgpvQhL8B5n1qlb01jV3n/bI0ZfZp5lWA1k4w==}
     engines: {node: '>=18.0.0'}
 
-  '@jongleberry/api-server@2.1.0':
-    resolution: {integrity: sha512-L3lddxsqp6doNDowrsEweK1hJBQhfzhXxNmE4V1ofMCxCEwOVC+MSC+xRfKvsdhhW6+XpsgQVxufoEW9WB32ZA==}
+  '@jongleberry/api-server@3.0.1':
+    resolution: {integrity: sha512-0LRSCERVQ03Uy/LVlc1tuFYNLwc1vIPaMNUcACIxi3fVUQnxDKzu1gpnszXnxNHtQFcsi/xSmjt5edXUsafWsg==}
     engines: {node: '>=24.0.0'}
 
   '@jongleberry/vurst-html-darwin-arm64@0.4.3':
@@ -1664,6 +1664,10 @@ packages:
     resolution: {integrity: sha512-mj7UPXE0jaqaOsukNZRUEfEi2AcL7C/vwmwcHV0O97eO1E1pxBZuyjlZrx5seTaNBg1U6+o35wpa35Qfcc+7ag==}
     engines: {node: '>=18'}
 
+  content-type@3.1.1:
+    resolution: {integrity: sha512-GW4qUsfFo59d0HbUibDlWv5wPz+vAAcaTWbKIuKCf0JkC7wWkSyf8f13IpXn5JkeMlB2P8iTSSIjwXljorg2vA==}
+    engines: {node: '>=22'}
+
   cookie-signature@1.2.2:
     resolution: {integrity: sha512-D76uU73ulSXrD1UXF4KE2TMxVVwhsnCgfAyTg9k8P6KGZjlXKrOLe4dJQKI3Bxi5wjesZoFXJWElNWBjPZMbhg==}
     engines: {node: '>=6.6.0'}
@@ -2540,6 +2544,10 @@ packages:
     resolution: {integrity: sha512-faYHw0anBbc/kWF3zFTEnxSFOAGUX9GFbOBthvDdLsIlEoWOFOtS0zgCiQYwIskL9iGXZL3kAXD8OoZ4GmMATA==}
     engines: {node: '>= 18'}
 
+  type-is@3.0.0:
+    resolution: {integrity: sha512-txjx+lbH40MgknWZzdizD8FjUukflN5xG/i8t6tggtJuHkEjHD1t6eYE4LwJRDImCbzU6FCg/IAsoyy/BoFIfw==}
+    engines: {node: '>= 22'}
+
   typescript@7.0.2:
     resolution: {integrity: sha512-8FYau96o3NKOhbjKi/qNvG/W5jhzxkbdm5sj9AbZ/5T5sWqn3hJgLfGx27sRKZWTvyzCP8dLRBTf5tBTSRVUNA==}
     engines: {node: '>=16.20.0'}
@@ -3057,7 +3065,7 @@ snapshots:
     dependencies:
       minipass: 7.1.3
 
-  '@jongleberry/api-server@2.1.0':
+  '@jongleberry/api-server@3.0.1':
     dependencies:
       bytes: 3.1.2
       compressible: 2.0.18
@@ -3067,7 +3075,7 @@ snapshots:
       http-errors: 2.0.1
       json-stream-stringify: 3.1.7
       negotiator: 1.1.0
-      type-is: 2.1.0
+      type-is: 3.0.0
 
   '@jongleberry/vurst-html-darwin-arm64@0.4.3':
     optional: true
@@ -3851,6 +3859,8 @@ snapshots:
   content-type@1.0.5: {}
 
   content-type@2.1.0: {}
+
+  content-type@3.1.1: {}
 
   cookie-signature@1.2.2: {}
 
@@ -4791,6 +4801,10 @@ snapshots:
       content-type: 2.1.0
       media-typer: 1.1.1
       mime-types: 3.0.2
+
+  type-is@3.0.0:
+    dependencies:
+      content-type: 3.1.1
 
   typescript@7.0.2:
     optionalDependencies:
