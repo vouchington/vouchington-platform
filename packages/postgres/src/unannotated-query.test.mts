@@ -34,6 +34,12 @@ describe('unannotated query opt-out', () => {
         psql.read(allowUnannotatedQuery(sql`SELECT ${2}::int AS n`)),
       ).resolves.toMatchObject({ rows: [{ n: 2 }] })
       await expect(
+        psql.write(allowUnannotatedQuery('SELECT $1::int AS n'), [8]),
+      ).resolves.toMatchObject({ rows: [{ n: 8 }] })
+      await expect(
+        psql.write(allowUnannotatedQuery(sql`SELECT ${9}::int AS n`), [1]),
+      ).resolves.toMatchObject({ rows: [{ n: 9 }] })
+      await expect(
         psql.write(allowUnannotatedQuery(sql`SELECT ${3}::int AS n`.setName('fixture_named'))),
       ).resolves.toMatchObject({ rows: [{ n: 3 }] })
       await expect(

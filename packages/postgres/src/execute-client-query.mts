@@ -88,10 +88,13 @@ function buildQueryConfig(
 
   const annotation = extractLeadingQueryAnnotation(input.text)
   assertLeadingQueryAnnotation(input)
-  const unnamed = !annotation && !input.name && isUnannotatedQueryAllowed(input)
+  const allowed = isUnannotatedQueryAllowed(input)
+  const unnamed = !annotation && !input.name && allowed
+  // allowUnannotatedQuery(string) yields a value-free statement; keep the positional values
+  const positional = allowed && input.values.length === 0 && values !== undefined
   const config: pg.QueryConfig = {
     text: input.text,
-    values: input.values,
+    values: positional ? [...values] : input.values,
     ...(unnamed ? {} : { name: buildPreparedStatementName(input.text, input.name) }),
     ...(queryTimeoutMs === undefined ? {} : { query_timeout: queryTimeoutMs }),
   }
