@@ -103,11 +103,7 @@ describe('withBoundedTransaction', () => {
     })
     await transaction.rollback()
     expect(inputs.every((input) => input.query_timeout === 50)).toBe(true)
-    expect(timings).toEqual([
-      'beginBoundedTransaction',
-      'beginBoundedTransaction',
-      'beginBoundedTransaction',
-    ])
+    expect(timings).toEqual(['beginBoundedTransaction', 'beginBoundedTransaction'])
   })
 
   it('reports only the real rollback failure from bounded callbacks', async () => {
@@ -204,7 +200,6 @@ describe('withBoundedTransaction', () => {
     ).rejects.toBe(commitFailure)
     expect(inputs).toEqual([
       '/* withBoundedTransaction */ BEGIN',
-      "/* withBoundedTransaction */ SELECT set_config('statement_timeout', $1, true)",
       '/* withBoundedTransaction */ COMMIT',
     ])
     expect(client.release).toHaveBeenCalledWith(true)
@@ -264,10 +259,11 @@ describe('withBoundedTransaction', () => {
       env: {},
       errorHandler: () => {},
     }
-    await createBoundedTransactionApi(runtime).beginBoundedTransaction({
+    const transaction = await createBoundedTransactionApi(runtime).beginBoundedTransaction({
       connectionTimeoutMs: 100,
       statementTimeoutMs: 50,
     })
+    await transaction.commit()
     expect(queries[0]).toBe('/* beginBoundedTransaction */ BEGIN')
     expect(queries.some((query) => query.includes('SAVEPOINT'))).toBe(false)
   })

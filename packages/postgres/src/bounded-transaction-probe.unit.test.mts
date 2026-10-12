@@ -32,16 +32,19 @@ describe('bounded transaction preflight', () => {
       },
       release: vi.fn(),
     }
-    await createBoundedTransactionApi(runtime(client)).beginBoundedTransaction({
+    const transaction = await createBoundedTransactionApi(runtime(client)).beginBoundedTransaction({
       connectionTimeoutMs: 100,
       statementTimeoutMs: 50,
     })
-    expect(statements[0]).toEqual(
-      expect.objectContaining({
-        query_timeout: 50,
-        text: '/* beginBoundedTransaction */ BEGIN',
-      }),
-    )
+    expect(statements).toEqual([])
+    await transaction('/* first */ SELECT 1')
+    expect(statements.map((statement) => statement.text)).toEqual([
+      '/* beginBoundedTransaction */ BEGIN',
+      "/* beginBoundedTransaction */ SELECT set_config('statement_timeout', $1, true)",
+      '/* first */ SELECT 1',
+    ])
+    expect(statements[0]).toEqual(expect.objectContaining({ query_timeout: 50 }))
+    expect(statements[1]).toEqual(expect.objectContaining({ query_timeout: 50, values: ['50ms'] }))
     expect(statements.some((statement) => statement.text?.includes('SAVEPOINT'))).toBe(false)
   })
 
