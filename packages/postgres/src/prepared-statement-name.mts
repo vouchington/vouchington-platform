@@ -1,4 +1,7 @@
 import { createHash } from 'node:crypto'
+import sql, { type SQLStatement } from 'sql-template-strings'
+
+import type { QueryInput } from './types.mts'
 
 const PREPARED_STATEMENT_HASH_LENGTH = 32
 const MAX_PREPARED_STATEMENT_NAME_LENGTH = 63
@@ -11,12 +14,21 @@ export function extractLeadingQueryAnnotation(sqlText: string): string | null {
   return annotation ? annotation : null
 }
 
-export function assertLeadingQueryAnnotation(
-  sqlText: string,
-  env: NodeJS.ProcessEnv = process.env,
-): void {
-  if (env.NODE_ENV === 'test' || env.VITEST === 'true') return
-  if (extractLeadingQueryAnnotation(sqlText)) return
+const unannotatedQueries = new WeakSet<SQLStatement>()
+
+export function allowUnannotatedQuery(input: QueryInput): SQLStatement {
+  const statement = typeof input === 'string' ? sql``.append(input) : input
+  unannotatedQueries.add(statement)
+  return statement
+}
+
+export function isUnannotatedQueryAllowed(input: QueryInput): boolean {
+  return typeof input !== 'string' && unannotatedQueries.has(input)
+}
+
+export function assertLeadingQueryAnnotation(input: QueryInput): void {
+  if (isUnannotatedQueryAllowed(input)) return
+  if (extractLeadingQueryAnnotation(typeof input === 'string' ? input : input.text)) return
   throw new Error('PostgreSQL query must start with an annotation comment')
 }
 

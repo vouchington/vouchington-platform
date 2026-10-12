@@ -47,7 +47,6 @@ export function createQueryApi(runtime: PsqlRuntime) {
           ? 'read'
           : 'write'
       return await executeClientQuery<Row>(client, input, values, poolLabel, {
-        env: runtime.env,
         onQueryTiming: runtime.onQueryTiming,
       })
     } catch (err) {

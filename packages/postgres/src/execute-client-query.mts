@@ -6,6 +6,7 @@ import {
   assertLeadingQueryAnnotation,
   buildPreparedStatementName,
   extractLeadingQueryAnnotation,
+  isUnannotatedQueryAllowed,
 } from './prepared-statement-name.mts'
 import type {
   QueryInput,
@@ -17,7 +18,7 @@ import type {
 
 export type ClientQueryTimingExtras = Pick<QueryTimingInput, 'pipelined' | 'batchSize'> & {
   onQueryTiming?: QueryTimingHandler | undefined
-  env?: NodeJS.ProcessEnv | undefined
+  allowUnannotated?: boolean | undefined
   queryTimeoutMs?: number | undefined
 }
 
@@ -31,7 +32,7 @@ export async function executeClientQuery<Row extends pg.QueryResultRow = pg.Quer
   const { config, annotation } = buildQueryConfig(
     input,
     values,
-    extras?.env,
+    extras?.allowUnannotated === true,
     extras?.queryTimeoutMs,
   )
   const start = performance.now()
@@ -70,11 +71,11 @@ export async function executeClientQuery<Row extends pg.QueryResultRow = pg.Quer
 function buildQueryConfig(
   input: QueryInput,
   values: QueryValues,
-  env?: NodeJS.ProcessEnv,
+  allowUnannotated: boolean,
   queryTimeoutMs?: number,
 ): { config: pg.QueryConfig; annotation: string | null } {
   if (typeof input === 'string') {
-    assertLeadingQueryAnnotation(input, env)
+    if (!allowUnannotated) assertLeadingQueryAnnotation(input)
     const annotation = extractLeadingQueryAnnotation(input)
     const config: pg.QueryConfig = {
       text: input,
@@ -86,11 +87,12 @@ function buildQueryConfig(
   }
 
   const annotation = extractLeadingQueryAnnotation(input.text)
-  assertLeadingQueryAnnotation(input.text, env)
+  assertLeadingQueryAnnotation(input)
+  const unnamed = !annotation && !input.name && isUnannotatedQueryAllowed(input)
   const config: pg.QueryConfig = {
     text: input.text,
     values: input.values,
-    name: buildPreparedStatementName(input.text, input.name),
+    ...(unnamed ? {} : { name: buildPreparedStatementName(input.text, input.name) }),
     ...(queryTimeoutMs === undefined ? {} : { query_timeout: queryTimeoutMs }),
   }
   return { config, annotation }

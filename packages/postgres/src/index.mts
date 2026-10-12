@@ -13,6 +13,7 @@ export {
   withLibpqCompat,
 } from './connection-string.mts'
 export {
+  allowUnannotatedQuery,
   assertLeadingQueryAnnotation,
   buildPreparedStatementName,
   extractLeadingQueryAnnotation,

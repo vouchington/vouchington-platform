@@ -74,7 +74,7 @@ async function openCursor<Row>(
   }
 
   const statementText = typeof input === 'string' ? input : input.text
-  assertLeadingQueryAnnotation(statementText, runtime.env)
+  assertLeadingQueryAnnotation(input)
   const statementValues: CursorQueryValues =
     values ?? (typeof input === 'string' ? undefined : input.values)
   const normalizedValues = normalizeCursorValues(statementValues)
