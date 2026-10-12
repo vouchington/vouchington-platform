@@ -24,11 +24,17 @@ export type BeginBatchOutcome<T> =
  * `failed` and never exposes that statement's result. A failed control
  * statement also reports `failed`; the caller must discard the connection
  * either way.
+ *
+ * The listener spans the whole batch, so a first statement that itself raises
+ * `25001` (a caller-issued `BEGIN`) is also treated as a nested `BEGIN`. Pass
+ * `pipeline: false` when the connection is about to receive queries outside
+ * the batch, so pg's own queue orders them behind it.
  */
 export async function beginTransactionBatch<T>(
   client: pg.PoolClient,
   controls: ReadonlyArray<() => Promise<unknown>>,
   first: () => Promise<T>,
+  pipeline = true,
 ): Promise<BeginBatchOutcome<T>> {
   let active = false
   const onNotice = (notice: { code?: string | undefined }) => {
@@ -39,12 +45,12 @@ export async function beginTransactionBatch<T>(
   client.on('notice', onNotice)
   let settled: PromiseSettledResult<unknown>[]
   try {
-    flag.pipeline = true
+    if (pipeline) flag.pipeline = true
     const pending: Promise<unknown>[] = controls.map((control) => control())
     pending.push(first())
     settled = await Promise.allSettled(pending)
   } finally {
-    flag.pipeline = previous
+    if (pipeline) flag.pipeline = previous
     client.off('notice', onNotice)
   }
   if (active) return { kind: 'failed', error: new Error(NESTED_BEGIN_MESSAGE) }

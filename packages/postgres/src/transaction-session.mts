@@ -77,12 +77,17 @@ export async function beginTransactionSession(
     hasFailed = true
     throw error
   }
-  const begin = async <T,>(first?: (extras: Extras) => Promise<T>) => {
+  const begin = async <T,>(first?: (extras: Extras) => Promise<T>, settings = false) => {
     begun = true
     const extras = { pipelined: true, batchSize: beginControls().length + 1 }
     const outcome = first
       ? await beginTransactionBatch(client, beginControls(extras), () => first(extras))
-      : await beginTransactionBatch(client, beginControls(undefined, false), async () => undefined)
+      : await beginTransactionBatch(
+          client,
+          beginControls(undefined, settings),
+          async () => undefined,
+          false,
+        )
     if (outcome.kind === 'failed') {
       abandoned = true
       release(true)
@@ -90,7 +95,14 @@ export async function beginTransactionSession(
     }
     return outcome.first
   }
-  const query = Object.assign(
+  let opening: Promise<unknown> | undefined
+  // Work sent directly on the client must run inside the transaction, so reading it
+  // before the first statement sends BEGIN now, unpipelined, ahead of that work.
+  const exposeClient = () => {
+    if (!begun && !settlement) opening = begin(undefined, true).catch(() => undefined)
+    return client
+  }
+  const query = Object.defineProperty(
     (<Row extends pg.QueryResultRow = pg.QueryResultRow>(
       input: QueryInput,
       values?: QueryValues,
@@ -102,6 +114,7 @@ export async function beginTransactionSession(
           ...extras,
         })
       const result = queue.then(async () => {
+        await opening
         if (hasFailed) throwFailure(failed)
         if (!begun) {
           const first = await begin(run)
@@ -120,7 +133,8 @@ export async function beginTransactionSession(
       )
       return result
     }) as TransactionQuery,
-    { client },
+    'client',
+    { enumerable: true, get: exposeClient },
   )
   const settle = (operation: 'COMMIT' | 'ROLLBACK'): Promise<void> => {
     if (settlement) {
@@ -133,6 +147,7 @@ export async function beginTransactionSession(
   }
   async function settleTransaction(operation: 'COMMIT' | 'ROLLBACK'): Promise<void> {
     await queue
+    await opening
     // Nothing ran yet: BEGIN alone, so a nested-BEGIN client is discarded before COMMIT is sent.
     if (!begun) await begin().catch(() => undefined)
     if (abandoned) {

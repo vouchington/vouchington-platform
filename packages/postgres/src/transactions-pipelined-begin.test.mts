@@ -83,3 +83,44 @@ describe('BEGIN pipelined with the first statement', () => {
     ])
   })
 })
+
+describe('reading transaction.client before the first statement', () => {
+  it('runs direct client work inside the transaction', async () => {
+    await withPsql(async (psql) => {
+      const table = `direct_${crypto.randomUUID().replaceAll('-', '')}`
+      await psql.write(`/* create */ CREATE TABLE ${table} (id int PRIMARY KEY)`)
+      try {
+        const rolledBack = await psql.beginTransaction()
+        await psql.query(`/* direct */ INSERT INTO ${table} (id) VALUES (1)`, {
+          client: rolledBack.client,
+        })
+        await rolledBack.rollback()
+
+        const committed = await psql.beginTransaction()
+        const pending = committed(`/* queued */ INSERT INTO ${table} (id) VALUES (2)`)
+        await committed.client.query(`/* direct */ INSERT INTO ${table} (id) VALUES (3)`)
+        await pending
+        await committed.commit()
+        await expect(
+          psql.read(`/* ids */ SELECT id FROM ${table} ORDER BY id`),
+        ).resolves.toMatchObject({ rows: [{ id: 2 }, { id: 3 }] })
+      } finally {
+        await psql.write(`/* drop */ DROP TABLE ${table}`)
+      }
+    })
+  })
+
+  it('bounds direct client work with the statement timeout', async () => {
+    await withPsql(async (psql) => {
+      const transaction = await psql.beginBoundedTransaction({
+        connectionTimeoutMs: 1000,
+        statementTimeoutMs: 75,
+      })
+      const { rows } = await transaction.client.query<{ timeout: string }>(
+        "/* timeout */ SELECT current_setting('statement_timeout') AS timeout",
+      )
+      expect(rows).toEqual([{ timeout: '75ms' }])
+      await transaction.commit()
+    })
+  })
+})

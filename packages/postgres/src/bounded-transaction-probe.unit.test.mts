@@ -46,6 +46,34 @@ describe('bounded transaction preflight', () => {
     expect(statements[0]).toEqual(expect.objectContaining({ query_timeout: 50 }))
     expect(statements[1]).toEqual(expect.objectContaining({ query_timeout: 50, values: ['50ms'] }))
     expect(statements.some((statement) => statement.text?.includes('SAVEPOINT'))).toBe(false)
+    expect(transaction.client).toBe(client)
+    await transaction.commit()
+    expect(transaction.client).toBe(client)
+    expect(statements.map((statement) => statement.text)).toHaveLength(4)
+  })
+
+  it('sends BEGIN and the timeout before direct client work', async () => {
+    const statements: QueryConfig[] = []
+    const client = {
+      query: async (input: QueryConfig) => {
+        statements.push(input)
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    }
+    const transaction = await createBoundedTransactionApi(runtime(client)).beginBoundedTransaction({
+      connectionTimeoutMs: 100,
+      statementTimeoutMs: 50,
+    })
+    expect(transaction.client).toBe(client)
+    await transaction('/* first */ SELECT 1')
+    await transaction.commit()
+    expect(statements.map((statement) => statement.text)).toEqual([
+      '/* beginBoundedTransaction */ BEGIN',
+      "/* beginBoundedTransaction */ SELECT set_config('statement_timeout', $1, true)",
+      '/* first */ SELECT 1',
+      '/* beginBoundedTransaction */ COMMIT',
+    ])
   })
 
   it('rejects a bounded BEGIN timeout and destroys the pool client before callback work', async () => {

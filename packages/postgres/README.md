@@ -45,7 +45,9 @@ transaction's callable query to nested work.
 
 Opening a transaction sends nothing. `BEGIN`, and for bounded transactions the statement timeout,
 are pipelined with the transaction's first statement, so they share its round trip. A transaction
-settled before any statement sends `BEGIN` on its own first.
+settled before any statement sends `BEGIN` on its own first. Reading `transaction.client` before the
+first statement sends `BEGIN` (and the timeout) immediately, so work run directly on that client stays
+inside the transaction.
 
 A pooled connection released while its transaction was still open is never reused silently. When an
 owned transaction's `BEGIN` reports that a transaction is already in progress (SQLSTATE `25001`),

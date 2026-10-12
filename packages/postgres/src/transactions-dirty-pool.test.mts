@@ -8,7 +8,7 @@ const DIRTY_CLIENT =
   'Cannot begin a transaction on a pool client that already has a transaction open'
 
 describe('owned transactions on a pool client released mid-transaction', () => {
-  it.each(['withTransactionOptions', 'beginTransaction'] as const)(
+  it.each(['withTransactionOptions', 'beginTransaction', 'transaction.client'] as const)(
     '%s rejects the dirty client and never commits its abandoned work',
     async (api) => {
       const table = `dirty_pool_${crypto.randomUUID().replaceAll('-', '')}`
@@ -38,7 +38,7 @@ describe('owned transactions on a pool client released mid-transaction', () => {
 async function insertOnPool(
   psql: Psql,
   pool: pg.Pool,
-  api: 'withTransactionOptions' | 'beginTransaction',
+  api: 'withTransactionOptions' | 'beginTransaction' | 'transaction.client',
   table: string,
   id: number,
 ): Promise<void> {
@@ -48,6 +48,15 @@ async function insertOnPool(
     return
   }
   const transaction = await psql.beginTransaction({ client: pool })
-  await transaction(text, [id])
+  if (api === 'beginTransaction') {
+    await transaction(text, [id])
+    await transaction.commit()
+    return
+  }
+  const direct = await transaction.client.query(text, [id]).then(
+    () => undefined,
+    (error: unknown) => error,
+  )
   await transaction.commit()
+  if (direct) throw direct
 }
