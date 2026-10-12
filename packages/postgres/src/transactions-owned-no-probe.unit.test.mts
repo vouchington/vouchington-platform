@@ -35,7 +35,7 @@ describe('owned transactions never probe a pooled connection', () => {
   const starters: [string, StartOwnedTransaction][] = [
     [
       'beginTransaction',
-      async (psqlRuntime) => createTransactionApi(psqlRuntime).beginTransaction(),
+      async (psqlRuntime) => (await createTransactionApi(psqlRuntime).beginTransaction()).commit(),
     ],
     [
       'withTransaction',
@@ -53,10 +53,12 @@ describe('owned transactions never probe a pooled connection', () => {
     [
       'beginBoundedTransaction',
       async (psqlRuntime) =>
-        createBoundedTransactionApi(psqlRuntime).beginBoundedTransaction({
-          connectionTimeoutMs: 100,
-          statementTimeoutMs: 50,
-        }),
+        (
+          await createBoundedTransactionApi(psqlRuntime).beginBoundedTransaction({
+            connectionTimeoutMs: 100,
+            statementTimeoutMs: 50,
+          })
+        ).commit(),
     ],
   ]
 

@@ -20,6 +20,8 @@ export type ClientQueryTimingExtras = Pick<QueryTimingInput, 'pipelined' | 'batc
   onQueryTiming?: QueryTimingHandler | undefined
   allowUnannotated?: boolean | undefined
   queryTimeoutMs?: number | undefined
+  /** `false` sends a value-free string unnamed, over the simple query protocol. */
+  prepare?: boolean | undefined
 }
 
 export async function executeClientQuery<Row extends pg.QueryResultRow = pg.QueryResultRow>(
@@ -34,6 +36,7 @@ export async function executeClientQuery<Row extends pg.QueryResultRow = pg.Quer
     values,
     extras?.allowUnannotated === true,
     extras?.queryTimeoutMs,
+    extras?.prepare !== false,
   )
   const start = performance.now()
   const pipelined = extras?.pipelined
@@ -72,7 +75,8 @@ function buildQueryConfig(
   input: QueryInput,
   values: QueryValues,
   allowUnannotated: boolean,
-  queryTimeoutMs?: number,
+  queryTimeoutMs: number | undefined,
+  prepare: boolean,
 ): { config: pg.QueryConfig; annotation: string | null } {
   if (typeof input === 'string') {
     if (!allowUnannotated) assertLeadingQueryAnnotation(input)
@@ -82,7 +86,7 @@ function buildQueryConfig(
       ...(queryTimeoutMs === undefined ? {} : { query_timeout: queryTimeoutMs }),
     }
     if (values !== undefined) config.values = [...values]
-    if (annotation) config.name = buildPreparedStatementName(input)
+    if (annotation && prepare) config.name = buildPreparedStatementName(input)
     return { config, annotation }
   }
 

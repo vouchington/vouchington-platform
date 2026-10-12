@@ -1,3 +1,5 @@
+import { EventEmitter } from 'node:events'
+
 import { describe, expect, it, vi } from 'vitest'
 
 import { withNoticeEvents } from './pool-client-test-helpers.mts'
@@ -100,6 +102,49 @@ describe('borrowed transaction cleanup', () => {
       '/* withClientTransaction */ BEGIN',
       '/* withClientTransaction */ ROLLBACK',
     ])
+    expect(client.release).not.toHaveBeenCalled()
+  })
+
+  it('begins a borrowed client before returning, ahead of direct caller work', async () => {
+    const queries: string[] = []
+    const client = Object.assign(new EventEmitter(), {
+      query: async (input: { text?: string } | string) => {
+        const text = typeof input === 'string' ? input : (input.text ?? '')
+        queries.push(text)
+        if (text.includes('SAVEPOINT')) throw Object.assign(new Error('idle'), { code: '25P01' })
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    })
+    const api = createTransactionApi(runtime({ query: client.query, release: vi.fn() }))
+    const transaction = await api.beginTransaction({ client: client as never })
+    await client.query('/* direct */ SELECT 1')
+    await transaction.commit()
+    expect(queries).toEqual([
+      'SAVEPOINT vouchington_transaction_probe',
+      '/* beginTransaction */ BEGIN',
+      '/* direct */ SELECT 1',
+      '/* beginTransaction */ COMMIT',
+    ])
+  })
+
+  it('rejects a nested borrowed BEGIN without rolling back or releasing the caller client', async () => {
+    const queries: string[] = []
+    const client = Object.assign(new EventEmitter(), {
+      query: async (input: { text?: string } | string) => {
+        const text = typeof input === 'string' ? input : (input.text ?? '')
+        queries.push(text)
+        if (text.includes('SAVEPOINT')) throw Object.assign(new Error('idle'), { code: '25P01' })
+        if (text.endsWith(' BEGIN')) client.emit('notice', { code: '25001' })
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    })
+    const api = createTransactionApi(runtime({ query: client.query, release: vi.fn() }))
+    await expect(api.beginTransaction({ client: client as never })).rejects.toThrow(
+      'already has a transaction open',
+    )
+    expect(queries.some((query) => query.includes('ROLLBACK'))).toBe(false)
     expect(client.release).not.toHaveBeenCalled()
   })
 })

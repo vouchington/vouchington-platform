@@ -84,10 +84,12 @@ describe('transaction probes and rollback', () => {
       },
       release: vi.fn(),
     }
-    await expect(createTransactionApi(runtime(beginClient)).beginTransaction()).rejects.toBe(
-      beginFailure,
-    )
+    const begun = await createTransactionApi(runtime(beginClient)).beginTransaction()
+    await expect(begun('/* first */ SELECT 1')).rejects.toBe(beginFailure)
     expect(beginClient.release).toHaveBeenCalledWith(true)
+    await expect(begun('/* second */ SELECT 1')).rejects.toBe(beginFailure)
+    await expect(begun.commit()).rejects.toBe(beginFailure)
+    expect(beginClient.release).toHaveBeenCalledOnce()
 
     const commitFailure = new Error('commit failed')
     const commitClient = {

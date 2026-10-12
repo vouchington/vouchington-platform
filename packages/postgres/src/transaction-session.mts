@@ -1,11 +1,16 @@
 import type pg from 'pg'
 
 import { executeClientQuery } from './execute-client-query.mts'
-import { beginTransactionBlock } from './transaction-begin.mts'
+import {
+  beginTransactionBatch,
+  transactionStartControls,
+  type ControlExtras as Extras,
+} from './transaction-begin.mts'
 import {
   recoverFailedCallerTransaction,
   setTransactionCleanupOutcome,
 } from './transaction-cleanup.mts'
+import { throwFailure } from './transaction-queue.mts'
 import type { Transaction } from './create-psql-types.mts'
 import type {
   PsqlRuntime,
@@ -22,74 +27,29 @@ export type TransactionSessionOptions = {
   queryPool?: QueryPoolLabel
 }
 
-export async function runQueuedTransactionHandler<Result>(
-  runtime: PsqlRuntime,
-  client: pg.PoolClient,
-  handler: (query: TransactionQuery) => Promise<Result>,
-  queryPool: QueryPoolLabel,
-): Promise<Result> {
-  let failed: unknown
-  let hasFailed = false
-  let queue = Promise.resolve()
-  const query = Object.assign(
-    (<Row extends pg.QueryResultRow = pg.QueryResultRow>(
-      input: QueryInput,
-      values?: QueryValues,
-    ) => {
-      const result = queue.then(async () => {
-        if (hasFailed) throwFailure(failed)
-        try {
-          return await executeClientQuery<Row>(client, input, values, queryPool, {
-            onQueryTiming: runtime.onQueryTiming,
-          })
-        } catch (error) {
-          failed = error
-          hasFailed = true
-          throw error
-        }
-      })
-      queue = result.then(
-        () => undefined,
-        () => undefined,
-      )
-      return result
-    }) as TransactionQuery,
-    { client },
-  )
-  try {
-    const result = await handler(query)
-    await queue
-    if (hasFailed) throwFailure(failed)
-    return result
-  } finally {
-    await queue
-  }
-}
-
+/**
+ * Opens an owned session without a round trip of its own: `BEGIN` and the
+ * timeout are pipelined with the first statement, and a session settled before
+ * any statement sends `BEGIN` alone first. Borrowed clients begin eagerly.
+ */
 export async function beginTransactionSession(
   runtime: PsqlRuntime,
   client: pg.PoolClient,
   options: TransactionSessionOptions,
 ): Promise<Transaction> {
-  const control = (text: string, values?: QueryValues) =>
+  const control = (text: string, values?: QueryValues, extras?: Extras) =>
     executeClientQuery(client, `${options.annotation} ${text}`, values, 'client', {
       onQueryTiming: runtime.onQueryTiming,
       queryTimeoutMs: options.statementTimeoutMs,
+      ...extras,
     })
-  try {
-    await beginTransactionBlock(client, () => control('BEGIN'))
-    if (options.statementTimeoutMs !== undefined) {
-      await control("SELECT set_config('statement_timeout', $1, true)", [
-        `${options.statementTimeoutMs}ms`,
-      ])
-    }
-  } catch (error) {
-    if (options.releaseClient !== false) client.release(true)
-    throw error
-  }
+  const beginControls = (extras: Extras = {}, settings = true) =>
+    transactionStartControls(control, options.statementTimeoutMs, extras, settings)
 
   let failed: unknown
   let hasFailed = false
+  let begun = false
+  let abandoned = false
   let queue = Promise.resolve()
   let released = false
   let transaction!: Transaction
@@ -102,28 +62,59 @@ export async function beginTransactionSession(
     }
     released = true
   }
-  const query = Object.assign(
+  function fail(error: unknown): never {
+    failed = error
+    hasFailed = true
+    throw error
+  }
+  const begin = async <T,>(first?: () => Promise<T>, settings = false) => {
+    begun = true
+    // Only the control statements report as pipelined; the caller's statement keeps its own timing.
+    const extras = { pipelined: true, batchSize: beginControls().length + 1 }
+    const outcome = first
+      ? await beginTransactionBatch(client, beginControls(extras), first)
+      : await beginTransactionBatch(
+          client,
+          beginControls(undefined, settings),
+          async () => undefined,
+          false,
+        )
+    if (outcome.kind === 'failed') {
+      abandoned = true
+      release(true)
+      fail(outcome.error)
+    }
+    return outcome.first
+  }
+  let opening: Promise<unknown> | undefined
+  // Work sent directly on the client must run inside the transaction, so reading it
+  // before the first statement sends BEGIN now, unpipelined, ahead of that work.
+  const exposeClient = () => {
+    if (!begun && !settlement) opening = begin(undefined, true).catch(() => undefined)
+    return client
+  }
+  const query = Object.defineProperty(
     (<Row extends pg.QueryResultRow = pg.QueryResultRow>(
       input: QueryInput,
       values?: QueryValues,
     ) => {
       if (settlement) return Promise.reject(new Error('Transaction is already settled'))
+      const run = () =>
+        executeClientQuery<Row>(client, input, values, options.queryPool ?? 'write', {
+          onQueryTiming: runtime.onQueryTiming,
+        })
       const result = queue.then(async () => {
+        await opening
         if (hasFailed) throwFailure(failed)
+        if (!begun) {
+          const first = await begin(run)
+          if (first.status === 'rejected') return fail(first.reason)
+          return first.value
+        }
         try {
-          return await executeClientQuery<Row>(
-            client,
-            input,
-            values,
-            options.queryPool ?? 'write',
-            {
-              onQueryTiming: runtime.onQueryTiming,
-            },
-          )
+          return await run()
         } catch (error) {
-          failed = error
-          hasFailed = true
-          throw error
+          return fail(error)
         }
       })
       queue = result.then(
@@ -132,7 +123,8 @@ export async function beginTransactionSession(
       )
       return result
     }) as TransactionQuery,
-    { client },
+    'client',
+    { get: exposeClient },
   )
   const settle = (operation: 'COMMIT' | 'ROLLBACK'): Promise<void> => {
     if (settlement) {
@@ -145,6 +137,14 @@ export async function beginTransactionSession(
   }
   async function settleTransaction(operation: 'COMMIT' | 'ROLLBACK'): Promise<void> {
     await queue
+    await opening
+    // Nothing ran yet: BEGIN alone, so a nested-BEGIN client is discarded before COMMIT is sent.
+    if (!begun) await begin().catch(() => undefined)
+    if (abandoned) {
+      // Only owned sessions start lazily; their connection was discarded, ending the transaction.
+      if (operation === 'COMMIT') throwFailure(failed)
+      return
+    }
     if (operation === 'COMMIT' && hasFailed) {
       try {
         await control('ROLLBACK')
@@ -186,10 +186,7 @@ export async function beginTransactionSession(
     },
   }) as Transaction
   setTransactionCleanupOutcome(transaction, { kind: 'none' })
+  // The caller already holds a borrowed client, so begin it eagerly, as before.
+  if (options.releaseClient === false) await begin(undefined, true)
   return transaction
-}
-
-function throwFailure(error: unknown): never {
-  if (error instanceof Error) throw error
-  throw new Error(`Transaction failed: ${String(error)}`)
 }
