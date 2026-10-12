@@ -28,10 +28,9 @@ export type TransactionSessionOptions = {
 }
 
 /**
- * Opens a transaction session without a round trip of its own. `BEGIN` and the
- * statement timeout are pipelined with the first statement; a session settled
- * before any statement sends `BEGIN` alone first, so a nested-`BEGIN` client is
- * never committed.
+ * Opens an owned session without a round trip of its own: `BEGIN` and the
+ * timeout are pipelined with the first statement, and a session settled before
+ * any statement sends `BEGIN` alone first. Borrowed clients begin eagerly.
  */
 export async function beginTransactionSession(
   runtime: PsqlRuntime,
@@ -51,7 +50,6 @@ export async function beginTransactionSession(
   let hasFailed = false
   let begun = false
   let abandoned = false
-  let rollbackFailure: { error: unknown } | undefined
   let queue = Promise.resolve()
   let released = false
   let transaction!: Transaction
@@ -83,9 +81,6 @@ export async function beginTransactionSession(
         )
     if (outcome.kind === 'failed') {
       abandoned = true
-      // A borrowed client is not discarded, so end whatever the batch left open on it.
-      if (options.releaseClient === false)
-        await control('ROLLBACK').catch((error: unknown) => (rollbackFailure = { error }))
       release(true)
       fail(outcome.error)
     }
@@ -146,11 +141,8 @@ export async function beginTransactionSession(
     // Nothing ran yet: BEGIN alone, so a nested-BEGIN client is discarded before COMMIT is sent.
     if (!begun) await begin().catch(() => undefined)
     if (abandoned) {
-      // Owned connections were discarded; borrowed ones were rolled back when BEGIN failed.
-      if (rollbackFailure)
-        setTransactionCleanupOutcome(transaction, { ...rollbackFailure, kind: 'rollback-failed' })
+      // Only owned sessions start lazily; their connection was discarded, ending the transaction.
       if (operation === 'COMMIT') throwFailure(failed)
-      if (rollbackFailure) throw rollbackFailure.error
       return
     }
     if (operation === 'COMMIT' && hasFailed) {
@@ -194,5 +186,7 @@ export async function beginTransactionSession(
     },
   }) as Transaction
   setTransactionCleanupOutcome(transaction, { kind: 'none' })
+  // The caller already holds a borrowed client, so begin it eagerly, as before.
+  if (options.releaseClient === false) await begin(undefined, true)
   return transaction
 }

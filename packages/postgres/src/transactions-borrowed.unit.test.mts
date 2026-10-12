@@ -105,31 +105,46 @@ describe('borrowed transaction cleanup', () => {
     expect(client.release).not.toHaveBeenCalled()
   })
 
-  it.each([
-    ['resolves rollback after ending', undefined],
-    ['surfaces a failed ROLLBACK after', new Error('rollback failed')],
-  ] as const)('%s the transaction a failed borrowed start left open', async (_name, failure) => {
+  it('begins a borrowed client before returning, ahead of direct caller work', async () => {
     const queries: string[] = []
     const client = Object.assign(new EventEmitter(), {
       query: async (input: { text?: string } | string) => {
         const text = typeof input === 'string' ? input : (input.text ?? '')
         queries.push(text)
         if (text.includes('SAVEPOINT')) throw Object.assign(new Error('idle'), { code: '25P01' })
-        // A caller-issued BEGIN as the first statement warns 25001 inside the new transaction.
-        if (text.includes('/* nested */')) client.emit('notice', { code: '25001' })
-        if (failure && text.includes('ROLLBACK')) throw failure
         return { rows: [], rowCount: 0 }
       },
       release: vi.fn(),
     })
     const api = createTransactionApi(runtime({ query: client.query, release: vi.fn() }))
     const transaction = await api.beginTransaction({ client: client as never })
-    await expect(transaction('/* nested */ BEGIN')).rejects.toThrow(
+    await client.query('/* direct */ SELECT 1')
+    await transaction.commit()
+    expect(queries).toEqual([
+      'SAVEPOINT vouchington_transaction_probe',
+      '/* beginTransaction */ BEGIN',
+      '/* direct */ SELECT 1',
+      '/* beginTransaction */ COMMIT',
+    ])
+  })
+
+  it('rejects a nested borrowed BEGIN without rolling back or releasing the caller client', async () => {
+    const queries: string[] = []
+    const client = Object.assign(new EventEmitter(), {
+      query: async (input: { text?: string } | string) => {
+        const text = typeof input === 'string' ? input : (input.text ?? '')
+        queries.push(text)
+        if (text.includes('SAVEPOINT')) throw Object.assign(new Error('idle'), { code: '25P01' })
+        if (text.endsWith(' BEGIN')) client.emit('notice', { code: '25001' })
+        return { rows: [], rowCount: 0 }
+      },
+      release: vi.fn(),
+    })
+    const api = createTransactionApi(runtime({ query: client.query, release: vi.fn() }))
+    await expect(api.beginTransaction({ client: client as never })).rejects.toThrow(
       'already has a transaction open',
     )
-    expect(queries.at(-1)).toBe('/* beginTransaction */ ROLLBACK')
-    if (failure) await expect(transaction.rollback()).rejects.toBe(failure)
-    else await expect(transaction.rollback()).resolves.toBeUndefined()
+    expect(queries.some((query) => query.includes('ROLLBACK'))).toBe(false)
     expect(client.release).not.toHaveBeenCalled()
   })
 })

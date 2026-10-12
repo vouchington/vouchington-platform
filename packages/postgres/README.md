@@ -43,13 +43,14 @@ caller-managed `pg.PoolClient`, pass `{ client }`; the resource settles the tran
 releases the caller's client. Active caller-managed clients are rejected rather than nested. Pass a
 transaction's callable query to nested work.
 
-Opening a transaction sends nothing. `BEGIN`, and for bounded transactions the statement timeout,
-are pipelined with the transaction's first statement, so they share its round trip. A transaction
-settled before any statement sends `BEGIN` on its own first. Reading `transaction.client` before the
-first statement sends `BEGIN` (and the timeout) immediately, so work run directly on that client stays
-inside the transaction. As a result, `beginTransaction()` and `beginBoundedTransaction()` no longer
-reject for `BEGIN` failures; those errors, including the dirty-connection error below, surface from the
-first statement or from `commit()`.
+Opening a transaction on a connection this package acquires sends nothing. `BEGIN`, and for bounded
+transactions the statement timeout, are pipelined with the transaction's first statement, so they
+share its round trip. A transaction settled before any statement sends `BEGIN` on its own first.
+Reading `transaction.client` before the first statement sends `BEGIN` (and the timeout) immediately,
+so work run directly on that client stays inside the transaction. As a result, those transactions no
+longer reject from `beginTransaction()` or `beginBoundedTransaction()` for `BEGIN` failures; those
+errors, including the dirty-connection error below, surface from the first statement or from
+`commit()`. A transaction on a caller-managed `pg.PoolClient` still begins before it is returned.
 
 A pooled connection released while its transaction was still open is never reused silently. When an
 owned transaction's `BEGIN` reports that a transaction is already in progress (SQLSTATE `25001`),
