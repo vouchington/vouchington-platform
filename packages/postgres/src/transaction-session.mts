@@ -1,7 +1,11 @@
 import type pg from 'pg'
 
-import { executeClientQuery, type ClientQueryTimingExtras } from './execute-client-query.mts'
-import { beginTransactionBatch } from './transaction-begin.mts'
+import { executeClientQuery } from './execute-client-query.mts'
+import {
+  beginTransactionBatch,
+  transactionStartControls,
+  type ControlExtras as Extras,
+} from './transaction-begin.mts'
 import {
   recoverFailedCallerTransaction,
   setTransactionCleanupOutcome,
@@ -23,8 +27,6 @@ export type TransactionSessionOptions = {
   queryPool?: QueryPoolLabel
 }
 
-type Extras = Omit<ClientQueryTimingExtras, 'onQueryTiming' | 'queryTimeoutMs'>
-
 /**
  * Opens a transaction session without a round trip of its own. `BEGIN` and the
  * statement timeout are pipelined with the first statement; a session settled
@@ -42,22 +44,14 @@ export async function beginTransactionSession(
       queryTimeoutMs: options.statementTimeoutMs,
       ...extras,
     })
-  // BEGIN is unnamed so it cannot fail on its own: each pipelined query has its own Sync,
-  // and a failed BEGIN would leave the first statement to run in autocommit.
-  const timeout = [`${options.statementTimeoutMs}ms`]
-  const setStatementTimeout = (extras?: Extras) =>
-    control("SELECT set_config('statement_timeout', $1, true)", timeout, extras)
-  const beginControls = (extras?: Extras, statements = true) => [
-    () => control('BEGIN', undefined, { ...extras, prepare: false }),
-    ...(options.statementTimeoutMs === undefined || !statements
-      ? []
-      : [() => setStatementTimeout(extras)]),
-  ]
+  const beginControls = (extras: Extras = {}, settings = true) =>
+    transactionStartControls(control, options.statementTimeoutMs, extras, settings)
 
   let failed: unknown
   let hasFailed = false
   let begun = false
   let abandoned = false
+  let rollbackFailure: { error: unknown } | undefined
   let queue = Promise.resolve()
   let released = false
   let transaction!: Transaction
@@ -89,6 +83,9 @@ export async function beginTransactionSession(
         )
     if (outcome.kind === 'failed') {
       abandoned = true
+      // A borrowed client is not discarded, so end whatever the batch left open on it.
+      if (options.releaseClient === false)
+        await control('ROLLBACK').catch((error: unknown) => (rollbackFailure = { error }))
       release(true)
       fail(outcome.error)
     }
@@ -149,8 +146,11 @@ export async function beginTransactionSession(
     // Nothing ran yet: BEGIN alone, so a nested-BEGIN client is discarded before COMMIT is sent.
     if (!begun) await begin().catch(() => undefined)
     if (abandoned) {
-      // The connection was discarded, which ends any server-side transaction.
+      // Owned connections were discarded; borrowed ones were rolled back when BEGIN failed.
+      if (rollbackFailure)
+        setTransactionCleanupOutcome(transaction, { ...rollbackFailure, kind: 'rollback-failed' })
       if (operation === 'COMMIT') throwFailure(failed)
+      if (rollbackFailure) throw rollbackFailure.error
       return
     }
     if (operation === 'COMMIT' && hasFailed) {

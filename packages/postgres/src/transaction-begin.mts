@@ -1,10 +1,34 @@
 import type pg from 'pg'
 
+import type { ClientQueryTimingExtras } from './execute-client-query.mts'
+import type { QueryValues } from './types.mts'
+
 const ACTIVE_SQL_TRANSACTION = '25001'
 const NESTED_BEGIN_MESSAGE =
   'Cannot begin a transaction on a pool client that already has a transaction open'
 
 type PipelineFlag = { pipeline?: boolean | undefined }
+
+export type ControlExtras = Omit<ClientQueryTimingExtras, 'onQueryTiming' | 'queryTimeoutMs'>
+type Control = (text: string, values?: QueryValues, extras?: ControlExtras) => Promise<unknown>
+
+/**
+ * Builds the statements that open a transaction. `BEGIN` is unnamed so it uses
+ * the simple protocol and cannot fail on its own: pg sends a Sync after each
+ * pipelined query, so a failed `BEGIN` would leave the first statement to run
+ * in autocommit.
+ */
+export function transactionStartControls(
+  control: Control,
+  statementTimeoutMs: number | undefined,
+  extras: ControlExtras,
+  settings: boolean,
+): Array<() => Promise<unknown>> {
+  const begin = () => control('BEGIN', undefined, { ...extras, prepare: false })
+  if (statementTimeoutMs === undefined || !settings) return [begin]
+  const timeout = [`${statementTimeoutMs}ms`]
+  return [begin, () => control("SELECT set_config('statement_timeout', $1, true)", timeout, extras)]
+}
 
 export type BeginBatchOutcome<T> =
   | { kind: 'begun'; first: PromiseSettledResult<T> }
