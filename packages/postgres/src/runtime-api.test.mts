@@ -23,7 +23,9 @@ describe('query clients', () => {
         } finally {
           client.release()
         }
-        await expect(psql.read('SELECT 1 AS n')).resolves.toMatchObject({ rows: [{ n: 1 }] })
+        await expect(psql.read('/* read */ SELECT 1 AS n')).resolves.toMatchObject({
+          rows: [{ n: 1 }],
+        })
         await expect(
           psql.query('/* delegatedFail */ SELECT 1', {
             query: async () => {

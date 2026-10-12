@@ -40,7 +40,6 @@ export async function runQueuedTransactionHandler<Result>(
         if (hasFailed) throwFailure(failed)
         try {
           return await executeClientQuery<Row>(client, input, values, queryPool, {
-            env: runtime.env,
             onQueryTiming: runtime.onQueryTiming,
           })
         } catch (error) {
@@ -74,7 +73,6 @@ export async function beginTransactionSession(
 ): Promise<Transaction> {
   const control = (text: string, values?: QueryValues) =>
     executeClientQuery(client, `${options.annotation} ${text}`, values, 'client', {
-      env: runtime.env,
       onQueryTiming: runtime.onQueryTiming,
       queryTimeoutMs: options.statementTimeoutMs,
     })
@@ -119,7 +117,6 @@ export async function beginTransactionSession(
             values,
             options.queryPool ?? 'write',
             {
-              env: runtime.env,
               onQueryTiming: runtime.onQueryTiming,
             },
           )

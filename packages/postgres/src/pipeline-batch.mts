@@ -3,12 +3,16 @@ import { SQLStatement } from 'sql-template-strings'
 
 import { connectWithRetry } from './connect-with-retry.mts'
 import { executeClientQuery } from './execute-client-query.mts'
-import { assertLeadingQueryAnnotation } from './prepared-statement-name.mts'
+import {
+  assertLeadingQueryAnnotation,
+  isUnannotatedQueryAllowed,
+} from './prepared-statement-name.mts'
 import type { PsqlRuntime, QueryInput, QueryValues } from './types.mts'
 
 type SnapshotQuery = {
   text: string
   values: QueryValues
+  allowUnannotated: boolean
 }
 
 export const PIPELINE_BATCH_MAX = 16
@@ -31,7 +35,7 @@ export function createPipelineBatch(runtime: PsqlRuntime) {
     }
     if (queries.length === 0) return []
 
-    const validated = queries.map((query) => snapshotPipelineQuery(query, runtime.env))
+    const validated = queries.map((query) => snapshotPipelineQuery(query))
     for (const query of validated) {
       try {
         runtime.onBeforeQuery?.(query.text, query.values)
@@ -51,7 +55,7 @@ export function createPipelineBatch(runtime: PsqlRuntime) {
       for (const query of validated) {
         pending.push(
           executeClientQuery<Row>(client, query.text, query.values, poolLabel, {
-            env: runtime.env,
+            allowUnannotated: query.allowUnannotated,
             onQueryTiming: runtime.onQueryTiming,
             pipelined: true,
             batchSize: validated.length,
@@ -74,12 +78,12 @@ export function createPipelineBatch(runtime: PsqlRuntime) {
   }
 }
 
-function snapshotPipelineQuery(query: QueryInput, env: NodeJS.ProcessEnv): SnapshotQuery {
+function snapshotPipelineQuery(query: QueryInput): SnapshotQuery {
   if (typeof query === 'string') {
     rejectSubmittable(query)
-    assertLeadingQueryAnnotation(query, env)
+    assertLeadingQueryAnnotation(query)
     rejectExcludedStatement(query)
-    return { text: query, values: undefined }
+    return { text: query, values: undefined, allowUnannotated: false }
   }
   if (!isSQLStatement(query)) {
     rejectSubmittable(query)
@@ -88,9 +92,9 @@ function snapshotPipelineQuery(query: QueryInput, env: NodeJS.ProcessEnv): Snaps
   rejectSubmittable(query)
   const text = query.text
   const values = query.values ? [...query.values] : undefined
-  assertLeadingQueryAnnotation(text, env)
+  assertLeadingQueryAnnotation(query)
   rejectExcludedStatement(text)
-  return { text, values }
+  return { text, values, allowUnannotated: isUnannotatedQueryAllowed(query) }
 }
 
 function isSQLStatement(value: unknown): value is SQLStatement {

@@ -71,7 +71,9 @@ Production defaults: `statement_timeout = 30s`, `idle_in_transaction_session_tim
 `jit=off`. Pool size comes from `PG_READ_POOL_MAX`, `PG_WRITE_POOL_MAX`, and
 `PG_ADVISORY_LOCK_POOL_MAX` (`PG_POOL_MAX` is the compatibility fallback).
 
-Every SQL string must start with a `/* functionName */` annotation outside tests. Do not set
+Every SQL string must start with a `/* functionName */` annotation, including under test runners.
+Wrap test-only fixture SQL with `allowUnannotatedQuery(sql)` to opt that one call out; value-free
+opted-out SQL keeps the simple query protocol, so multi-statement fixtures still run. Do not set
 `pipeline` on the shared pools; pipelining is enabled only inside `pipelineBatch()` (max 16
 independent statements).
 

@@ -35,6 +35,7 @@ describe('package exports', () => {
     expect(postgres.PIPELINE_BATCH_MAX).toBe(16)
     expect(typeof postgres.withLibpqCompat).toBe('function')
     expect(typeof postgres.connectWithRetry).toBe('function')
+    expect(typeof postgres.allowUnannotatedQuery).toBe('function')
     expect(typeof postgres.assertLeadingQueryAnnotation).toBe('function')
     expect(typeof postgres.runBoundedTransactionWithClient).toBe('function')
     expect(typeof postgres.computeMigrationChecksum).toBe('function')
