@@ -77,7 +77,7 @@ describe('BEGIN pipelined with the first statement', () => {
     )
     expect(timings).toEqual([
       { annotation: 'withClientTransaction', pipelined: true, batchSize: 2 },
-      { annotation: 'first', pipelined: true, batchSize: 2 },
+      { annotation: 'first' },
       { annotation: 'second' },
       { annotation: 'withClientTransaction' },
     ])

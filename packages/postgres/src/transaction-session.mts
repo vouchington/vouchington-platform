@@ -42,18 +42,16 @@ export async function beginTransactionSession(
       queryTimeoutMs: options.statementTimeoutMs,
       ...extras,
     })
+  // BEGIN is unnamed so it cannot fail on its own: each pipelined query has its own Sync,
+  // and a failed BEGIN would leave the first statement to run in autocommit.
+  const timeout = [`${options.statementTimeoutMs}ms`]
+  const setStatementTimeout = (extras?: Extras) =>
+    control("SELECT set_config('statement_timeout', $1, true)", timeout, extras)
   const beginControls = (extras?: Extras, statements = true) => [
-    () => control('BEGIN', undefined, extras),
+    () => control('BEGIN', undefined, { ...extras, prepare: false }),
     ...(options.statementTimeoutMs === undefined || !statements
       ? []
-      : [
-          () =>
-            control(
-              "SELECT set_config('statement_timeout', $1, true)",
-              [`${options.statementTimeoutMs}ms`],
-              extras,
-            ),
-        ]),
+      : [() => setStatementTimeout(extras)]),
   ]
 
   let failed: unknown
@@ -77,11 +75,12 @@ export async function beginTransactionSession(
     hasFailed = true
     throw error
   }
-  const begin = async <T,>(first?: (extras: Extras) => Promise<T>, settings = false) => {
+  const begin = async <T,>(first?: () => Promise<T>, settings = false) => {
     begun = true
+    // Only the control statements report as pipelined; the caller's statement keeps its own timing.
     const extras = { pipelined: true, batchSize: beginControls().length + 1 }
     const outcome = first
-      ? await beginTransactionBatch(client, beginControls(extras), () => first(extras))
+      ? await beginTransactionBatch(client, beginControls(extras), first)
       : await beginTransactionBatch(
           client,
           beginControls(undefined, settings),
@@ -108,10 +107,9 @@ export async function beginTransactionSession(
       values?: QueryValues,
     ) => {
       if (settlement) return Promise.reject(new Error('Transaction is already settled'))
-      const run = (extras?: Extras) =>
+      const run = () =>
         executeClientQuery<Row>(client, input, values, options.queryPool ?? 'write', {
           onQueryTiming: runtime.onQueryTiming,
-          ...extras,
         })
       const result = queue.then(async () => {
         await opening
@@ -134,7 +132,7 @@ export async function beginTransactionSession(
       return result
     }) as TransactionQuery,
     'client',
-    { enumerable: true, get: exposeClient },
+    { get: exposeClient },
   )
   const settle = (operation: 'COMMIT' | 'ROLLBACK'): Promise<void> => {
     if (settlement) {

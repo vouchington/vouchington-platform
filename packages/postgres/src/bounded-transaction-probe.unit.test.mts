@@ -44,6 +44,9 @@ describe('bounded transaction preflight', () => {
       '/* first */ SELECT 1',
     ])
     expect(statements[0]).toEqual(expect.objectContaining({ query_timeout: 50 }))
+    // An unnamed BEGIN uses the simple protocol, so it cannot fail apart from the first statement.
+    expect(statements[0]).not.toHaveProperty('name')
+    expect(statements[1]).toHaveProperty('name')
     expect(statements[1]).toEqual(expect.objectContaining({ query_timeout: 50, values: ['50ms'] }))
     expect(statements.some((statement) => statement.text?.includes('SAVEPOINT'))).toBe(false)
     expect(transaction.client).toBe(client)
