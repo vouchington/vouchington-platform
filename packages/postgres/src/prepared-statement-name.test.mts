@@ -32,12 +32,19 @@ describe('prepared statement names', () => {
     ).not.toThrow()
   })
 
-  it('opts out a string as a value-free statement and a statement in place', () => {
+  it('opts out a copy of a string or statement', () => {
     const fromString = allowUnannotatedQuery('SELECT 1; SELECT 2')
     expect(fromString.text).toBe('SELECT 1; SELECT 2')
     expect(fromString.values).toEqual([])
     const statement = sql`SELECT ${1}`
-    expect(allowUnannotatedQuery(statement)).toBe(statement)
+    const copy = allowUnannotatedQuery(statement)
+    expect(copy).not.toBe(statement)
+    expect(copy.text).toBe(statement.text)
+    expect(copy.values).toEqual([1])
+    expect(() => assertLeadingQueryAnnotation(statement)).toThrow()
+    statement.append(sql` + ${2}`)
+    expect(copy.text).toBe('SELECT $1')
+    expect(allowUnannotatedQuery(sql`SELECT 1`.setName('fixture')).name).toBe('fixture')
   })
 
   it('builds names from annotations and explicit names', () => {

@@ -17,7 +17,9 @@ export function extractLeadingQueryAnnotation(sqlText: string): string | null {
 const unannotatedQueries = new WeakSet<SQLStatement>()
 
 export function allowUnannotatedQuery(input: QueryInput): SQLStatement {
-  const statement = typeof input === 'string' ? sql``.append(input) : input
+  // copy so the caller's statement keeps requiring an annotation and later appends do not leak in
+  const statement = sql``.append(input)
+  if (typeof input !== 'string' && input.name) statement.setName(input.name)
   unannotatedQueries.add(statement)
   return statement
 }
