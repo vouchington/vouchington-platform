@@ -64,6 +64,7 @@ the migration advisory lock is per database, and `VITEST_MAX_WORKERS` overrides 
 - `@vouchington/email` — React Email render helpers, style factories, injected catalog copy, and locale resolution
 - `@vouchington/sentry` — Sentry SDK init options, least-data policy, event filtering, coded errors, and Node/browser capture helpers
 - `@vouchington/ai` — subpath-only model-call primitives: `/providers` (usage, pricing, JSON-output adapters) and `/structured-decisions` (codecs, classification)
+- `@vouchington/aws` — SES, SQS, Firehose, and CloudWatch command builders, batching, codecs, and throttling classifiers
 
 Extracted APIs must be opinionated generic utilities, never orchestration or workflows. State
 transitions, transaction and ordering decisions, queue and retry behavior, HTTP lifecycle, cleanup
