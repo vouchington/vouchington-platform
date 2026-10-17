@@ -24,6 +24,8 @@
       "@vouchington/utils/scopes": ["./packages/utils/src/scopes.mts"],
       "@vouchington/utils/strings": ["./packages/utils/src/strings.mts"],
       "@vouchington/utils/urls": ["./packages/utils/src/urls.mts"],
+      "@vouchington/memberships": ["./packages/memberships/src/index.mts"],
+      "@vouchington/stripe": ["./packages/stripe/src/index.mts"],
       "@vouchington/uuid-v7": ["./packages/uuid-v7/src/index.mts"]
     },
     "target": "ES2023",

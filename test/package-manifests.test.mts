@@ -26,6 +26,7 @@ const packages = [
   'edge',
   'oauth-server',
   'email',
+  'stripe',
 ]
 
 describe('runtime package manifests', () => {
