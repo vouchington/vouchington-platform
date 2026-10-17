@@ -21,6 +21,15 @@ function assertSafe(label: string, value: string): string {
   return value
 }
 
+// RFC 2046 boundary grammar without the trailing-space allowance.
+const BOUNDARY = /^[0-9A-Za-z'()+_,\-./:=?]{1,70}$/
+
+// Folds an address list across lines so no header line nears the 998-character limit.
+function addressHeader(name: string, value: string | readonly string[]): string {
+  const addresses = list(value).map((address) => assertSafe(name, address))
+  return `${name}: ${addresses.join(',\r\n ')}`
+}
+
 function normalizeCrLf(value: string): string {
   return value.replace(/\r\n|\r|\n/g, '\r\n')
 }
@@ -41,16 +50,8 @@ function encodeHeaderValue(value: string): string {
 export function buildRawEmailMessage(options: RawEmailOptions): string {
   const headers = [
     `From: ${assertSafe('source', options.source)}`,
-    `To: ${list(options.to)
-      .map((a) => assertSafe('to', a))
-      .join(', ')}`,
-    ...(options.replyTo
-      ? [
-          `Reply-To: ${list(options.replyTo)
-            .map((a) => assertSafe('replyTo', a))
-            .join(', ')}`,
-        ]
-      : []),
+    addressHeader('To', options.to),
+    ...(options.replyTo ? [addressHeader('Reply-To', options.replyTo)] : []),
     `Subject: ${encodeHeaderValue(assertSafe('subject', options.subject))}`,
     'MIME-Version: 1.0',
     ...Object.entries(options.headers ?? {}).map(
@@ -60,6 +61,7 @@ export function buildRawEmailMessage(options: RawEmailOptions): string {
 
   if (options.text && options.html) {
     const boundary = options.boundary ?? `${options.boundaryPrefix ?? 'mime'}-${randomUUID()}`
+    if (!BOUNDARY.test(boundary)) throw new TypeError('Invalid MIME boundary')
     const part = (type: string, body: string) => [
       `--${boundary}`,
       `Content-Type: ${type}; charset=UTF-8`,

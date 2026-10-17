@@ -22,7 +22,7 @@ describe('buildRawEmailMessage', () => {
       boundary: 'fixed',
     })
     expect(raw).toContain('From: from@example.com\r\n')
-    expect(raw).toContain('To: a@example.com, b@example.com\r\n')
+    expect(raw).toContain('To: a@example.com,\r\n b@example.com\r\n')
     expect(raw).toContain('Reply-To: r@example.com\r\n')
     expect(raw).toContain('\r\nList-Unsubscribe-Post: List-Unsubscribe=One-Click\r\n')
     expect(raw).toContain('multipart/alternative; boundary="fixed"')
@@ -78,6 +78,24 @@ describe('ses commands', () => {
     expect(SES_CLIENT_CONFIG).toEqual({ useDualstackEndpoint: true, maxAttempts: 1 })
   })
 
+  it('rejects invalid MIME boundaries', () => {
+    for (const boundary of ['x"\r\nX-Injected: y', 'a b', '']) {
+      expect(() => buildRawEmailMessage({ ...base, text: 't', html: 'h', boundary })).toThrow(
+        'Invalid MIME boundary',
+      )
+    }
+    expect(() =>
+      buildRawEmailMessage({ ...base, text: 't', html: 'h', boundaryPrefix: 'a"b' }),
+    ).toThrow(TypeError)
+  })
+
+  it('requires a body for structured SendEmail', () => {
+    expect(() => buildSendEmailCommand(base)).toThrow(TypeError)
+    expect(buildSendEmailCommand({ ...base, html: '<p>h</p>' }).input.Message?.Body).toEqual({
+      Html: { Charset: 'UTF-8', Data: '<p>h</p>' },
+    })
+  })
+
   it('builds a structured SendEmail command', () => {
     const command = buildSendEmailCommand({
       ...base,
@@ -101,11 +119,11 @@ describe('ses commands', () => {
   })
 
   it('omits optional SendEmail fields', () => {
-    const command = buildSendEmailCommand(base)
+    const command = buildSendEmailCommand({ ...base, text: 't' })
     expect(command.input.ReplyToAddresses).toBeUndefined()
     expect(command.input.ConfigurationSetName).toBeUndefined()
     expect(command.input.Destination?.BccAddresses).toEqual([])
-    expect(command.input.Message?.Body).toEqual({})
+    expect(command.input.Message?.Body).toEqual({ Text: { Charset: 'UTF-8', Data: 't' } })
   })
 
   it('builds a SendRawEmail command with BCC destinations', () => {
@@ -123,8 +141,10 @@ describe('ses commands', () => {
   })
 
   it('selects raw only when custom headers exist', () => {
-    expect(buildEmailCommand(base).constructor.name).toBe('SendEmailCommand')
-    expect(buildEmailCommand({ ...base, headers: {} }).constructor.name).toBe('SendEmailCommand')
+    expect(buildEmailCommand({ ...base, text: 't' }).constructor.name).toBe('SendEmailCommand')
+    expect(buildEmailCommand({ ...base, text: 't', headers: {} }).constructor.name).toBe(
+      'SendEmailCommand',
+    )
     expect(buildEmailCommand({ ...base, headers: { 'X-A': 'b' } }).constructor.name).toBe(
       'SendRawEmailCommand',
     )

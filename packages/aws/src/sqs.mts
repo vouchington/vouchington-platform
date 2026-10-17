@@ -11,7 +11,7 @@ import { byteLength, chunkBySize } from './chunk.mts'
 import { AWS_DUALSTACK_CLIENT_CONFIG } from './request-handler.mts'
 
 const SQS_MAX_BATCH_ENTRIES = 10
-const SQS_MAX_BATCH_BYTES = 262_144
+const SQS_MAX_BATCH_BYTES = 1_048_576
 
 // Client options for the application's SQSClient. QueueUrls use the IPv4 host, and the SDK default
 // useQueueUrlAsEndpoint would override the resolved dual-stack endpoint on every call.
@@ -42,9 +42,10 @@ export function decodeMessageAttributes(
   for (const [name, attribute] of Object.entries(attributes ?? {})) {
     if (attribute.DataType?.startsWith('Binary') && attribute.BinaryValue) {
       decoded[name] = attribute.BinaryValue
-    } else if (attribute.DataType?.startsWith('Number') && attribute.StringValue !== undefined) {
-      decoded[name] = Number(attribute.StringValue)
-    } else if (attribute.StringValue !== undefined) decoded[name] = attribute.StringValue
+    } else if (attribute.StringValue !== undefined) {
+      // Number attributes stay strings: SQS allows 38 digits, which a JS number would round.
+      decoded[name] = attribute.StringValue
+    }
   }
   return decoded
 }
@@ -58,7 +59,7 @@ function entrySize(entry: SendMessageBatchRequestEntry): number {
   return size
 }
 
-// Splits entries into SendMessageBatch-sized groups (10 entries, 256 KiB). Oversized entries throw.
+// Splits entries into SendMessageBatch-sized groups (10 entries, 1 MiB). Oversized entries throw.
 export function chunkSendEntries(
   entries: readonly SendMessageBatchRequestEntry[],
 ): SendMessageBatchRequestEntry[][] {

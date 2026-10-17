@@ -27,7 +27,14 @@ describe('cloudwatch', () => {
       MetricName: 'm',
     }))
     expect(chunkMetricData(data).map((chunk) => chunk.length)).toEqual([1_000, 1])
-    expect(chunkMetricData(data, 600)).toHaveLength(2)
+    expect(chunkMetricData(data, { maxItems: 600 })).toHaveLength(2)
+  })
+
+  it('chunks by serialized size and rejects oversized datums', () => {
+    const datum = { MetricName: 'x'.repeat(100) }
+    const chunks = chunkMetricData([datum, datum, datum], { maxBytes: 200 })
+    expect(chunks.map((chunk) => chunk.length)).toEqual([1, 1, 1])
+    expect(() => chunkMetricData([datum], { maxBytes: 10 })).toThrow(RangeError)
   })
 
   it('builds PutMetricData', () => {
@@ -42,6 +49,7 @@ describe('firehose', () => {
   it('encodes delimited JSON records', () => {
     expect(Buffer.from(encodeJsonRecord({ a: 1 })).toString()).toBe('{"a":1}\n')
     expect(Buffer.from(encodeJsonRecord({ a: 1 }, '')).toString()).toBe('{"a":1}')
+    expect(() => encodeJsonRecord(undefined)).toThrow(TypeError)
   })
 
   it('chunks by count and bytes and rejects oversized records', () => {
@@ -83,6 +91,7 @@ describe('errors', () => {
     expect(isAwsThrottlingError({ name: 'ThrottlingException' })).toBe(true)
     expect(isAwsThrottlingError({ Code: 'Throttling' })).toBe(true)
     expect(isAwsThrottlingError({ code: 'SlowDown' })).toBe(true)
+    expect(isAwsThrottlingError({ name: 'ServiceUnavailableException' })).toBe(true)
     expect(isAwsThrottlingError({ $retryable: { throttling: true } })).toBe(true)
     expect(isAwsThrottlingError({ $metadata: { httpStatusCode: 429 } })).toBe(true)
     expect(isAwsThrottlingError({ name: 'AccessDenied', $metadata: { httpStatusCode: 403 } })).toBe(

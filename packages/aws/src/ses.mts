@@ -34,6 +34,7 @@ export function buildSendRawEmailCommand(email: SesEmail): SendRawEmailCommand {
 
 // Builds a structured SendEmail command (no custom headers).
 export function buildSendEmailCommand(email: SesEmail): SendEmailCommand {
+  if (!email.text && !email.html) throw new TypeError('SendEmail requires a text or html body')
   const Body: Body = {}
   if (email.text) Body.Text = { Charset: 'UTF-8', Data: email.text }
   if (email.html) Body.Html = { Charset: 'UTF-8', Data: email.html }

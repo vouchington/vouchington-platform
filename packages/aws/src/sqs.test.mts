@@ -24,7 +24,7 @@ describe('sqs', () => {
       n: { DataType: 'Number', StringValue: '4' },
       b: { DataType: 'Binary', BinaryValue: bytes },
     })
-    expect(decodeMessageAttributes(encoded)).toEqual({ s: 'x', n: 4, b: bytes })
+    expect(decodeMessageAttributes(encoded)).toEqual({ s: 'x', n: '4', b: bytes })
   })
 
   it('decodes custom types and tolerates missing or empty values', () => {
@@ -37,13 +37,13 @@ describe('sqs', () => {
         d: { DataType: 'String' },
         e: {} as never,
       }),
-    ).toEqual({ a: 'v', b: 2 })
+    ).toEqual({ a: 'v', b: '2' })
   })
 
   it('chunks send entries by count and bytes', () => {
     const entries = Array.from({ length: 12 }, (_, i) => ({ Id: `${i}`, MessageBody: 'x' }))
     expect(chunkSendEntries(entries).map((chunk) => chunk.length)).toEqual([10, 2])
-    const big = 'x'.repeat(200_000)
+    const big = 'x'.repeat(600_000)
     expect(
       chunkSendEntries([
         { Id: '1', MessageBody: big },
@@ -55,7 +55,7 @@ describe('sqs', () => {
   it('counts attribute bytes and rejects oversized entries', () => {
     const entry = {
       Id: '1',
-      MessageBody: 'x'.repeat(262_000),
+      MessageBody: 'x'.repeat(1_048_500),
       MessageAttributes: { a: { DataType: 'String', StringValue: 'y'.repeat(200) } },
     }
     expect(() => chunkSendEntries([entry])).toThrow(RangeError)
@@ -63,7 +63,7 @@ describe('sqs', () => {
       chunkSendEntries([
         {
           Id: '1',
-          MessageAttributes: { a: { DataType: 'Binary', BinaryValue: new Uint8Array(262_144) } },
+          MessageAttributes: { a: { DataType: 'Binary', BinaryValue: new Uint8Array(1_048_576) } },
           MessageBody: 'x',
         },
       ]),

@@ -11,7 +11,9 @@ const FIREHOSE_MAX_RECORD_BYTES = 1_000 * 1024
 
 // Serializes a value as a delimiter-terminated JSON record (newline by default for S3 sinks).
 export function encodeJsonRecord(value: unknown, delimiter = '\n'): Uint8Array {
-  return Buffer.from(`${JSON.stringify(value)}${delimiter}`, 'utf8')
+  const json = JSON.stringify(value) as string | undefined
+  if (json === undefined) throw new TypeError('Value is not JSON serializable')
+  return Buffer.from(`${json}${delimiter}`, 'utf8')
 }
 
 // Splits records by Firehose count and byte limits. A record over the per-record limit throws.

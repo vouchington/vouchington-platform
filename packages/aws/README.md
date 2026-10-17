@@ -17,8 +17,8 @@ Each client package is an optional peer; install only the services you use. S3 s
 - `/firehose`: `encodeJsonRecord`, `chunkFirehoseRecords`, `buildPutRecordBatchCommand`,
   `getFailedFirehoseRecords`.
 - `/cloudwatch`: `chunkMetricData`, `buildPutMetricDataCommand`.
-- `/request-handler`: `createAwsRequestHandler` (connection and socket deadlines that also cover
-  the response body), timeout constants, `AWS_DUALSTACK_CLIENT_CONFIG`.
+- `/request-handler`: `createAwsRequestHandler` (default connection and socket deadlines,
+  timeout constants, `AWS_DUALSTACK_CLIENT_CONFIG`.
 - `/errors`: `isAwsThrottlingError` and `getAwsErrorStatus`. Pass `getAwsErrorStatus` as
   `getStatus` to `@vouchington/queue-errors` helpers; this package does not duplicate them.
 

@@ -7,6 +7,7 @@ const THROTTLING_NAMES = new Set([
   'RequestLimitExceeded',
   'RequestThrottled',
   'RequestThrottledException',
+  'ServiceUnavailableException',
   'SlowDown',
   'ThrottledException',
   'Throttling',
