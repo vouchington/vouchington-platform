@@ -44,7 +44,7 @@ export function scrubUrlValue(value: unknown, options: UrlScrubOptions = {}): un
   const items = value.map((item: unknown) =>
     typeof item === 'string' ? scrubUrl(item, options) : item,
   )
-  return items.some((item, index) => item !== value[index]) ? items : value
+  return items.some((item, index) => !Object.is(item, value[index])) ? items : value
 }
 
 function isUrlHeader(name: string): boolean {

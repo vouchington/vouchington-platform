@@ -35,6 +35,8 @@ describe('copy-on-write identity', () => {
     expect(scrubHeaders(headers, ['authorization'])).toBe(headers)
     const withNaN = { 'http.status_code': Number.NaN }
     expect(scrubSpanAttributes(withNaN, options)).toBe(withNaN)
+    const nanReferer = { referer: ['/a', Number.NaN] }
+    expect(scrubHeaders(nanReferer, [])).toBe(nanReferer)
     expect(scrubRequest(undefined, options)).toBeUndefined()
     expect(scrubBreadcrumbs(undefined, options)).toBeUndefined()
     expect(scrubBreadcrumbs([], options)).toEqual([])
