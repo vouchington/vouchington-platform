@@ -1,31 +1,13 @@
 {
-  "changedManifests": [
-    "packages/edge/package.json",
-    "packages/typed-entities/package.json",
-    "packages/utils/package.json"
-  ],
+  "changedManifests": ["packages/session-jwt/package.json"],
   "releases": [
     {
-      "bump": "minor",
-      "directory": "utils",
-      "fromVersion": "0.5.3",
-      "name": "@vouchington/utils",
-      "toVersion": "0.6.0"
-    },
-    {
-      "bump": "minor",
-      "directory": "edge",
-      "fromVersion": "0.0.0",
-      "name": "@vouchington/edge",
-      "toVersion": "0.1.0"
-    },
-    {
-      "bump": "minor",
-      "directory": "typed-entities",
-      "fromVersion": "0.1.0",
-      "name": "@vouchington/typed-entities",
-      "toVersion": "0.2.0"
+      "bump": "patch",
+      "directory": "session-jwt",
+      "fromVersion": "0.0.1",
+      "name": "@vouchington/session-jwt",
+      "toVersion": "0.0.2"
     }
   ],
-  "selectedPackage": "@vouchington/utils"
+  "selectedPackage": "@vouchington/session-jwt"
 }
