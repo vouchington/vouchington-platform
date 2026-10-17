@@ -96,6 +96,7 @@
     "packages/ai": {
       "entry": ["src/providers/index.mts!", "src/structured-decisions/index.mts!"],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
+    },
     "packages/ui": {
       "entry": ["src/index.ts!"],
       "project": ["src/**/*.{ts,tsx}!", "!src/**/*.test.tsx!"],
