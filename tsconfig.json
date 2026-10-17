@@ -15,6 +15,7 @@
       "@vouchington/rate-limit": ["./packages/rate-limit/src/index.mts"],
       "@vouchington/rate-limit/edge": ["./packages/rate-limit/src/edge/index.mts"],
       "@vouchington/rss-parser": ["./packages/rss-parser/src/index.mts"],
+      "@vouchington/sentry": ["./packages/sentry/src/index.mts"],
       "@vouchington/session-jwt": ["./packages/session-jwt/src/index.mts"],
       "@vouchington/utils/cookies": ["./packages/utils/src/cookies.mts"],
       "@vouchington/utils/sentry-envelope": ["./packages/utils/src/sentry-envelope.mts"],

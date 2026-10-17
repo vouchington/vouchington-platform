@@ -88,6 +88,26 @@ describe('runtime package manifests', () => {
     expect(root).not.toMatch(/from 'react'/u)
   })
 
+  it('publishes the root, node, and browser entries for sentry with caret peer ranges', () => {
+    const manifest = JSON.parse(readFileSync('packages/sentry/package.json', 'utf8')) as {
+      exports: Record<string, { import: string; types: string }>
+      peerDependencies: Record<string, string>
+      dependencies: Record<string, string>
+      files: string[]
+    }
+    expect(Object.keys(manifest.exports)).toEqual(['.', './node', './browser'])
+    for (const entry of Object.values(manifest.exports)) {
+      expect(existsSync(`packages/sentry/${entry.import.replace('./', '')}`)).toBe(true)
+      expect(existsSync(`packages/sentry/${entry.types.replace('./', '')}`)).toBe(true)
+      expect(() =>
+        importBuiltModule(`packages/sentry/${entry.import.replace('./', '')}`),
+      ).not.toThrow()
+    }
+    expect(manifest.files).toEqual(['dist', 'README.md', 'LICENSE'])
+    for (const range of Object.values(manifest.peerDependencies)) expectCaretSemverRange(range)
+    expectCaretSemverRange(manifest.dependencies['@vouchington/utils'])
+  })
+
   it('declares a publishable UUIDv7 dependency from session-jwt', () => {
     const manifest = JSON.parse(readFileSync('packages/session-jwt/package.json', 'utf8')) as {
       dependencies: Record<string, string>

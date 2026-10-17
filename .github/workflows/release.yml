@@ -42,6 +42,7 @@ on:
           - '@vouchington/edge'
           - '@vouchington/oauth-server'
           - '@vouchington/api-client'
+          - '@vouchington/sentry'
       bump:
         description: Semver bump type
         type: choice
