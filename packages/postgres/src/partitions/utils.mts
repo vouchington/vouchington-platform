@@ -37,6 +37,14 @@ export function generateMonthlyPartitionStatements(
     const table = assertSafeSqlIdentifier(config.table)
     const pastMonths = config.pastMonths ?? DEFAULT_MONTHLY_PARTITION_PAST_MONTHS
     const futureMonths = config.futureMonths ?? DEFAULT_MONTHLY_PARTITION_FUTURE_MONTHS
+    for (const [name, value] of [
+      ['pastMonths', pastMonths],
+      ['futureMonths', futureMonths],
+    ] as const) {
+      if (!Number.isInteger(value) || value < 0) {
+        throw new Error(`${name} must be a non-negative integer for ${table}: ${value}`)
+      }
+    }
     for (let offset = -pastMonths; offset <= futureMonths; offset++) {
       const startMs = Date.UTC(baseYear, baseMonth + offset, 1)
       const start = new Date(startMs)

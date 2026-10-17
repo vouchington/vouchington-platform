@@ -91,6 +91,15 @@ describe('monthly partition SQL', () => {
     ])
   })
 
+  it.each([Number.NaN, -1, 1.5])('rejects invalid window count %s', (value) => {
+    expect(() =>
+      generateMonthlyPartitions({ tables: [{ table: 'a', futureMonths: value }] }),
+    ).toThrow('futureMonths must be a non-negative integer')
+    expect(() =>
+      generateMonthlyPartitions({ tables: [{ table: 'a', pastMonths: value }] }),
+    ).toThrow('pastMonths must be a non-negative integer')
+  })
+
   it('generates default partitions', () => {
     expect(generateDefaultPartitions(['a', 'b'])).toBe(
       '/* generateDefaultPartitions */\nCREATE TABLE IF NOT EXISTS a__default\nPARTITION OF a DEFAULT;\nCREATE TABLE IF NOT EXISTS b__default\nPARTITION OF b DEFAULT;',

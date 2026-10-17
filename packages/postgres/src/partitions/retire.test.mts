@@ -180,6 +180,36 @@ describe('retireExpiredMonthlyPartitions', () => {
     })
   })
 
+  it('keeps retiring when the error reporter throws', async () => {
+    const attempted: string[] = []
+    const startTransaction = vi.fn(async () => {
+      const query = vi.fn(async (sql: string) => {
+        attempted.push(sql)
+        throw new Error('boom')
+      })
+      return Object.assign(query, {
+        commit: async () => {},
+        [Symbol.asyncDispose]: async () => {},
+      }) as never
+    })
+    await retireExpiredMonthlyPartitions(
+      ['a__p_2020_01', 'a__p_2020_02'].map((partitionName, index) => ({
+        table: 'a',
+        partitionName,
+        dropPriority: 0,
+        year: 2020,
+        month: index + 1,
+      })),
+      {
+        startTransaction,
+        reportError: () => {
+          throw new Error('reporter broke')
+        },
+      },
+    )
+    expect(attempted).toHaveLength(2)
+  })
+
   it('reports a failed retirement with its cause and continues', async () => {
     const reportError = vi.fn()
     const commits: string[] = []

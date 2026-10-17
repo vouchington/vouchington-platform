@@ -58,9 +58,15 @@ export async function retireExpiredMonthlyPartitions(
       await retireMonthlyPartition(transaction, partition, options.beforeDetach)
       await transaction.commit()
     } catch (err) {
-      options.reportError(
-        new Error(`Failed to retire monthly partition ${partition.partitionName}`, { cause: err }),
-      )
+      try {
+        options.reportError(
+          new Error(`Failed to retire monthly partition ${partition.partitionName}`, {
+            cause: err,
+          }),
+        )
+      } catch {
+        // a failing reporter must not stop later partitions from retiring
+      }
     }
     await retireAt(index + 1)
   }
