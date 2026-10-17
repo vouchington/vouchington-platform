@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/sentry",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Sentry SDK init options, data-collection policy, event filtering, coded errors, and capture helpers.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/sentry#readme",
   "bugs": {

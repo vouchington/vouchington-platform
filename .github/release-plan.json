@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/utils/package.json"],
+  "changedManifests": ["packages/sentry/package.json"],
   "releases": [
     {
-      "bump": "patch",
-      "directory": "utils",
-      "fromVersion": "0.7.0",
-      "name": "@vouchington/utils",
-      "toVersion": "0.7.1"
+      "bump": "minor",
+      "directory": "sentry",
+      "fromVersion": "0.0.0",
+      "name": "@vouchington/sentry",
+      "toVersion": "0.1.0"
     }
   ],
-  "selectedPackage": "@vouchington/utils"
+  "selectedPackage": "@vouchington/sentry"
 }
