@@ -15,11 +15,12 @@ export class ContentAndIdentityCache<TIdentityKey extends object, TSubKey, TValu
     compute: () => TValue,
   ): TValue {
     const identityMap = identityKey && this.byIdentity.get(identityKey)
-    const identityCached = identityMap?.get(subKey)
-    if (identityCached !== undefined) return identityCached
+    if (identityMap?.has(subKey)) return identityMap.get(subKey) as TValue
 
     const contentKey = getContentKey()
-    const value = this.byContent.get(contentKey) ?? compute()
+    const value = this.byContent.has(contentKey)
+      ? (this.byContent.get(contentKey) as TValue)
+      : compute()
     this.byContent.set(contentKey, value)
     if (identityKey) {
       const map = identityMap || new Map<TSubKey, TValue>()

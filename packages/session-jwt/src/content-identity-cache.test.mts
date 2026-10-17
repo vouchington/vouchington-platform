@@ -24,6 +24,16 @@ describe('ContentAndIdentityCache', () => {
     expect(compute).toHaveBeenCalledOnce()
   })
 
+  it('memoizes undefined values', () => {
+    const cache = new ContentAndIdentityCache<object, string, undefined>()
+    const identity = {}
+    const compute = vi.fn(() => undefined)
+    cache.getOrCompute(identity, 'a', () => 'k', compute)
+    cache.getOrCompute(identity, 'a', () => 'k', compute)
+    cache.getOrCompute(undefined, 'a', () => 'k', compute)
+    expect(compute).toHaveBeenCalledOnce()
+  })
+
   it('works without an identity key', () => {
     const cache = new ContentAndIdentityCache<object, string, number>()
     const compute = vi.fn(() => 2)
