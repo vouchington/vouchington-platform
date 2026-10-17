@@ -292,7 +292,7 @@ importers:
   packages/sentry:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.0
+        specifier: ^0.7.2
         version: link:../utils
       http-errors:
         specifier: ^2.0.1
