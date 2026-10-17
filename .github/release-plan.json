@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/session-jwt/package.json"],
+  "changedManifests": ["packages/worker-runtime/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "session-jwt",
-      "fromVersion": "0.0.1",
-      "name": "@vouchington/session-jwt",
-      "toVersion": "0.0.2"
+      "directory": "worker-runtime",
+      "fromVersion": "0.1.1",
+      "name": "@vouchington/worker-runtime",
+      "toVersion": "0.1.2"
     }
   ],
-  "selectedPackage": "@vouchington/session-jwt"
+  "selectedPackage": "@vouchington/worker-runtime"
 }
