@@ -98,6 +98,22 @@ describe('CatalogHydrator', () => {
     )
     expect(screen.getByText('en:merged')).toBeTruthy()
   })
+
+  it('rebuilds the translator after a same-locale merge', () => {
+    const { cache, Greeting, createTranslator } = setup(vi.fn())
+    cache.seedMessages('en', { hello: 'first' })
+    const tree = (catalog: Catalog) =>
+      createElement(
+        CatalogHydrator<Catalog>,
+        { cache, locale: 'en', catalog },
+        suspense(createElement(Greeting)),
+      )
+    const view = render(tree({}))
+    expect(screen.getByText('en:first')).toBeTruthy()
+    view.rerender(tree({ hello: 'second' }))
+    expect(screen.getByText('en:second')).toBeTruthy()
+    expect(createTranslator).toHaveBeenCalledTimes(2)
+  })
 })
 
 describe('reporter and bootstrap', () => {

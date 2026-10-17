@@ -22,47 +22,56 @@ export function createFulfilledThenable<T>(value: T): FulfilledThenable<T> {
 }
 
 /**
- * Per-locale catalog cache. `loadMessages` is injected (HTTP, bundled JSON, ...). A rejected load
- * stays cached until `invalidateMessages` so React's replay render sees the same thenable.
+ * Per-locale catalog cache. `loadMessages` is injected (HTTP, bundled JSON, ...).
+ *
+ * Catalogs are never mutated after they are cached: a merge replaces the entry with a new
+ * fulfilled catalog object, so memoized translators observe the identity change. Merging is
+ * additive and idempotent. A rejected load stays cached until `invalidateMessages` so React's
+ * replay render sees the same thenable.
  */
 export function createMessagesCache<C extends object>(
   loadMessages: (locale: string) => Promise<C>,
 ): MessagesCache<C> {
   const cache = new Map<string, Promise<C>>()
-  const failed = new Set<string>()
+  const failed = new WeakSet<Promise<C>>()
+
+  function setFulfilled(locale: string, value: C): void {
+    cache.set(locale, createFulfilledThenable(value))
+  }
+
+  function fulfilledValue(promise: Promise<C>): C | undefined {
+    return (promise as Partial<FulfilledThenable<C>>).value
+  }
 
   function seed(locale: string, messages: C): void {
-    if (cache.has(locale) && !failed.has(locale)) return
-    failed.delete(locale)
-    cache.set(locale, createFulfilledThenable(cloneCatalog(messages)))
+    const current = cache.get(locale)
+    if (current && !failed.has(current)) return
+    setFulfilled(locale, cloneCatalog(messages))
+  }
+
+  function mergedCopy(base: C, incoming: C): C {
+    const copy = cloneCatalog(base)
+    mergeCatalogInPlace(copy as Record<string, unknown>, incoming as Record<string, unknown>)
+    return copy
   }
 
   function merge(locale: string, incoming: C): void {
-    const pending = cache.get(locale)
-    if (!pending) {
-      seed(locale, incoming)
+    const current = cache.get(locale)
+    const value = current ? fulfilledValue(current) : undefined
+    if (value !== undefined) {
+      setFulfilled(locale, mergedCopy(value, incoming))
       return
     }
-    const tagged = pending as Partial<FulfilledThenable<C>>
-    if (tagged.status === 'fulfilled' && tagged.value !== undefined) {
-      mergeCatalogInPlace(
-        tagged.value as Record<string, unknown>,
-        incoming as Record<string, unknown>,
-      )
-      return
-    }
-    void pending.then(
-      (existing) => {
-        mergeCatalogInPlace(
-          existing as Record<string, unknown>,
-          incoming as Record<string, unknown>,
-        )
+    // Pending or failed: hydrate immediately from the incoming catalog, then fold the original
+    // load underneath whatever has been merged by the time it settles.
+    setFulfilled(locale, cloneCatalog(incoming))
+    void current?.then(
+      (loaded) => {
+        // The entry is always fulfilled here: only failed entries are ever replaced or removed.
+        const latest = cache.get(locale) as FulfilledThenable<C>
+        setFulfilled(locale, mergedCopy(loaded, latest.value))
       },
-      () => {
-        failed.delete(locale)
-        cache.delete(locale)
-        merge(locale, incoming)
-      },
+      () => undefined,
     )
   }
 
@@ -73,15 +82,15 @@ export function createMessagesCache<C extends object>(
       promise = created
       cache.set(locale, created)
       void created.catch(() => {
-        failed.add(locale)
+        failed.add(created)
       })
     }
     return promise
   }
 
   function invalidate(locale: string): void {
-    if (!failed.delete(locale)) return
-    cache.delete(locale)
+    const current = cache.get(locale)
+    if (current && failed.has(current)) cache.delete(locale)
   }
 
   return {

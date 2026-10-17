@@ -6,6 +6,7 @@ import { createFulfilledThenable, createMessagesCache } from './messages-cache.m
 type Catalog = Record<string, unknown>
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
+const valueOf = (promise: Promise<Catalog>) => (promise as unknown as { value: Catalog }).value
 
 describe('catalog merge', () => {
   it('merges nested objects and replaces scalars and arrays', () => {
@@ -19,6 +20,16 @@ describe('catalog merge', () => {
     const copy = cloneCatalog(source)
     copy.a.b = 2
     expect(source.a.b).toBe(1)
+  })
+
+  it('never writes prototype keys or descends into inherited properties', () => {
+    const target: Catalog = {}
+    mergeCatalogInPlace(target, JSON.parse('{"__proto__":{"polluted":true},"constructor":{"x":1}}'))
+    mergeCatalogInPlace(target, JSON.parse('{"toString":{"y":1},"prototype":{"z":1}}'))
+    expect(({} as Catalog).polluted).toBeUndefined()
+    expect(Object.keys(target)).toEqual(['toString'])
+    expect(Object.getOwnPropertyDescriptor(target, 'toString')?.value).toEqual({ y: 1 })
+    expect(Object.hasOwn(Object.prototype, 'y')).toBe(false)
   })
 })
 
@@ -46,37 +57,58 @@ describe('createMessagesCache', () => {
     const input = { a: { b: 1 } }
     cache.seedMessages('en', input)
     cache.seedMessages('en', { a: 2 })
-    const seeded = cache.getMessagesPromise('en') as unknown as { status: string; value: Catalog }
+    const seeded = cache.getMessagesPromise('en') as unknown as { status: string }
     expect(seeded.status).toBe('fulfilled')
-    expect(seeded.value).toEqual({ a: { b: 1 } })
-    expect(seeded.value).not.toBe(input)
+    expect(valueOf(cache.getMessagesPromise('en'))).toEqual({ a: { b: 1 } })
+    expect(valueOf(cache.getMessagesPromise('en'))).not.toBe(input)
   })
 
-  it('merges into a fulfilled entry', () => {
+  it('merges into a fulfilled entry by replacing it with a new object', () => {
     const cache = createMessagesCache<Catalog>(vi.fn())
     cache.seedMessages('en', { a: 1 })
+    const before = cache.getMessagesPromise('en')
     cache.mergeMessages('en', { b: 2 })
-    const seeded = cache.getMessagesPromise('en') as unknown as { value: Catalog }
-    expect(seeded.value).toEqual({ a: 1, b: 2 })
+    const after = cache.getMessagesPromise('en')
+    expect(after).not.toBe(before)
+    expect(valueOf(before)).toEqual({ a: 1 })
+    expect(valueOf(after)).toEqual({ a: 1, b: 2 })
   })
 
   it('seeds when merging into an empty locale', () => {
     const cache = createMessagesCache<Catalog>(vi.fn())
     cache.mergeMessages('es', { a: 1 })
-    expect((cache.getMessagesPromise('es') as unknown as { value: Catalog }).value).toEqual({
-      a: 1,
+    expect(valueOf(cache.getMessagesPromise('es'))).toEqual({ a: 1 })
+  })
+
+  it('hydrates immediately over a pending load, then folds the load underneath', async () => {
+    let resolve!: (value: Catalog) => void
+    const cache = createMessagesCache<Catalog>(() => new Promise<Catalog>((r) => (resolve = r)))
+    void cache.getMessagesPromise('en')
+    cache.mergeMessages('en', { route: 'r', shared: 'incoming' })
+    expect(valueOf(cache.getMessagesPromise('en'))).toEqual({ route: 'r', shared: 'incoming' })
+    cache.mergeMessages('en', { later: 'l' })
+    resolve({ full: 'f', shared: 'loaded' })
+    await flush()
+    expect(valueOf(cache.getMessagesPromise('en'))).toEqual({
+      full: 'f',
+      shared: 'incoming',
+      route: 'r',
+      later: 'l',
     })
   })
 
-  it('merges after a pending load resolves', async () => {
-    const cache = createMessagesCache<Catalog>(async () => ({ a: 1 }))
-    const pending = cache.getMessagesPromise('en')
+  it('keeps the incoming catalog when the pending load fails', async () => {
+    const cache = createMessagesCache<Catalog>(() => Promise.reject(new Error('nope')))
+    const failed = cache.getMessagesPromise('en')
     cache.mergeMessages('en', { b: 2 })
+    await expect(failed).rejects.toThrow('nope')
     await flush()
-    expect(await pending).toEqual({ a: 1, b: 2 })
+    expect(valueOf(cache.getMessagesPromise('en'))).toEqual({ b: 2 })
+    cache.invalidateMessages('en')
+    expect(valueOf(cache.getMessagesPromise('en'))).toEqual({ b: 2 })
   })
 
-  it('drops a failed load, merges the incoming catalog, and allows reload', async () => {
+  it('keeps a failed load cached until invalidated, and a seed replaces it', async () => {
     const load = vi
       .fn<(locale: string) => Promise<Catalog>>()
       .mockRejectedValueOnce(new Error('boom'))
@@ -84,27 +116,15 @@ describe('createMessagesCache', () => {
     const cache = createMessagesCache<Catalog>(load)
     const failed = cache.getMessagesPromise('en')
     await expect(failed).rejects.toThrow('boom')
+    expect(cache.getMessagesPromise('en')).toBe(failed)
     cache.invalidateMessages('fr')
     cache.invalidateMessages('en')
     await expect(cache.getMessagesPromise('en')).resolves.toEqual({ ok: 1 })
-  })
-
-  it('replaces a failed entry when seeded and merges after a rejected pending load', async () => {
-    const cache = createMessagesCache<Catalog>(() => Promise.reject(new Error('nope')))
-    const failed = cache.getMessagesPromise('en')
-    cache.mergeMessages('en', { b: 2 })
-    await expect(failed).rejects.toThrow('nope')
-    await flush()
-    expect((cache.getMessagesPromise('en') as unknown as { value: Catalog }).value).toEqual({
-      b: 2,
-    })
+    cache.invalidateMessages('en')
 
     const second = createMessagesCache<Catalog>(() => Promise.reject(new Error('nope')))
     await expect(second.getMessagesPromise('en')).rejects.toThrow()
-    await flush()
     second.seedMessages('en', { c: 3 })
-    expect((second.getMessagesPromise('en') as unknown as { value: Catalog }).value).toEqual({
-      c: 3,
-    })
+    expect(valueOf(second.getMessagesPromise('en'))).toEqual({ c: 3 })
   })
 })
