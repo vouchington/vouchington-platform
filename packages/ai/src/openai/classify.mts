@@ -1,4 +1,10 @@
-import { APIConnectionError, APIError, APIUserAbortError, RateLimitError } from 'openai'
+import {
+  APIConnectionError,
+  APIConnectionTimeoutError,
+  APIError,
+  APIUserAbortError,
+  RateLimitError,
+} from 'openai'
 import { parseRetryAfter, readHeader } from '../providers/http.mts'
 import { findInErrorChain, walkErrorChain } from './error-chain.mts'
 import { OpenAIResponseNotCompletedError, OpenAIResponseStreamIterationError } from './response.mts'
@@ -13,6 +19,15 @@ export type OpenAIUpstreamFailure = {
 
 /** Statuses OpenAI's own SDK retry predicate treats as transient (404 is handled separately). */
 const TRANSIENT_STATUSES = new Set([408, 409, 429])
+/** Billing and quota 429s that need a person, not a retry; never tolerated as upstream weather. */
+const PERMANENT_QUOTA_CODES = new Set([
+  'insufficient_quota',
+  'credit_balance_exhausted',
+  'organization_spend_limit_exceeded',
+  'project_spend_limit_exceeded',
+])
+/** Terminal `response.failed` codes that are the provider being unavailable. */
+const TRANSIENT_FAILED_CODES = new Set(['server_error', 'rate_limit_exceeded'])
 const FLEX_RESOURCE_UNAVAILABLE = /resource[\s_-]*unavailable/i
 const FLEX_CAPACITY_FAILURE = /flex processing is temporarily unavailable/i
 
@@ -87,6 +102,7 @@ export function shouldLatchUnknownBilledOpenAIAttempt(
 ): boolean {
   if (isOpenAIMissingPreviousResponseError(error)) return false
   if (isOpenAIFlexCapacityFailedResponseError(error)) return false
+  if (isOpenAIFlexResourceUnavailableError(error)) return false
   if (options.cancelledBeforeDispatch && isExplicitClientCancelError(error)) return false
   if (error instanceof OpenAIResponseNotCompletedError) return error.usage == null
   return true
@@ -100,12 +116,10 @@ export function getOpenAIRetryAfterMs(error: unknown, fallbackMs = 60_000): numb
 
 function matchUpstreamFailure(current: object): OpenAIUpstreamFailure | null {
   if (current instanceof OpenAIResponseStreamIterationError) {
-    // A stream that broke after emitting text may have been cut short by our own consumption.
-    if (current.emittedTextDelta) return null
     return { reason: 'the response stream ended before emitting any text' }
   }
   if (current instanceof OpenAIResponseNotCompletedError) {
-    if (current.code !== 'server_error') return null
+    if (!current.code || !TRANSIENT_FAILED_CODES.has(current.code)) return null
     return { reason: 'OpenAI returned a failed response', code: current.code }
   }
   // Checked before APIError because it extends it and carries no status to match on.
@@ -114,6 +128,7 @@ function matchUpstreamFailure(current: object): OpenAIUpstreamFailure | null {
   const requestId = current.requestID ?? undefined
   if (current.status >= 500 || TRANSIENT_STATUSES.has(current.status)) {
     const code = current.code ?? undefined
+    if (current.status === 429 && code && PERMANENT_QUOTA_CODES.has(code)) return null
     return { reason: `OpenAI returned ${current.status}`, status: current.status, requestId, code }
   }
   // A bodiless 404 came from an edge or gateway; every genuine 404 carries a JSON body with `code`.
@@ -130,5 +145,14 @@ function matchUpstreamFailure(current: object): OpenAIUpstreamFailure | null {
  */
 export function describeOpenAIUpstreamFailure(error: unknown): OpenAIUpstreamFailure | null {
   if (isExplicitClientCancelError(error)) return null
+  // Anywhere in the chain, these end classification: the SDK's own timeout is our budget, and a
+  // stream that broke after emitting text may have been cut short by our own consumption.
+  const rejected = walkErrorChain(
+    error,
+    (current) =>
+      current instanceof APIConnectionTimeoutError ||
+      (current instanceof OpenAIResponseStreamIterationError && current.emittedTextDelta),
+  )
+  if (rejected) return null
   return findInErrorChain(error, matchUpstreamFailure)
 }

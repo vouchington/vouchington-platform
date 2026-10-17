@@ -1,4 +1,10 @@
-import { APIConnectionError, APIError, APIUserAbortError, RateLimitError } from 'openai'
+import {
+  APIConnectionError,
+  APIConnectionTimeoutError,
+  APIError,
+  APIUserAbortError,
+  RateLimitError,
+} from 'openai'
 import { describe, expect, it } from 'vitest'
 import {
   describeOpenAIUpstreamFailure,
@@ -124,6 +130,8 @@ describe('classification', () => {
     const noUsage = new OpenAIResponseNotCompletedError('x', { status: 'incomplete', output: [] })
     expect(shouldLatchUnknownBilledOpenAIAttempt(noUsage)).toBe(true)
     expect(shouldLatchUnknownBilledOpenAIAttempt(apiError(500))).toBe(true)
+    const flex429 = apiError(429, { code: 'resource_unavailable' })
+    expect(shouldLatchUnknownBilledOpenAIAttempt(flex429)).toBe(false)
   })
 
   it('reads retry-after with a fallback', () => {
@@ -160,6 +168,25 @@ describe('classification', () => {
       describeOpenAIUpstreamFailure(new OpenAIResponseStreamIterationError(true, { cause: 1 })),
     ).toBeNull()
     expect(describeOpenAIUpstreamFailure(flexFailed())).toMatchObject({ code: 'server_error' })
+    const streamed = new OpenAIResponseNotCompletedError('x', {
+      status: 'failed',
+      error: { code: 'rate_limit_exceeded' },
+      output: [],
+    })
+    expect(describeOpenAIUpstreamFailure(streamed)).toMatchObject({ code: 'rate_limit_exceeded' })
+    const noCode = new OpenAIResponseNotCompletedError('x', { status: 'failed', output: [] })
+    expect(describeOpenAIUpstreamFailure(noCode)).toBeNull()
+    expect(describeOpenAIUpstreamFailure(new APIConnectionTimeoutError())).toBeNull()
+    const partial = new OpenAIResponseStreamIterationError(true, {
+      cause: new APIConnectionError({ message: 'x' }),
+    })
+    expect(describeOpenAIUpstreamFailure(partial)).toBeNull()
+    expect(describeOpenAIUpstreamFailure(apiError(429, { code: 'insufficient_quota' }))).toBeNull()
+    expect(
+      describeOpenAIUpstreamFailure(apiError(429, { code: 'rate_limit_exceeded' })),
+    ).toMatchObject({
+      status: 429,
+    })
     const other = new OpenAIResponseNotCompletedError('x', {
       status: 'failed',
       error: { code: 'invalid_prompt' },
