@@ -158,9 +158,6 @@ const CommandShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanE
 )
 CommandShortcut.displayName = 'CommandShortcut'
 
-// CommandInput uses a callback ref to merge forwardedRef with a local inputRef — this is an intentional
-// React Compiler exception per web/AGENTS.md (callback refs need useCallback when they capture state).
-
 export {
   Command,
   CommandDialog,

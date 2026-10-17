@@ -76,7 +76,7 @@ function SheetContent({
 }) {
   return (
     <SheetPortal forceMount={forceMount}>
-      {hideOverlay ? null : <SheetOverlay />}
+      <SheetOverlay className={hideOverlay ? 'bg-transparent' : undefined} />
       <SheetPrimitive.Content
         ref={ref}
         forceMount={forceMount}

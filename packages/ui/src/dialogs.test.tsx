@@ -73,7 +73,7 @@ describe('Dialog', () => {
       </Dialog>,
     )
     expect(screen.queryByRole('button')).toBeNull()
-    expect(document.querySelector('.bg-black\\/80')).toBeNull()
+    expect(document.querySelector('.bg-transparent')).toBeTruthy()
   })
 
   it('renders the overlay by default and forwards title/description refs', () => {
@@ -120,7 +120,7 @@ describe('Sheet', () => {
       </Sheet>,
     )
     expect(screen.getByRole('dialog').className).toContain('right-0')
-    expect(document.querySelector('.bg-black\\/80')).toBeNull()
+    expect(document.querySelector('.bg-transparent')).toBeTruthy()
     expect(ref.current).toBeTruthy()
   })
 })

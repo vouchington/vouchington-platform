@@ -9,9 +9,13 @@ import { cn } from './cn.js'
 function Breadcrumb({
   ref,
   ...props
-}: React.ComponentPropsWithoutRef<'nav'> & {
-  ref?: React.Ref<HTMLElement>
-}) {
+}: Omit<React.ComponentPropsWithoutRef<'nav'>, 'aria-label' | 'aria-labelledby'> &
+  (
+    | { 'aria-label': string; 'aria-labelledby'?: string }
+    | { 'aria-labelledby': string; 'aria-label'?: string }
+  ) & {
+    ref?: React.Ref<HTMLElement>
+  }) {
   return <nav ref={ref} {...props} />
 }
 Breadcrumb.displayName = 'Breadcrumb'

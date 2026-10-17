@@ -63,7 +63,7 @@ function DialogContent({
 } & CloseProps) {
   return (
     <DialogPortal forceMount={forceMount}>
-      {hideOverlay ? null : <DialogOverlay />}
+      <DialogOverlay className={hideOverlay ? 'bg-transparent' : undefined} />
       <DialogPrimitive.Content
         ref={ref}
         forceMount={forceMount}
