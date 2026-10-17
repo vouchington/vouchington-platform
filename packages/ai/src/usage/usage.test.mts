@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { PriceTable } from '../providers/pricing.mts'
 import type { ModelUsage } from '../providers/types.mts'
-import { parseUtcIsoTime, priceUsageLedgerRow } from './index.mts'
+import { parseUtcIsoTime, getUsageCostMicrounits } from './index.mts'
 
 const prices: PriceTable = {
   acme: {
@@ -26,26 +26,17 @@ const usage = (overrides: Partial<ModelUsage> = {}): ModelUsage => ({
 })
 const row = {
   provider: 'acme',
-  transport: 'direct',
   model: 'm-2026-10-01',
   serviceTier: 'standard',
 }
 
-describe('priceUsageLedgerRow', () => {
-  it('prefers a reported cost, then list price, else unpriced', () => {
-    expect(priceUsageLedgerRow({ ...row, usage: usage({ reportedCostUsd: 0.5 }) }, prices)).toEqual(
-      {
-        costMicrounits: 500_000,
-        pricingStatus: 'priced',
-        currencyCode: 'usd',
-      },
+describe('getUsageCostMicrounits', () => {
+  it('prefers a reported cost, then list price, else null', () => {
+    expect(getUsageCostMicrounits({ ...row, usage: usage({ reportedCostUsd: 0.5 }) }, prices)).toBe(
+      500_000,
     )
-    expect(priceUsageLedgerRow({ ...row, usage: usage() }, prices).costMicrounits).toBe(10)
-    expect(priceUsageLedgerRow({ ...row, model: 'x', usage: usage() }, prices)).toEqual({
-      costMicrounits: null,
-      pricingStatus: 'unpriced',
-      currencyCode: null,
-    })
+    expect(getUsageCostMicrounits({ ...row, usage: usage() }, prices)).toBe(10)
+    expect(getUsageCostMicrounits({ ...row, model: 'x', usage: usage() }, prices)).toBeNull()
   })
 })
 

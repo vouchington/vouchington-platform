@@ -46,8 +46,8 @@ Moderation and Bedrock embedding helpers have no third-party dependency, so they
 
 ## `@vouchington/ai/usage`
 
-- `priceUsageLedgerRow(input, prices)`: cost columns (`priced`/`unpriced`, microunits, currency) from a
-  provider-reported cost or an injected price table; unpriced is never silently zero.
+- `getUsageCostMicrounits(input, prices)`: a provider-reported cost, else list price from an injected
+  price table, else null (never silently zero). Ledger columns and status are the app's.
 - `parseUtcIsoTime`: exact UTC report-window edges.
 
 Ledger SQL, idempotency keys and response-id rules, spend-cap policy, the uncertainty latch, and
