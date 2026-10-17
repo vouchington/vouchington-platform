@@ -52,7 +52,7 @@
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
     },
     "packages/worker-runtime": {
-      "entry": ["src/index.mts!"],
+      "entry": ["src/index.mts!", "src/testing/index.mts!"],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
     },
     "packages/rate-limit": {

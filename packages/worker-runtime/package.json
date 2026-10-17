@@ -26,6 +26,11 @@
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs",
       "default": "./dist/index.mjs"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.mts",
+      "import": "./dist/testing/index.mjs",
+      "default": "./dist/testing/index.mjs"
     }
   },
   "publishConfig": {
@@ -36,10 +41,17 @@
     "prepack": "pnpm run build"
   },
   "devDependencies": {
-    "glide-mq": "^0.18.0"
+    "glide-mq": "^0.18.0",
+    "vitest": "^5.0.4"
   },
   "peerDependencies": {
-    "glide-mq": "^0.18.0"
+    "glide-mq": "^0.18.0",
+    "vitest": "^5.0.4"
+  },
+  "peerDependenciesMeta": {
+    "vitest": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=24.0.0"

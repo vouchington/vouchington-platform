@@ -48,3 +48,38 @@ This package deliberately does not implement SQS polling, process lifecycle or s
 observability, warmups, worker inventories, or queue placement. Cloudflare routing and CSP also
 remain application-owned: they encode each application's routes, origins, authentication, cache,
 and security policy.
+
+## Testing harness (`@vouchington/worker-runtime/testing`)
+
+An in-memory [GlideMQ](https://www.npmjs.com/package/glide-mq) harness for Vitest. It builds on
+`glide-mq/testing`, so no Valkey server is needed. Vitest is an optional peer dependency used only
+by this subpath; the root export never imports it.
+
+```ts
+import { Queue, Worker } from '@vouchington/worker-runtime/testing'
+
+const worker = new Worker('send-email', async (job) => deliver(job.data))
+await new Queue('send-email').add('welcome', { to: 'a@example.com' }) // resolves once settled
+await worker.close()
+```
+
+- `Queue.add` and `addBulk` wait for attached workers to settle the jobs (completed, failed, or
+  parked as delayed/suspended). Failures reject with the processor error; a timeout rejects with
+  `TestQueueFlushTimeoutError`, which carries worker and queue diagnostics. Per-add options:
+  `flushTimeoutMs` and `expectDeadLetter`.
+- Adds made from inside a processor never auto-flush.
+- `Worker` accepts the production option shape, clamps concurrency, dispatches batches
+  immediately, and takes a `wrapProcessor(processor, queueName)` hook. Subclass it to inject
+  profiling or context propagation; the package knows nothing about your application.
+- `createWorkerAttachmentGuardRunner(Base?)` returns a Vitest runner class that fails a test file
+  which leaves workers attached. Wrap your own runner class, then export the result as the default
+  of the module named by `test.runner`:
+
+```ts
+// vitest.runner.mts
+import { createWorkerAttachmentGuardRunner } from '@vouchington/worker-runtime/testing'
+
+export default createWorkerAttachmentGuardRunner()
+```
+
+Queue names, worker modules, and Vitest config wiring remain application-owned.
