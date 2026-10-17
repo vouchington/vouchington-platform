@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/request-contract-validation/package.json"],
+  "changedManifests": ["packages/dynamic-config/package.json"],
   "releases": [
     {
-      "bump": "patch",
-      "directory": "request-contract-validation",
-      "fromVersion": "0.0.2",
-      "name": "@vouchington/request-contract-validation",
-      "toVersion": "0.0.3"
+      "bump": "minor",
+      "directory": "dynamic-config",
+      "fromVersion": "0.0.0",
+      "name": "@vouchington/dynamic-config",
+      "toVersion": "0.1.0"
     }
   ],
-  "selectedPackage": "@vouchington/request-contract-validation"
+  "selectedPackage": "@vouchington/dynamic-config"
 }
