@@ -5,6 +5,7 @@ import { openAIUsageToModelUsage, type OpenAIUsageLike } from './usage.mts'
 /** One output item of an OpenAI Responses (or OpenRouter) response that this package reads. */
 export type OpenAIOutputItem =
   | { type: 'function_call'; call_id: string; name: string; arguments: string }
+  | { type: 'message'; content?: readonly { type: string }[] }
   | { type: string }
 
 /** The fields of an OpenAI Responses (or OpenRouter) response this package reads. */

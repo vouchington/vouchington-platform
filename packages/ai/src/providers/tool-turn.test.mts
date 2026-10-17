@@ -71,6 +71,8 @@ describe('anthropic tool turn', () => {
     })
     await callAnthropicToolTurn(create, 'm', request)
     expect(create.mock.calls[1]?.[1]).toBeUndefined()
+    await callAnthropicToolTurn(create, 'm', { ...request, maxRetries: 0 })
+    expect(create.mock.calls[2]?.[1]).toEqual({ maxRetries: 0 })
   })
 
   it('rethrows classified transport errors', async () => {
@@ -81,6 +83,7 @@ describe('anthropic tool turn', () => {
   it.each([
     [{ stop_reason: 'refusal' }, 'refusal'],
     [{ stop_reason: 'max_tokens' }, 'output-truncated'],
+    [{ stop_reason: 'model_context_window_exceeded' }, 'output-truncated'],
     [{ content: [{ type: 'text', text: 'only', citations: null }] }, 'invalid-response'],
   ])('flags unusable turns (%#)', (overrides, code) => {
     try {
@@ -139,6 +142,7 @@ describe('openai tool turn', () => {
     expect(result.output).toEqual({
       text: 'words',
       toolCalls: [{ id: 'f1', name: 'lookup', input: { q: 3 } }],
+      providerItems: response.output,
     })
     expect(create.mock.calls[0]?.[1]).toEqual({ maxRetries: 1, signal })
     await callOpenAIToolTurn(create, 'm', 'direct', request)
@@ -149,7 +153,32 @@ describe('openai tool turn', () => {
     expect(create.mock.calls[3]?.[1]).toEqual({ maxRetries: 0 })
   })
 
+  it('replays provider items verbatim, including reasoning', () => {
+    const items = [
+      { type: 'reasoning', id: 'rs1' },
+      { type: 'function_call', call_id: 'f1' },
+    ]
+    const params = buildOpenAIToolTurnParams({
+      ...request,
+      messages: [{ role: 'assistant', text: 'x', toolCalls: [], providerItems: items }],
+    })
+    expect(params.input).toEqual(items)
+  })
+
   it.each([
+    [
+      {
+        ...response,
+        status: 'completed',
+        output: [{ type: 'message', content: [{ type: 'refusal' }] }],
+      },
+      'refusal',
+    ],
+    [
+      { ...response, output: [{ type: 'message', content: [{ type: 'output_text' }] }] },
+      'invalid-response',
+    ],
+    [{ ...response, output: [{ type: 'message' }] }, 'invalid-response'],
     [{ ...response, output: [] }, 'invalid-response'],
     [{ id: 'r1', output_text: 'x' }, 'invalid-response'],
     [

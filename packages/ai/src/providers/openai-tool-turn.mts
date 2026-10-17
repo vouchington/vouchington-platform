@@ -16,6 +16,7 @@ export type OpenAIInputItem =
   | { role: 'user' | 'assistant'; content: string }
   | { type: 'function_call_output'; call_id: string; output: string }
   | { type: 'function_call'; call_id: string; name: string; arguments: string }
+  | { type: string }
 
 export type OpenAIToolTurnParams = {
   instructions: string
@@ -50,6 +51,7 @@ function toInputItems(message: AgentTurnMessage): OpenAIInputItem[] {
       output: result.isError ? `Error: ${result.content}` : result.content,
     }))
   }
+  if (message.providerItems) return [...(message.providerItems as OpenAIInputItem[])]
   return [
     ...(message.text ? [{ role: 'assistant' as const, content: message.text }] : []),
     ...message.toolCalls.map((call) => ({
@@ -102,7 +104,21 @@ export function parseOpenAIToolTurn(
   const billed = openAIBilledResponse(response, model, transport)
   assertCompletedOpenAIResponse(response, billed)
   const toolCalls: ToolCall[] = []
-  for (const item of response.output ?? []) {
+  const items = response.output ?? []
+  const refused = items.some(
+    (item) =>
+      item.type === 'message' &&
+      (item as { content?: readonly { type: string }[] }).content?.some(
+        (part) => part.type === 'refusal',
+      ),
+  )
+  if (refused) {
+    throw new ModelProviderError('refusal', 'OpenAI declined the request.', {
+      retryClass: 'permanent',
+      billedResponse: billed,
+    })
+  }
+  for (const item of items) {
     if (item.type === 'function_call') {
       const call = item as { call_id: string; name: string; arguments: string }
       toolCalls.push({
@@ -118,7 +134,7 @@ export function parseOpenAIToolTurn(
       billedResponse: billed,
     })
   }
-  return { ...billed, output: { text: response.output_text, toolCalls } }
+  return { ...billed, output: { text: response.output_text, toolCalls, providerItems: items } }
 }
 
 /** One Responses turn through an injected function; retries and sequencing stay with the caller. */

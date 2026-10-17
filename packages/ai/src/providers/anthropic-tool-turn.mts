@@ -1,13 +1,18 @@
 import type Anthropic from '@anthropic-ai/sdk'
-import { anthropicBilledResponse, type CreateAnthropicMessage } from './anthropic-json.mts'
-import { classifyAnthropicError, ModelProviderError } from './errors.mts'
+import {
+  anthropicBilledResponse,
+  anthropicRequestOptions,
+  assertAnthropicCompleted,
+  unusable,
+  type CreateAnthropicMessage,
+} from './anthropic-json.mts'
+import { classifyAnthropicError } from './errors.mts'
 import type {
   AgentTurnMessage,
   ToolCall,
   ToolTurnRequest,
   ToolTurnResult,
 } from './tool-turn-types.mts'
-import type { BilledModelResponse } from './types.mts'
 
 function toAnthropicMessage(message: AgentTurnMessage): Anthropic.MessageParam {
   if (message.role === 'user') return { role: 'user', content: message.text }
@@ -56,14 +61,6 @@ export function buildAnthropicToolTurnParams(
   }
 }
 
-function unusable(
-  code: 'refusal' | 'output-truncated' | 'invalid-response',
-  message: string,
-  billedResponse: BilledModelResponse,
-): ModelProviderError {
-  return new ModelProviderError(code, message, { retryClass: 'permanent', billedResponse })
-}
-
 /**
  * Reads a Messages turn. A refusal, a turn cut off at `max_tokens` (whose tool input may be
  * incomplete), or a turn without a tool call is unusable but still billed, so the thrown error
@@ -71,12 +68,7 @@ function unusable(
  */
 export function parseAnthropicToolTurn(message: Anthropic.Message): ToolTurnResult {
   const billed = anthropicBilledResponse(message)
-  if (message.stop_reason === 'refusal') {
-    throw unusable('refusal', 'Anthropic declined the request.', billed)
-  }
-  if (message.stop_reason === 'max_tokens') {
-    throw unusable('output-truncated', 'Anthropic output hit max_tokens.', billed)
-  }
+  assertAnthropicCompleted(message, billed)
   const toolCalls: ToolCall[] = []
   let text = ''
   for (const block of message.content) {
@@ -102,7 +94,7 @@ export async function callAnthropicToolTurn(
   try {
     message = await createMessage(
       buildAnthropicToolTurnParams(model, request),
-      signal ? { signal } : undefined,
+      anthropicRequestOptions(request.maxRetries, signal),
     )
   } catch (err) {
     throw classifyAnthropicError(err)

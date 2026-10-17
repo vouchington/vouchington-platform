@@ -26,7 +26,16 @@ export type ToolResultBlock = {
  */
 export type AgentTurnMessage =
   | { role: 'user'; text: string }
-  | { role: 'assistant'; text: string; toolCalls: readonly ToolCall[] }
+  | {
+      role: 'assistant'
+      text: string
+      toolCalls: readonly ToolCall[]
+      /**
+       * The provider's raw output items from `ToolTurnOutput.providerItems`. When present they are
+       * replayed verbatim, so reasoning items survive between tool turns.
+       */
+      providerItems?: readonly unknown[]
+    }
   | { role: 'tool'; results: readonly ToolResultBlock[] }
 
 export type ToolTurnRequest = {
@@ -44,6 +53,8 @@ export type ToolTurnRequest = {
 export type ToolTurnOutput = {
   text: string
   toolCalls: readonly ToolCall[]
+  /** The provider's raw output items (OpenAI: reasoning included), to replay on the next turn. */
+  providerItems?: readonly unknown[]
 }
 
 export type ToolTurnResult = ModelCallResult<ToolTurnOutput>
