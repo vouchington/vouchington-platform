@@ -13,9 +13,9 @@ describe('batch records', () => {
     expect(line.recordId).toBe('r1')
     expect(line.modelInput.singleEmbeddingParams.text.value).toBe('hi')
     const image = JSON.parse(
-      createEmbeddingImageRecordLine({ recordId: 'r2', format: 'webp', bytes: 'AA==' }),
+      createEmbeddingImageRecordLine({ recordId: 'r2', format: 'gif', bytes: 'AA==' }),
     )
-    expect(image.modelInput.singleEmbeddingParams.image.format).toBe('webp')
+    expect(image.modelInput.singleEmbeddingParams.image.format).toBe('gif')
   })
 
   it('bounds batch file sizes from injected limits', () => {

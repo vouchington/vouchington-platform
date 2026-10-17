@@ -24,6 +24,12 @@ describe('moderation', () => {
     })
     expect(checkModerationResults([{ flagged: false, categories: {} }])).toBeNull()
     expect(checkModerationResults([])).toBeNull()
+    const clean = { flagged: false, categories: {} }
+    const later = { flagged: true, categories: { violence: true, spam: true } }
+    expect(checkModerationResults([clean, flagged, later])).toEqual({
+      code: 'MODERATION_VIOLATION',
+      categories: ['hate', 'violence', 'spam'],
+    })
   })
 })
 

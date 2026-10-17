@@ -63,7 +63,7 @@ export function estimateEmbeddingTokens(
 
 /** The model input for one text or image, shared by the single and batch record formats. */
 export function buildEmbeddingModelInput(
-  content: { text: string } | { image: { format: 'jpeg' | 'png' | 'webp'; bytes: string } },
+  content: { text: string } | { image: { format: 'jpeg' | 'png' | 'webp' | 'gif'; bytes: string } },
   options: EmbeddingOptions = {},
 ): Record<string, unknown> {
   const dimension = options.dimension ?? NOVA_EMBEDDING_DEFAULTS.dimension

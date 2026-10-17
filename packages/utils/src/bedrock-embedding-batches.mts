@@ -45,7 +45,7 @@ export function createEmbeddingTextRecordLine(
 }
 
 export function createEmbeddingImageRecordLine(
-  record: { recordId: string; format: 'jpeg' | 'png' | 'webp'; bytes: string },
+  record: { recordId: string; format: 'jpeg' | 'png' | 'webp' | 'gif'; bytes: string },
   options: EmbeddingOptions = {},
 ): string {
   return createEmbeddingRecordLine(

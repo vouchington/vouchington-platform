@@ -28,13 +28,17 @@ export function getFlaggedCategories(result: ModerationResultLike): string[] {
   )
 }
 
-/** A violation for the first result when it is flagged, else null (no results is not a violation). */
+/**
+ * A violation naming every category flagged by any result, else null. Results line up with the
+ * request's inputs, so a later flagged input is never masked by a clean earlier one.
+ */
 export function checkModerationResults(
   results: readonly ModerationResultLike[],
 ): MessageSafetyViolation | null {
-  const [result] = results
-  if (!result?.flagged) return null
-  return { code: 'MODERATION_VIOLATION', categories: getFlaggedCategories(result) }
+  const flagged = results.filter((result) => result.flagged)
+  if (flagged.length === 0) return null
+  const categories = [...new Set(flagged.flatMap(getFlaggedCategories))]
+  return { code: 'MODERATION_VIOLATION', categories }
 }
 
 /** Common instruction-override and chat-template markers. Callers may pass their own list. */
