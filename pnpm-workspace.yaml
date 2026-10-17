@@ -2,6 +2,7 @@ packages:
   - packages/*
 allowBuilds:
   '@jongleberry/vurst-html': true
+  esbuild: false
   protobufjs: false
 disallowWorkspaceCycles: true
 linkWorkspacePackages: true

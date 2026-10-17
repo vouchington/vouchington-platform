@@ -25,6 +25,7 @@ const packages = [
   'typed-entities',
   'edge',
   'oauth-server',
+  'email',
 ]
 
 describe('runtime package manifests', () => {

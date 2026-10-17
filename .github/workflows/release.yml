@@ -43,6 +43,7 @@ on:
           - '@vouchington/oauth-server'
           - '@vouchington/api-client'
           - '@vouchington/sentry'
+          - '@vouchington/email'
       bump:
         description: Semver bump type
         type: choice
