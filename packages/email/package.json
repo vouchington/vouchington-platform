@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/email",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "React Email render helpers, style factories, catalog copy loading, and locale resolution.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/email#readme",
   "license": "MIT",

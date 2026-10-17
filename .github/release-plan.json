@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/aws/package.json"],
+  "changedManifests": ["packages/email/package.json"],
   "releases": [
     {
       "bump": "minor",
-      "directory": "aws",
+      "directory": "email",
       "fromVersion": "0.0.0",
-      "name": "@vouchington/aws",
+      "name": "@vouchington/email",
       "toVersion": "0.1.0"
     }
   ],
-  "selectedPackage": "@vouchington/aws"
+  "selectedPackage": "@vouchington/email"
 }
