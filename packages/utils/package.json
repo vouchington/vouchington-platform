@@ -50,6 +50,21 @@
       "import": "./dist/web-push-binding.mjs",
       "default": "./dist/web-push-binding.mjs"
     },
+    "./json-ld": {
+      "types": "./dist/json-ld.d.mts",
+      "import": "./dist/json-ld.mjs",
+      "default": "./dist/json-ld.mjs"
+    },
+    "./seo-metadata": {
+      "types": "./dist/seo-metadata.d.mts",
+      "import": "./dist/seo-metadata.mjs",
+      "default": "./dist/seo-metadata.mjs"
+    },
+    "./speculation-rules": {
+      "types": "./dist/speculation-rules.d.mts",
+      "import": "./dist/speculation-rules.mjs",
+      "default": "./dist/speculation-rules.mjs"
+    },
     "./cache-tags": {
       "types": "./dist/cache-tags.d.mts",
       "import": "./dist/cache-tags.mjs",
