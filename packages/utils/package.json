@@ -20,6 +20,16 @@
   ],
   "type": "module",
   "exports": {
+    "./api-errors": {
+      "types": "./dist/api-errors.d.mts",
+      "import": "./dist/api-errors.mjs",
+      "default": "./dist/api-errors.mjs"
+    },
+    "./api-response-contract": {
+      "types": "./dist/api-response-contract.d.mts",
+      "import": "./dist/api-response-contract.mjs",
+      "default": "./dist/api-response-contract.mjs"
+    },
     "./cache-tags": {
       "types": "./dist/cache-tags.d.mts",
       "import": "./dist/cache-tags.mjs",

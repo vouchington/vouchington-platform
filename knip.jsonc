@@ -30,6 +30,8 @@
         "src/cache-tags.mts!",
         "src/sentry-envelope.mts!",
         "src/scopes.mts!",
+        "src/api-errors.mts!",
+        "src/api-response-contract.mts!",
       ],
       "project": [
         "src/**/*.mts!",
