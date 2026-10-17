@@ -23,6 +23,13 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
   Single-tag validation rejects spaces and comma separators; raw commas are percent-encoded.
 - `schema-growth`: `buildUnboundedUnpartitionedTables()` and `classifyTableGrowth()` map tables to
   caller-supplied growth reasons. Applications own every table name and reason.
+- `web-push`: push-subscription JSON validation with an injected endpoint policy, base64url and
+  VAPID public-key decoding, and bounded payload build/parse helpers. No sending or storage.
+- `web-push-vapid` (Node): VAPID key generation/matching and ES256 JWT/`Authorization` builders.
+  Applications own key storage, subject, and delivery.
+- `web-push-binding` (browser): service-worker binding-state guards, one MessageChannel
+  request/acknowledge round trip with an injected message type, and a named Web Lock wrapper.
+  Sequencing of bind/clear/reconcile steps stays in the application.
 - `sentry-envelope`: bounded UTF-8 envelope record scanning and safe item-type diagnostics.
   Callers choose the byte and type-list limits; DSN, tunnel, request, and logging policy stay local.
 - `scopes`: caller-owned scope catalog validation, prerequisite expansion, audience and surface

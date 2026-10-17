@@ -35,6 +35,21 @@
       "import": "./dist/schema-growth.mjs",
       "default": "./dist/schema-growth.mjs"
     },
+    "./web-push": {
+      "types": "./dist/web-push.d.mts",
+      "import": "./dist/web-push.mjs",
+      "default": "./dist/web-push.mjs"
+    },
+    "./web-push-vapid": {
+      "types": "./dist/web-push-vapid.d.mts",
+      "import": "./dist/web-push-vapid.mjs",
+      "default": "./dist/web-push-vapid.mjs"
+    },
+    "./web-push-binding": {
+      "types": "./dist/web-push-binding.d.mts",
+      "import": "./dist/web-push-binding.mjs",
+      "default": "./dist/web-push-binding.mjs"
+    },
     "./cache-tags": {
       "types": "./dist/cache-tags.d.mts",
       "import": "./dist/cache-tags.mjs",
