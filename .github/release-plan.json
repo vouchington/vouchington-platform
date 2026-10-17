@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/pagination/package.json"],
+  "changedManifests": ["packages/robots/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "pagination",
-      "fromVersion": "0.0.2",
-      "name": "@vouchington/pagination",
-      "toVersion": "0.0.3"
+      "directory": "robots",
+      "fromVersion": "0.0.1",
+      "name": "@vouchington/robots",
+      "toVersion": "0.0.2"
     }
   ],
-  "selectedPackage": "@vouchington/pagination"
+  "selectedPackage": "@vouchington/robots"
 }
