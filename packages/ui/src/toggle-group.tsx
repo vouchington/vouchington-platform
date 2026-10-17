@@ -7,6 +7,8 @@ import type { VariantProps } from 'class-variance-authority'
 import { cn } from './cn.js'
 import { toggleVariants } from './toggle.js'
 
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never
+
 const ToggleGroupContext = React.createContext<VariantProps<typeof toggleVariants>>({
   size: 'default',
   variant: 'default',
@@ -19,7 +21,7 @@ function ToggleGroup({
   children,
   ref,
   ...props
-}: React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Root> &
+}: DistributiveOmit<React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Root>, 'asChild'> &
   VariantProps<typeof toggleVariants> & {
     ref?: React.Ref<React.ComponentRef<typeof ToggleGroupPrimitive.Root>>
   }) {

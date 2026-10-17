@@ -10,7 +10,7 @@ function Checkbox({
   className,
   ref,
   ...props
-}: React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root> & {
+}: Omit<React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>, 'asChild'> & {
   ref?: React.Ref<React.ComponentRef<typeof CheckboxPrimitive.Root>>
 }) {
   return (
