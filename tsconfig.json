@@ -4,6 +4,7 @@
       "@vouchington/ai/openai": ["./packages/ai/src/openai/index.mts"],
       "@vouchington/ai/providers": ["./packages/ai/src/providers/index.mts"],
       "@vouchington/ai/structured-decisions": ["./packages/ai/src/structured-decisions/index.mts"],
+      "@vouchington/ai/usage": ["./packages/ai/src/usage/index.mts"],
       "@vouchington/api-client": ["./packages/api-client/src/index.mts"],
       "@vouchington/aws/cloudwatch": ["./packages/aws/src/cloudwatch.mts"],
       "@vouchington/aws/errors": ["./packages/aws/src/errors.mts"],

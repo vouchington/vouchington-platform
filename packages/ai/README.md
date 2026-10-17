@@ -44,6 +44,15 @@ Pure OpenAI/OpenRouter Responses error semantics (`openai` is an optional peer).
 Moderation and Bedrock embedding helpers have no third-party dependency, so they live in
 `@vouchington/utils`: `ai-moderation`, `bedrock-embeddings`, and `bedrock-embedding-batches`.
 
+## `@vouchington/ai/usage`
+
+- `priceUsageLedgerRow(input, prices)`: cost columns (`priced`/`unpriced`, microunits, currency) from a
+  provider-reported cost or an injected price table; unpriced is never silently zero.
+- `parseUtcIsoTime`: exact UTC report-window edges.
+
+Ledger SQL, idempotency keys and response-id rules, spend-cap policy, the uncertainty latch, and
+classifier-run workflows are product policy and stay in the application.
+
 ## `@vouchington/ai/structured-decisions`
 
 - `validateRequest`, `buildDecisionTransportRequest` (URL, model, and routing injected), `decodeResult`
