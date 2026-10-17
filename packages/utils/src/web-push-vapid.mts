@@ -1,4 +1,4 @@
-import { createPrivateKey, createPublicKey, generateKeyPairSync, sign } from 'node:crypto'
+import { createPrivateKey, createPublicKey, generateKeyPairSync, sign, verify } from 'node:crypto'
 
 import { decodeBase64Url, decodeVapidPublicKey, encodeBase64Url } from './web-push.mts'
 
@@ -52,12 +52,21 @@ function toPrivateKey({ publicKey, privateKey }: VapidKeyPair) {
 /** Returns whether the private scalar corresponds to the public point. */
 export function vapidKeysMatch(keys: VapidKeyPair): boolean {
   try {
-    const derived = createPublicKey(toPrivateKey(keys)).export({ format: 'jwk' })
+    // Sign/verify rather than comparing exported points: some Node/OpenSSL builds keep the
+    // imported public coordinates instead of deriving them from the private scalar.
     const point = decodeVapidPublicKey(keys.publicKey)
-    return (
-      derived.x === encodeBase64Url(point.slice(1, 33)) &&
-      derived.y === encodeBase64Url(point.slice(33))
-    )
+    const publicKey = createPublicKey({
+      key: {
+        kty: 'EC',
+        crv: 'P-256',
+        x: encodeBase64Url(point.slice(1, 33)),
+        y: encodeBase64Url(point.slice(33)),
+      },
+      format: 'jwk',
+    })
+    const probe = Buffer.from('vapid-key-check')
+    const signature = sign('sha256', probe, toPrivateKey(keys))
+    return verify('sha256', probe, publicKey, signature)
   } catch {
     return false
   }
