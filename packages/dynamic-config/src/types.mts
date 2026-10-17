@@ -1,8 +1,11 @@
-import type { DynamicConfig } from 'valkyries/dynamic-config'
+import type { DynamicConfigField, DynamicConfigFieldType } from 'valkyries'
+import type {
+  DynamicConfig,
+  DynamicConfigNamespaceDefinition,
+  DynamicConfigRegistry,
+} from 'valkyries/dynamic-config'
 
-export type DynamicConfigFieldType = 'boolean' | 'number' | 'string'
-export type DynamicConfigFieldValue = boolean | number | string
-export type DynamicConfigFields = Record<string, DynamicConfigFieldValue>
+export type DynamicConfigFields = Record<string, DynamicConfigField>
 
 /** The subset of a valkyries `DynamicConfig` instance this package uses. Fakes may implement it. */
 export type DynamicConfigLike = Pick<
@@ -16,32 +19,30 @@ export type DynamicConfigAccess = {
   update_roles: string[]
 }
 
+/**
+ * A valkyries namespace definition plus the admin-facing label, description, and access policy.
+ * Field rules are valkyries' camelCase `DynamicConfigFieldRules`.
+ */
+export type DynamicConfigRegistryEntry = DynamicConfigNamespaceDefinition<DynamicConfigLike> & {
+  label: string
+  description: string
+  access: DynamicConfigAccess
+}
+
+/** A valkyries registry of admin entries (`createDynamicConfigRegistry<DynamicConfigRegistryEntry>`). */
+export type AdminDynamicConfigRegistry = DynamicConfigRegistry<DynamicConfigRegistryEntry>
+
+/** Admin output for one field (snake_case). */
 export type DynamicConfigFieldMetadata = {
   name: string
   type: DynamicConfigFieldType
-  value: DynamicConfigFieldValue
-  default_value: DynamicConfigFieldValue | null
+  value: DynamicConfigField
+  default_value: DynamicConfigField | null
   description: string
   min_value?: number | undefined
   max_value?: number | undefined
   max_value_exemption?: string | undefined
   integer?: boolean | undefined
-}
-
-export type DynamicConfigFieldDescriptors = Record<
-  string,
-  Partial<Omit<DynamicConfigFieldMetadata, 'default_value' | 'name' | 'type' | 'value'>>
->
-
-export type DynamicConfigRegistryEntry = {
-  namespace: string
-  label: string
-  description: string
-  config: DynamicConfigLike
-  access: DynamicConfigAccess
-  fields: DynamicConfigFieldDescriptors
-  /** Cross-field validator; throws (typically `DynamicConfigValidationError`) to reject. */
-  validate?: (next: DynamicConfigFields) => void
 }
 
 export type DynamicConfigNamespaceSummary = {
@@ -57,8 +58,6 @@ export type DynamicConfigNamespace = DynamicConfigNamespaceSummary & {
   config: DynamicConfigFields
   fields: DynamicConfigFieldMetadata[]
 }
-
-export type DynamicConfigChangedFields = Record<string, { previous: unknown; next: unknown }>
 
 export type DynamicConfigUpdateResult = {
   namespace: DynamicConfigNamespace

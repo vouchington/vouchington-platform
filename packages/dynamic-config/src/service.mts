@@ -1,7 +1,8 @@
-import { assertPlainChanges, normalizeFields, validateChanges } from './fields.mts'
+import { validateDynamicConfigUpdate } from 'valkyries/dynamic-config'
+import { normalizeFields } from './fields.mts'
 import { toNamespace, toNamespaceSummary } from './namespace.mts'
-import type { DynamicConfigRegistry } from './registry.mts'
 import type {
+  AdminDynamicConfigRegistry,
   DynamicConfigAuthorizer,
   DynamicConfigFields,
   DynamicConfigNamespace,
@@ -11,7 +12,7 @@ import type {
 } from './types.mts'
 
 export type DynamicConfigAdminOptions<TUser, THistory = never> = {
-  registry: DynamicConfigRegistry
+  registry: AdminDynamicConfigRegistry
   authorize: DynamicConfigAuthorizer<TUser>
   /**
    * Persists an audit record. Awaited after validation and before the config is written, so a
@@ -33,7 +34,7 @@ export type DynamicConfigAdmin<TUser, THistory = never> = {
   update(
     user: TUser,
     namespace: string,
-    changes: Record<string, unknown>,
+    changes: unknown,
   ): Promise<DynamicConfigUpdateResult | null>
   history(user: TUser, namespace: string): Promise<THistory[] | null>
 }
@@ -81,17 +82,13 @@ export function createDynamicConfigAdmin<TUser, THistory = never>(
       const entry = await authorized(user, namespace, 'update')
       if (!entry) return null
 
-      assertPlainChanges(changes)
       await entry.config.waitForInitialization()
       const previous = normalizeFields(entry, entry.config.getFields())
-      const validated = validateChanges(entry, previous, changes)
-      const next = { ...previous, ...validated }
-      entry.validate?.(next)
-
-      const changed = Object.entries(validated).some(([key, value]) => previous[key] !== value)
+      const result = validateDynamicConfigUpdate(entry, previous, changes)
+      const { changed } = result
       if (changed) {
-        await options.recordChange?.(user, entry.namespace, previous, next)
-        await entry.config.setFields(validated)
+        await options.recordChange?.(user, entry.namespace, previous, result.next)
+        await entry.config.setFields(result.changes)
       }
       return { changed, namespace: toNamespace(entry, await permissions(user, entry)) }
     },

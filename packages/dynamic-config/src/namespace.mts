@@ -44,9 +44,9 @@ export function toNamespace(
         default_value:
           defaultValue === undefined ? null : normalizeFieldValue(name, rawType, defaultValue),
         description: metadata?.description ?? humanizeFieldName(name),
-        min_value: metadata?.min_value,
-        max_value: metadata?.max_value,
-        max_value_exemption: metadata?.max_value_exemption,
+        min_value: metadata?.minValue,
+        max_value: metadata?.maxValue,
+        max_value_exemption: metadata?.maxValueExemption,
         integer: metadata?.integer,
       }
     }),

@@ -107,8 +107,8 @@ importers:
   packages/dynamic-config:
     devDependencies:
       valkyries:
-        specifier: ^0.8.2
-        version: 0.8.2
+        specifier: ^0.9.0
+        version: 0.9.0
 
   packages/edge:
     dependencies:
@@ -3134,6 +3134,10 @@ packages:
     resolution: {integrity: sha512-IEDQlNChFLhKhikJgkOa1tTVt8HGU2wsbs3+zMEjCmcBz4NR6+m3zdjRGENI1RLfTgePbx90hnhvbaM15SJsmg==}
     engines: {node: '>=24.0.0'}
 
+  valkyries@0.9.0:
+    resolution: {integrity: sha512-8rrkDwr4GAOO3fKu1IG+NXyEk3Tn2NVsL9rEu0GXmiJvmdW7PQDCKMGptNArogR+1gr+DMmHUKpTpRvR3fiolw==}
+    engines: {node: '>=24.0.0'}
+
   vary@1.1.2:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
@@ -5853,6 +5857,10 @@ snapshots:
   uuid@14.0.3: {}
 
   valkyries@0.8.2:
+    dependencies:
+      '@valkey/valkey-glide': 2.5.3
+
+  valkyries@0.9.0:
     dependencies:
       '@valkey/valkey-glide': 2.5.3
 

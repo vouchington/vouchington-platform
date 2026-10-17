@@ -1,17 +1,17 @@
-import { defineDynamicConfigNamespace } from './descriptor.mts'
+import type { DynamicConfigField } from 'valkyries'
+import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 import type {
   DynamicConfigFields,
-  DynamicConfigFieldValue,
   DynamicConfigLike,
   DynamicConfigRegistryEntry,
 } from './types.mts'
 
-export type FakeConfig = DynamicConfigLike & { stored: Record<string, DynamicConfigFieldValue> }
+export type FakeConfig = DynamicConfigLike & { stored: Record<string, DynamicConfigField> }
 
 export function fakeConfig(
   fieldTypes: Record<string, 'boolean' | 'number' | 'string'>,
   defaultFields: DynamicConfigFields,
-  stored: Record<string, DynamicConfigFieldValue> = {},
+  stored: Record<string, DynamicConfigField> = {},
 ): FakeConfig {
   const config: FakeConfig = {
     key: 'fake',
@@ -35,7 +35,7 @@ export function fakeEntry(
     { enabled: false, limit: 5, mode: 'a' },
   ),
 ): DynamicConfigRegistryEntry {
-  return defineDynamicConfigNamespace({
+  return defineDynamicConfigNamespace<DynamicConfigRegistryEntry>({
     namespace: 'demo',
     label: 'Demo',
     description: 'Demo namespace',
@@ -43,7 +43,7 @@ export function fakeEntry(
     access: { update_roles: ['developer'] },
     fields: {
       enabled: { description: 'Turn it on' },
-      limit: { min_value: 1, max_value: 10, integer: true },
+      limit: { minValue: 1, maxValue: 10, integer: true },
       mode: {},
     },
     ...overrides,

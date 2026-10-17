@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createRoleAuthorizer } from './authorization.mts'
 import { createDynamicConfigAdmin } from './service.mts'
-import { createDynamicConfigRegistry } from './registry.mts'
+import { DynamicConfigValidationError, createDynamicConfigRegistry } from 'valkyries/dynamic-config'
+import type { DynamicConfigRegistryEntry } from './types.mts'
 import { fakeConfig, fakeEntry } from './test-helpers.mts'
-import { DynamicConfigValidationError } from './errors.mts'
 
 type User = { id: string; roles: string[] }
 const admin: User = { id: 'a', roles: ['administrator'] }
@@ -21,7 +21,7 @@ function setup(extra: { validate?: (next: Record<string, unknown>) => void } = {
   const recordChange = vi.fn(() => Promise.resolve())
   const readHistory = vi.fn((_user: User, namespace: string) => Promise.resolve([namespace]))
   const admin_ = createDynamicConfigAdmin<User, string>({
-    registry: createDynamicConfigRegistry([entry]),
+    registry: createDynamicConfigRegistry<DynamicConfigRegistryEntry>([entry]),
     authorize: createRoleAuthorizer<User>({
       getRoles: (user) => user.roles,
       adminRoles: ['administrator'],
@@ -98,7 +98,9 @@ describe('createDynamicConfigAdmin', () => {
   it('works without recordChange', async () => {
     const config = fakeConfig({ a: 'boolean' }, { a: false })
     const service = createDynamicConfigAdmin<User>({
-      registry: createDynamicConfigRegistry([fakeEntry({ fields: { a: {} } }, config)]),
+      registry: createDynamicConfigRegistry<DynamicConfigRegistryEntry>([
+        fakeEntry({ fields: { a: {} } }, config),
+      ]),
       authorize: () => true,
     })
     expect((await service.update(admin, 'demo', { a: true }))?.changed).toBe(true)
@@ -110,7 +112,9 @@ describe('createDynamicConfigAdmin', () => {
       throw new DynamicConfigValidationError('nope')
     }
     const { admin: service, config, recordChange } = setup({ validate: reject })
-    await expect(service.update(admin, 'demo', {})).rejects.toThrow('must not be empty')
+    await expect(service.update(admin, 'demo', {})).rejects.toThrow('Changes must not be empty')
+    await expect(service.update(admin, 'demo', null)).rejects.toThrow('Changes must be an object')
+    await expect(service.update(admin, 'demo', { nope: 1 })).rejects.toThrow('Unknown field')
     await expect(service.update(admin, 'demo', { limit: 99 })).rejects.toThrow('less than or equal')
     await expect(service.update(admin, 'demo', { limit: 2 })).rejects.toThrow('nope')
     expect(recordChange).not.toHaveBeenCalled()
@@ -128,7 +132,9 @@ describe('createDynamicConfigAdmin', () => {
   it('reports a null default_value for fields without defaults', async () => {
     const config = fakeConfig({ a: 'string' }, {}, { a: 'set' })
     const service = createDynamicConfigAdmin<User>({
-      registry: createDynamicConfigRegistry([fakeEntry({ fields: { a: {} } }, config)]),
+      registry: createDynamicConfigRegistry<DynamicConfigRegistryEntry>([
+        fakeEntry({ fields: { a: {} } }, config),
+      ]),
       authorize: () => true,
     })
     const result = await service.get(admin, 'demo')
