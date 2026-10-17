@@ -43,6 +43,9 @@
         "src/web-push.mts!",
         "src/web-push-vapid.mts!",
         "src/web-push-binding.mts!",
+        "src/json-ld.mts!",
+        "src/seo-metadata.mts!",
+        "src/speculation-rules.mts!",
       ],
       "project": [
         "src/**/*.mts!",

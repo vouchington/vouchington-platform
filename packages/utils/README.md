@@ -31,6 +31,14 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
   request/acknowledge round trip with an injected message type and acceptance check, and a named
   Web Lock wrapper. Request actions, expected state transitions, and the bind/clear/reconcile
   sequence stay in the application.
+- `json-ld`: schema.org JSON-LD builders (organization, website, navigation, collection, thing,
+  comparison, item list, breadcrumb, profile) and script-safe serialization. Callers inject the
+  absolute-URL resolver and site name; product schemas such as posts stay in the application.
+- `seo-metadata`: framework-agnostic page, root, and noindex metadata objects (structurally
+  compatible with Next.js `Metadata`), excerpts, and markdown-alternate paths. Callers inject site
+  config, image URLs, locale mapping, and alternate prefixes.
+- `speculation-rules`: prefetch speculation-rules builder and preconnect-origin parsing with
+  caller-supplied exclusions.
 - `sentry-envelope`: bounded UTF-8 envelope record scanning and safe item-type diagnostics.
   Callers choose the byte and type-list limits; DSN, tunnel, request, and logging policy stay local.
 - `scopes`: caller-owned scope catalog validation, prerequisite expansion, audience and surface
