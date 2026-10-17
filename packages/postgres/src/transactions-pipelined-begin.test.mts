@@ -114,12 +114,13 @@ describe('reading transaction.client before the first statement', () => {
     await withPsql(async (psql) => {
       const transaction = await psql.beginBoundedTransaction({
         connectionTimeoutMs: 1000,
-        statementTimeoutMs: 75,
+        // Control statements share this as their client-side timeout, so keep it above CI latency.
+        statementTimeoutMs: 5000,
       })
       const { rows } = await transaction.client.query<{ timeout: string }>(
         "/* timeout */ SELECT current_setting('statement_timeout') AS timeout",
       )
-      expect(rows).toEqual([{ timeout: '75ms' }])
+      expect(rows).toEqual([{ timeout: '5s' }])
       await transaction.commit()
     })
   })
