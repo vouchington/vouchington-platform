@@ -14,6 +14,7 @@ const packages = [
   'memberships',
   'worker-runtime',
   'typed-entities',
+  'oauth-server',
 ] as const
 
 describe('new package manifests and exports', () => {
@@ -58,6 +59,7 @@ describe('new package manifests and exports', () => {
     expect(readManifest('memberships').dependencies).toBeUndefined()
     expect(readManifest('worker-runtime').dependencies).toBeUndefined()
     expectDependencyNames('typed-entities', ['@vouchington/utils'])
+    expectDependencyNames('oauth-server', ['@vouchington/utils'])
   })
 
   it('keeps membership declarations utility-only and product-neutral', () => {

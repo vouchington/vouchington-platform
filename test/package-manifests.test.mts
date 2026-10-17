@@ -24,6 +24,7 @@ const packages = [
   'worker-runtime',
   'typed-entities',
   'edge',
+  'oauth-server',
 ]
 
 describe('runtime package manifests', () => {

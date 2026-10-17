@@ -154,6 +154,12 @@ importers:
 
   packages/memberships: {}
 
+  packages/oauth-server:
+    dependencies:
+      '@vouchington/utils':
+        specifier: ^0.5.3
+        version: link:../utils
+
   packages/pagination:
     dependencies:
       http-errors:

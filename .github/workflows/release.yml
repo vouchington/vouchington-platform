@@ -40,6 +40,7 @@ on:
           - '@vouchington/request-contract-validation'
           - '@vouchington/rate-limit'
           - '@vouchington/edge'
+          - '@vouchington/oauth-server'
       bump:
         description: Semver bump type
         type: choice

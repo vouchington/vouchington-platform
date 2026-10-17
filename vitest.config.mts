@@ -7,6 +7,9 @@ export default defineConfig({
       '@vouchington/localization': fileURLToPath(
         new URL('./packages/localization/src/index.mts', import.meta.url),
       ),
+      '@vouchington/utils/scopes': fileURLToPath(
+        new URL('./packages/utils/src/scopes.mts', import.meta.url),
+      ),
       '@vouchington/crawler-html': fileURLToPath(
         new URL('./packages/crawler-html/src/index.mts', import.meta.url),
       ),
