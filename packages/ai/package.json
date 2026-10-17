@@ -17,6 +17,16 @@
   ],
   "type": "module",
   "exports": {
+    "./bedrock-embeddings": {
+      "types": "./dist/bedrock-embeddings/index.d.mts",
+      "import": "./dist/bedrock-embeddings/index.mjs",
+      "default": "./dist/bedrock-embeddings/index.mjs"
+    },
+    "./moderation": {
+      "types": "./dist/moderation/index.d.mts",
+      "import": "./dist/moderation/index.mjs",
+      "default": "./dist/moderation/index.mjs"
+    },
     "./openai": {
       "types": "./dist/openai/index.d.mts",
       "import": "./dist/openai/index.mjs",

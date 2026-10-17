@@ -121,6 +121,8 @@ describe('runtime package manifests', () => {
       files: string[]
     }
     expect(Object.keys(manifest.exports)).toEqual([
+      './bedrock-embeddings',
+      './moderation',
       './openai',
       './providers',
       './structured-decisions',

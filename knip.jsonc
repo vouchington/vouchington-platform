@@ -95,6 +95,8 @@
     },
     "packages/ai": {
       "entry": [
+        "src/bedrock-embeddings/index.mts!",
+        "src/moderation/index.mts!",
         "src/openai/index.mts!",
         "src/providers/index.mts!",
         "src/structured-decisions/index.mts!",
