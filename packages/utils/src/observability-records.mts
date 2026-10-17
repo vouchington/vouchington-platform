@@ -22,7 +22,7 @@ export function transformRecord<T extends object>(
     if (next === DROP) {
       changed = true
     } else {
-      if (next !== value) changed = true
+      if (!Object.is(next, value)) changed = true
       entries.push([key, next])
     }
   }
