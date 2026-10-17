@@ -10,6 +10,7 @@ import type {
   ClientStore,
   GrantStore,
   HashSecret,
+  IssuedTokens,
   OAuthClient,
   RefreshTokenRecord,
   ScopePolicy,
@@ -36,8 +37,8 @@ type Subject = Pick<RefreshTokenRecord, 'grantId' | 'subject' | 'resource'> & {
 
 /**
  * Handles the token endpoint for `authorization_code` and `refresh_token` grants: authenticates the
- * client, then verifies and consumes the grant through the injected store. Codes and refresh tokens
- * are single use; a failed verification after consumption leaves the grant spent by design.
+ * client, then verifies the grant inside the store's redeem transaction. Codes and refresh tokens are
+ * single use; the adapter owns the transaction and decides what a failed redemption spends.
  */
 export async function exchangeTokenGrant(
   form: URLSearchParams,
@@ -63,23 +64,28 @@ async function exchangeAuthorizationCode(
   const code = requiredFormValue(form, 'code')
   const redirectUri = requiredFormValue(form, 'redirect_uri')
   const verifier = validatePkceVerifier(form.get('code_verifier'))
-  const record = await deps.grants.consumeAuthorizationCode(
+  let response: TokenResponse | undefined
+  await deps.grants.redeemAuthorizationCode(
     deps.hashSecret('authorization-code', code),
+    (record) => {
+      const now = (deps.now?.() ?? new Date()).getTime()
+      assertCodeUsable(record, client, redirectUri, verifier, now)
+      assertTokenRequestResource(resource, record.resource)
+      const lifetimes = { ...DEFAULT_TOKEN_LIFETIMES, ...deps.lifetimes }
+      const issued = buildTokens({
+        client,
+        subject: record,
+        familyId: (deps.newFamilyId ?? crypto.randomUUID.bind(crypto))(),
+        generation: 0,
+        refreshExpiresAt: new Date(now + lifetimes.refreshTokenMs),
+        now,
+        deps,
+      })
+      response = issued.response
+      return issued.tokens
+    },
   )
-  const now = (deps.now?.() ?? new Date()).getTime()
-  assertCodeUsable(record, client, redirectUri, verifier, now)
-  assertTokenRequestResource(resource, record.resource)
-  const lifetimes = { ...DEFAULT_TOKEN_LIFETIMES, ...deps.lifetimes }
-  const familyId = (deps.newFamilyId ?? crypto.randomUUID.bind(crypto))()
-  return issueTokens({
-    client,
-    subject: record,
-    familyId,
-    generation: 0,
-    refreshExpiresAt: new Date(now + lifetimes.refreshTokenMs),
-    now,
-    deps,
-  })
+  return response!
 }
 
 function assertCodeUsable(
@@ -109,39 +115,44 @@ async function exchangeRefreshToken(
 ): Promise<TokenResponse> {
   const token = requiredFormValue(form, 'refresh_token')
   const requestedScope = form.has('scope') ? requiredFormValue(form, 'scope') : undefined
-  const record = await deps.grants.consumeRefreshToken(deps.hashSecret('refresh-token', token))
-  const now = (deps.now?.() ?? new Date()).getTime()
-  if (
-    !record ||
-    record.replayed ||
-    record.revoked ||
-    record.clientId !== client.clientId ||
-    record.expiresAt.getTime() <= now ||
-    record.familyExpiresAt.getTime() <= now
-  ) {
-    throw invalidGrant('refresh token is invalid')
-  }
-  assertTokenRequestResource(resource, record.resource)
-  let scopes = record.scopes
-  if (requestedScope !== undefined) {
-    const requested = parseScopeParameter(requestedScope, deps.scopes).scopes
-    if (!scopesCover(deps.scopes, record.scopes, requested)) {
-      throw new OAuthProtocolError('invalid_scope', 'scope exceeds the original grant')
+  let response: TokenResponse | undefined
+  await deps.grants.redeemRefreshToken(deps.hashSecret('refresh-token', token), (record) => {
+    const now = (deps.now?.() ?? new Date()).getTime()
+    if (
+      !record ||
+      record.replayed ||
+      record.revoked ||
+      record.clientId !== client.clientId ||
+      record.expiresAt.getTime() <= now ||
+      record.familyExpiresAt.getTime() <= now
+    ) {
+      throw invalidGrant('refresh token is invalid')
     }
-    scopes = requested
-  }
-  return issueTokens({
-    client,
-    subject: { ...record, scopes },
-    familyId: record.familyId,
-    generation: record.generation + 1,
-    refreshExpiresAt: record.familyExpiresAt,
-    now,
-    deps,
+    assertTokenRequestResource(resource, record.resource)
+    let scopes = record.scopes
+    if (requestedScope !== undefined) {
+      const requested = parseScopeParameter(requestedScope, deps.scopes).scopes
+      if (!scopesCover(deps.scopes, record.scopes, requested)) {
+        throw new OAuthProtocolError('invalid_scope', 'scope exceeds the original grant')
+      }
+      scopes = requested
+    }
+    const issued = buildTokens({
+      client,
+      subject: { ...record, scopes },
+      familyId: record.familyId,
+      generation: record.generation + 1,
+      refreshExpiresAt: record.familyExpiresAt,
+      now,
+      deps,
+    })
+    response = issued.response
+    return issued.tokens
   })
+  return response!
 }
 
-async function issueTokens(input: {
+function buildTokens(input: {
   client: OAuthClient
   subject: Subject
   familyId: string
@@ -149,7 +160,7 @@ async function issueTokens(input: {
   refreshExpiresAt: Date
   now: number
   deps: TokenDependencies
-}): Promise<TokenResponse> {
+}): { tokens: IssuedTokens; response: TokenResponse } {
   const { client, subject, deps, now } = input
   const prefixes = { ...DEFAULT_TOKEN_PREFIXES, ...deps.prefixes }
   const lifetimes = { ...DEFAULT_TOKEN_LIFETIMES, ...deps.lifetimes }
@@ -159,7 +170,7 @@ async function issueTokens(input: {
   const accessExpiresAt = new Date(
     Math.min(now + lifetimes.accessTokenMs, input.refreshExpiresAt.getTime()),
   )
-  await deps.grants.saveTokens({
+  const tokens: IssuedTokens = {
     clientId: client.clientId,
     grantId: subject.grantId,
     subject: subject.subject,
@@ -171,12 +182,13 @@ async function issueTokens(input: {
     accessExpiresAt,
     refreshTokenHash: deps.hashSecret('refresh-token', refreshToken),
     refreshExpiresAt: input.refreshExpiresAt,
-  })
-  return {
+  }
+  const response: TokenResponse = {
     access_token: accessToken,
     expires_in: Math.max(0, Math.floor((accessExpiresAt.getTime() - now) / 1000)),
     refresh_token: refreshToken,
     scope: subject.scopes.join(' '),
     token_type: 'Bearer',
   }
+  return { tokens, response }
 }

@@ -185,6 +185,9 @@ describe('responses and metadata', () => {
     expect(protectedResourceMetadataUrl('https://api.test/api/mcp')).toBe(
       'https://api.test/.well-known/oauth-protected-resource/api/mcp',
     )
+    expect(protectedResourceMetadataUrl('https://api.test/mcp?tenant=a')).toBe(
+      'https://api.test/.well-known/oauth-protected-resource/mcp?tenant=a',
+    )
     expect(protectedResourceMetadataUrl('https://api.test')).toBe(
       'https://api.test/.well-known/oauth-protected-resource',
     )

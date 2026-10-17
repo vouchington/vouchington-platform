@@ -19,6 +19,8 @@ export interface RegistrationDependencies {
   clientIdPrefix?: string
   /** Prefix for generated client secrets. Defaults to "secret_". */
   clientSecretPrefix?: string
+  /** Used when the request omits token_endpoint_auth_method. Defaults to client_secret_basic. */
+  defaultAuthMethod?: ClientAuthMethod
   now?: () => Date
 }
 
@@ -49,7 +51,7 @@ export async function registerClient(
   const metadata = validateRegistrationObject(input)
   const clientName = validateClientName(metadata.client_name)
   const redirectUris = validateRedirectUris(metadata.redirect_uris)
-  const method = validateAuthMethod(metadata.token_endpoint_auth_method)
+  const method = validateAuthMethod(metadata.token_endpoint_auth_method, deps.defaultAuthMethod)
   const grantTypes = validateGrantTypes(metadata.grant_types)
   const responseTypes = validateResponseTypes(metadata.response_types)
   const scopes = parseRegistrationScopes(metadata.scope, deps.scopes)

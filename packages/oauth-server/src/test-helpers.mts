@@ -63,6 +63,7 @@ export interface MemoryStore extends ClientRegistry, GrantStore {
   refresh: Map<string, RefreshTokenRecord>
   tokens: IssuedTokens[]
   revoked: Array<{ hash: string; clientId: string }>
+  persist(tokens: IssuedTokens): void
 }
 
 /** In-memory stores that honor the single-use consume contract. */
@@ -82,21 +83,17 @@ export function createMemoryStore(clients: OAuthClient[] = []): MemoryStore {
     saveAuthorizationCode: async (code: AuthorizationCodeGrant) => {
       store.codes.set(code.codeHash, { ...code, replayed: false })
     },
-    consumeAuthorizationCode: async (codeHash) => {
+    redeemAuthorizationCode: async (codeHash, redeem) => {
       const record = store.codes.get(codeHash)
-      if (!record) return null
-      const result = { ...record }
-      store.codes.set(codeHash, { ...record, replayed: true })
-      return result
+      if (record) store.codes.set(codeHash, { ...record, replayed: true })
+      store.persist(await redeem(record ? { ...record } : null))
     },
-    consumeRefreshToken: async (tokenHash) => {
+    redeemRefreshToken: async (tokenHash, redeem) => {
       const record = store.refresh.get(tokenHash)
-      if (!record) return null
-      const result = { ...record }
-      store.refresh.set(tokenHash, { ...record, replayed: true })
-      return result
+      if (record) store.refresh.set(tokenHash, { ...record, replayed: true })
+      store.persist(await redeem(record ? { ...record } : null))
     },
-    saveTokens: async (tokens) => {
+    persist: (tokens) => {
       store.tokens.push(tokens)
       store.refresh.set(tokens.refreshTokenHash, {
         clientId: tokens.clientId,

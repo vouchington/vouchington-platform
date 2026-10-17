@@ -22,9 +22,13 @@ export function validateClientName(value: unknown): string {
   return value.trim()
 }
 
-export function validateAuthMethod(value: unknown): ClientAuthMethod {
-  if (value === undefined || value === 'none') return 'none'
-  if (value === 'client_secret_basic') return value
+/** RFC 7591 section 2 defaults an omitted method to client_secret_basic; callers may override. */
+export function validateAuthMethod(
+  value: unknown,
+  defaultMethod: ClientAuthMethod = 'client_secret_basic',
+): ClientAuthMethod {
+  if (value === undefined) return defaultMethod
+  if (value === 'none' || value === 'client_secret_basic') return value
   throw invalidClientMetadata('token_endpoint_auth_method is not supported')
 }
 

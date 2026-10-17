@@ -69,5 +69,10 @@ export function matchesRegisteredRedirectUri(
   const requested = LOOPBACK_REQUEST.exec(requestedUri)
   if (!requested) return false
   if (Number(requested[2]) > 65_535) return false
-  return registeredUris.includes(`http://${requested[1]}${requested[3] ?? ''}`)
+  const suffix = requested[3] ?? ''
+  // Registration serializes a portless root URI with a trailing slash.
+  return (
+    registeredUris.includes(`http://${requested[1]}${suffix}`) ||
+    (suffix === '' && registeredUris.includes(`http://${requested[1]}/`))
+  )
 }

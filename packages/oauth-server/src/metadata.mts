@@ -51,5 +51,5 @@ export function buildProtectedResourceMetadata(options: {
 export function protectedResourceMetadataUrl(resource: string): string {
   const url = new URL(resource)
   const path = url.pathname === '/' ? '' : url.pathname
-  return `${url.origin}/.well-known/oauth-protected-resource${path}`
+  return `${url.origin}/.well-known/oauth-protected-resource${path}${url.search}`
 }

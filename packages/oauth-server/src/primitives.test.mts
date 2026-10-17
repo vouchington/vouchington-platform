@@ -116,5 +116,10 @@ describe('redirect URIs', () => {
     expect(matchesRegisteredRedirectUri('http://127.0.0.1:5123/other', registered)).toBe(false)
     expect(matchesRegisteredRedirectUri('http://localhost:5123/native', registered)).toBe(false)
     expect(matchesRegisteredRedirectUri('http://127.0.0.1:5123', ['http://127.0.0.1'])).toBe(true)
+    expect(matchesRegisteredRedirectUri('http://127.0.0.1:5123', ['http://127.0.0.1/'])).toBe(true)
+    expect(matchesRegisteredRedirectUri('http://[::1]:5123', ['http://[::1]/'])).toBe(true)
+    expect(matchesRegisteredRedirectUri('http://127.0.0.1:5123', ['http://127.0.0.1/x'])).toBe(
+      false,
+    )
   })
 })

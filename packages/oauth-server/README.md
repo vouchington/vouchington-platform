@@ -7,9 +7,10 @@ RFC 8414 / 9728 (metadata), RFC 8707 (resource indicators), and RFC 9207 (`iss` 
 The package never touches HTTP frameworks or databases. The application injects:
 
 - `ClientStore` / `ClientRegistry` — client lookup (return only active, eligible clients) and creation.
-- `GrantStore` — authorization-code and refresh-token persistence. `consumeAuthorizationCode` and
-  `consumeRefreshToken` must atomically mark the secret spent and set `replayed: true` on reuse, so
-  codes and rotated refresh tokens are single use. The application decides what a replay revokes.
+- `GrantStore` — authorization-code and refresh-token persistence. `redeemAuthorizationCode` and
+  `redeemRefreshToken` run the package's verification callback inside the adapter's own
+  transaction and lock; the adapter persists the returned tokens and spends the secret atomically,
+  flags reuse with `replayed: true`, and decides what a replay or failed attempt revokes.
 - `HashSecret` — one-way hash for client secrets, codes, and tokens. Only hashes reach the stores.
 - `ScopePolicy` — a `ScopeCatalog` from `@vouchington/utils/scopes` plus the catalog surface.
 - `resolveResource` — maps a `resource` URL to `{ url, audience }` or `null`.

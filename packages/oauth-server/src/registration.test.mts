@@ -102,7 +102,8 @@ describe('RFC 7591 metadata validators', () => {
   })
 
   it('validates auth methods, grants, and response types', () => {
-    expect(validateAuthMethod(undefined)).toBe('none')
+    expect(validateAuthMethod(undefined)).toBe('client_secret_basic')
+    expect(validateAuthMethod(undefined, 'none')).toBe('none')
     expect(validateAuthMethod('none')).toBe('none')
     expect(validateAuthMethod('client_secret_basic')).toBe('client_secret_basic')
     expect(code(() => validateAuthMethod('client_secret_post'))).toBe('invalid_client_metadata')
@@ -133,7 +134,9 @@ describe('registerClient', () => {
   it('registers a public client and stores no secret', async () => {
     const registry = createMemoryStore()
     const deps = { registry, scopes: policy, hashSecret, now: () => NOW }
-    const result = await registerClient(base, deps, { owner: 'u1' })
+    const result = await registerClient({ ...base, token_endpoint_auth_method: 'none' }, deps, {
+      owner: 'u1',
+    })
     expect(result).toMatchObject({
       client_name: 'My App',
       client_id_issued_at: NOW.getTime() / 1000,
@@ -167,6 +170,17 @@ describe('registerClient', () => {
     const stored = registry.created[0]!.client
     expect(stored.clientSecretHash).toBe(hashSecret('client-secret', result.client_secret!))
     expect(JSON.stringify(stored)).not.toContain(result.client_secret)
+  })
+
+  it('defaults omitted authentication to client_secret_basic unless overridden', async () => {
+    const registry = createMemoryStore()
+    const deps = { registry, scopes: policy, hashSecret }
+    expect((await registerClient(base, deps)).token_endpoint_auth_method).toBe(
+      'client_secret_basic',
+    )
+    const pub = await registerClient(base, { ...deps, defaultAuthMethod: 'none' })
+    expect(pub.token_endpoint_auth_method).toBe('none')
+    expect(pub).not.toHaveProperty('client_secret')
   })
 
   it('defaults the generated secret prefix', async () => {

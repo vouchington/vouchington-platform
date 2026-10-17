@@ -110,14 +110,22 @@ export interface AuthorizationCodeGrant {
 export interface GrantStore {
   saveAuthorizationCode(code: AuthorizationCodeGrant): Promise<void>
   /**
-   * Must atomically mark the code consumed and return it, so concurrent exchanges cannot both
-   * succeed. Return null for unknown codes. A code that was already consumed is returned with
-   * `replayed: true` so the application can revoke the grants it issued.
+   * Looks up the code and calls `redeem` with the record (or null when unknown) inside the
+   * adapter's own transaction, holding a lock so concurrent exchanges cannot both succeed. If
+   * `redeem` returns tokens, the adapter must persist them and mark the code spent atomically. If
+   * it throws, no tokens may be persisted and the error must propagate; the adapter decides whether
+   * a failed attempt spends the code. An already-spent code is passed with `replayed: true` so the
+   * adapter can revoke what it issued.
    */
-  consumeAuthorizationCode(codeHash: string): Promise<AuthorizationCodeRecord | null>
-  /** Same single-use contract as codes: rotate atomically and flag replays. */
-  consumeRefreshToken(tokenHash: string): Promise<RefreshTokenRecord | null>
-  saveTokens(tokens: IssuedTokens): Promise<void>
+  redeemAuthorizationCode(
+    codeHash: string,
+    redeem: (record: AuthorizationCodeRecord | null) => IssuedTokens | Promise<IssuedTokens>,
+  ): Promise<void>
+  /** Same contract for refresh tokens: persist the rotated pair and spend the old token atomically. */
+  redeemRefreshToken(
+    tokenHash: string,
+    redeem: (record: RefreshTokenRecord | null) => IssuedTokens | Promise<IssuedTokens>,
+  ): Promise<void>
   /** Revoke the access or refresh token (and its family) when it belongs to `clientId`. */
   revokeToken(tokenHash: string, clientId: string): Promise<void>
 }
