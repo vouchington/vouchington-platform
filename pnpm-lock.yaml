@@ -157,7 +157,7 @@ importers:
   packages/oauth-server:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.5.3
+        specifier: ^0.6.0
         version: link:../utils
 
   packages/pagination:
