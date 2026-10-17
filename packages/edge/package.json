@@ -1,0 +1,52 @@
+{
+  "name": "@vouchington/edge",
+  "version": "0.0.0",
+  "description": "Cloudflare Worker builders: security headers, CSP, basic auth, origin proxying, cache policy, and a Sentry tunnel.",
+  "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/edge#readme",
+  "license": "MIT",
+  "author": "Jonathan Ong",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vouchington/vouchington-platform.git",
+    "directory": "packages/edge"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "@vouchington/utils": "^0.5.3"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261016.1"
+  },
+  "peerDependencies": {
+    "@cloudflare/workers-types": "^5.20261016.1"
+  },
+  "peerDependenciesMeta": {
+    "@cloudflare/workers-types": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

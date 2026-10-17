@@ -23,6 +23,7 @@ const packages = [
   'memberships',
   'worker-runtime',
   'typed-entities',
+  'edge',
 ]
 
 describe('runtime package manifests', () => {

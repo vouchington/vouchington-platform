@@ -39,6 +39,7 @@ on:
           - '@vouchington/typed-entities'
           - '@vouchington/request-contract-validation'
           - '@vouchington/rate-limit'
+          - '@vouchington/edge'
       bump:
         description: Semver bump type
         type: choice
