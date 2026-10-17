@@ -6,6 +6,7 @@
       "@vouchington/crawler-html": ["./packages/crawler-html/src/index.mts"],
       "@vouchington/dynamic-config": ["./packages/dynamic-config/src/index.mts"],
       "@vouchington/csv": ["./packages/csv/src/index.mts"],
+      "@vouchington/email": ["./packages/email/src/index.mts"],
       "@vouchington/edge": ["./packages/edge/src/index.mts"],
       "@vouchington/http-transport": ["./packages/http-transport/src/index.mts"],
       "@vouchington/localization": ["./packages/localization/src/index.mts"],
