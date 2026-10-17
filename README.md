@@ -22,6 +22,7 @@ SKU names.
 | [`@vouchington/localization-compiler`](packages/localization-compiler)             | JSON-to-SQLite compiler, CLI resolver, and native resource helpers |
 | [`@vouchington/html-utils`](packages/html-utils)                                   | HTML entity decoding and text helpers                              |
 | [`@vouchington/phone-validation`](packages/phone-validation)                       | Phone normalization and predicates                                 |
+| [`@vouchington/edge`](packages/edge)                                               | Injected Cloudflare Worker header, CSP, auth, and cache builders   |
 | [`@vouchington/uuid-v7`](packages/uuid-v7)                                         | UUIDv7 generation, validation, and date bounds                     |
 | [`@vouchington/dynamic-config`](packages/dynamic-config)                           | Registry, validators, and authorized admin service over valkyries  |
 | [`@vouchington/frontmatter`](packages/frontmatter)                                 | Deterministic YAML frontmatter serialization                       |

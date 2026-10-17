@@ -10,6 +10,12 @@ export default defineConfig({
       '@vouchington/crawler-html': fileURLToPath(
         new URL('./packages/crawler-html/src/index.mts', import.meta.url),
       ),
+      '@vouchington/utils/cookies': fileURLToPath(
+        new URL('./packages/utils/src/cookies.mts', import.meta.url),
+      ),
+      '@vouchington/utils/sentry-envelope': fileURLToPath(
+        new URL('./packages/utils/src/sentry-envelope.mts', import.meta.url),
+      ),
       '@vouchington/http-transport': fileURLToPath(
         new URL('./packages/http-transport/src/index.mts', import.meta.url),
       ),
