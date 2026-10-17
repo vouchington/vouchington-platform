@@ -165,6 +165,20 @@ Check mode validates both outputs without writing. Update mode removes orphaned 
 the selected Markdown tree, plus the legacy `root/schema.md`; it does not migrate or clean a former
 Markdown location. The application owns moving previously generated files when changing roots.
 
+## Views and query telemetry
+
+- `@vouchington/postgres/views` — `runViews({ folder, writer })` applies `.sql` view files in
+  repeated passes so views can depend on each other, optionally dropping every declared view
+  first (`forced`). `extractViewDeclarations` uses the PostgreSQL parser (call
+  `loadSqlParserModule()` first). `refreshMaterializedView({ pool, viewName, allowedViews })`
+  refreshes concurrently under a session advisory lock; the allowlist is injected.
+- `@vouchington/postgres/query-telemetry` — `createQueryTimingRecorder({ emit })` builds an
+  `onQueryTiming` handler that samples and emits records, and names slow failing queries on stderr
+  in test environments. `runWithQueryCompletionDiagnostics` and `observeQueryCompletion` capture
+  query settlement for a scope. `createSharedDbScopeObserver({ key, tables })` is a
+  process-global, test-installable observer for scope-bounded service calls; the application owns
+  the operation-to-table vocabulary.
+
 ## Conventions
 
 - UUIDv7 primary keys

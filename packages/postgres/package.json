@@ -31,6 +31,16 @@
       "types": "./dist/pg-schema-snapshot/index.d.mts",
       "import": "./dist/pg-schema-snapshot/index.mjs",
       "default": "./dist/pg-schema-snapshot/index.mjs"
+    },
+    "./views": {
+      "types": "./dist/views/index.d.mts",
+      "import": "./dist/views/index.mjs",
+      "default": "./dist/views/index.mjs"
+    },
+    "./query-telemetry": {
+      "types": "./dist/query-telemetry/index.d.mts",
+      "import": "./dist/query-telemetry/index.mjs",
+      "default": "./dist/query-telemetry/index.mjs"
     }
   },
   "publishConfig": {

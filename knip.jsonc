@@ -10,7 +10,12 @@
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
     },
     "packages/postgres": {
-      "entry": ["src/index.mts!", "src/pg-schema-snapshot/index.mts!"],
+      "entry": [
+        "src/index.mts!",
+        "src/pg-schema-snapshot/index.mts!",
+        "src/views/index.mts!",
+        "src/query-telemetry/index.mts!",
+      ],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!", "!src/**/test-helpers.mts!"],
     },
     "packages/utils": {
