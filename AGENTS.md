@@ -61,6 +61,7 @@ the migration advisory lock is per database, and `VITEST_MAX_WORKERS` overrides 
 - `@vouchington/edge` — Cloudflare Worker builders with injected routes, origins, and CSP sources
 - `@vouchington/oauth-server` — OAuth 2.0 authorization-server primitives with injected stores
 - `@vouchington/frontmatter` — Deterministic YAML frontmatter serialization
+- `@vouchington/sentry` — Sentry SDK init options, least-data policy, event filtering, coded errors, and Node/browser capture helpers
 
 Extracted APIs must be opinionated generic utilities, never orchestration or workflows. State
 transitions, transaction and ordering decisions, queue and retry behavior, HTTP lifecycle, cleanup

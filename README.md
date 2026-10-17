@@ -26,6 +26,7 @@ SKU names.
 | [`@vouchington/uuid-v7`](packages/uuid-v7)                                         | UUIDv7 generation, validation, and date bounds                                       |
 | [`@vouchington/dynamic-config`](packages/dynamic-config)                           | Registry, validators, and authorized admin service over valkyries                    |
 | [`@vouchington/frontmatter`](packages/frontmatter)                                 | Deterministic YAML frontmatter serialization                                         |
+| [`@vouchington/sentry`](packages/sentry)                                           | Sentry init options, data-collection policy, filters, and capture                    |
 | [`@vouchington/http-transport`](packages/http-transport)                           | Redirect-safe transport with injected fetch/address pinning                          |
 | [`@vouchington/image-resize`](packages/image-resize)                               | Sharp transforms, file output, metadata, and negotiation                             |
 | [`@vouchington/media`](packages/media)                                             | Upload validation, streams, and split S3 primitives                                  |

@@ -16,6 +16,9 @@ export default defineConfig({
       '@vouchington/utils/cookies': fileURLToPath(
         new URL('./packages/utils/src/cookies.mts', import.meta.url),
       ),
+      '@vouchington/utils/observability': fileURLToPath(
+        new URL('./packages/utils/src/observability.mts', import.meta.url),
+      ),
       '@vouchington/utils/sentry-envelope': fileURLToPath(
         new URL('./packages/utils/src/sentry-envelope.mts', import.meta.url),
       ),

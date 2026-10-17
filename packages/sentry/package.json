@@ -1,0 +1,74 @@
+{
+  "name": "@vouchington/sentry",
+  "version": "0.0.0",
+  "description": "Sentry SDK init options, data-collection policy, event filtering, coded errors, and capture helpers.",
+  "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/sentry#readme",
+  "bugs": {
+    "url": "https://github.com/vouchington/vouchington-platform/issues"
+  },
+  "license": "MIT",
+  "author": "Jonathan Ong",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vouchington/vouchington-platform.git",
+    "directory": "packages/sentry"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    },
+    "./node": {
+      "types": "./dist/node.d.mts",
+      "import": "./dist/node.mjs",
+      "default": "./dist/node.mjs"
+    },
+    "./browser": {
+      "types": "./dist/browser.d.mts",
+      "import": "./dist/browser.mjs",
+      "default": "./dist/browser.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "@vouchington/utils": "^0.7.0",
+    "http-errors": "^2.0.1"
+  },
+  "devDependencies": {
+    "@sentry/browser": "^11.8.0",
+    "@sentry/core": "^11.8.0",
+    "@sentry/node": "^11.8.0",
+    "@types/http-errors": "^2.0.5"
+  },
+  "peerDependencies": {
+    "@sentry/browser": "^11.8.0",
+    "@sentry/core": "^11.8.0",
+    "@sentry/node": "^11.8.0"
+  },
+  "peerDependenciesMeta": {
+    "@sentry/browser": {
+      "optional": true
+    },
+    "@sentry/node": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}
