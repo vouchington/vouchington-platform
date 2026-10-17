@@ -77,13 +77,17 @@ export function isOpenAINotFoundError(error: unknown): boolean {
 
 /**
  * True when a physical attempt may have been billed but left no authoritative usage. Unbilled
- * rejections (missing previous response, flex capacity, caller cancel) and terminal responses that
- * carry usage do not need the latch.
+ * rejections (missing previous response, flex capacity) and terminal responses that carry usage do
+ * not need the latch. A caller cancel after dispatch may still have been billed, so it only skips
+ * the latch when the caller states the cancel happened before the request was sent.
  */
-export function shouldLatchUnknownBilledOpenAIAttempt(error: unknown): boolean {
+export function shouldLatchUnknownBilledOpenAIAttempt(
+  error: unknown,
+  options: { cancelledBeforeDispatch?: boolean } = {},
+): boolean {
   if (isOpenAIMissingPreviousResponseError(error)) return false
   if (isOpenAIFlexCapacityFailedResponseError(error)) return false
-  if (isExplicitClientCancelError(error)) return false
+  if (options.cancelledBeforeDispatch && isExplicitClientCancelError(error)) return false
   if (error instanceof OpenAIResponseNotCompletedError) return error.usage == null
   return true
 }

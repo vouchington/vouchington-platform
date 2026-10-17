@@ -5,7 +5,10 @@ import {
 
 export type OpenAIFlexFallbackTrigger = 'http_429' | 'stream_failed'
 
-export type OpenAIFlexFallback<P> = { params: P; trigger: OpenAIFlexFallbackTrigger }
+export type OpenAIFlexFallback<P> = {
+  params: Omit<P, 'service_tier'> & { service_tier: 'default' }
+  trigger: OpenAIFlexFallbackTrigger
+}
 
 /**
  * Decides whether a failed `service_tier: 'flex'` request should be resent once on the default

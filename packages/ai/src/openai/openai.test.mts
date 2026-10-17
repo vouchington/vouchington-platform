@@ -106,7 +106,14 @@ describe('classification', () => {
     })
     expect(shouldLatchUnknownBilledOpenAIAttempt(missing)).toBe(false)
     expect(shouldLatchUnknownBilledOpenAIAttempt(flexFailed())).toBe(false)
-    expect(shouldLatchUnknownBilledOpenAIAttempt(new APIUserAbortError())).toBe(false)
+    const cancel = new APIUserAbortError()
+    expect(shouldLatchUnknownBilledOpenAIAttempt(cancel)).toBe(true)
+    expect(shouldLatchUnknownBilledOpenAIAttempt(cancel, { cancelledBeforeDispatch: true })).toBe(
+      false,
+    )
+    expect(
+      shouldLatchUnknownBilledOpenAIAttempt(apiError(500), { cancelledBeforeDispatch: true }),
+    ).toBe(true)
     const usage = { input_tokens: 1, output_tokens: 1 }
     const withUsage = new OpenAIResponseNotCompletedError('x', {
       status: 'incomplete',
