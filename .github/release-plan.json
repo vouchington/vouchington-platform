@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/dynamic-config/package.json"],
+  "changedManifests": ["packages/sentry/package.json"],
   "releases": [
     {
-      "bump": "minor",
-      "directory": "dynamic-config",
+      "bump": "patch",
+      "directory": "sentry",
       "fromVersion": "0.1.0",
-      "name": "@vouchington/dynamic-config",
-      "toVersion": "0.2.0"
+      "name": "@vouchington/sentry",
+      "toVersion": "0.1.1"
     }
   ],
-  "selectedPackage": "@vouchington/dynamic-config"
+  "selectedPackage": "@vouchington/sentry"
 }
