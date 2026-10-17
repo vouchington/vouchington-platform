@@ -49,6 +49,7 @@ the migration advisory lock is per database, and `VITEST_MAX_WORKERS` overrides 
 - `@vouchington/typed-entities` — injected transaction-scoped typed entity semantics
 - `@vouchington/request-contract-validation` — bundle-injected Ajv request carrier validation
 - `@vouchington/rate-limit` — house layer over valkyries: api-server middleware, overlapped limits, and `/edge` Cloudflare bindings
+- `@vouchington/api-client` — injected-config browser/server request wrappers, errors, admission idempotency, and a paginated-list hook
 
 - `@vouchington/csv` — BOM-safe CSV parsing and spreadsheet-safe serialization
 - `@vouchington/localization` — browser-safe catalog contracts, selectors, and fallback

@@ -75,6 +75,7 @@ SKU names.
 | [`@vouchington/request-contract-validation`](packages/request-contract-validation) | Caller-injected Ajv request carrier validation                           |
 | [`@vouchington/rate-limit`](packages/rate-limit)                                   | Valkyries house layer: api-server middleware and edge bindings           |
 | [`@vouchington/oauth-server`](packages/oauth-server)                               | Injected-store OAuth 2.0 authorization-server primitives                 |
+| [`@vouchington/api-client`](packages/api-client) | Injected-config request wrappers, errors, admission idempotency, paginated-list hook |
 
 ## Commands
 

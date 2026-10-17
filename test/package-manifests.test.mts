@@ -66,6 +66,28 @@ describe('runtime package manifests', () => {
     for (const range of Object.values(manifest.peerDependencies)) expectCaretSemverRange(range)
   })
 
+  it('publishes api-client with React as an optional peer of the paginated-list subpath only', () => {
+    const manifest = JSON.parse(readFileSync('packages/api-client/package.json', 'utf8')) as {
+      dependencies?: Record<string, string>
+      exports: Record<string, { import: string; types: string }>
+      peerDependencies: Record<string, string>
+      peerDependenciesMeta: Record<string, { optional?: boolean }>
+    }
+    expect(Object.keys(manifest.exports)).toEqual(['.', './paginated-list'])
+    expect(manifest.dependencies).toBeUndefined()
+    expect(manifest.peerDependenciesMeta['react']?.optional).toBe(true)
+    expectCaretSemverRange(manifest.peerDependencies['react'])
+    for (const entry of Object.values(manifest.exports)) {
+      expect(existsSync(`packages/api-client/${entry.import.replace('./', '')}`)).toBe(true)
+      expect(existsSync(`packages/api-client/${entry.types.replace('./', '')}`)).toBe(true)
+      expect(() =>
+        importBuiltModule(`packages/api-client/${entry.import.replace('./', '')}`),
+      ).not.toThrow()
+    }
+    const root = readFileSync('packages/api-client/dist/index.mjs', 'utf8')
+    expect(root).not.toMatch(/from 'react'/u)
+  })
+
   it('declares a publishable UUIDv7 dependency from session-jwt', () => {
     const manifest = JSON.parse(readFileSync('packages/session-jwt/package.json', 'utf8')) as {
       dependencies: Record<string, string>

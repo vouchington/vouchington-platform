@@ -63,6 +63,10 @@
       "entry": ["src/index.mts!"],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
     },
+    "packages/api-client": {
+      "entry": ["src/index.mts!", "src/paginated-list.mts!"],
+      "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
+    },
     "packages/localization": {
       "entry": ["src/index.mts!"],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
