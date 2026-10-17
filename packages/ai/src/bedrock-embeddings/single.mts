@@ -24,10 +24,6 @@ export type InvokeEmbeddingInput = {
   body: string
 }
 
-export type InvokeEmbedding = (input: InvokeEmbeddingInput) => PromiseLike<{
-  body?: Uint8Array | undefined
-}>
-
 type EmbeddingEntry = { embedding: number[] } | number[]
 type EmbeddingResponseBody = { embedding?: number[]; embeddings?: EmbeddingEntry[] }
 
@@ -141,17 +137,4 @@ export function requireDenseEmbedding(
     throw new InvalidEmbeddingError('Bedrock embedding is not a dense vector')
   }
   return value as number[]
-}
-
-/** One embedding through an injected invoke function; metrics and abort handling are the caller's. */
-export async function invokeEmbedding(
-  invoke: InvokeEmbedding,
-  text: string,
-  options: EmbeddingOptions = {},
-): Promise<number[]> {
-  const response = await invoke(buildInvokeEmbeddingInput(text, options))
-  return parseEmbeddingResponseBody(
-    response.body,
-    options.dimension ?? NOVA_EMBEDDING_DEFAULTS.dimension,
-  )
 }

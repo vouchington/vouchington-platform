@@ -43,8 +43,7 @@ Pure OpenAI/OpenRouter Responses error semantics (`openai` is an optional peer).
 
 ## `@vouchington/ai/moderation`
 
-- `buildModerationInput(texts, imageUrls)`, `requestModeration(create, input, model, { apiSafetyCheck })`
-  (one call through an injected `create`; safety checks get bounded timeouts and a retry budget).
+- `buildModerationInput(texts, imageUrls)` builds the multimodal input; the app makes the call.
 - `checkPromptInjection(message, patterns)` and `checkModerationResults(results)` each return a
   `MessageSafetyViolation` (`PROMPT_INJECTION` or `MODERATION_VIOLATION` with categories) or null.
   Mapping a violation to an HTTP error, metrics, and persistence of results are the app's.
@@ -54,7 +53,7 @@ Pure OpenAI/OpenRouter Responses error semantics (`openai` is an optional peer).
 No AWS SDK dependency: builders return the `InvokeModel` input and parsers take the response bytes,
 so the application keeps its own Bedrock client and command.
 
-- Single: `buildInvokeEmbeddingInput`, `parseEmbeddingResponseBody`, `invokeEmbedding(invoke, text)`,
+- Single: `buildInvokeEmbeddingInput`, `parseEmbeddingResponseBody`,
   `truncateEmbeddingText`, `estimateEmbeddingTokens`, `requireDenseEmbedding`, `InvalidEmbeddingError`.
   Model id, dimension, and text cap default to Nova values and are overridable.
   `purpose` (default `GENERIC_INDEX`) selects index vs retrieval embeddings.

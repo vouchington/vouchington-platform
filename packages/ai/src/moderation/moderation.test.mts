@@ -1,10 +1,9 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   buildModerationInput,
   checkModerationResults,
   checkPromptInjection,
   getFlaggedCategories,
-  requestModeration,
 } from './index.mts'
 
 describe('moderation', () => {
@@ -14,24 +13,6 @@ describe('moderation', () => {
       { type: 'image_url', image_url: { url: 'u' } },
     ])
     expect(buildModerationInput([])).toEqual([])
-  })
-
-  it('applies safety-check limits only when asked', async () => {
-    const create = vi.fn().mockResolvedValue({ results: [{ flagged: false, categories: {} }] })
-    const input = buildModerationInput(['a'])
-    expect(await requestModeration(create, input, 'm')).toHaveLength(1)
-    expect(create.mock.calls[0]).toEqual([{ input, model: 'm' }, undefined])
-    await requestModeration(create, input, 'm', { apiSafetyCheck: true })
-    expect(create.mock.calls[1]?.[1]).toMatchObject({
-      timeout: 5000,
-    })
-    expect(create.mock.calls[1]?.[1]).not.toHaveProperty('maxRetries')
-    expect(create.mock.calls[1]?.[1].signal).toBeInstanceOf(AbortSignal)
-    await requestModeration(create, input, 'm', {
-      apiSafetyCheck: true,
-      limits: { attemptTimeoutMs: 1, overallTimeoutMs: 2, maxRetries: 0 },
-    })
-    expect(create.mock.calls[2]?.[1]).toMatchObject({ maxRetries: 0, timeout: 1 })
   })
 
   it('reports flagged categories', () => {

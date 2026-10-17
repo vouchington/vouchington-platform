@@ -6,24 +6,6 @@ export type ModerationInputPart =
 /** The fields of a moderation result this module reads. */
 export type ModerationResultLike = { flagged: boolean; categories: Record<string, boolean> }
 
-export type ModerationCreate<R> = (
-  params: { input: ModerationInputPart[]; model: string },
-  options?: { maxRetries?: number; timeout: number; signal: AbortSignal },
-) => PromiseLike<{ results: R[] }>
-
-export type SafetyCheckLimits = {
-  attemptTimeoutMs: number
-  overallTimeoutMs: number
-  /** The client's own retry budget; unset leaves it to the client default (the app owns retries). */
-  maxRetries?: number
-}
-
-/** Latency-bounded defaults for an interactive safety check. */
-export const DEFAULT_SAFETY_CHECK_LIMITS: SafetyCheckLimits = {
-  attemptTimeoutMs: 5_000,
-  overallTimeoutMs: 10_000,
-}
-
 export type MessageSafetyViolation =
   | { code: 'PROMPT_INJECTION' }
   | { code: 'MODERATION_VIOLATION'; categories: string[] }
@@ -37,29 +19,6 @@ export function buildModerationInput(
     ...texts.map((text) => ({ type: 'text' as const, text })),
     ...imageUrls.map((url) => ({ type: 'image_url' as const, image_url: { url } })),
   ]
-}
-
-/**
- * One moderation call through an injected `create`. With `apiSafetyCheck` the call is bounded by
- * per-attempt and overall timeouts (and a retry budget only if the caller sets one); otherwise the client's defaults apply.
- * Metrics, errors, and sequencing stay with the caller.
- */
-export async function requestModeration<R>(
-  create: ModerationCreate<R>,
-  input: ModerationInputPart[],
-  model: string,
-  options: { apiSafetyCheck?: boolean; limits?: SafetyCheckLimits } = {},
-): Promise<R[]> {
-  const limits = options.limits ?? DEFAULT_SAFETY_CHECK_LIMITS
-  const requestOptions = options.apiSafetyCheck
-    ? {
-        ...(limits.maxRetries === undefined ? {} : { maxRetries: limits.maxRetries }),
-        timeout: limits.attemptTimeoutMs,
-        signal: AbortSignal.timeout(limits.overallTimeoutMs),
-      }
-    : undefined
-  const response = await create({ input, model }, requestOptions)
-  return response.results
 }
 
 /** Names of the categories a result flagged. */

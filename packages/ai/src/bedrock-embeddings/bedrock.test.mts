@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   buildEmbeddingModelInput,
   buildInvokeEmbeddingInput,
@@ -7,7 +7,6 @@ import {
   estimateEmbeddingTokens,
   extractEmbedding,
   InvalidEmbeddingError,
-  invokeEmbedding,
   minimumImageBatchSizeMB,
   minimumTextBatchSizeMB,
   parseBatchResult,
@@ -84,14 +83,6 @@ describe('responses', () => {
     expect(() => requireDenseEmbedding([1, NaN], 2)).toThrow()
     expect(() => requireDenseEmbedding([1, '2'], 2)).toThrow()
     expect(() => requireDenseEmbedding([])).toThrow()
-  })
-
-  it('invokes through the injected function with the requested dimension', async () => {
-    const invoke = vi.fn().mockResolvedValue({ body: bytes({ embedding: [9, 8] }) })
-    expect(await invokeEmbedding(invoke, 'hello', { dimension: 2 })).toEqual([9, 8])
-    expect(invoke.mock.calls[0]?.[0].body).toContain('hello')
-    invoke.mockResolvedValue({ body: bytes({ embedding: vector(1024) }) })
-    expect(await invokeEmbedding(invoke, 'hello')).toHaveLength(1024)
   })
 })
 
