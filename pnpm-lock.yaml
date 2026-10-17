@@ -86,7 +86,7 @@ importers:
   packages/edge:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.5.3
+        specifier: ^0.6.0
         version: link:../utils
     devDependencies:
       '@cloudflare/workers-types':
@@ -249,7 +249,7 @@ importers:
   packages/typed-entities:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.5.0
+        specifier: ^0.6.0
         version: link:../utils
 
   packages/utils: {}
