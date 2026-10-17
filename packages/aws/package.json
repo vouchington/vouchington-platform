@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/aws",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "AWS SDK v3 command builders, batching, codecs, and error classifiers for SES, SQS, Firehose, and CloudWatch.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/aws#readme",
   "bugs": {
