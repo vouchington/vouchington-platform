@@ -115,9 +115,13 @@ export function parseEmbeddingResponseBody(
   dimension: number = NOVA_EMBEDDING_DEFAULTS.dimension,
 ): number[] {
   if (!body) throw new InvalidEmbeddingError('Bedrock embedding response body is empty')
-  const embedding = extractEmbedding(
-    JSON.parse(new TextDecoder().decode(body)) as EmbeddingResponseBody,
-  )
+  let parsed: EmbeddingResponseBody
+  try {
+    parsed = JSON.parse(new TextDecoder().decode(body)) as EmbeddingResponseBody
+  } catch (err) {
+    throw new InvalidEmbeddingError('Bedrock embedding response is not valid JSON', { cause: err })
+  }
+  const embedding = extractEmbedding(parsed)
   if (!embedding) {
     throw new InvalidEmbeddingError('Bedrock embedding response did not include an embedding')
   }

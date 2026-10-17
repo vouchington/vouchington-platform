@@ -72,6 +72,9 @@ describe('responses', () => {
     expect(parseEmbeddingResponseBody(bytes({ embedding: vector(1024) }))).toHaveLength(1024)
     expect(() => parseEmbeddingResponseBody(undefined)).toThrow(InvalidEmbeddingError)
     expect(() => parseEmbeddingResponseBody(bytes({}))).toThrow(/did not include/)
+    expect(() => parseEmbeddingResponseBody(new TextEncoder().encode('{oops'))).toThrow(
+      InvalidEmbeddingError,
+    )
     expect(() => parseEmbeddingResponseBody(bytes({ embedding: 'bad' }), 2)).toThrow(/dense/)
     expect(() => parseEmbeddingResponseBody(bytes({ embedding: [1] }), 2)).toThrow(/dense/)
   })
@@ -108,6 +111,9 @@ describe('batch records', () => {
     const small = minimumImageBatchSizeMB(2, { maxImageBytes: 1024 * 1024 })
     expect(minimumImageBatchSizeMB(2)).toBeGreaterThan(small)
     expect(minimumImageBatchSizeMB(2)).toBeGreaterThan(40)
+    expect(minimumTextBatchSizeMB(1, { maxRecordIdLength: 1000 })).toBeGreaterThan(
+      minimumTextBatchSizeMB(1, { maxRecordIdLength: 0 }) + 0.005,
+    )
   })
 
   it('parses result lines defensively', () => {

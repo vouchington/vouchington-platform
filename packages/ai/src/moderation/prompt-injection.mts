@@ -15,7 +15,8 @@ export const DEFAULT_PROMPT_INJECTION_PATTERNS: readonly RegExp[] = [
   /<\/system>/i,
   // Require "now" to avoid benign phrases like "you are a great help"
   /you\s+are\s+now\s+(a|an)\s+/i,
-  /new\s+instructions?/i,
+  // A heading-style "new instructions:" at the start of a line, not "new instructions for the cake".
+  /(?:^|\n)\s*new\s+instructions?\s*:/i,
   /override\s+(previous|prior|all)\s+(instructions?|rules?)/i,
 ]
 

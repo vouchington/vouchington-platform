@@ -6,19 +6,25 @@ import {
 } from './single.mts'
 
 /**
- * Nova accepts inline media up to 25 MB after Base64 encoding; callers that enforce a smaller
+ * Nova accepts inline media up to 25 MB after Base64 encoding; 18,000,000 raw bytes encode to
+ * 24,000,000, leaving room for framing; callers that enforce a smaller
  * decoded bound (e.g. after converting images) pass it as `maxImageBytes`.
  */
-export const DEFAULT_MAX_IMAGE_EMBEDDING_BYTES = 18 * 1024 * 1024
+export const DEFAULT_MAX_IMAGE_EMBEDDING_BYTES = 18_000_000
 
 export type BatchSizeOptions = EmbeddingOptions & {
   /** Decoded image bytes bound used to budget the worst-case record. */
   maxImageBytes?: number
-  /** Longest `recordId` string the application will write (default 128). */
+  /**
+   * Longest `recordId` in UTF-16 code units (default 128). Budgeted at JSON's worst case of six
+   * bytes per unit, since escapes can expand the encoded line.
+   */
   maxRecordIdLength?: number
 }
 
 const DEFAULT_MAX_RECORD_ID_LENGTH = 128
+/** A control character JSON-escapes to six bytes (`\u0001`), the worst case per code unit. */
+const WORST_CASE_ID_UNIT = '\u0001'
 
 /** One JSONL line of a batch input file. `recordId` is opaque and comes back on the result line. */
 export function createEmbeddingRecordLine(
@@ -54,7 +60,9 @@ function framingBytes(line: string): number {
 
 /** Lower bound on a batch file for `records` images: worst-case payload plus actual framing. */
 export function minimumImageBatchSizeMB(records: number, options: BatchSizeOptions = {}): number {
-  const recordId = '0'.repeat(options.maxRecordIdLength ?? DEFAULT_MAX_RECORD_ID_LENGTH)
+  const recordId = WORST_CASE_ID_UNIT.repeat(
+    options.maxRecordIdLength ?? DEFAULT_MAX_RECORD_ID_LENGTH,
+  )
   const framing = framingBytes(
     createEmbeddingImageRecordLine({ recordId, format: 'jpeg', bytes: '' }, options),
   )
@@ -64,7 +72,9 @@ export function minimumImageBatchSizeMB(records: number, options: BatchSizeOptio
 
 /** Same for text; JSON control-character escapes cost up to six bytes per UTF-16 code unit. */
 export function minimumTextBatchSizeMB(records: number, options: BatchSizeOptions = {}): number {
-  const recordId = '0'.repeat(options.maxRecordIdLength ?? DEFAULT_MAX_RECORD_ID_LENGTH)
+  const recordId = WORST_CASE_ID_UNIT.repeat(
+    options.maxRecordIdLength ?? DEFAULT_MAX_RECORD_ID_LENGTH,
+  )
   const maxTextLength = options.maxTextLength ?? NOVA_EMBEDDING_DEFAULTS.maxTextLength
   const framing = framingBytes(createEmbeddingTextRecordLine({ recordId, content: '' }, options))
   return (records * (maxTextLength * 6 + framing)) / 1024 / 1024
