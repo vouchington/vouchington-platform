@@ -20,6 +20,21 @@
   ],
   "type": "module",
   "exports": {
+    "./ai-moderation": {
+      "types": "./dist/ai-moderation.d.mts",
+      "import": "./dist/ai-moderation.mjs",
+      "default": "./dist/ai-moderation.mjs"
+    },
+    "./bedrock-embedding-batches": {
+      "types": "./dist/bedrock-embedding-batches.d.mts",
+      "import": "./dist/bedrock-embedding-batches.mjs",
+      "default": "./dist/bedrock-embedding-batches.mjs"
+    },
+    "./bedrock-embeddings": {
+      "types": "./dist/bedrock-embeddings.d.mts",
+      "import": "./dist/bedrock-embeddings.mjs",
+      "default": "./dist/bedrock-embeddings.mjs"
+    },
     "./api-errors": {
       "types": "./dist/api-errors.d.mts",
       "import": "./dist/api-errors.mjs",

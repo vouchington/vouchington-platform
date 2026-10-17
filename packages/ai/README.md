@@ -41,6 +41,9 @@ Pure OpenAI/OpenRouter Responses error semantics (`openai` is an optional peer).
 - `getOpenAIFlexFallback(params, error)` returns the default-tier resend params and trigger, or null.
   Resending (and re-checking spend caps first) is the application's call; `toOpenRouterModel` maps names.
 
+Moderation and Bedrock embedding helpers have no third-party dependency, so they live in
+`@vouchington/utils`: `ai-moderation`, `bedrock-embeddings`, and `bedrock-embedding-batches`.
+
 ## `@vouchington/ai/structured-decisions`
 
 - `validateRequest`, `buildDecisionTransportRequest` (URL, model, and routing injected), `decodeResult`
