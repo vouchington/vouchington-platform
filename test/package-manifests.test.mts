@@ -38,7 +38,11 @@ describe('runtime package manifests', () => {
       files: string[]
     }
     expect(Object.keys(manifest.exports)).toEqual(
-      directory === 'worker-runtime' ? ['.', './testing'] : ['.'],
+      directory === 'worker-runtime'
+        ? ['.', './testing']
+        : directory === 'localization'
+          ? ['.', './react']
+          : ['.'],
     )
     const entry = manifest.exports['.']!
     expect(existsSync(`packages/${directory}/${entry.import.replace('./', '')}`)).toBe(true)
