@@ -179,6 +179,32 @@ Markdown location. The application owns moving previously generated files when c
   process-global, test-installable observer for scope-bounded service calls; the application owns
   the operation-to-table vocabulary.
 
+## Partitions
+
+Explicit subpaths keep the root focused. Partition parents and their table names are always
+injected by the application; nothing here knows a product schema.
+
+```ts
+import { cleanupMonthlyPartitions, createMonthlyPartitions } from '@vouchington/postgres/partitions'
+
+const tables = [{ table: 'crawls', retentionDays: 30, futureMonths: 2, dropPriority: 1 }]
+await createMonthlyPartitions(psql.write, { tables })
+await cleanupMonthlyPartitions({
+  query: psql.write,
+  tables,
+  startTransaction: () => psql.beginTransaction(),
+  reportError: (error) => logger.error(error),
+  // Referential actions DROP does not fire run here, inside the retirement transaction.
+  beforeDetach: async (query, partition) => {},
+})
+```
+
+- `@vouchington/postgres/partitions` — UUIDv7 range bounds, monthly and default partition SQL,
+  partition-name parsing, expiry selection, and per-partition transactional retirement. Each
+  partition retires in its own transaction; a failure is reported and the rest continue.
+- `@vouchington/postgres/catalog-guarded-ddl` — idempotent `ADD CONSTRAINT ... NOT VALID` plus
+  `VALIDATE CONSTRAINT` blocks guarded by `pg_constraint`, with lock-then-recheck serialization.
+
 ## Conventions
 
 - UUIDv7 primary keys
