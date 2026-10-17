@@ -9,6 +9,9 @@ export type QueryCompletion = {
   promise: ReturnType<QueryExecutor>
 } & ({ status: 'fulfilled' } | { status: 'rejected'; reason: unknown })
 
+/** May return a promise; a rejection is reported to the scope and drained on close. */
+export type QueryCompletionListener = (event: QueryCompletion) => unknown
+
 export type ErrorSummary = Readonly<{ name: string; message: string }>
 
 type TransactionSnapshot = Readonly<{
@@ -21,7 +24,7 @@ type TransactionSnapshot = Readonly<{
 export type CompletionAudience = {
   active: boolean
   pending: Set<Promise<unknown>>
-  listeners: Set<(event: QueryCompletion) => undefined>
+  listeners: Set<QueryCompletionListener>
   completed: TransactionSnapshot[]
   report: (reason: unknown) => undefined
 }
@@ -68,7 +71,7 @@ export function createQueryCompletionAudience(reportError?: (error: Error) => vo
     scope: audience,
     completed: audience.completed,
     report,
-    subscribe(listener: (event: QueryCompletion) => undefined) {
+    subscribe(listener: QueryCompletionListener) {
       if (audience.active) audience.listeners.add(listener)
       return () => {
         audience.listeners.delete(listener)

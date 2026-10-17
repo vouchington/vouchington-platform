@@ -7,7 +7,7 @@ import {
 import { isUnannotatedQueryAllowed } from '../prepared-statement-name.mts'
 import type { QueryExecutor } from '../types.mts'
 
-export type { QueryCompletion } from './completion-audience.mts'
+export type { QueryCompletion, QueryCompletionListener } from './completion-audience.mts'
 
 export interface QueryCompletionDiagnosticsOptions {
   /** Receives a wrapped error for each diagnostic failure; it never reaches the query path. */

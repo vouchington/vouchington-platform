@@ -68,11 +68,15 @@ export async function runViews(options: RunViewsOptions): Promise<void> {
 
   while (pending.length > 0) {
     const attempts: Attempt[] = []
+    let halted = false
     // Sequential: a view may depend on one created earlier in the same pass.
     await pending.reduce(
       (previous, view) =>
         previous.then(async () => {
-          attempts.push(await attempt(view))
+          if (halted) return
+          const result = await attempt(view)
+          attempts.push(result)
+          halted = !result.success && !retryBlocked
         }),
       Promise.resolve(),
     )

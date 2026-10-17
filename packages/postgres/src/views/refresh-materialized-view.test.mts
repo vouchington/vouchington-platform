@@ -41,6 +41,18 @@ describe('refreshMaterializedView', () => {
     })
   })
 
+  it('quotes allowlisted names that are SQL keywords', async () => {
+    await withPsql(async (psql) => {
+      await psql.write('/* setup */ CREATE MATERIALIZED VIEW "order" AS SELECT 1 AS id')
+      await psql.write('/* setup */ CREATE UNIQUE INDEX order_id ON "order" (id)')
+      await refreshMaterializedView({
+        pool: psql.writePool,
+        viewName: 'order',
+        allowedViews: ['order'],
+      })
+    })
+  })
+
   it('rejects names outside the allowlist or unsafe, before connecting', async () => {
     const { pool } = fakePool([])
     await expect(

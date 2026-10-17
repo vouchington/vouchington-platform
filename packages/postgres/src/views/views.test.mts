@@ -123,6 +123,39 @@ describe('runViews', () => {
     })
   })
 
+  it('stops the pass at the first failure when retries are disabled', async () => {
+    const folder = viewFolder({
+      'a_broken.sql': 'CREATE VIEW broken AS SELECT * FROM missing_table;',
+      'b_ok.sql': 'CREATE VIEW fine AS SELECT 1 AS id;',
+    })
+    await withPsql(async (psql) => {
+      await expect(runViews({ folder, writer: psql.write, retryBlocked: false })).rejects.toThrow(
+        'missing_table',
+      )
+      const { rows } = await psql.write<{ n: number }>(
+        "/* read */ SELECT count(*)::int AS n FROM pg_views WHERE viewname = 'fine'",
+      )
+      expect(rows).toEqual([{ n: 0 }])
+    })
+  })
+
+  it('drops an object whose relation kind changed since it was created', async () => {
+    await withPsql(async (psql) => {
+      await psql.write('/* setup */ CREATE MATERIALIZED VIEW was_matview AS SELECT 1 AS id')
+      await psql.write('/* setup */ CREATE VIEW was_view AS SELECT 1 AS id')
+      await psql.write(
+        buildDropViewsStatement([
+          { type: 'view', name: 'was_matview' },
+          { type: 'materialized view', name: 'was_view' },
+        ])!,
+      )
+      const { rows } = await psql.write<{ n: number }>(
+        "/* read */ SELECT count(*)::int AS n FROM pg_class WHERE relname IN ('was_matview', 'was_view')",
+      )
+      expect(rows).toEqual([{ n: 0 }])
+    })
+  })
+
   it('does nothing for an empty or missing folder, silently by default', async () => {
     const writer = vi.fn()
     await runViews({ folder: path.join(os.tmpdir(), 'does-not-exist-views'), writer })

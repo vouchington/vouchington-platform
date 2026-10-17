@@ -5,7 +5,11 @@ export {
   reportQueryCaptureFailure,
   runWithQueryCompletionDiagnostics,
 } from './query-completion.mts'
-export type { QueryCompletion, QueryCompletionDiagnosticsOptions } from './query-completion.mts'
+export type {
+  QueryCompletion,
+  QueryCompletionDiagnosticsOptions,
+  QueryCompletionListener,
+} from './query-completion.mts'
 export {
   createSharedDbScopeObserver,
   sharedDbCursorScope,

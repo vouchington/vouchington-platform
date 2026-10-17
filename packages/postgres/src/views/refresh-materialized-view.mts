@@ -1,4 +1,4 @@
-import type pg from 'pg'
+import pg from 'pg'
 
 import { assertWhitelistedSqlIdentifier } from '../sql-fragments.mts'
 
@@ -49,7 +49,7 @@ export async function refreshMaterializedView(
     let refreshError: Error | undefined
     try {
       await client.query(
-        `/* refreshMaterializedView */ REFRESH MATERIALIZED VIEW CONCURRENTLY ${viewName}`,
+        `/* refreshMaterializedView */ REFRESH MATERIALIZED VIEW CONCURRENTLY ${pg.escapeIdentifier(viewName)}`,
       )
     } catch (err) {
       refreshError = toError(err)
