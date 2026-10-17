@@ -7,11 +7,11 @@
 export function watchStaleAriaReferences(input: HTMLElement): () => void {
   const removeStale = () => {
     const activeDescendant = input.getAttribute('aria-activedescendant')
-    if (activeDescendant && !document.getElementById(activeDescendant)) {
+    if (activeDescendant && !input.ownerDocument.getElementById(activeDescendant)) {
       input.removeAttribute('aria-activedescendant')
     }
     const controls = input.getAttribute('aria-controls')
-    if (controls && !document.getElementById(controls)) {
+    if (controls && !input.ownerDocument.getElementById(controls)) {
       input.removeAttribute('aria-controls')
       input.setAttribute('aria-expanded', 'false')
     }

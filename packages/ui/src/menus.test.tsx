@@ -99,6 +99,31 @@ describe('DropdownMenu', () => {
   })
 })
 
+describe('menu force mounting', () => {
+  it('mounts closed dropdown and menubar content when asked', () => {
+    render(
+      <>
+        <DropdownMenu>
+          <DropdownMenuTrigger>D</DropdownMenuTrigger>
+          <DropdownMenuContent forceMount>
+            <DropdownMenuItem>Forced dropdown</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <Menubar>
+          <MenubarMenu value="m">
+            <MenubarTrigger>M</MenubarTrigger>
+            <MenubarContent forceMount>
+              <MenubarItem>Forced menubar</MenubarItem>
+            </MenubarContent>
+          </MenubarMenu>
+        </Menubar>
+      </>,
+    )
+    expect(screen.getByText('Forced dropdown')).toBeTruthy()
+    expect(screen.getByText('Forced menubar')).toBeTruthy()
+  })
+})
+
 describe('Menubar', () => {
   it('opens a menu with items', () => {
     render(

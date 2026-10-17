@@ -11,8 +11,7 @@ function InputOTP({
   containerClassName,
   ref,
   ...props
-}: Omit<React.ComponentPropsWithoutRef<typeof OTPInput>, 'pattern'> & {
-  pattern?: string | RegExp
+}: React.ComponentPropsWithoutRef<typeof OTPInput> & {
   ref?: React.Ref<React.ComponentRef<typeof OTPInput>>
 }) {
   return (
@@ -23,7 +22,7 @@ function InputOTP({
         containerClassName,
       )}
       className={cn('disabled:cursor-not-allowed', className)}
-      {...(props as React.ComponentPropsWithoutRef<typeof OTPInput>)}
+      {...props}
     />
   )
 }
