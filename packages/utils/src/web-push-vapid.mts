@@ -72,14 +72,22 @@ export function vapidKeysMatch(keys: VapidKeyPair): boolean {
   }
 }
 
+/** Accepts `mailto:user@host` or an https URL with a host. */
+export function isValidVapidSubject(subject: string): boolean {
+  const url = URL.parse(subject)
+  if (!url) return false
+  if (url.protocol === 'https:') return url.hostname.length > 0
+  return url.protocol === 'mailto:' && /^[^@\s]+@[^@\s]+$/.test(decodeURIComponent(url.pathname))
+}
+
 /** Signs an ES256 VAPID JWT (RFC 8292). */
 export function createVapidJwt(input: VapidJwtInput): string {
   const lifetime = input.expiresInSeconds ?? MAX_VAPID_LIFETIME_SECONDS
   if (!(lifetime > 0) || lifetime > MAX_VAPID_LIFETIME_SECONDS) {
     throw new RangeError('VAPID JWT lifetime must be between 1 second and 24 hours')
   }
-  if (!/^(mailto:|https:\/\/)/.test(input.subject)) {
-    throw new TypeError('VAPID subject must be a mailto: or https: URI')
+  if (!isValidVapidSubject(input.subject)) {
+    throw new TypeError('VAPID subject must be a valid mailto: address or https: URL')
   }
   const now = input.now ?? Math.floor(Date.now() / 1000)
   const encode = (value: object) => encodeBase64Url(new TextEncoder().encode(JSON.stringify(value)))

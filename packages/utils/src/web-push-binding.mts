@@ -9,14 +9,6 @@ export type WebPushWorkerState =
   | { status: 'reconciling'; binding?: WebPushBinding; revision: string }
   | { status: 'disabled'; binding?: WebPushBinding; revision: string }
 
-export type WebPushWorkerAction = 'read-or-initialize' | 'begin-reconciliation' | 'bind' | 'clear'
-
-export interface WebPushWorkerInput {
-  action: WebPushWorkerAction
-  binding?: WebPushBinding
-  expected_revision?: string
-}
-
 export interface WebPushWorkerResponse {
   type: string
   version: 1
@@ -28,6 +20,8 @@ export interface WebPushWorkerResponse {
 export interface WorkerRequestOptions {
   /** Caller-owned message `type` tag shared with the service worker. */
   messageType: string
+  /** Caller-owned check that the acknowledged state is the one the request expects. */
+  accept?: (state: WebPushWorkerState) => boolean
   timeoutMs?: number
 }
 
@@ -57,47 +51,33 @@ export function isWebPushWorkerState(value: unknown): value is WebPushWorkerStat
   )
 }
 
-/** Checks that a worker response is well-formed and consistent with the request it answers. */
-export function isExpectedWorkerResponse(
+/** Envelope check only: tag, version, `ok`, and a well-formed state. */
+export function isWebPushWorkerResponse(
   response: WebPushWorkerResponse | undefined,
-  input: WebPushWorkerInput,
   messageType: string,
 ): response is WebPushWorkerResponse & { state: WebPushWorkerState } {
-  if (
-    !response ||
-    response.type !== messageType ||
-    response.version !== 1 ||
-    !response.ok ||
-    !isWebPushWorkerState(response.state)
-  ) {
-    return false
-  }
-  const { state } = response
-  if (input.action === 'bind') {
-    return (
-      state.status === 'bound' &&
-      state.binding.endpoint === input.binding?.endpoint &&
-      state.binding.subscription_id === input.binding?.subscription_id &&
-      state.revision === input.expected_revision
-    )
-  }
-  if (input.action === 'clear') return state.status === 'disabled'
-  return input.action !== 'begin-reconciliation' || state.status === 'reconciling'
+  return (
+    !!response &&
+    response.type === messageType &&
+    response.version === 1 &&
+    response.ok &&
+    isWebPushWorkerState(response.state)
+  )
 }
 
 /**
  * One request/acknowledge round trip over a MessageChannel to the active service worker.
- * Sequencing of actions (reconcile, bind, clear) belongs to the caller.
+ * `request` is sent as `{ type, version: 1, ...request }`. Which requests to send, in what
+ * order, and which acknowledged states are acceptable belong to the caller.
  */
 export function requestWorkerState(
   registration: { active: { postMessage(message: unknown, transfer: unknown[]): void } | null },
-  input: WebPushWorkerInput,
+  request: Record<string, unknown>,
   options: WorkerRequestOptions,
 ): Promise<WebPushWorkerState> {
   const worker = registration.active
   if (!worker) return Promise.reject(new Error('The active service worker is unavailable.'))
   const channel = new MessageChannel()
-  const request = { type: options.messageType, version: 1, ...input }
   return new Promise<WebPushWorkerState>((resolve, reject) => {
     const timeout = setTimeout(() => {
       channel.port1.close()
@@ -107,7 +87,10 @@ export function requestWorkerState(
       clearTimeout(timeout)
       channel.port1.close()
       const response = event.data as WebPushWorkerResponse | undefined
-      if (!isExpectedWorkerResponse(response, input, options.messageType)) {
+      if (
+        !isWebPushWorkerResponse(response, options.messageType) ||
+        (options.accept && !options.accept(response.state))
+      ) {
         reject(
           new Error(response?.error ?? 'The service worker rejected the push binding request.'),
         )
@@ -115,7 +98,7 @@ export function requestWorkerState(
       }
       resolve(response.state)
     }
-    worker.postMessage(request, [channel.port2])
+    worker.postMessage({ type: options.messageType, version: 1, ...request }, [channel.port2])
   })
 }
 

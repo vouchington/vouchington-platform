@@ -19,7 +19,8 @@ export interface WebPushPayload {
   data?: Record<string, unknown>
 }
 
-export const MAX_WEB_PUSH_PAYLOAD_BYTES = 4000
+/** RFC 8291 section 4: the largest plaintext every push service must accept (4096 - 103). */
+export const MAX_WEB_PUSH_PAYLOAD_BYTES = 3993
 const P256DH_BYTES = 65
 const AUTH_BYTES = 16
 

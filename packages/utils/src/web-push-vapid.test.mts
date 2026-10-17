@@ -6,6 +6,7 @@ import {
   createVapidAuthorization,
   createVapidJwt,
   generateVapidKeys,
+  isValidVapidSubject,
   vapidKeysMatch,
 } from './web-push-vapid.mts'
 import { decodeBase64Url, decodeVapidPublicKey, encodeBase64Url } from './web-push.mts'
@@ -74,7 +75,18 @@ describe('createVapidJwt', () => {
   it('rejects bad lifetimes and subjects', () => {
     expect(() => createVapidJwt({ ...input, expiresInSeconds: 0 })).toThrow(RangeError)
     expect(() => createVapidJwt({ ...input, expiresInSeconds: 86_401 })).toThrow(RangeError)
-    expect(() => createVapidJwt({ ...input, subject: 'http://x' })).toThrow(TypeError)
+    for (const subject of [
+      'http://x',
+      'https://',
+      'https:// bad',
+      'mailto:',
+      'mailto:nobody',
+      'nope',
+    ]) {
+      expect(() => createVapidJwt({ ...input, subject })).toThrow(TypeError)
+    }
+    expect(isValidVapidSubject('mailto:ops@example.com')).toBe(true)
+    expect(isValidVapidSubject('https://example.com/contact')).toBe(true)
   })
 
   it('builds the authorization header', () => {

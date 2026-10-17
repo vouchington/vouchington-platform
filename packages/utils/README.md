@@ -28,8 +28,9 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
 - `web-push-vapid` (Node): VAPID key generation/matching and ES256 JWT/`Authorization` builders.
   Applications own key storage, subject, and delivery.
 - `web-push-binding` (browser): service-worker binding-state guards, one MessageChannel
-  request/acknowledge round trip with an injected message type, and a named Web Lock wrapper.
-  Sequencing of bind/clear/reconcile steps stays in the application.
+  request/acknowledge round trip with an injected message type and acceptance check, and a named
+  Web Lock wrapper. Request actions, expected state transitions, and the bind/clear/reconcile
+  sequence stay in the application.
 - `sentry-envelope`: bounded UTF-8 envelope record scanning and safe item-type diagnostics.
   Callers choose the byte and type-list limits; DSN, tunnel, request, and logging policy stay local.
 - `scopes`: caller-owned scope catalog validation, prerequisite expansion, audience and surface

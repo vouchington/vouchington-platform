@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  isExpectedWorkerResponse,
   isWebPushBinding,
+  isWebPushWorkerResponse,
   isWebPushWorkerState,
   requestWorkerState,
   withWebLock,
@@ -10,6 +10,7 @@ import {
 
 const TYPE = 'app:web-push'
 const binding = { endpoint: 'https://p.example/1', subscription_id: 's1' }
+const disabled = { status: 'disabled', revision: 'r' }
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -30,7 +31,7 @@ describe('state guards', () => {
     expect(isWebPushWorkerState({ status: 'uninitialized', binding })).toBe(false)
     expect(isWebPushWorkerState({ status: 'bound', binding, revision: 'r' })).toBe(true)
     expect(isWebPushWorkerState({ status: 'bound', revision: 'r' })).toBe(false)
-    expect(isWebPushWorkerState({ status: 'disabled', revision: 'r' })).toBe(true)
+    expect(isWebPushWorkerState(disabled)).toBe(true)
     expect(isWebPushWorkerState({ status: 'reconciling', binding, revision: 'r' })).toBe(true)
     expect(isWebPushWorkerState({ status: 'reconciling', binding: {}, revision: 'r' })).toBe(false)
     expect(isWebPushWorkerState({ status: 'disabled', revision: '' })).toBe(false)
@@ -40,54 +41,16 @@ describe('state guards', () => {
   })
 })
 
-describe('isExpectedWorkerResponse', () => {
-  const ok = (state: unknown) => ({ type: TYPE, version: 1 as const, ok: true, state })
-  const bound = { status: 'bound', binding, revision: 'r1' }
+describe('isWebPushWorkerResponse', () => {
+  const ok = { type: TYPE, version: 1 as const, ok: true, state: disabled }
 
-  it('checks the envelope', () => {
-    const input = { action: 'read-or-initialize' as const }
-    expect(isExpectedWorkerResponse(undefined, input, TYPE)).toBe(false)
-    expect(isExpectedWorkerResponse({ ...ok(bound), type: 'x' }, input, TYPE)).toBe(false)
-    expect(isExpectedWorkerResponse({ ...ok(bound), version: 2 as 1 }, input, TYPE)).toBe(false)
-    expect(isExpectedWorkerResponse({ ...ok(bound), ok: false }, input, TYPE)).toBe(false)
-    expect(isExpectedWorkerResponse(ok({ status: 'x' }), input, TYPE)).toBe(false)
-    expect(isExpectedWorkerResponse(ok(bound), input, TYPE)).toBe(true)
-  })
-
-  it('checks action-specific expectations', () => {
-    const bind = { action: 'bind' as const, binding, expected_revision: 'r1' }
-    expect(isExpectedWorkerResponse(ok(bound), bind, TYPE)).toBe(true)
-    expect(isExpectedWorkerResponse(ok({ ...bound, revision: 'r2' }), bind, TYPE)).toBe(false)
-    expect(
-      isExpectedWorkerResponse(
-        ok({ ...bound, binding: { ...binding, subscription_id: 's2' } }),
-        bind,
-        TYPE,
-      ),
-    ).toBe(false)
-    expect(
-      isExpectedWorkerResponse(
-        ok({ ...bound, binding: { ...binding, endpoint: 'https://other' } }),
-        bind,
-        TYPE,
-      ),
-    ).toBe(false)
-    expect(isExpectedWorkerResponse(ok({ status: 'uninitialized' }), bind, TYPE)).toBe(false)
-
-    expect(
-      isExpectedWorkerResponse(
-        ok({ status: 'disabled', revision: 'r' }),
-        { action: 'clear' },
-        TYPE,
-      ),
-    ).toBe(true)
-    expect(isExpectedWorkerResponse(ok(bound), { action: 'clear' }, TYPE)).toBe(false)
-
-    const begin = { action: 'begin-reconciliation' as const }
-    expect(
-      isExpectedWorkerResponse(ok({ status: 'reconciling', revision: 'r' }), begin, TYPE),
-    ).toBe(true)
-    expect(isExpectedWorkerResponse(ok(bound), begin, TYPE)).toBe(false)
+  it('checks the envelope only', () => {
+    expect(isWebPushWorkerResponse(ok, TYPE)).toBe(true)
+    expect(isWebPushWorkerResponse(undefined, TYPE)).toBe(false)
+    expect(isWebPushWorkerResponse({ ...ok, type: 'x' }, TYPE)).toBe(false)
+    expect(isWebPushWorkerResponse({ ...ok, version: 2 as 1 }, TYPE)).toBe(false)
+    expect(isWebPushWorkerResponse({ ...ok, ok: false }, TYPE)).toBe(false)
+    expect(isWebPushWorkerResponse({ ...ok, state: { status: 'x' } }, TYPE)).toBe(false)
   })
 })
 
@@ -96,12 +59,12 @@ type Worker = { postMessage: (message: unknown, transfer: unknown[]) => void }
 function workerReplying(reply: (message: unknown) => unknown): Worker {
   return {
     postMessage: (message, [port]) => {
-      const response = reply(message)
-      const target = port as MessagePort
-      target.postMessage(response)
+      ;(port as MessagePort).postMessage(reply(message))
     },
   }
 }
+
+const okReply = { type: TYPE, version: 1, ok: true, state: disabled }
 
 describe('requestWorkerState', () => {
   it('rejects without an active worker', async () => {
@@ -114,12 +77,30 @@ describe('requestWorkerState', () => {
     const seen: unknown[] = []
     const active = workerReplying((message) => {
       seen.push(message)
-      return { type: TYPE, version: 1, ok: true, state: { status: 'disabled', revision: 'r' } }
+      return okReply
     })
     await expect(
       requestWorkerState({ active }, { action: 'clear' }, { messageType: TYPE }),
-    ).resolves.toEqual({ status: 'disabled', revision: 'r' })
+    ).resolves.toEqual(disabled)
     expect(seen).toEqual([{ type: TYPE, version: 1, action: 'clear' }])
+  })
+
+  it('applies the caller-owned accept check', async () => {
+    const active = workerReplying(() => okReply)
+    await expect(
+      requestWorkerState(
+        { active },
+        { action: 'clear' },
+        { messageType: TYPE, accept: (state) => state.status === 'disabled' },
+      ),
+    ).resolves.toEqual(disabled)
+    await expect(
+      requestWorkerState(
+        { active },
+        { action: 'bind' },
+        { messageType: TYPE, accept: (state) => state.status === 'bound' },
+      ),
+    ).rejects.toThrow('rejected the push binding request')
   })
 
   it('rejects with the worker error or a default message', async () => {

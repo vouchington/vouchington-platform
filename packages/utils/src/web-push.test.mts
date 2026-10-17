@@ -112,6 +112,8 @@ describe('payloads', () => {
   it('rejects missing titles and oversize payloads', () => {
     expect(() => buildWebPushPayload({ title: '' })).toThrow(TypeError)
     expect(() => buildWebPushPayload({ title: 'x'.repeat(50) }, 20)).toThrow(RangeError)
+    expect(() => buildWebPushPayload({ title: 'x'.repeat(3993) })).toThrow(RangeError)
+    expect(buildWebPushPayload({ title: 'x'.repeat(3993 - 12) })).toHaveLength(3993)
   })
 
   it('returns null or drops invalid fields when parsing', () => {
