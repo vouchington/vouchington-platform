@@ -1,0 +1,95 @@
+{
+  "name": "@vouchington/aws",
+  "version": "0.0.0",
+  "description": "AWS SDK v3 command builders, batching, codecs, and error classifiers for SES, SQS, Firehose, and CloudWatch.",
+  "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/aws#readme",
+  "bugs": {
+    "url": "https://github.com/vouchington/vouchington-platform/issues"
+  },
+  "license": "MIT",
+  "author": "Jonathan Ong",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vouchington/vouchington-platform.git",
+    "directory": "packages/aws"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "exports": {
+    "./ses": {
+      "types": "./dist/ses.d.mts",
+      "import": "./dist/ses.mjs",
+      "default": "./dist/ses.mjs"
+    },
+    "./sqs": {
+      "types": "./dist/sqs.d.mts",
+      "import": "./dist/sqs.mjs",
+      "default": "./dist/sqs.mjs"
+    },
+    "./firehose": {
+      "types": "./dist/firehose.d.mts",
+      "import": "./dist/firehose.mjs",
+      "default": "./dist/firehose.mjs"
+    },
+    "./cloudwatch": {
+      "types": "./dist/cloudwatch.d.mts",
+      "import": "./dist/cloudwatch.mjs",
+      "default": "./dist/cloudwatch.mjs"
+    },
+    "./request-handler": {
+      "types": "./dist/request-handler.d.mts",
+      "import": "./dist/request-handler.mjs",
+      "default": "./dist/request-handler.mjs"
+    },
+    "./errors": {
+      "types": "./dist/errors.d.mts",
+      "import": "./dist/errors.mjs",
+      "default": "./dist/errors.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "prepack": "pnpm run build"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-cloudwatch": "^3.1152.0",
+    "@aws-sdk/client-firehose": "^3.1152.0",
+    "@aws-sdk/client-ses": "^3.1152.0",
+    "@aws-sdk/client-sqs": "^3.1152.0",
+    "@smithy/node-http-handler": "^4.12.1"
+  },
+  "peerDependencies": {
+    "@aws-sdk/client-cloudwatch": "^3.1152.0",
+    "@aws-sdk/client-firehose": "^3.1152.0",
+    "@aws-sdk/client-ses": "^3.1152.0",
+    "@aws-sdk/client-sqs": "^3.1152.0",
+    "@smithy/node-http-handler": "^4.12.1"
+  },
+  "peerDependenciesMeta": {
+    "@aws-sdk/client-cloudwatch": {
+      "optional": true
+    },
+    "@aws-sdk/client-firehose": {
+      "optional": true
+    },
+    "@aws-sdk/client-ses": {
+      "optional": true
+    },
+    "@aws-sdk/client-sqs": {
+      "optional": true
+    },
+    "@smithy/node-http-handler": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

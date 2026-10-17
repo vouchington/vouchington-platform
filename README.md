@@ -31,6 +31,7 @@ SKU names.
 | [`@vouchington/email`](packages/email)                                             | React Email render helpers, style factories, catalog copy, and locale resolution     |
 | [`@vouchington/sentry`](packages/sentry)                                           | Sentry init options, data-collection policy, filters, and capture                    |
 | [`@vouchington/ai`](packages/ai)                                                   | Model-call primitives: usage, pricing, JSON adapters, structured decisions           |
+| [`@vouchington/aws`](packages/aws)                                                 | AWS SES/SQS/Firehose/CloudWatch command builders, chunking, and error classifiers    |
 | [`@vouchington/http-transport`](packages/http-transport)                           | Redirect-safe transport with injected fetch/address pinning                          |
 | [`@vouchington/image-resize`](packages/image-resize)                               | Sharp transforms, file output, metadata, and negotiation                             |
 | [`@vouchington/media`](packages/media)                                             | Upload validation, streams, and split S3 primitives                                  |

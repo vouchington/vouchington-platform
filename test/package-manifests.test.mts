@@ -126,6 +126,28 @@ describe('runtime package manifests', () => {
     for (const range of Object.values(manifest.peerDependencies)) expectCaretSemverRange(range)
   })
 
+  it('publishes per-service aws subpaths with optional caret SDK peers', () => {
+    const manifest = JSON.parse(readFileSync('packages/aws/package.json', 'utf8')) as {
+      exports: Record<string, { import: string; types: string }>
+      peerDependencies: Record<string, string>
+      files: string[]
+    }
+    expect(Object.keys(manifest.exports)).toEqual([
+      './ses',
+      './sqs',
+      './firehose',
+      './cloudwatch',
+      './request-handler',
+      './errors',
+    ])
+    for (const entry of Object.values(manifest.exports)) {
+      expect(existsSync(`packages/aws/${entry.import.replace('./', '')}`)).toBe(true)
+      expect(existsSync(`packages/aws/${entry.types.replace('./', '')}`)).toBe(true)
+    }
+    expect(manifest.files).toEqual(['dist', 'README.md', 'LICENSE'])
+    for (const range of Object.values(manifest.peerDependencies)) expectCaretSemverRange(range)
+  })
+
   it('declares a publishable UUIDv7 dependency from session-jwt', () => {
     const manifest = JSON.parse(readFileSync('packages/session-jwt/package.json', 'utf8')) as {
       dependencies: Record<string, string>

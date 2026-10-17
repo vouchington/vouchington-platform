@@ -46,6 +46,7 @@ on:
           - '@vouchington/sentry'
           - '@vouchington/email'
           - '@vouchington/ai'
+          - '@vouchington/aws'
       bump:
         description: Semver bump type
         type: choice
