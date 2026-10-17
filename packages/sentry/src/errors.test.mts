@@ -25,6 +25,9 @@ describe('HTTP error classes', () => {
       retryAfterMs: 1500,
     })
     expect(error.message).toBe('Rate limited for https://a.test, retry after 1500ms')
+    expect(new HttpRateLimitError('https://a.test/x?sig=1#f', 429, null).message).toBe(
+      'Rate limited for https://a.test/x',
+    )
   })
 
   it('classifies server errors', () => {

@@ -18,12 +18,14 @@ describe('createDataCollectionPolicy', () => {
     })
     const deny = (policy.httpHeaders as { request: { deny: string[] } }).request.deny
     expect(deny).toEqual([...CLIENT_IP_HEADER_NAMES, 'authorization'])
+    expect(policy.httpHeaders).toMatchObject({ response: { deny } })
+    expect(policy).toMatchObject({ frameContextLines: 0 })
   })
 
   it('defaults to client IP headers and returns fresh arrays', () => {
     const first = createDataCollectionPolicy()
     const second = createDataCollectionPolicy()
-    expect(first.httpHeaders).toEqual({ request: { deny: [...CLIENT_IP_HEADER_NAMES] } })
+    expect(first.httpHeaders).toMatchObject({ request: { deny: [...CLIENT_IP_HEADER_NAMES] } })
     expect(first.httpHeaders).not.toBe(second.httpHeaders)
   })
 })

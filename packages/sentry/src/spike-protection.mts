@@ -1,7 +1,13 @@
 import { createSpikeWindowTracker } from '@vouchington/utils/observability'
 
 export interface SpikeProtectableEvent {
-  exception?: { values?: Array<{ type?: string; value?: string }> }
+  exception?: {
+    values?: Array<{
+      type?: string
+      value?: string
+      stacktrace?: { frames?: Array<{ filename?: string; function?: string; lineno?: number }> }
+    }>
+  }
   message?: string
   fingerprint?: string[]
 }
@@ -20,7 +26,11 @@ function fingerprintOf(event: SpikeProtectableEvent): string | null {
   if (event.fingerprint && event.fingerprint.length > 0) return event.fingerprint.join('\u0000')
   const exception = event.exception?.values?.[0]
   if (exception?.type || exception?.value) {
-    return `${exception.type ?? ''}\u0000${exception.value ?? ''}`
+    const frame = exception.stacktrace?.frames?.at(-1)
+    const location = frame
+      ? `${frame.filename ?? ''}:${frame.function ?? ''}:${frame.lineno ?? ''}`
+      : ''
+    return `${exception.type ?? ''}\u0000${exception.value ?? ''}\u0000${location}`
   }
   return event.message ? `message\u0000${event.message}` : null
 }

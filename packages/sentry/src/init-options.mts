@@ -2,7 +2,6 @@ import type { ErrorEvent, EventHint } from '@sentry/core'
 import {
   composeBeforeSend,
   isAllowedEnvironment,
-  type ObservableEvent,
   type ScrubOptions,
 } from '@vouchington/utils/observability'
 import { createDataCollectionPolicy } from './data-collection.mts'
@@ -21,7 +20,7 @@ export interface CreateSentryInitOptionsInput {
   /** Reported environment when `environment` is unset. Default `development`. */
   fallbackEnvironment?: string
   release?: string | undefined
-  /** Default 1. */
+  /** Left unset by default so the application decides trace sampling. */
   tracesSampleRate?: number
   /** Credential headers and URL redaction applied to events, breadcrumbs, and spans. */
   scrub: ScrubOptions
@@ -49,9 +48,8 @@ export function createSentryInitOptions(input: CreateSentryInitOptionsInput): Se
     const filtered = filter(event, hint)
     return filtered && input.beforeSend ? input.beforeSend(filtered, hint) : filtered
   }
-  // SDK event interfaces have no index signature; the scrubber only reads `request`/`breadcrumbs`.
   const scrubbed = composeBeforeSend(
-    beforeSend as unknown as (event: ObservableEvent, hint: EventHint) => ObservableEvent | null,
+    beforeSend as never,
     input.scrub,
   ) as unknown as SentryInitOptions['beforeSend']
   return {
@@ -59,7 +57,6 @@ export function createSentryInitOptions(input: CreateSentryInitOptionsInput): Se
     environment: input.environment ?? input.fallbackEnvironment ?? 'development',
     release: input.release || undefined,
     enabled: allowed && Boolean(dsn),
-    tracesSampleRate: input.tracesSampleRate ?? 1,
     dataCollection: createDataCollectionPolicy({
       credentialHeaders: input.scrub.credentialHeaders,
     }),
@@ -68,6 +65,7 @@ export function createSentryInitOptions(input: CreateSentryInitOptionsInput): Se
         ? scrubbed
         : withSpikeProtection(scrubbed, input.spikeProtection),
     beforeSendSpan: createSpanScrubber(input.scrub),
+    ...(input.tracesSampleRate === undefined ? {} : { tracesSampleRate: input.tracesSampleRate }),
     ...(input.tunnel === undefined ? {} : { tunnel: input.tunnel }),
     ...(input.initialScope === undefined ? {} : { initialScope: input.initialScope }),
   }

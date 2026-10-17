@@ -23,6 +23,7 @@ describe('createSentryInitOptions', () => {
     })
     expect(options.dataCollection).toMatchObject({ userInfo: false })
     expect('tunnel' in options).toBe(false)
+    expect('tracesSampleRate' in createSentryInitOptions(base)).toBe(false)
     expect('initialScope' in options).toBe(false)
   })
 

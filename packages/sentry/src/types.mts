@@ -5,7 +5,7 @@ export interface SentryInitOptions {
   environment: string
   release: string | undefined
   enabled: boolean
-  tracesSampleRate: number
+  tracesSampleRate?: number
   dataCollection: DataCollection
   beforeSend: (
     event: ErrorEvent,

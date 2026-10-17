@@ -28,18 +28,19 @@ export interface DataCollectionOptions {
 /**
  * Least-data `dataCollection` policy (Sentry v11 collects everything by default): no client IP,
  * cookies, query strings, bodies, database values, stack locals, queue arguments, GraphQL
- * documents, or gen-AI content. Returns a fresh object because the SDK keeps the arrays it gets.
+ * documents, source context lines, or gen-AI content. Returns a fresh object because the SDK keeps the arrays it gets.
  */
 export function createDataCollectionPolicy(options: DataCollectionOptions = {}): DataCollection {
   const deny = [...new Set([...CLIENT_IP_HEADER_NAMES, ...(options.credentialHeaders ?? [])])]
   return {
     userInfo: false,
     cookies: false,
-    httpHeaders: { request: { deny } },
+    httpHeaders: { request: { deny }, response: { deny: [...deny] } },
     httpBodies: [],
     urlQueryParams: false,
     databaseQueryData: false,
     stackFrameVariables: false,
+    frameContextLines: 0,
     queues: false,
     graphQL: { document: false, variables: false },
     genAI: { inputs: false, outputs: false },

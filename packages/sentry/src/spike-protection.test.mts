@@ -27,6 +27,23 @@ describe('withSpikeProtection', () => {
     expect(guarded({ fingerprint: [], message: 'fallback' }, undefined)).not.toBeNull()
   })
 
+  it('separates identical messages by top stack frame', () => {
+    const guarded = withSpikeProtection(identity, { limit: 1 })
+    const at = (filename: string, lineno: number) => ({
+      exception: {
+        values: [{ type: 'TypeError', value: 'x', stacktrace: { frames: [{ filename, lineno }] } }],
+      },
+    })
+    expect(guarded(at('a.js', 1), undefined)).not.toBeNull()
+    expect(guarded(at('b.js', 1), undefined)).not.toBeNull()
+    expect(guarded(at('a.js', 1), undefined)).toBeNull()
+    const named = {
+      exception: { values: [{ type: 'E', stacktrace: { frames: [{ function: 'f' }] } }] },
+    }
+    expect(guarded(named, undefined)).not.toBeNull()
+    expect(guarded(named, undefined)).toBeNull()
+  })
+
   it('never suppresses events with no identity', () => {
     const guarded = withSpikeProtection(identity, { limit: 0 })
     const anonymous = {}
