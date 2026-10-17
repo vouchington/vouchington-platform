@@ -22,10 +22,19 @@ value; the package never sets them):
 `primary-foreground`, `secondary`, `secondary-foreground`, `muted`, `muted-foreground`, `accent`,
 `accent-foreground`, `destructive`, `destructive-foreground`, `border`, `input`, `ring`.
 
+Floating surfaces and accordions use `animate-in`/`fade-in-0`/`zoom-in-95`/`slide-in-from-*` (the
+`tw-animate-css` utilities) and `animate-accordion-down`/`animate-accordion-up`. Add `tw-animate-css` (install it and `@import 'tw-animate-css';` in your stylesheet) and
+define `--animate-accordion-down`/`--animate-accordion-up` plus their keyframes (height from 0 to
+`var(--radix-accordion-content-height)`) in your theme; the package ships no CSS.
+
 ## Components
 
+`Accordion` is vertical only; its `orientation` prop is not styled.
+
 `Button` (`loading`, `asChild`, `buttonVariants`), `Badge`, `Input`, `Textarea`, `Label`,
-`Separator`, `Skeleton`, `Spinner`, `Kbd`, `KbdGroup`, and `cn`.
+`Separator`, `Skeleton`, `Spinner`, `Kbd`, `KbdGroup`, `Checkbox`, `Switch`, `RadioGroup`, `Toggle`,
+`ToggleGroup`, `Tabs`, `Accordion`, `Tooltip`, `Popover`, `HoverCard`, `ScrollArea`, `Avatar`, `Alert`,
+`Card`, `Table`, `ButtonGroup`, and `cn`.
 
 Copy is injected: `Spinner` takes `label`; the `Button` spinner is decorative. Links are rendered
 through `asChild`, so any router `Link` can be supplied by the application.
