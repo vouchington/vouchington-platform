@@ -188,9 +188,10 @@ describe('composeBeforeSend with a custom scrubber', () => {
       composeBeforeSend<Event, unknown>(async (event) => event, mark)({ tag: 'a' }, {}),
     ).resolves.toEqual({ tag: 'scrubbed' })
     expect(composeBeforeSend<Event, unknown>(() => null, mark)({ tag: 'a' }, {})).toBeNull()
-    const thenableFunction = Object.assign(() => undefined, {
-      then: (resolve: (value: Event) => void) => resolve({ tag: 'late' }),
-    })
+    const thenableFunction = () => undefined
+    Reflect.set(thenableFunction, 'then', (resolve: (value: Event) => void) =>
+      resolve({ tag: 'late' }),
+    )
     const hook = composeBeforeSend<Event, unknown>(() => thenableFunction as unknown as Event, mark)
     await expect(hook({ tag: 'a' }, {})).resolves.toEqual({ tag: 'scrubbed' })
   })
