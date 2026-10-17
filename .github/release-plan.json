@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/sentry/package.json"],
+  "changedManifests": ["packages/postgres/package.json"],
   "releases": [
     {
-      "bump": "minor",
-      "directory": "sentry",
-      "fromVersion": "0.0.0",
-      "name": "@vouchington/sentry",
-      "toVersion": "0.1.0"
+      "bump": "patch",
+      "directory": "postgres",
+      "fromVersion": "0.0.15",
+      "name": "@vouchington/postgres",
+      "toVersion": "0.0.16"
     }
   ],
-  "selectedPackage": "@vouchington/sentry"
+  "selectedPackage": "@vouchington/postgres"
 }
