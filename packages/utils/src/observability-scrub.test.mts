@@ -115,6 +115,9 @@ describe('URL redaction hook', () => {
     expect(scrubUrlValue('/a?b')).toBe('/a')
     expect(scrubUrlValue(7)).toBe(7)
     expect(scrubSpanUrlAttributes({ url: 1 })).toEqual({ url: 1 })
+    expect(
+      scrubSpanUrlAttributes({ 'http.request.header.referer': ['https://a.test/x?s=1#f', 2] }),
+    ).toEqual({ 'http.request.header.referer': ['https://a.test/x', 2] })
   })
   it('strips every item of a multi-value referer header', () => {
     expect(

@@ -17,6 +17,8 @@ export interface SpikeProtectionOptions {
   limit?: number
   /** Window length in milliseconds. Default five minutes. */
   windowMs?: number
+  /** Distinct fingerprints tracked at once; the least recently seen is evicted. Default 1000. */
+  maxFingerprints?: number
   now?: () => number
 }
 
@@ -50,9 +52,14 @@ function isPromiseLike<T>(value: unknown): value is PromiseLike<T> {
  */
 export function withSpikeProtection<T extends SpikeProtectableEvent, H>(
   beforeSend: (event: T, hint: H) => Result<T>,
-  { limit = 10, windowMs = 5 * 60_000, now = Date.now }: SpikeProtectionOptions = {},
+  {
+    limit = 10,
+    windowMs = 5 * 60_000,
+    maxFingerprints,
+    now = Date.now,
+  }: SpikeProtectionOptions = {},
 ): (event: T, hint: H) => Result<T> {
-  const tracker = createSpikeWindowTracker(limit, windowMs)
+  const tracker = createSpikeWindowTracker(limit, windowMs, maxFingerprints)
   const admit = (event: T): T | null => {
     const fingerprint = fingerprintOf(event)
     if (fingerprint === null) return event

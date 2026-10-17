@@ -1,5 +1,9 @@
 export { SENSITIVE_VALUE } from './observability-records.mts'
-export { createSpikeWindowTracker, type SpikeWindowTracker } from './spike-window.mts'
+export {
+  createSpikeWindowTracker,
+  DEFAULT_MAX_SPIKE_FINGERPRINTS,
+  type SpikeWindowTracker,
+} from './spike-window.mts'
 export {
   composeBeforeSend,
   scrubBreadcrumbs,

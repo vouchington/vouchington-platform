@@ -75,4 +75,11 @@ describe('withSpikeProtection', () => {
     )
     await expect(guarded({}, undefined)).resolves.toEqual({ message: 'z' })
   })
+
+  it('bounds tracked fingerprints with maxFingerprints', () => {
+    const guarded = withSpikeProtection(identity, { limit: 1, maxFingerprints: 1 })
+    expect(guarded({ message: 'a' }, undefined)).not.toBeNull()
+    expect(guarded({ message: 'b' }, undefined)).not.toBeNull()
+    expect(guarded({ message: 'a' }, undefined)).not.toBeNull()
+  })
 })

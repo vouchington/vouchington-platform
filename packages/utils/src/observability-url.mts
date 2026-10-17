@@ -59,9 +59,7 @@ export function scrubSpanUrlAttributes<T extends Record<string, unknown>>(
 ): T {
   return transformRecord(data, (key, value) => {
     if (URL_COMPONENT_ATTRIBUTE_KEYS.includes(key)) return DROP
-    return URL_ATTRIBUTE_KEYS.includes(key) && typeof value === 'string'
-      ? scrubUrl(value, options)
-      : value
+    return URL_ATTRIBUTE_KEYS.includes(key) ? scrubUrlValue(value, options) : value
   })
 }
 
