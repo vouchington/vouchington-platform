@@ -120,7 +120,11 @@ describe('runtime package manifests', () => {
       peerDependencies: Record<string, string>
       files: string[]
     }
-    expect(Object.keys(manifest.exports)).toEqual(['./providers', './structured-decisions'])
+    expect(Object.keys(manifest.exports)).toEqual([
+      './openai',
+      './providers',
+      './structured-decisions',
+    ])
     for (const entry of Object.values(manifest.exports)) {
       expect(existsSync(`packages/ai/${entry.import.replace('./', '')}`)).toBe(true)
       expect(existsSync(`packages/ai/${entry.types.replace('./', '')}`)).toBe(true)

@@ -17,6 +17,11 @@
   ],
   "type": "module",
   "exports": {
+    "./openai": {
+      "types": "./dist/openai/index.d.mts",
+      "import": "./dist/openai/index.mjs",
+      "default": "./dist/openai/index.mjs"
+    },
     "./providers": {
       "types": "./dist/providers/index.d.mts",
       "import": "./dist/providers/index.mjs",
@@ -39,10 +44,20 @@
     "ajv": "^8.20.0"
   },
   "devDependencies": {
-    "@anthropic-ai/sdk": "^0.135.0"
+    "@anthropic-ai/sdk": "^0.135.0",
+    "openai": "^7.36.0"
   },
   "peerDependencies": {
-    "@anthropic-ai/sdk": "^0.135.0"
+    "@anthropic-ai/sdk": "^0.135.0",
+    "openai": "^7.36.0"
+  },
+  "peerDependenciesMeta": {
+    "@anthropic-ai/sdk": {
+      "optional": true
+    },
+    "openai": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=24.0.0"
