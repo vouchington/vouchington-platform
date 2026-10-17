@@ -22,3 +22,20 @@ copy and its full translation variants.
 artifact, persists known selector IDs separately from aliases, and resolves the same selectors
 locally. Its CLI owns table updates, formatting, CSV interchange, and three-way merges so catalog
 edits remain deterministic.
+
+## `@vouchington/localization/react`
+
+Thin React 19 primitives (`react` is an optional peer of this subpath only; the root entry never
+imports it):
+
+- `createLocaleBindings(defaultLocale)`: `LocaleContext`, `LocaleProvider`, `useLocale`.
+- `createMessagesCache(loadMessages)`: per-locale catalog cache with `seedMessages`,
+  `mergeMessages`, `invalidateMessages`; seeded entries are pre-fulfilled so `use()` never
+  suspends during hydration.
+- `createTranslationsHook({ cache, useLocale, normalizeLocale, defaultLocale, createTranslator })`:
+  suspends on the active locale's catalog and returns a memoized translator.
+- `CatalogHydrator`: merges a server-fetched catalog into the cache during render.
+- `createUnresolvedMessageReporter(locale, capture)` and `seedFromBootstrap(...)`.
+
+Applications own the catalog loader, translator, supported locales, error capture, and the
+generated route selectors; none are shipped here.
