@@ -28,6 +28,16 @@ describe('helpers', () => {
     expect(createExcerpt('abcdefghij', 5)).toBe('abcd…')
   })
 
+  it('keeps ordinary prose, decodes entities, and truncates by code point', () => {
+    expect(createExcerpt('3 < 5 and 7 > 6, C++')).toBe('3 < 5 and 7 > 6, C++')
+    expect(createExcerpt('Tom &amp; Jerry &#39;s &#x41; &nbsp;&bogus; &#0; &#x110000;')).toBe(
+      "Tom & Jerry 's A &bogus; &#0; &#x110000;",
+    )
+    expect(createExcerpt('> quote\n## Head [link](http://x) ![img](y)')).toBe('quote Head link img')
+    expect(createExcerpt(`${'a'.repeat(158)}😀😀😀`, 160)).toBe(`${'a'.repeat(158)}😀…`)
+    expect(createExcerpt('😀😀😀', 2)).toBe('😀…')
+  })
+
   it('finds markdown alternates for listed prefixes', () => {
     const prefixes = new Set(['review'])
     expect(getMarkdownAlternatePath('/review/1', prefixes)).toBe('/review/1.md')

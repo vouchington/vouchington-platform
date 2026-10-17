@@ -11,15 +11,41 @@ export interface SeoRobots {
   googleBot: { index: false; follow: false }
 }
 
+export interface SeoImage extends ImageSize {
+  url: string
+}
+
+export interface SeoOpenGraph {
+  type: 'website' | 'article'
+  siteName: string
+  title?: string
+  description: string
+  locale?: string
+  url: string
+  images?: SeoImage[]
+  publishedTime?: string
+  modifiedTime?: string
+  authors?: string[]
+}
+
+export interface SeoTwitter {
+  card: 'summary_large_image'
+  title?: string
+  description: string
+  images?: string[]
+}
+
+export type SeoAlternateTypes = Record<string, string | { url: string; title?: string }[]>
+
+/** Assignable to Next.js `Metadata` (the shapes below are subsets of its OpenGraph/Twitter types). */
 export interface SeoMetadata {
   metadataBase: URL
   title?: string | { default: string; template: string }
   description: string
-  alternates?: { canonical: string; types?: Record<string, unknown> }
+  alternates?: { canonical: string; types?: SeoAlternateTypes }
   robots?: SeoRobots | undefined
-  openGraph?: Record<string, unknown>
-  twitter?: Record<string, unknown>
-  [key: string]: unknown
+  openGraph?: SeoOpenGraph
+  twitter?: SeoTwitter
 }
 
 export interface ImageSize {
@@ -58,19 +84,7 @@ export function createRobotsMetadata(noIndex: boolean): SeoRobots | undefined {
   return { index: false, follow: false, googleBot: { index: false, follow: false } }
 }
 
-function stripMarkup(value: string): string {
-  return value
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/[#*_`>[\]()+!]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-export function createExcerpt(value: string, maxLength: number = 160): string {
-  const plainText = stripMarkup(value)
-  if (plainText.length <= maxLength) return plainText
-  return `${plainText.slice(0, maxLength - 1).trimEnd()}…`
-}
+export { createExcerpt } from './seo-excerpt.mts'
 
 /** Returns `${path}.md` when `path` is `/prefix/id` for a listed prefix. */
 export function getMarkdownAlternatePath(
@@ -141,15 +155,15 @@ export function createPageMetadata(site: SeoSite, options: PageMetadataOptions):
 }
 
 /** Root layout metadata; icons are passed through untouched. */
-export function createRootMetadata(
+export function createRootMetadata<Icons = never>(
   site: SeoSite,
   options: {
     imageUrl: string
     openGraphLocale?: string | null
-    icons?: Record<string, unknown>
+    icons?: Icons
     imageSize?: ImageSize
   },
-): SeoMetadata {
+): SeoMetadata & { icons?: Icons } {
   const size = options.imageSize ?? DEFAULT_IMAGE_SIZE
   return {
     metadataBase: new URL(site.origin),
