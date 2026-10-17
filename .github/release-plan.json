@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/api-client/package.json"],
+  "changedManifests": ["packages/utils/package.json"],
   "releases": [
     {
-      "bump": "minor",
-      "directory": "api-client",
-      "fromVersion": "0.0.0",
-      "name": "@vouchington/api-client",
-      "toVersion": "0.1.0"
+      "bump": "patch",
+      "directory": "utils",
+      "fromVersion": "0.7.0",
+      "name": "@vouchington/utils",
+      "toVersion": "0.7.1"
     }
   ],
-  "selectedPackage": "@vouchington/api-client"
+  "selectedPackage": "@vouchington/utils"
 }
