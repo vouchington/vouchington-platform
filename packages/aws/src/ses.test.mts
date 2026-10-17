@@ -61,6 +61,19 @@ describe('buildRawEmailMessage', () => {
     expect(Math.max(...raw.split('\r\n').map((line) => line.length))).toBeLessThanOrEqual(998)
   })
 
+  it('splits long non-ASCII subjects into folded encoded-words without breaking characters', () => {
+    const subject = 'é'.repeat(50)
+    const raw = buildRawEmailMessage({ ...base, subject, text: 't' })
+    const header = raw.split('\r\nMIME-Version')[0]!.split('Subject: ')[1]!
+    const words = header.split('\r\n ')
+    expect(words.length).toBeGreaterThan(1)
+    for (const word of words) expect(word.length).toBeLessThanOrEqual(75)
+    const decoded = words
+      .map((word) => Buffer.from(word.slice('=?UTF-8?B?'.length, -2), 'base64').toString('utf8'))
+      .join('')
+    expect(decoded).toBe(subject)
+  })
+
   it.each([
     [{ subject: 'a\r\nBcc: x' }],
     [{ source: 'a\nb' }],

@@ -39,10 +39,24 @@ function encodeMimeBody(value: string): string {
   return (encoded.match(/.{1,76}/g) ?? ['']).join('\r\n')
 }
 
+// RFC 2047 caps an encoded-word at 75 characters: 45 UTF-8 bytes encode to 60 base64 characters.
+const ENCODED_WORD_MAX_BYTES = 45
+
 function encodeHeaderValue(value: string): string {
-  return /^[\x20-\x7E]*$/.test(value)
-    ? value
-    : `=?UTF-8?B?${Buffer.from(value, 'utf8').toString('base64')}?=`
+  if (/^[\x20-\x7E]*$/.test(value)) return value
+  const words: string[] = []
+  let current = ''
+  for (const character of value) {
+    if (current && Buffer.byteLength(current + character, 'utf8') > ENCODED_WORD_MAX_BYTES) {
+      words.push(current)
+      current = ''
+    }
+    current += character
+  }
+  words.push(current)
+  return words
+    .map((word) => `=?UTF-8?B?${Buffer.from(word, 'utf8').toString('base64')}?=`)
+    .join('\r\n ')
 }
 
 // Builds a base64-encoded RFC 5322 message, preserving caller headers such as List-Unsubscribe.
