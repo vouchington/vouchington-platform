@@ -1,3 +1,5 @@
+'use client'
+
 import type { ComponentPropsWithoutRef, ComponentRef, Ref } from 'react'
 import * as LabelPrimitive from '@radix-ui/react-label'
 

@@ -1,3 +1,5 @@
+'use client'
+
 import type { ComponentProps, Ref } from 'react'
 
 import { cn } from './cn.js'
