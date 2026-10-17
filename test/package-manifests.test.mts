@@ -109,6 +109,22 @@ describe('runtime package manifests', () => {
     expectCaretSemverRange(manifest.dependencies['@vouchington/utils'])
   })
 
+  it('publishes the providers and structured-decisions entries for ai with caret ranges', () => {
+    const manifest = JSON.parse(readFileSync('packages/ai/package.json', 'utf8')) as {
+      exports: Record<string, { import: string; types: string }>
+      peerDependencies: Record<string, string>
+      files: string[]
+    }
+    expect(Object.keys(manifest.exports)).toEqual(['./providers', './structured-decisions'])
+    for (const entry of Object.values(manifest.exports)) {
+      expect(existsSync(`packages/ai/${entry.import.replace('./', '')}`)).toBe(true)
+      expect(existsSync(`packages/ai/${entry.types.replace('./', '')}`)).toBe(true)
+      expect(() => importBuiltModule(`packages/ai/${entry.import.replace('./', '')}`)).not.toThrow()
+    }
+    expect(manifest.files).toEqual(['dist', 'README.md', 'LICENSE'])
+    for (const range of Object.values(manifest.peerDependencies)) expectCaretSemverRange(range)
+  })
+
   it('declares a publishable UUIDv7 dependency from session-jwt', () => {
     const manifest = JSON.parse(readFileSync('packages/session-jwt/package.json', 'utf8')) as {
       dependencies: Record<string, string>
