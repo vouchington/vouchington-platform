@@ -17,3 +17,5 @@ requested URL does not match the robots.txt origin.
 Generalized from Filaments revision `2bd1d813f858da613fa89eec76037379503d9fd1`, primarily
 `backend/services/urls-domains-robots/index.mts` and
 `backend/services/urls-domains-robots/robots-parser-adapter.mts`.
+
+`robotsProductToken(userAgent)` returns the RFC 9309 product token of a User-Agent string. `computeCrawlIntervalMs({ requestsPerSecond, crawlDelayMs, defaultIntervalMs, maxIntervalMs })` combines a caller rate limit with the host Crawl-delay.

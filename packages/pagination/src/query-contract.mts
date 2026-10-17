@@ -132,3 +132,15 @@ export function withQueryContract<
   return Object.assign(fn, composeQueryContracts(...sources)) as TFunction &
     QueryContractCarrier<ComposedQueryContract<TSources>>
 }
+/** Marks a string query parameter as required, for the HTTP boundary and generated API schemas. */
+export function requiredQueryString<const TDescription extends string | undefined = undefined>(
+  options: Description<TDescription> = {},
+): QueryStringContract<undefined, TDescription> & { readonly required: true } {
+  return { ...queryString<undefined, TDescription>(options), required: true }
+}
+/** Marks an enum query parameter as required, for the HTTP boundary and generated API schemas. */
+export function requiredQueryEnum<const TValues extends readonly string[]>(
+  values: TValues,
+): QueryEnumContract<TValues> & { readonly required: true } {
+  return { ...queryEnum(values), required: true }
+}
