@@ -9,6 +9,9 @@ export type OpenAIResponseLike = {
   model?: string
   service_tier?: string | null
   usage?: OpenAIUsageLike | null
+  /** Anything other than `completed` (e.g. `incomplete`, `failed`) is not parsed as an answer. */
+  status?: string | null
+  incomplete_details?: { reason?: string } | null
   output_text: string
 }
 
@@ -19,6 +22,8 @@ export type OpenAIJsonParams = {
   safety_identifier?: string
   prompt_cache_key?: string
   service_tier?: 'flex'
+  temperature?: number
+  top_p?: number
   text: {
     format: { type: 'json_schema'; name: string; schema: Record<string, unknown>; strict: true }
   }
@@ -41,6 +46,8 @@ export function buildOpenAIJsonParams(request: GenerateJsonRequest<unknown>): Op
     ...(request.safetyIdentifier ? { safety_identifier: request.safetyIdentifier } : {}),
     ...(request.promptCacheKey ? { prompt_cache_key: request.promptCacheKey } : {}),
     ...(request.flex ? { service_tier: 'flex' as const } : {}),
+    ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
+    ...(request.topP === undefined ? {} : { top_p: request.topP }),
     text: {
       format: {
         type: 'json_schema',
@@ -69,6 +76,19 @@ export function parseOpenAIJsonResponse<T>(
     responseId: response.id,
     serviceTier: response.service_tier ?? 'unknown-tier',
     usage: openAIUsageToModelUsage(response.usage ?? NO_USAGE),
+  }
+  if (response.status != null && response.status !== 'completed') {
+    const reason = response.incomplete_details?.reason
+    const code =
+      reason === 'max_output_tokens'
+        ? 'output-truncated'
+        : reason === 'content_filter'
+          ? 'refusal'
+          : 'invalid-response'
+    throw new ModelProviderError(code, `OpenAI response ended as ${response.status}.`, {
+      retryClass: 'permanent',
+      billedResponse: billed,
+    })
   }
   try {
     return { ...billed, output: parseSchemaValidJson(response.output_text, request) }

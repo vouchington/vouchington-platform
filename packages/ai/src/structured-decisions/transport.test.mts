@@ -204,6 +204,29 @@ describe('provider error detail', () => {
     expect(await readProviderErrorDetail({ body: broken() })).toBeUndefined()
   })
 
+  it('redacts short flagged inputs and bounds oversized chunks', async () => {
+    const detail = parseProviderErrorDetail({
+      error: { message: 'bad input: ab', metadata: { flagged_input: 'ab' } },
+    })
+    expect(detail?.providerMessage).toBe('bad input: [redacted]')
+    const huge = JSON.stringify({ error: { message: 'x'.repeat(40_000) } })
+    expect(await readProviderErrorDetail({ body: stream(huge) })).toBeUndefined()
+  })
+
+  it('does not let extra body fields replace the request', () => {
+    const built = buildDecisionTransportRequest(
+      {
+        url: 'u',
+        provider: 'p',
+        apiKey: 'k',
+        model: 'real',
+        extraBody: { model: 'evil', state: 'x' },
+      },
+      request,
+    )
+    expect(built.body).toMatchObject({ model: 'real', state: 'the state' })
+  })
+
   it('describes details on one line', () => {
     expect(
       describeProviderErrorDetail({

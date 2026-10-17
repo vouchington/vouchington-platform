@@ -7,6 +7,8 @@ const compiled = new WeakMap<JsonSchema, ValidateFunction>()
 function compile(schema: JsonSchema): ValidateFunction {
   const existing = compiled.get(schema)
   if (existing) return existing
+  // A distinct schema object may reuse an `$id` the shared Ajv already registered.
+  if (typeof schema.$id === 'string') ajv.removeSchema(schema.$id)
   const validate = ajv.compile(schema)
   compiled.set(schema, validate)
   return validate

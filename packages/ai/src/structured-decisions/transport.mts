@@ -44,12 +44,12 @@ export function buildDecisionTransportRequest(
     provider: options.provider,
     headers: { authorization: `Bearer ${options.apiKey}`, 'content-type': 'application/json' },
     body: {
+      ...options.extraBody,
       model: options.model,
       state: request.state,
       questions: Object.fromEntries(
         request.questions.map((question) => [question.id, toProviderQuestion(question)]),
       ),
-      ...options.extraBody,
     },
   }
 }

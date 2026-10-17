@@ -27,9 +27,10 @@ function shortText(value: unknown): string | undefined {
 function boundMessage(message: string, flaggedInput: unknown): string {
   // The provider truncates a long `flagged_input` in the middle with "...", so each remaining
   // fragment is cut as well as the whole value.
+  // The whole value is always cut, however short; only the split fragments need a minimum length.
   const fragments =
-    typeof flaggedInput === 'string'
-      ? [flaggedInput, ...flaggedInput.split('...')].filter((fragment) => fragment.length >= 4)
+    typeof flaggedInput === 'string' && flaggedInput.length > 0
+      ? [flaggedInput, ...flaggedInput.split('...').filter((fragment) => fragment.length >= 4)]
       : []
   const redacted = fragments.reduce(
     (text, fragment) => text.split(fragment).join(REDACTED),
@@ -45,14 +46,15 @@ async function readBoundedText(response: ErrorBodyResponse): Promise<string | nu
   let size = 0
   try {
     for await (const chunk of response.body) {
-      chunks.push(Buffer.from(chunk))
-      size += chunk.byteLength
+      const part = chunk.subarray(0, MAX_BODY_BYTES - size)
+      chunks.push(Buffer.from(part))
+      size += part.byteLength
       if (size >= MAX_BODY_BYTES) break
     }
   } catch {
     return null
   }
-  return Buffer.concat(chunks).subarray(0, MAX_BODY_BYTES).toString('utf8')
+  return Buffer.concat(chunks).toString('utf8')
 }
 
 /** Parses a decoded error body into its safe fields, or `undefined` for any other shape. */

@@ -21,6 +21,9 @@ export function buildAnthropicJsonParams(
     messages: [{ role: 'user', content: request.input }],
     output_config: { format: { type: 'json_schema', schema: request.schema } },
     ...(request.safetyIdentifier ? { metadata: { user_id: request.safetyIdentifier } } : {}),
+    ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
+    ...(request.topP === undefined ? {} : { top_p: request.topP }),
+    ...(request.topK === undefined ? {} : { top_k: request.topK }),
   }
 }
 
