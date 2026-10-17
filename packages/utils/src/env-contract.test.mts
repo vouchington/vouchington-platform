@@ -18,6 +18,18 @@ describe('environment contracts', () => {
     expect(envNamesForSurface(contract, 'runtime')).toEqual(['TOKEN', 'PUBLIC_URL'])
     expect(envNamesBySensitivity(contract, 'public')).toEqual(['PUBLIC_URL'])
     expect(envContractsByName(contract).get('PUBLIC_URL')).toHaveLength(1)
+    const mutableContract = [
+      {
+        key: 'deployment:runtime:TOKEN',
+        name: 'TOKEN',
+        sourceOfTruth: 'deployment' as const,
+        sensitivity: 'secret' as const,
+        surfaces: ['runtime'] as ('runtime' | 'build')[],
+      },
+    ]
+    const mutableManifest = envContractManifest(mutableContract)
+    mutableManifest[0]?.runtimeSurfaces.push('build')
+    expect(mutableContract[0]?.surfaces).toEqual(['runtime'])
     expect(envContractManifest(contract)[0]).toEqual({
       name: 'TOKEN',
       contractKey: 'deployment:runtime:TOKEN',
