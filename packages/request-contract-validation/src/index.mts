@@ -49,6 +49,12 @@ export class RequestContractValidatorRegistry {
     return this.validators.has(operation)
   }
 
+  /** True when the operation declares a contract for at least one carrier; false if unknown. */
+  hasInputCarriers(operation: string): boolean {
+    const validators = this.validators.get(operation)
+    return validators !== undefined && requestCarriers.some((carrier) => carrier in validators)
+  }
+
   validateBody(operation: string, value: unknown): RequestValidationError | null {
     return this.validate(operation, 'body', value)
   }

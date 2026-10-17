@@ -20,3 +20,5 @@ Applications supply generated or hand-written contracts and decide authenticatio
 rate limits, request lifecycle, HTTP status, and error mapping. Header names in object inputs are
 lowercased before validation; case-insensitive duplicates are rejected when a header contract is
 present. This package has no generated bundle or shared registry.
+
+`hasInputCarriers(operation)` reports whether an operation declares a contract for any carrier.

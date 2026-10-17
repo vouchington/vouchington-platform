@@ -1,5 +1,7 @@
 import robotsParser from 'robots-parser'
 
+export * from './crawl.mts'
+
 const allowAll = 'User-agent: *\nAllow: /'
 const disallowAll = 'User-agent: *\nDisallow: /'
 

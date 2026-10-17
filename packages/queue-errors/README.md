@@ -74,3 +74,7 @@ try {
 `cooldownMs` must be a positive safe integer. The package does not choose provider names,
 identifiers, throttling rules, or fallback policy. Provider exception names, SDK-specific metadata
 extraction, and fixed cooldowns belong in an application adapter.
+
+## Deferral helpers
+
+`throwRateLimited`, `createRateLimitError`, `deferJobForRateLimit`, and `boundRateLimitDeferral` requeue a job after a provider-stated wait without consuming an attempt. `clampRateLimitDelayMs` keeps the wait within `minMs`/`maxMs` (defaults 1 second to 15 minutes, `defaultMs` 60 seconds), and `boundRateLimitDeferral` turns the signal back into its cause once the job is older than `maxAgeMs` (default 24 hours). `deferPostgresConnectionTimeout` defers a job while a pg-pool cannot supply a connection; `messages` and `retryDelayMs` are overridable. Reading `Retry-After` from a response and choosing which providers are throttled stay in the application.
