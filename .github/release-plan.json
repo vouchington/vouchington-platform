@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/queue-errors/package.json"],
+  "changedManifests": ["packages/pagination/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "queue-errors",
-      "fromVersion": "0.1.2",
-      "name": "@vouchington/queue-errors",
-      "toVersion": "0.1.3"
+      "directory": "pagination",
+      "fromVersion": "0.0.2",
+      "name": "@vouchington/pagination",
+      "toVersion": "0.0.3"
     }
   ],
-  "selectedPackage": "@vouchington/queue-errors"
+  "selectedPackage": "@vouchington/pagination"
 }
