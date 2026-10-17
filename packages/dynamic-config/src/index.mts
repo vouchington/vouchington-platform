@@ -1,5 +1,6 @@
 export { createRoleAuthorizer } from './authorization.mts'
 export type { RoleAuthorizerOptions } from './authorization.mts'
-export { createDynamicConfigAdmin } from './service.mts'
-export type { DynamicConfigAdmin, DynamicConfigAdminOptions } from './service.mts'
+export { normalizeFields } from './fields.mts'
+export { toAdminNamespaceSummary, toAdminNamespaceView } from './namespace.mts'
+export type { NamespacePermissions } from './namespace.mts'
 export type * from './types.mts'

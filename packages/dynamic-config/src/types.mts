@@ -1,9 +1,5 @@
 import type { DynamicConfigField, DynamicConfigFieldType } from 'valkyries'
-import type {
-  DynamicConfig,
-  DynamicConfigNamespaceDefinition,
-  DynamicConfigRegistry,
-} from 'valkyries/dynamic-config'
+import type { DynamicConfig, DynamicConfigNamespaceDefinition } from 'valkyries/dynamic-config'
 
 export type DynamicConfigFields = Record<string, DynamicConfigField>
 
@@ -28,9 +24,6 @@ export type DynamicConfigRegistryEntry = DynamicConfigNamespaceDefinition<Dynami
   description: string
   access: DynamicConfigAccess
 }
-
-/** A valkyries registry of admin entries (`createDynamicConfigRegistry<DynamicConfigRegistryEntry>`). */
-export type AdminDynamicConfigRegistry = DynamicConfigRegistry<DynamicConfigRegistryEntry>
 
 /** Admin output for one field (snake_case). */
 export type DynamicConfigFieldMetadata = {
@@ -57,11 +50,6 @@ export type DynamicConfigNamespaceSummary = {
 export type DynamicConfigNamespace = DynamicConfigNamespaceSummary & {
   config: DynamicConfigFields
   fields: DynamicConfigFieldMetadata[]
-}
-
-export type DynamicConfigUpdateResult = {
-  namespace: DynamicConfigNamespace
-  changed: boolean
 }
 
 /** Decides whether `user` may view or update an entry. Application-owned policy. */
