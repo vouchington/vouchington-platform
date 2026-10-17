@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/ai",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Provider-neutral model-call primitives: usage, pricing, JSON-output adapters, and structured-decision codecs.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/ai#readme",
   "license": "MIT",
