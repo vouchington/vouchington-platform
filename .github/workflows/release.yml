@@ -36,6 +36,7 @@ on:
           - '@vouchington/media'
           - '@vouchington/wikimedia'
           - '@vouchington/memberships'
+          - '@vouchington/stripe'
           - '@vouchington/typed-entities'
           - '@vouchington/request-contract-validation'
           - '@vouchington/rate-limit'
