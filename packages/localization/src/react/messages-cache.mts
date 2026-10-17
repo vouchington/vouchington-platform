@@ -73,7 +73,7 @@ export function createMessagesCache<C extends object>(
       promise = created
       cache.set(locale, created)
       void created.catch(() => {
-        if (cache.get(locale) === created) failed.add(locale)
+        failed.add(locale)
       })
     }
     return promise
