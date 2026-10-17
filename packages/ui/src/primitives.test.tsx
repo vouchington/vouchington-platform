@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { createRef } from 'react'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import {
@@ -63,6 +63,18 @@ describe('Button', () => {
     expect(link.className).toContain('bg-primary')
     expect(link.getAttribute('aria-busy')).toBeNull()
     expect(link.querySelector('svg')).toBeNull()
+    expect(link.getAttribute('aria-disabled')).toBe('true')
+    expect(link.getAttribute('tabindex')).toBe('-1')
+    expect(fireEvent.click(link)).toBe(false)
+  })
+
+  it('leaves an enabled asChild link interactive', () => {
+    render(
+      <Button asChild>
+        <a href="/z">Go</a>
+      </Button>,
+    )
+    expect(screen.getByRole('link').getAttribute('aria-disabled')).toBeNull()
   })
 
   it('exposes variants for non-button elements', () => {

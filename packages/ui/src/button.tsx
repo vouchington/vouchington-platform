@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, Ref } from 'react'
+import type { ButtonHTMLAttributes, MouseEvent, Ref } from 'react'
 import { Slot } from '@radix-ui/react-slot'
 import { cva, type VariantProps } from 'class-variance-authority'
 
@@ -6,7 +6,7 @@ import { cn } from './cn.js'
 import { Spinner } from './spinner.js'
 
 export const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   {
     variants: {
       variant: {
@@ -40,6 +40,11 @@ export interface ButtonProps
   ref?: Ref<HTMLButtonElement>
 }
 
+// Anchors ignore `disabled`, so a disabled asChild link is made inert via aria-disabled.
+function blockClick(event: MouseEvent) {
+  event.preventDefault()
+}
+
 export function Button({
   className,
   variant,
@@ -59,6 +64,7 @@ export function Button({
       disabled={asChild ? disabled : disabled || loading}
       aria-busy={!asChild && loading ? true : undefined}
       {...props}
+      {...(asChild && disabled ? { 'aria-disabled': true, tabIndex: -1, onClick: blockClick } : {})}
     >
       {asChild ? (
         children
