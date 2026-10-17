@@ -21,6 +21,8 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
 - `cache-tags`: canonical printable-ASCII wire encoding, one-segment URL decoding, validation,
   and escape-boundary truncation. Applications own family names, route recognition, and purge policy.
   Single-tag validation rejects spaces and comma separators; raw commas are percent-encoded.
+- `schema-growth`: `buildUnboundedUnpartitionedTables()` and `classifyTableGrowth()` map tables to
+  caller-supplied growth reasons. Applications own every table name and reason.
 - `sentry-envelope`: bounded UTF-8 envelope record scanning and safe item-type diagnostics.
   Callers choose the byte and type-list limits; DSN, tunnel, request, and logging policy stay local.
 - `scopes`: caller-owned scope catalog validation, prerequisite expansion, audience and surface

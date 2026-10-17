@@ -30,6 +30,11 @@
       "import": "./dist/api-response-contract.mjs",
       "default": "./dist/api-response-contract.mjs"
     },
+    "./schema-growth": {
+      "types": "./dist/schema-growth.d.mts",
+      "import": "./dist/schema-growth.mjs",
+      "default": "./dist/schema-growth.mjs"
+    },
     "./cache-tags": {
       "types": "./dist/cache-tags.d.mts",
       "import": "./dist/cache-tags.mjs",

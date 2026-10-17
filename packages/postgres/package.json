@@ -41,6 +41,16 @@
       "types": "./dist/query-telemetry/index.d.mts",
       "import": "./dist/query-telemetry/index.mjs",
       "default": "./dist/query-telemetry/index.mjs"
+    },
+    "./partitions": {
+      "types": "./dist/partitions/index.d.mts",
+      "import": "./dist/partitions/index.mjs",
+      "default": "./dist/partitions/index.mjs"
+    },
+    "./catalog-guarded-ddl": {
+      "types": "./dist/catalog-guarded-ddl/index.d.mts",
+      "import": "./dist/catalog-guarded-ddl/index.mjs",
+      "default": "./dist/catalog-guarded-ddl/index.mjs"
     }
   },
   "publishConfig": {
