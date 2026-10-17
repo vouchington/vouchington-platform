@@ -7,7 +7,6 @@ import {
   getStripeObjectId,
   getStripeObjectNumber,
   getStripeObjectString,
-  mapStripeSubscriptionStatus,
   normalizeStripeEvent,
 } from './event-utils.mts'
 import {
@@ -114,19 +113,35 @@ describe('event utils', () => {
     )
   })
 
-  it('maps subscription statuses', () => {
-    const cases: [string, string][] = [
-      ['active', 'active'],
-      ['trialing', 'active'],
-      ['past_due', 'past_due'],
-      ['paused', 'paused'],
-      ['canceled', 'cancelled'],
-      ['unpaid', 'cancelled'],
-      ['incomplete', 'expired'],
-      ['incomplete_expired', 'expired'],
-    ]
-    for (const [input, output] of cases) expect(mapStripeSubscriptionStatus(input)).toBe(output)
-    expect(() => mapStripeSubscriptionStatus('wat')).toThrow('Unknown Stripe subscription status')
+  it('reads invoice subscriptions from the parent and expanded objects', () => {
+    const make = (object: Record<string, unknown>) =>
+      normalizeStripeEvent({ created: 1, data: { object } } as unknown as Stripe.Event)
+    expect(
+      make({
+        id: 'in_1',
+        object: 'invoice',
+        parent: { subscription_details: { subscription: 'sub_9' } },
+      }).subscriptionId,
+    ).toBe('sub_9')
+    expect(make({ id: 'in_1', object: 'invoice', parent: null }).subscriptionId).toBeNull()
+    expect(
+      make({ id: 'x', object: 'charge', customer: { id: 'cus_5' }, subscription: { id: 'sub_5' } }),
+    ).toMatchObject({ customerId: 'cus_5', subscriptionId: 'sub_5' })
+  })
+})
+
+describe('tolerance', () => {
+  it('rejects non-positive tolerances', () => {
+    for (const toleranceSeconds of [0, -1, 1.5])
+      expect(() =>
+        verifyStripeWebhook({
+          stripe,
+          payload,
+          signature: sign(payload),
+          secret,
+          toleranceSeconds,
+        }),
+      ).toThrow(RangeError)
   })
 })
 

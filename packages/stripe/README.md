@@ -3,7 +3,7 @@
 Stripe primitives: a client factory, webhook signature verification, typed event narrowing,
 request-parameter builders, and response parsers. Primitives only: no dispatcher, no flows, no
 retries, no sequencing. `stripe` is a peer dependency; the application owns the client, secrets,
-persistence, and membership sync. SKU mapping lives in `@vouchington/memberships`.
+persistence, and membership sync.
 
 ```ts
 const stripe = createStripeClient({ apiKey, fetch: proxiedFetch })

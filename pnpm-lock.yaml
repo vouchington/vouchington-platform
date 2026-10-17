@@ -321,10 +321,6 @@ importers:
         version: 6.2.12
 
   packages/stripe:
-    dependencies:
-      '@vouchington/memberships':
-        specifier: ^0.2.0
-        version: link:../memberships
     devDependencies:
       stripe:
         specifier: ^23.0.0

@@ -48,6 +48,7 @@ describe('param builders', () => {
       ...urls,
     })
     expect(once.mode).toBe('payment')
+    expect(once.payment_intent_data).toEqual({ metadata })
     expect(once.line_items?.[0]?.price_data?.unit_amount).toBe(500)
   })
 
@@ -66,7 +67,8 @@ describe('param builders', () => {
     expect(buildCustomerSearchParams('userId', 'a"b\\c').query).toBe(
       'metadata["userId"]:"a\\"b\\\\c"',
     )
-    expect(() => buildCustomerSearchParams('bad"key', 'x')).toThrow('Invalid Stripe metadata key')
+    expect(buildCustomerSearchParams('user"Id', 'x').query).toBe('metadata["user\\"Id"]:"x"')
+    expect(() => buildCustomerSearchParams('', 'x')).toThrow('Invalid Stripe metadata key')
     expect(buildCustomerCreateParams(metadata)).toEqual({ metadata })
     expect(buildCustomerCreateParams(metadata, 'e@x.test')).toEqual({ email: 'e@x.test', metadata })
     expect(buildCustomerRedactionParams()).toEqual({
@@ -78,10 +80,18 @@ describe('param builders', () => {
   })
 
   it('builds refund params', () => {
-    expect(buildRefundParams({})).toEqual({})
-    expect(
-      buildRefundParams({ chargeId: 'ch', paymentIntentId: 'pi', amountMinorUnits: 0, metadata }),
-    ).toEqual({ charge: 'ch', payment_intent: 'pi', amount: 0, metadata })
+    expect(buildRefundParams({ chargeId: 'ch' })).toEqual({ charge: 'ch' })
+    expect(buildRefundParams({ paymentIntentId: 'pi', amountMinorUnits: 5, metadata })).toEqual({
+      payment_intent: 'pi',
+      amount: 5,
+      metadata,
+    })
+    expect(() => buildRefundParams({})).toThrow('exactly one')
+    expect(() => buildRefundParams({ chargeId: 'a', paymentIntentId: 'b' })).toThrow('exactly one')
+    for (const amountMinorUnits of [0, 1.5])
+      expect(() => buildRefundParams({ chargeId: 'a', amountMinorUnits })).toThrow(
+        'positive integer',
+      )
   })
 
   it('builds refund list params for exactly one target', () => {
@@ -136,7 +146,8 @@ describe('parsers', () => {
     expect(parseVerificationSession({ status: 'requires_input' })).toEqual({
       outcome: 'requires_input',
     })
-    expect(parseVerificationSession({ status: 'processing' })).toEqual({ outcome: 'failed' })
+    expect(parseVerificationSession({ status: 'processing' })).toEqual({ outcome: 'processing' })
+    expect(parseVerificationSession({ status: 'weird' })).toEqual({ outcome: 'failed' })
     expect(parseVerificationSession({ status: 'verified' })).toEqual({ outcome: 'requires_input' })
     expect(
       parseVerificationSession({

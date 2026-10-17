@@ -34,7 +34,7 @@ export type VerificationResult =
       issuingCountry: string
       documentType: string
     }
-  | { outcome: 'requires_input' | 'canceled' | 'failed' }
+  | { outcome: 'requires_input' | 'processing' | 'canceled' | 'failed' }
 
 export type StripeVerificationSessionResult = {
   status: string
@@ -62,6 +62,7 @@ export function parseVerificationSession(
 ): VerificationResult {
   if (session.status === 'canceled') return { outcome: 'canceled' }
   if (session.status === 'requires_input') return { outcome: 'requires_input' }
+  if (session.status === 'processing') return { outcome: 'processing' }
   if (session.status !== 'verified') return { outcome: 'failed' }
 
   const doc = session.last_verification_report?.document

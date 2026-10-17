@@ -16,6 +16,11 @@ export type VerifyStripeWebhookOptions = {
 
 /** Verifies the Stripe-Signature header and returns the typed event. Throws StripeWebhookSignatureError. */
 export function verifyStripeWebhook(options: VerifyStripeWebhookOptions): Stripe.Event {
+  if (
+    options.toleranceSeconds !== undefined &&
+    !(Number.isInteger(options.toleranceSeconds) && options.toleranceSeconds > 0)
+  )
+    throw new RangeError('toleranceSeconds must be a positive integer; 0 disables replay checks')
   if (!options.signature) throw new StripeWebhookSignatureError('Missing Stripe-Signature header')
   try {
     return options.stripe.webhooks.constructEvent(

@@ -47,6 +47,7 @@ export function buildOneTimeCheckoutParams(
     success_url: input.successUrl,
     cancel_url: input.cancelUrl,
     metadata: input.metadata,
+    payment_intent_data: { metadata: input.metadata },
   }
 }
 
@@ -72,14 +73,17 @@ export function buildBillingPortalParams(
   }
 }
 
+function escapeQuery(value: string): string {
+  return value.replaceAll('\\', '\\\\').replaceAll('"', '\\"')
+}
+
 /** Search query matching a customer by a metadata key; quotes and backslashes are escaped. */
 export function buildCustomerSearchParams(
   metadataKey: string,
   value: string,
 ): Stripe.CustomerSearchParams {
-  if (!/^[A-Za-z0-9_]+$/u.test(metadataKey)) throw new Error('Invalid Stripe metadata key')
-  const escaped = value.replaceAll('\\', '\\\\').replaceAll('"', '\\"')
-  return { query: `metadata["${metadataKey}"]:"${escaped}"` }
+  if (!metadataKey) throw new Error('Invalid Stripe metadata key')
+  return { query: `metadata["${escapeQuery(metadataKey)}"]:"${escapeQuery(value)}"` }
 }
 
 export function buildCustomerCreateParams(
@@ -104,6 +108,13 @@ export type RefundInput = {
 }
 
 export function buildRefundParams(input: RefundInput): Stripe.RefundCreateParams {
+  if (!input.chargeId === !input.paymentIntentId)
+    throw new Error('Stripe refund requires exactly one of a charge or payment intent')
+  if (
+    input.amountMinorUnits !== undefined &&
+    !(Number.isInteger(input.amountMinorUnits) && input.amountMinorUnits > 0)
+  )
+    throw new Error('Stripe refund amount must be a positive integer')
   return {
     ...(input.chargeId ? { charge: input.chargeId } : {}),
     ...(input.paymentIntentId ? { payment_intent: input.paymentIntentId } : {}),

@@ -12,7 +12,6 @@ export {
   getStripeObjectId,
   getStripeObjectNumber,
   getStripeObjectString,
-  mapStripeSubscriptionStatus,
   normalizeStripeEvent,
 } from './event-utils.mts'
 export type { NormalizedStripeEvent } from './event-utils.mts'
