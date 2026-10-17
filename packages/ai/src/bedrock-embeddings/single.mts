@@ -12,6 +12,8 @@ export type EmbeddingOptions = {
   modelId?: string
   dimension?: number
   maxTextLength?: number
+  /** `embeddingPurpose`: `GENERIC_INDEX` (default) for stored content, a retrieval purpose for queries. */
+  purpose?: string
 }
 
 /** The `InvokeModel` input; the app wraps it in its own command and client. */
@@ -37,8 +39,9 @@ export class InvalidEmbeddingError extends Error {
 }
 
 /**
- * Slices to the limit, drops a trailing high surrogate, then backs up to the last whitespace so a
- * word is not cut. Falls back to the hard slice when the head has no whitespace.
+ * Slices to the limit. When the cut falls inside a word, drops a trailing high surrogate and backs
+ * up to the last whitespace so the word is not cut; a cut that already ends a word is kept. Falls
+ * back to the hard slice when the head has no whitespace.
  */
 export function truncateEmbeddingText(
   text: string,
@@ -46,6 +49,7 @@ export function truncateEmbeddingText(
 ): string {
   if (text.length <= maxLength) return text
   let sliced = text.slice(0, maxLength)
+  if (/\s/.test(text.charAt(maxLength))) return sliced
   const last = sliced.charCodeAt(sliced.length - 1)
   if (last >= 0xd800 && last <= 0xdbff) sliced = sliced.slice(0, -1)
   const lastWhitespace = sliced.search(/\s\S*$/)
@@ -65,7 +69,10 @@ export function buildEmbeddingModelInput(
   options: EmbeddingOptions = {},
 ): Record<string, unknown> {
   const dimension = options.dimension ?? NOVA_EMBEDDING_DEFAULTS.dimension
-  const common = { embeddingPurpose: 'GENERIC_INDEX', embeddingDimension: dimension }
+  const common = {
+    embeddingPurpose: options.purpose ?? 'GENERIC_INDEX',
+    embeddingDimension: dimension,
+  }
   return {
     taskType: 'SINGLE_EMBEDDING',
     singleEmbeddingParams:
@@ -103,8 +110,14 @@ export function extractEmbedding(body: EmbeddingResponseBody | undefined): numbe
   return Array.isArray(first) ? first : first?.embedding
 }
 
-/** Parses an `InvokeModel` response body; throws `InvalidEmbeddingError` when it holds no vector. */
-export function parseEmbeddingResponseBody(body: Uint8Array | undefined): number[] {
+/**
+ * Parses an `InvokeModel` response body into a dense vector of `dimension` finite numbers; throws
+ * `InvalidEmbeddingError` when the body is empty or holds no valid vector.
+ */
+export function parseEmbeddingResponseBody(
+  body: Uint8Array | undefined,
+  dimension: number = NOVA_EMBEDDING_DEFAULTS.dimension,
+): number[] {
   if (!body) throw new InvalidEmbeddingError('Bedrock embedding response body is empty')
   const embedding = extractEmbedding(
     JSON.parse(new TextDecoder().decode(body)) as EmbeddingResponseBody,
@@ -112,7 +125,7 @@ export function parseEmbeddingResponseBody(body: Uint8Array | undefined): number
   if (!embedding) {
     throw new InvalidEmbeddingError('Bedrock embedding response did not include an embedding')
   }
-  return embedding
+  return requireDenseEmbedding(embedding, dimension)
 }
 
 /** Narrows to a finite-number vector of exactly `dimension` entries or throws. */
@@ -137,5 +150,8 @@ export async function invokeEmbedding(
   options: EmbeddingOptions = {},
 ): Promise<number[]> {
   const response = await invoke(buildInvokeEmbeddingInput(text, options))
-  return parseEmbeddingResponseBody(response.body)
+  return parseEmbeddingResponseBody(
+    response.body,
+    options.dimension ?? NOVA_EMBEDDING_DEFAULTS.dimension,
+  )
 }

@@ -8,20 +8,20 @@ export type ModerationResultLike = { flagged: boolean; categories: Record<string
 
 export type ModerationCreate<R> = (
   params: { input: ModerationInputPart[]; model: string },
-  options?: { maxRetries: number; timeout: number; signal: AbortSignal },
+  options?: { maxRetries?: number; timeout: number; signal: AbortSignal },
 ) => PromiseLike<{ results: R[] }>
 
 export type SafetyCheckLimits = {
   attemptTimeoutMs: number
   overallTimeoutMs: number
-  maxRetries: number
+  /** The client's own retry budget; unset leaves it to the client default (the app owns retries). */
+  maxRetries?: number
 }
 
 /** Latency-bounded defaults for an interactive safety check. */
 export const DEFAULT_SAFETY_CHECK_LIMITS: SafetyCheckLimits = {
   attemptTimeoutMs: 5_000,
   overallTimeoutMs: 10_000,
-  maxRetries: 1,
 }
 
 export type MessageSafetyViolation =
@@ -41,7 +41,7 @@ export function buildModerationInput(
 
 /**
  * One moderation call through an injected `create`. With `apiSafetyCheck` the call is bounded by
- * per-attempt and overall timeouts and a retry budget; otherwise the client's defaults apply.
+ * per-attempt and overall timeouts (and a retry budget only if the caller sets one); otherwise the client's defaults apply.
  * Metrics, errors, and sequencing stay with the caller.
  */
 export async function requestModeration<R>(
@@ -53,7 +53,7 @@ export async function requestModeration<R>(
   const limits = options.limits ?? DEFAULT_SAFETY_CHECK_LIMITS
   const requestOptions = options.apiSafetyCheck
     ? {
-        maxRetries: limits.maxRetries,
+        ...(limits.maxRetries === undefined ? {} : { maxRetries: limits.maxRetries }),
         timeout: limits.attemptTimeoutMs,
         signal: AbortSignal.timeout(limits.overallTimeoutMs),
       }

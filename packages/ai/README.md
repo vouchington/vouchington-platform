@@ -57,10 +57,11 @@ so the application keeps its own Bedrock client and command.
 - Single: `buildInvokeEmbeddingInput`, `parseEmbeddingResponseBody`, `invokeEmbedding(invoke, text)`,
   `truncateEmbeddingText`, `estimateEmbeddingTokens`, `requireDenseEmbedding`, `InvalidEmbeddingError`.
   Model id, dimension, and text cap default to Nova values and are overridable.
-- Batch: `createEmbeddingTextRecordLine`, `createEmbeddingImageRecordLine`,
-  `minimumTextBatchSizeMB`, `minimumImageBatchSizeMB`, `parseTextBatchResult`, `parseImageBatchResult`
-  (one line at a time; streaming, batching, and applying updates are the app's).
-- Status: `deriveBedrockBatchStatus`, `lifecycleColumnForBedrockStatus`.
+  `purpose` (default `GENERIC_INDEX`) selects index vs retrieval embeddings.
+- Batch: `createEmbeddingTextRecordLine`, `createEmbeddingImageRecordLine` (opaque `recordId`
+  supplied and decoded by the app), `minimumTextBatchSizeMB`, `minimumImageBatchSizeMB` (image bound
+  and record-id length injected), `parseBatchResult` (one line at a time; streaming, batching,
+  applying updates, and mapping provider job statuses to lifecycle state are the app's).
 
 ## `@vouchington/ai/structured-decisions`
 

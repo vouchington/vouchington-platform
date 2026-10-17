@@ -4,27 +4,26 @@ import {
   buildInvokeEmbeddingInput,
   createEmbeddingImageRecordLine,
   createEmbeddingTextRecordLine,
-  deriveBedrockBatchStatus,
   estimateEmbeddingTokens,
   extractEmbedding,
   InvalidEmbeddingError,
   invokeEmbedding,
-  lifecycleColumnForBedrockStatus,
   minimumImageBatchSizeMB,
   minimumTextBatchSizeMB,
+  parseBatchResult,
   parseEmbeddingResponseBody,
-  parseImageBatchResult,
-  parseTextBatchResult,
   requireDenseEmbedding,
   truncateEmbeddingText,
 } from './index.mts'
 
 const bytes = (value: unknown) => new TextEncoder().encode(JSON.stringify(value))
+const vector = (n: number) => Array.from({ length: n }, (_, i) => i)
 
 describe('text and request building', () => {
   it('truncates at word and surrogate boundaries', () => {
     expect(truncateEmbeddingText('short')).toBe('short')
-    expect(truncateEmbeddingText('hello wonderful world', 15)).toBe('hello')
+    expect(truncateEmbeddingText('hello wonderful world', 15)).toBe('hello wonderful')
+    expect(truncateEmbeddingText('hello wonderful world', 18)).toBe('hello wonderful')
     expect(truncateEmbeddingText('abcdefghij', 5)).toBe('abcde')
     expect(truncateEmbeddingText(`abcd${'😀'}`, 5)).toBe('abcd')
     expect(estimateEmbeddingTokens('abcdefgh')).toBe(2)
@@ -41,15 +40,21 @@ describe('text and request building', () => {
       },
     })
     expect(
-      buildEmbeddingModelInput({ image: { format: 'png', bytes: 'AA==' } }, { dimension: 256 }),
+      buildEmbeddingModelInput(
+        { image: { format: 'png', bytes: 'AA==' } },
+        { dimension: 256, purpose: 'GENERIC_RETRIEVAL' },
+      ),
     ).toMatchObject({
       singleEmbeddingParams: {
+        embeddingPurpose: 'GENERIC_RETRIEVAL',
         embeddingDimension: 256,
         image: { format: 'png', source: { bytes: 'AA==' } },
       },
     })
-    const input = buildInvokeEmbeddingInput('hi', { modelId: 'custom' })
-    expect(input).toMatchObject({ modelId: 'custom', contentType: 'application/json' })
+    expect(buildInvokeEmbeddingInput('hi', { modelId: 'custom' })).toMatchObject({
+      modelId: 'custom',
+      contentType: 'application/json',
+    })
     expect(buildInvokeEmbeddingInput('hi').modelId).toContain('nova')
   })
 })
@@ -63,10 +68,13 @@ describe('responses', () => {
     expect(extractEmbedding(undefined)).toBeUndefined()
   })
 
-  it('parses bodies or throws typed errors', () => {
-    expect(parseEmbeddingResponseBody(bytes({ embedding: [1, 2] }))).toEqual([1, 2])
+  it('parses and validates bodies or throws typed errors', () => {
+    expect(parseEmbeddingResponseBody(bytes({ embedding: [1, 2] }), 2)).toEqual([1, 2])
+    expect(parseEmbeddingResponseBody(bytes({ embedding: vector(1024) }))).toHaveLength(1024)
     expect(() => parseEmbeddingResponseBody(undefined)).toThrow(InvalidEmbeddingError)
     expect(() => parseEmbeddingResponseBody(bytes({}))).toThrow(/did not include/)
+    expect(() => parseEmbeddingResponseBody(bytes({ embedding: 'bad' }), 2)).toThrow(/dense/)
+    expect(() => parseEmbeddingResponseBody(bytes({ embedding: [1] }), 2)).toThrow(/dense/)
   })
 
   it('validates dense vectors', () => {
@@ -78,111 +86,48 @@ describe('responses', () => {
     expect(() => requireDenseEmbedding([])).toThrow()
   })
 
-  it('invokes through the injected function', async () => {
-    const invoke = vi.fn().mockResolvedValue({ body: bytes({ embedding: [9] }) })
-    expect(await invokeEmbedding(invoke, 'hello')).toEqual([9])
+  it('invokes through the injected function with the requested dimension', async () => {
+    const invoke = vi.fn().mockResolvedValue({ body: bytes({ embedding: [9, 8] }) })
+    expect(await invokeEmbedding(invoke, 'hello', { dimension: 2 })).toEqual([9, 8])
     expect(invoke.mock.calls[0]?.[0].body).toContain('hello')
+    invoke.mockResolvedValue({ body: bytes({ embedding: vector(1024) }) })
+    expect(await invokeEmbedding(invoke, 'hello')).toHaveLength(1024)
   })
 })
 
 describe('batch records', () => {
-  const sha = Buffer.from('ab', 'hex')
-
-  it('creates JSONL lines whose recordId round-trips', () => {
-    const line = JSON.parse(
-      createEmbeddingTextRecordLine({ entity_id: 'e1', content: 'hi', content_sha256: sha }),
-    )
-    expect(JSON.parse(line.recordId)).toEqual({ entity_id: 'e1', content_sha256: 'ab' })
+  it('creates JSONL lines with an opaque recordId', () => {
+    const line = JSON.parse(createEmbeddingTextRecordLine({ recordId: 'r1', content: 'hi' }))
+    expect(line.recordId).toBe('r1')
     expect(line.modelInput.singleEmbeddingParams.text.value).toBe('hi')
     const image = JSON.parse(
-      createEmbeddingImageRecordLine({
-        entity_id: 'e2',
-        image_sha_256: sha,
-        format: 'webp',
-        bytes: 'AA==',
-      }),
+      createEmbeddingImageRecordLine({ recordId: 'r2', format: 'webp', bytes: 'AA==' }),
     )
-    expect(JSON.parse(image.recordId)).toEqual({ entity_id: 'e2', image_sha_256: 'ab' })
+    expect(image.modelInput.singleEmbeddingParams.image.format).toBe('webp')
   })
 
-  it('bounds batch file sizes', () => {
+  it('bounds batch file sizes from injected limits', () => {
     expect(minimumTextBatchSizeMB(10)).toBeGreaterThan(0.4)
     expect(minimumTextBatchSizeMB(10, { maxTextLength: 100 })).toBeLessThan(
       minimumTextBatchSizeMB(10),
     )
-    expect(minimumImageBatchSizeMB(2)).toBeGreaterThan(10)
+    expect(minimumTextBatchSizeMB(10, { maxRecordIdLength: 500 })).toBeGreaterThan(
+      minimumTextBatchSizeMB(10),
+    )
+    const small = minimumImageBatchSizeMB(2, { maxImageBytes: 1024 * 1024 })
+    expect(minimumImageBatchSizeMB(2)).toBeGreaterThan(small)
+    expect(minimumImageBatchSizeMB(2)).toBeGreaterThan(40)
   })
 
   it('parses result lines defensively', () => {
-    const recordId = JSON.stringify({ entity_id: 'e', content_sha256: 'ab', image_sha_256: 'cd' })
-    const ok = { recordId, modelOutput: { embedding: [1], inputTokenCount: 7 } }
-    expect(parseTextBatchResult(ok)).toEqual({
-      entity_id: 'e',
-      content_sha256: sha,
-      embedding: [1],
-      input_token_count: 7,
+    const ok = { recordId: 'r', modelOutput: { embedding: [1], inputTokenCount: 7 } }
+    expect(parseBatchResult(ok)).toEqual({ recordId: 'r', embedding: [1], inputTokenCount: 7 })
+    expect(parseBatchResult({ recordId: 'r', modelOutput: { embeddings: [[2]] } })).toEqual({
+      recordId: 'r',
+      embedding: [2],
+      inputTokenCount: null,
     })
-    expect(
-      parseTextBatchResult({ recordId, modelOutput: { embeddings: [[2]] } })?.input_token_count,
-    ).toBeNull()
-    expect(parseImageBatchResult(ok)).toEqual({
-      entity_id: 'e',
-      image_sha_256: Buffer.from('cd', 'hex'),
-      embedding: [1],
-    })
-    expect(parseTextBatchResult({ ...ok, error: { code: 1 } })).toBeNull()
-    expect(parseTextBatchResult({ recordId })).toBeNull()
-    expect(parseTextBatchResult({ ...ok, recordId: 'not json' })).toBeNull()
-    expect(parseTextBatchResult({ ...ok, recordId: JSON.stringify({ entity_id: 'e' }) })).toBeNull()
-    expect(
-      parseImageBatchResult({ ...ok, recordId: JSON.stringify({ entity_id: 'e' }) }),
-    ).toBeNull()
-    expect(parseImageBatchResult({ recordId })).toBeNull()
-    expect(parseImageBatchResult({ ...ok, error: { code: 1 } })).toBeNull()
-    const noEntity = { recordId: '{}', modelOutput: { embedding: [1] } }
-    expect(parseImageBatchResult(noEntity)).toBeNull()
-    expect(parseTextBatchResult(noEntity)).toBeNull()
-  })
-})
-
-describe('batch status', () => {
-  const none = {
-    submitted_at: null,
-    in_progress_at: null,
-    completed_at: null,
-    failed_at: null,
-    cancelled_at: null,
-  }
-  const now = new Date()
-
-  it('derives the furthest stage', () => {
-    expect(deriveBedrockBatchStatus(none)).toBe('preparing')
-    expect(deriveBedrockBatchStatus({ ...none, submitted_at: now })).toBe('submitted')
-    expect(deriveBedrockBatchStatus({ ...none, in_progress_at: now, submitted_at: now })).toBe(
-      'in_progress',
-    )
-    expect(deriveBedrockBatchStatus({ ...none, cancelled_at: now, in_progress_at: now })).toBe(
-      'cancelled',
-    )
-    expect(deriveBedrockBatchStatus({ ...none, failed_at: now, cancelled_at: now })).toBe('failed')
-    expect(deriveBedrockBatchStatus({ ...none, completed_at: now, failed_at: now })).toBe(
-      'completed',
-    )
-  })
-
-  it.each([
-    ['Submitted', 'submitted_at'],
-    ['Validating', 'submitted_at'],
-    ['Scheduled', 'submitted_at'],
-    ['InProgress', 'in_progress_at'],
-    ['Stopping', 'in_progress_at'],
-    ['Completed', 'completed_at'],
-    ['PartiallyCompleted', 'completed_at'],
-    ['Failed', 'failed_at'],
-    ['Expired', 'failed_at'],
-    ['Stopped', 'cancelled_at'],
-    ['Nope', null],
-  ])('maps %s', (status, column) => {
-    expect(lifecycleColumnForBedrockStatus(status)).toBe(column)
+    expect(parseBatchResult({ ...ok, error: { code: 1 } })).toBeNull()
+    expect(parseBatchResult({ recordId: 'r' })).toBeNull()
   })
 })
