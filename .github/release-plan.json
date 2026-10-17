@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/robots/package.json"],
+  "changedManifests": ["packages/request-contract-validation/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "robots",
+      "directory": "request-contract-validation",
       "fromVersion": "0.0.1",
-      "name": "@vouchington/robots",
+      "name": "@vouchington/request-contract-validation",
       "toVersion": "0.0.2"
     }
   ],
-  "selectedPackage": "@vouchington/robots"
+  "selectedPackage": "@vouchington/request-contract-validation"
 }
