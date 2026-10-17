@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { createRef } from 'react'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -223,7 +223,7 @@ describe('Command', () => {
   it('renders the palette with every part', () => {
     const input = createRef<HTMLInputElement>()
     render(
-      <Command>
+      <Command label="Menu">
         <CommandInput ref={input} placeholder="Search..." />
         <CommandList label="Results">
           <CommandEmpty>Nothing</CommandEmpty>
@@ -243,7 +243,7 @@ describe('Command', () => {
   it('supports function refs and unmounting on CommandInput', () => {
     const calls: Array<HTMLInputElement | null> = []
     const { unmount } = render(
-      <Command>
+      <Command label="Menu">
         <CommandInput ref={(node) => void calls.push(node)} placeholder="Find" />
       </Command>,
     )
@@ -256,7 +256,7 @@ describe('Command', () => {
     const cleanup = vi.fn()
     const seen: Array<HTMLInputElement | null> = []
     const { unmount } = render(
-      <Command>
+      <Command label="Menu">
         <CommandInput
           ref={(node) => {
             seen.push(node)
@@ -273,7 +273,7 @@ describe('Command', () => {
 
   it('works without a ref', () => {
     render(
-      <Command>
+      <Command label="Menu">
         <CommandInput placeholder="No ref" />
       </Command>,
     )
@@ -335,6 +335,18 @@ describe('ErrorBoundary', () => {
 })
 
 describe('Toaster', () => {
+  it('merges custom styles with the semantic variables', async () => {
+    render(<Toaster style={{ width: '10px' }} />)
+    toast('hello')
+    const list = await waitFor(() => {
+      const found = document.querySelector('[style*="--normal-bg"]')
+      if (!found) throw new Error('toaster list not rendered')
+      return found
+    })
+    expect(list.getAttribute('style')).toContain('width: 10px')
+    expect(list.getAttribute('style')).toContain('var(--color-popover)')
+  })
+
   it('re-exports the paired toast emitter', () => {
     expect(typeof toast).toBe('function')
   })

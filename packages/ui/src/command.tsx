@@ -11,6 +11,8 @@ function Command({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof CommandPrimitive> & {
+  /** Accessible name for the command menu. */
+  label: string
   ref?: React.Ref<React.ComponentRef<typeof CommandPrimitive>>
 }) {
   return (

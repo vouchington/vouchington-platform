@@ -3,7 +3,7 @@
 import type { CSSProperties } from 'react'
 import { Toaster as Sonner, type ToasterProps } from 'sonner'
 
-function Toaster(props: ToasterProps) {
+function Toaster({ style, ...props }: ToasterProps) {
   return (
     <Sonner
       className="toaster group"
@@ -13,6 +13,7 @@ function Toaster(props: ToasterProps) {
           '--normal-text': 'var(--color-popover-foreground)',
           '--normal-border': 'var(--color-border)',
           '--border-radius': 'var(--radius, 8px)',
+          ...style,
         } as CSSProperties
       }
       {...props}

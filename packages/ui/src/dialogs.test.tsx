@@ -125,6 +125,35 @@ describe('Sheet', () => {
   })
 })
 
+describe('force mounting', () => {
+  it('mounts closed dialog, sheet and alert dialog content when asked', () => {
+    render(
+      <>
+        <Dialog>
+          <DialogContent forceMount hideCloseButton>
+            <DialogTitle>Forced dialog</DialogTitle>
+            <DialogDescription>d</DialogDescription>
+          </DialogContent>
+        </Dialog>
+        <Sheet>
+          <SheetContent forceMount closeLabel="Close">
+            <SheetTitle>Forced sheet</SheetTitle>
+            <SheetDescription>d</SheetDescription>
+          </SheetContent>
+        </Sheet>
+        <AlertDialog>
+          <AlertDialogContent forceMount>
+            <AlertDialogTitle>Forced alert</AlertDialogTitle>
+            <AlertDialogDescription>d</AlertDialogDescription>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>,
+    )
+    for (const text of ['Forced dialog', 'Forced sheet', 'Forced alert'])
+      expect(screen.getByText(text)).toBeTruthy()
+  })
+})
+
 describe('AlertDialog', () => {
   it('renders actions and forwards refs', () => {
     const onAction = vi.fn()

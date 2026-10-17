@@ -65,6 +65,7 @@ function SheetContent({
   children,
   hideOverlay,
   closeLabel,
+  forceMount,
   ref,
   ...props
 }: SheetContentProps & {
@@ -74,10 +75,11 @@ function SheetContent({
   hideOverlay?: boolean
 }) {
   return (
-    <SheetPortal>
+    <SheetPortal forceMount={forceMount}>
       {hideOverlay ? null : <SheetOverlay />}
       <SheetPrimitive.Content
         ref={ref}
+        forceMount={forceMount}
         className={cn(sheetVariants({ side }), className)}
         {...props}
       >
