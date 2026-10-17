@@ -29,8 +29,12 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
   `createTokenSecrets({ hashSecret, encryptionKeys })` throws for invalid keys or ciphertext.
 - `deploy-environment`: `getDeployEnvironment(source)` classifies explicit environment inputs without
   throwing.
-- `url-signing`: Node-only HMAC SHA-256 `signPathWithKey(path, key)` and verification; invalid keys
-  throw and invalid signatures return `false`.
+- `url-signing`: Node-only HMAC SHA-256 path signing (`signPathWithKey`, `signPath`,
+  `verifyPathSignature` with rotation, `signExpiringPath`/`verifyExpiringPath` with an injectable
+  clock), `parseSigningKeys`, `buildSignedProxyUrl` (caller-owned origin, route prefix, query, and
+  skip predicate), `createProtectedHostPolicy`, `matchRouteSegment`, and `authorizeDependencyStates`.
+  Prefixes, hosts, and keys are injected; verification fails closed with no keys unless
+  `allowUnsignedWhenNoKeys` is set.
 - `request-client-info`: `createClientInfoParser(config)` validates caller-selected headers,
   families, platforms, compatibility, and versions.
 - `money`: `createMoneyCatalog(currencies, scale)` supplies exact integer parsing and validation for
