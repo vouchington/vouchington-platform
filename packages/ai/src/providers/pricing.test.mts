@@ -79,7 +79,9 @@ describe('pricing', () => {
     const noWrite: PriceTable = {
       acme: { m: { standard: [{ maxPromptTokens: 9, rates: { ...rates, cacheWrite5m: null } }] } },
     }
-    expect(calcCostMicrounits(noWrite, 'acme', 'm', 'standard', usage({ inputTokens: 5 }))).toBe(501)
+    expect(calcCostMicrounits(noWrite, 'acme', 'm', 'standard', usage({ inputTokens: 5 }))).toBe(
+      501,
+    )
     expect(
       calcCostMicrounits(
         noWrite,
