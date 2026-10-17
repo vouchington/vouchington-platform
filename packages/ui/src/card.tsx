@@ -1,0 +1,74 @@
+import * as React from 'react'
+
+import { cn } from './cn.js'
+
+function Card({
+  className,
+  ref,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement> & { ref?: React.Ref<HTMLDivElement> }) {
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        'rounded-md border bg-card text-card-foreground shadow-sm dark:shadow-none',
+        className,
+      )}
+      {...props}
+    />
+  )
+}
+Card.displayName = 'Card'
+
+function CardHeader({
+  className,
+  ref,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement> & { ref?: React.Ref<HTMLDivElement> }) {
+  return <div ref={ref} className={cn('flex flex-col gap-1.5 p-4', className)} {...props} />
+}
+CardHeader.displayName = 'CardHeader'
+
+function CardTitle({
+  className,
+  ref,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement> & { ref?: React.Ref<HTMLDivElement> }) {
+  return (
+    <div
+      ref={ref}
+      className={cn('font-semibold leading-none tracking-tight', className)}
+      {...props}
+    />
+  )
+}
+CardTitle.displayName = 'CardTitle'
+
+function CardDescription({
+  className,
+  ref,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement> & { ref?: React.Ref<HTMLDivElement> }) {
+  return <div ref={ref} className={cn('text-sm text-muted-foreground', className)} {...props} />
+}
+CardDescription.displayName = 'CardDescription'
+
+function CardContent({
+  className,
+  ref,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement> & { ref?: React.Ref<HTMLDivElement> }) {
+  return <div ref={ref} className={cn('p-4 pt-0', className)} {...props} />
+}
+CardContent.displayName = 'CardContent'
+
+function CardFooter({
+  className,
+  ref,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement> & { ref?: React.Ref<HTMLDivElement> }) {
+  return <div ref={ref} className={cn('flex items-center p-4 pt-0', className)} {...props} />
+}
+CardFooter.displayName = 'CardFooter'
+
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }

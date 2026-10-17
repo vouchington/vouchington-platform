@@ -25,7 +25,9 @@ value; the package never sets them):
 ## Components
 
 `Button` (`loading`, `asChild`, `buttonVariants`), `Badge`, `Input`, `Textarea`, `Label`,
-`Separator`, `Skeleton`, `Spinner`, `Kbd`, `KbdGroup`, and `cn`.
+`Separator`, `Skeleton`, `Spinner`, `Kbd`, `KbdGroup`, `Checkbox`, `Switch`, `RadioGroup`, `Toggle`,
+`ToggleGroup`, `Tabs`, `Accordion`, `Tooltip`, `Popover`, `HoverCard`, `ScrollArea`, `Avatar`, `Alert`,
+`Card`, `Table`, `ButtonGroup`, and `cn`.
 
 Copy is injected: `Spinner` takes `label`; the `Button` spinner is decorative. Links are rendered
 through `asChild`, so any router `Link` can be supplied by the application.
