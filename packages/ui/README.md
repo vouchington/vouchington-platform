@@ -34,7 +34,12 @@ define `--animate-accordion-down`/`--animate-accordion-up` plus their keyframes 
 `Button` (`loading`, `asChild`, `buttonVariants`), `Badge`, `Input`, `Textarea`, `Label`,
 `Separator`, `Skeleton`, `Spinner`, `Kbd`, `KbdGroup`, `Checkbox`, `Switch`, `RadioGroup`, `Toggle`,
 `ToggleGroup`, `Tabs`, `Accordion`, `Tooltip`, `Popover`, `HoverCard`, `ScrollArea`, `Avatar`, `Alert`,
-`Card`, `Table`, `ButtonGroup`, and `cn`.
+`Card`, `Table`, `ButtonGroup`, `Dialog`, `Sheet`, `AlertDialog`, `DropdownMenu`, `Menubar`,
+`Select`, `Command` (cmdk), `Breadcrumb` parts, `InputOTP`, `Toaster` (sonner), `ErrorBoundary`, and `cn`.
+
+Dialog, Sheet and CommandDialog require an injected `closeLabel`; `CommandDialog` also takes `title` and
+`description`; `BreadcrumbEllipsis` takes `label`; `Toaster` takes the app's `theme`. Breadcrumb trails, router links
+and route-aware composition stay in the application.
 
 Copy is injected: `Spinner` takes `label`; the `Button` spinner is decorative. Links are rendered
 through `asChild`, so any router `Link` can be supplied by the application.
