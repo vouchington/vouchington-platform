@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/utils/package.json"],
+  "changedManifests": ["packages/dynamic-config/package.json"],
   "releases": [
     {
-      "bump": "patch",
-      "directory": "utils",
-      "fromVersion": "0.7.1",
-      "name": "@vouchington/utils",
-      "toVersion": "0.7.2"
+      "bump": "minor",
+      "directory": "dynamic-config",
+      "fromVersion": "0.1.0",
+      "name": "@vouchington/dynamic-config",
+      "toVersion": "0.2.0"
     }
   ],
-  "selectedPackage": "@vouchington/utils"
+  "selectedPackage": "@vouchington/dynamic-config"
 }
