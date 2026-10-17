@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "paths": {
+      "@vouchington/ai/openai": ["./packages/ai/src/openai/index.mts"],
       "@vouchington/ai/providers": ["./packages/ai/src/providers/index.mts"],
       "@vouchington/ai/structured-decisions": ["./packages/ai/src/structured-decisions/index.mts"],
       "@vouchington/api-client": ["./packages/api-client/src/index.mts"],

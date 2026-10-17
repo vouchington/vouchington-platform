@@ -88,7 +88,11 @@
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
     },
     "packages/ai": {
-      "entry": ["src/providers/index.mts!", "src/structured-decisions/index.mts!"],
+      "entry": [
+        "src/openai/index.mts!",
+        "src/providers/index.mts!",
+        "src/structured-decisions/index.mts!",
+      ],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
     },
     "packages/localization-compiler": {

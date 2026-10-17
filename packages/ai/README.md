@@ -27,6 +27,20 @@ client). Tests use fakes and recorded-shape fixtures only; no live provider call
   execution, and validation of tool input stay with the application.
 - `openAIBilledResponse` and `assertCompletedOpenAIResponse`: shared response bookkeeping.
 
+## `@vouchington/ai/openai`
+
+Pure OpenAI/OpenRouter Responses error semantics (`openai` is an optional peer).
+
+- `OpenAIResponseNotCompletedError`, `OpenAIResponseStreamIterationError`, `validateCompletedResponse`,
+  `computeOutputText`: a non-completed response keeps its usage for the ledger.
+- Predicates: `isOpenAIRateLimitError`, `isOpenAIServerError`, `isOpenAIFlexResourceUnavailableError`,
+  `isOpenAIFlexCapacityFailedResponseError`, `isExplicitClientCancelError`,
+  `isOpenAIMissingPreviousResponseError`, `isOpenAINotFoundError`,
+  `shouldLatchUnknownBilledOpenAIAttempt`, `describeOpenAIUpstreamFailure`.
+- `getOpenAIRetryAfterMs(error, fallbackMs)`.
+- `getOpenAIFlexFallback(params, error)` returns the default-tier resend params and trigger, or null.
+  Resending (and re-checking spend caps first) is the application's call; `toOpenRouterModel` maps names.
+
 ## `@vouchington/ai/structured-decisions`
 
 - `validateRequest`, `buildDecisionTransportRequest` (URL, model, and routing injected), `decodeResult`
