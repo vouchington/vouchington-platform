@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/request-contract-validation",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Bundle-injected runtime validation of request contract carriers.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/request-contract-validation#readme",
   "bugs": {
