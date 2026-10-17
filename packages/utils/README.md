@@ -46,6 +46,8 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
 - `cookies`: `serializeCookie(name, value, attributes)` validates cookie grammar and requires the
   caller to supply every policy attribute. `SameSite=None` requires `Secure`.
   `parseCookies(header)` splits a `Cookie` request header into a name/value `Map`.
+- `content-identity-cache`: `ContentAndIdentityCache` memoizes by object identity (WeakMap fast
+  path) with a content-key fallback; the content key is a thunk and entries are never evicted.
 - `http-signatures`: Node-only (`node:crypto`) Cavage-12 HTTP Signatures. Callers pass signed
   headers, allowed algorithms, and `maxAgeSeconds` on both sign and verify. The package has no
   default header set or product keyId policy.
