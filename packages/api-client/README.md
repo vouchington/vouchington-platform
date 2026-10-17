@@ -42,4 +42,4 @@ const server = new ServerRequest({
   and `onError`. `pause`, `resume`, `drain`, and `setActor` support logout flows.
 - `@vouchington/api-client/paginated-list` exports `usePaginatedList(initial, endpoint, params,
   { fetchPage | loadPage })` for cursor-page accumulation with stale-request protection, plus
-  `getPaginatedQueryKey`. The application supplies the page fetcher.
+  `getPaginatedQueryKey`. The application supplies the page fetcher, and `initialData` must keep a stable identity across renders.

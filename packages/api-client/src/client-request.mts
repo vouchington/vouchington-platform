@@ -1,10 +1,10 @@
 import {
   executeRequest,
   RequestVerbs,
-  serializeBody,
   type RequestBehavior,
   type RequestOptions,
 } from './request-core.mts'
+import { applyBody, mergeHeaders } from './request-parts.mts'
 
 export type ClientRequestConfig = RequestBehavior & {
   /** Prefix for every endpoint. Defaults to '' so endpoints are same-origin relative URLs. */
@@ -29,15 +29,10 @@ export class ClientRequest extends RequestVerbs {
     const url = `${this.#config.baseUrl ?? ''}${endpoint}`
     const init: RequestInit = {
       method,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(await this.#config.headers?.()),
-        ...headers,
-      },
       credentials: this.#config.credentials ?? 'include',
       ...(signal ? { signal } : {}),
     }
-    serializeBody(init, method, body)
+    applyBody(init, method, body, mergeHeaders(await this.#config.headers?.(), headers))
     return executeRequest<T>(url, method, init, this.#config)
   }
 }

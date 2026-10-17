@@ -69,6 +69,8 @@ function freshState<T extends PaginatedData>(
  * Resets accumulated pages when the query changes (endpoint/params/page_info fingerprint), so
  * stale pages never mix with a new query. When the fingerprint is unchanged but `initialData` is a
  * new object (a server re-render after navigation or a mutation), only `pages[0]` is refreshed.
+ * `initialData` must be referentially stable between renders of the same data (do not rebuild it
+ * during render), because a new identity is treated as a refreshed first page.
  */
 export function usePaginatedList<T extends PaginatedData>(
   initialData: T,

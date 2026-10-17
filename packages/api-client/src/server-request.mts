@@ -1,11 +1,11 @@
 import {
   executeRequest,
   RequestVerbs,
-  serializeBody,
   type HttpMethod,
   type RequestBehavior,
   type RequestOptions,
 } from './request-core.mts'
+import { applyBody, mergeHeaders } from './request-parts.mts'
 
 export type ServerHeaderContext = {
   method: HttpMethod
@@ -45,21 +45,16 @@ export class ServerRequest extends RequestVerbs {
     const { baseUrl } = this.#config
     const url = `${typeof baseUrl === 'function' ? baseUrl() : baseUrl}${endpoint}`
     const injected = await this.#config.resolveHeaders?.({ method, url, headers })
-    const merged: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...headers,
-      ...injected,
-    }
+    let merged = mergeHeaders(headers, injected)
     if (method !== 'GET' && Object.keys(merged).some((name) => name.toLowerCase() === 'cookie')) {
-      merged.Origin = new URL(url).origin
+      merged = mergeHeaders(merged, { Origin: new URL(url).origin })
     }
     const init: RequestInit = {
       ...this.#config.fetchInit,
       method,
-      headers: merged,
       ...(signal ? { signal } : {}),
     }
-    serializeBody(init, method, body)
+    applyBody(init, method, body, merged)
     return executeRequest<T>(url, method, init, this.#config)
   }
 }

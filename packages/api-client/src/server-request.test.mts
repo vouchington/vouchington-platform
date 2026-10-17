@@ -28,7 +28,6 @@ describe('ServerRequest', () => {
       cache: 'no-store',
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
         'X-Caller': 'injected',
         'x-request-id': 'r1',
       },
@@ -43,7 +42,7 @@ describe('ServerRequest', () => {
     expect(baseUrl).toHaveBeenCalledOnce()
     expect(fetchMock).toHaveBeenCalledWith('http://localhost:2900/a', {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {},
       signal,
     })
   })

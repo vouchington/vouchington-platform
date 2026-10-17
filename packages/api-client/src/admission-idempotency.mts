@@ -1,8 +1,8 @@
 import { canonicalizeAdmissionIntent, fingerprintAdmissionIntent } from './admission-intent.mts'
+import { AdmissionEntryCache } from './admission-entry-cache.mts'
 import { identifyAdmissionIntent, type AdmissionFingerprintState } from './admission-identify.mts'
 import {
   admissionStoragePrefix,
-  getActiveAdmissionStorageKeys,
   getAdmissionLockManager,
   withAdmissionAllocationLock,
 } from './admission-lock.mts'
@@ -15,12 +15,14 @@ import type {
   AdmissionIdempotencyOptions,
 } from './admission-types.mts'
 
+const ACTOR_CHANGED = 'Admission actor changed during submission'
+
 /** Pairs each distinct admission intent with one idempotency key so retries (even after a reload,
  * with durable storage and Web Locks) reuse it. The application owns the request and namespace. */
 export class AdmissionIdempotency {
-  readonly #entries = new Map<string, Entry>()
+  readonly #entries: Map<string, Entry>
+  readonly #cache: AdmissionEntryCache
   readonly #activeRequests = new Set<Promise<unknown>>()
-  readonly #generateKey: () => string
   readonly #lockManager: Exclude<AdmissionIdempotencyOptions['lockManager'], undefined>
   readonly #store: AdmissionEntryStore
   readonly #now: () => number
@@ -30,6 +32,7 @@ export class AdmissionIdempotency {
   readonly #transientFields: ReadonlySet<string>
   readonly #onError: (error: unknown) => void
   #actorId: string | null | undefined
+  #actorGeneration = 0
   readonly #ownerId = crypto.randomUUID()
   #paused = false
   #retainSuccessfulSettlements = false
@@ -37,7 +40,6 @@ export class AdmissionIdempotency {
     generateKey: () => string = () => crypto.randomUUID(),
     options: AdmissionIdempotencyOptions = {},
   ) {
-    this.#generateKey = generateKey
     this.#lockManager =
       options.lockManager === undefined ? getAdmissionLockManager() : options.lockManager
     this.#now = options.now ?? Date.now
@@ -47,6 +49,8 @@ export class AdmissionIdempotency {
       this.#now,
       admissionStoragePrefix(this.#namespace),
     )
+    this.#cache = new AdmissionEntryCache(this.#store, this.#now, generateKey)
+    this.#entries = this.#cache.entries
     this.#fingerprint = options.fingerprint ?? fingerprintAdmissionIntent
     this.#transientFields = new Set(options.transientFields)
     this.#onError = options.onError ?? (() => undefined)
@@ -73,6 +77,7 @@ export class AdmissionIdempotency {
     request: (idempotencyKey: string) => Promise<T>,
   ): Promise<T> {
     const canonicalIntent = canonicalizeAdmissionIntent(intent, this.#transientFields)
+    const generation = this.#actorGeneration
     const { storageKey, intentFingerprint } = await identifyAdmissionIntent(
       this.#namespace,
       canonicalIntent,
@@ -82,7 +87,9 @@ export class AdmissionIdempotency {
     )
     const durable = this.#store.isDurableKey(storageKey)
     const entry = await this.#lock(storageKey, () => {
-      const entry = this.#getOrCreateEntry(storageKey, intentFingerprint)
+      // An actor change while identifying or waiting for the lock invalidates this run.
+      if (generation !== this.#actorGeneration) throw new Error(ACTOR_CHANGED)
+      const entry = this.#cache.getOrCreate(storageKey, intentFingerprint)
       if (!entry.inFlight && durable) {
         entry.expiresAt = this.#now() + ADMISSION_RETENTION_MS
         if (!this.#store.claim(storageKey, entry, this.#ownerId)) {
@@ -150,6 +157,7 @@ export class AdmissionIdempotency {
   setActor(actorId: string | null): void {
     if (this.#actorId === actorId) return
     this.#entries.clear()
+    this.#actorGeneration += 1
     this.#actorId = actorId
   }
 
@@ -164,35 +172,5 @@ export class AdmissionIdempotency {
     return settleWithin(this.#activeRequests, timeoutMs, () => {
       this.#retainSuccessfulSettlements = true
     })
-  }
-  #getOrCreateEntry(storageKey: string, intentFingerprint: string): Entry {
-    const existing = this.#getEntry(storageKey, intentFingerprint)
-    if (existing?.intentFingerprint === intentFingerprint) return existing
-    const entry = {
-      intentFingerprint,
-      key: this.#generateKey(),
-      expiresAt: this.#now() + ADMISSION_RETENTION_MS,
-      ownerIds: [],
-    }
-    this.#entries.set(storageKey, entry)
-    if (
-      this.#store.isDurableKey(storageKey) &&
-      !this.#store.set(storageKey, entry, getActiveAdmissionStorageKeys(this.#entries))
-    ) {
-      this.#entries.delete(storageKey)
-      throw new Error('Durable admission requires writable browser storage')
-    }
-    return entry
-  }
-
-  #getEntry(storageKey: string, intentFingerprint: string): Entry | undefined {
-    const memoryEntry = this.#entries.get(storageKey)
-    if (memoryEntry?.inFlight || (memoryEntry && memoryEntry.expiresAt > this.#now()))
-      return memoryEntry
-    this.#entries.delete(storageKey)
-    const persisted = this.#store.get(storageKey, intentFingerprint)
-    if (!persisted) return undefined
-    this.#entries.set(storageKey, persisted)
-    return persisted
   }
 }

@@ -28,6 +28,40 @@ describe('AdmissionIdempotency defaults', () => {
       '{"a":1,"b":[{"z":1}]}',
     )
   })
+
+  it('applies toJSON before sorting so distinct dates stay distinct', () => {
+    const first = canonicalizeAdmissionIntent({ at: new Date('2026-01-01T00:00:00Z'), b: 1 })
+    const second = canonicalizeAdmissionIntent({ b: 1, at: new Date('2026-02-01T00:00:00Z') })
+    expect(first).toBe('{"at":"2026-01-01T00:00:00.000Z","b":1}')
+    expect(first).not.toBe(second)
+  })
+
+  it('reuses custom, non-UUID keys after a reload', async () => {
+    const storage = new MemoryStorage()
+    const lockManager = new MemoryLockManager()
+    const options = { actorId: 'actor', storage, lockManager }
+    const first = new AdmissionIdempotency(() => 'order-123', options)
+    await expect(
+      first.run({ a: 1 }, async () => {
+        throw new Error('retry')
+      }),
+    ).rejects.toThrow('retry')
+    const reloaded = new AdmissionIdempotency(() => 'order-456', options)
+    await expect(reloaded.run({ a: 1 }, async (key) => key)).resolves.toBe('order-123')
+  })
+
+  it('rejects runs whose actor changed while the intent was being identified', async () => {
+    const storage = new MemoryStorage()
+    const lockManager = new MemoryLockManager()
+    const request = vi.fn(async (key: string) => key)
+    for (const next of ['actor-b', null]) {
+      const keys = new AdmissionIdempotency(undefined, { actorId: 'actor-a', storage, lockManager })
+      const pending = keys.run({ a: 1 }, request)
+      keys.setActor(next)
+      await expect(pending).rejects.toThrow('Admission actor changed during submission')
+    }
+    expect(request).not.toHaveBeenCalled()
+  })
 })
 
 describe('getAdmissionLockManager', () => {

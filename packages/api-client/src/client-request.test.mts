@@ -43,7 +43,7 @@ describe('ClientRequest', () => {
 
     expect(fetchMock).toHaveBeenCalledWith('/things?q=a+b', {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {},
       credentials: 'same-origin',
       signal,
     })

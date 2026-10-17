@@ -20,8 +20,9 @@ const page = (ids: string[], end: string | null): Page => ({
 })
 
 describe('paginated query keys', () => {
-  it('sorts params and renders undefined values as empty', () => {
-    expect(getPaginatedQueryKey('/x', { b: 1, a: undefined })).toBe('/x|a=&b=1')
+  it('sorts params and omits undefined values', () => {
+    expect(getPaginatedQueryKey('/x', { b: 1, a: undefined })).toBe('/x|b=1')
+    expect(getPaginatedQueryKey('/x', { q: '' })).toBe('/x|q=')
   })
 })
 

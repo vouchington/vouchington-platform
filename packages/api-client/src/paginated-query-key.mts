@@ -4,11 +4,12 @@ function serializeParams(params: PaginatedListParams): string {
   return new URLSearchParams(
     Object.keys(params)
       .toSorted()
-      .map((key) => [key, String(params[key] ?? '')] as [string, string]),
+      .filter((key) => params[key] !== undefined)
+      .map((key) => [key, String(params[key])] as [string, string]),
   ).toString()
 }
 
-/** Stable `endpoint|sortedParams` key, suitable for query caches. */
+/** Stable `endpoint|sortedParams` key, suitable for query caches. Undefined params are omitted. */
 export function getPaginatedQueryKey(endpoint: string, params: PaginatedListParams): string {
   return `${endpoint}|${serializeParams(params)}`
 }

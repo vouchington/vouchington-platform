@@ -1,6 +1,7 @@
 import { ApiError } from './error.mts'
 import { parseErrorResponseBody } from './error-body.mts'
 import { buildQueryString, type QueryParams } from './query-string.mts'
+import { appendQuery } from './request-parts.mts'
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
@@ -10,6 +11,9 @@ export type RequestOptions = {
   headers?: Record<string, string>
   signal?: AbortSignal
 }
+
+/** Per-call options for verbs whose method and body are fixed by the helper. */
+export type VerbOptions = Pick<RequestOptions, 'headers' | 'signal'>
 
 export type GetOptions = {
   searchParams?: QueryParams
@@ -36,28 +40,24 @@ export abstract class RequestVerbs {
   get<T>(endpoint: string, options: GetOptions = {}): Promise<T> {
     const { searchParams, ...rest } = options
     const queryString = searchParams ? buildQueryString(searchParams) : ''
-    return this.request<T>(`${endpoint}${queryString}`, rest)
+    return this.request<T>(appendQuery(endpoint, queryString), rest)
   }
 
-  post<T>(endpoint: string, body?: unknown, options?: RequestOptions): Promise<T> {
-    return this.request<T>(endpoint, { method: 'POST', body, ...options })
+  post<T>(endpoint: string, body?: unknown, options?: VerbOptions): Promise<T> {
+    return this.request<T>(endpoint, { ...options, method: 'POST', body })
   }
 
-  put<T>(endpoint: string, body?: unknown, options?: RequestOptions): Promise<T> {
-    return this.request<T>(endpoint, { method: 'PUT', body, ...options })
+  put<T>(endpoint: string, body?: unknown, options?: VerbOptions): Promise<T> {
+    return this.request<T>(endpoint, { ...options, method: 'PUT', body })
   }
 
-  patch<T>(endpoint: string, body?: unknown, options?: RequestOptions): Promise<T> {
-    return this.request<T>(endpoint, { method: 'PATCH', body, ...options })
+  patch<T>(endpoint: string, body?: unknown, options?: VerbOptions): Promise<T> {
+    return this.request<T>(endpoint, { ...options, method: 'PATCH', body })
   }
 
-  delete<T>(endpoint: string, options?: RequestOptions): Promise<T> {
-    return this.request<T>(endpoint, { method: 'DELETE', ...options })
+  delete<T>(endpoint: string, options?: Omit<RequestOptions, 'method'>): Promise<T> {
+    return this.request<T>(endpoint, { ...options, method: 'DELETE' })
   }
-}
-
-export function serializeBody(init: RequestInit, method: HttpMethod, body: unknown): void {
-  if (body && method !== 'GET') init.body = JSON.stringify(body)
 }
 
 /** Runs a fetch and converts failures into `ApiError`, parsing JSON and tolerating empty bodies. */

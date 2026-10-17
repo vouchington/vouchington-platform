@@ -113,7 +113,7 @@ describe('AdmissionIdempotency persistence', () => {
     expect(storage.length).toBe(0)
   })
 
-  it('replaces a persisted key that is not a UUID', async () => {
+  it('replaces a persisted key that is not a safe header value', async () => {
     const storage = new MemoryStorage()
     const lockManager = new MemoryLockManager()
     const intent = { endpoint: '/api/v1/posts', body: { markdown: 'Hello' } }
@@ -130,7 +130,10 @@ describe('AdmissionIdempotency persistence', () => {
     const persisted = [...storage.values][0]
     if (!persisted) throw new Error('Expected a persisted admission entry')
     const [storageKey, storedValue] = persisted
-    storage.setItem(storageKey, JSON.stringify({ ...JSON.parse(storedValue), key: 'not-a-uuid' }))
+    storage.setItem(
+      storageKey,
+      JSON.stringify({ ...JSON.parse(storedValue), key: 'has whitespace' }),
+    )
 
     const replacementKey = crypto.randomUUID()
     const reloaded = new AdmissionIdempotency(() => replacementKey, {

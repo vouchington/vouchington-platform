@@ -17,6 +17,8 @@ export function canonicalizeAdmissionIntent(
 }
 
 function sortIntent(value: unknown, transientFields: ReadonlySet<string>): unknown {
+  // Honor JSON.stringify semantics for values such as Date that serialize through toJSON.
+  if (hasToJSON(value)) return sortIntent(value.toJSON(), transientFields)
   if (Array.isArray(value)) return value.map((item) => sortIntent(item, transientFields))
   if (value && typeof value === 'object') {
     return Object.fromEntries(
@@ -27,4 +29,12 @@ function sortIntent(value: unknown, transientFields: ReadonlySet<string>): unkno
     )
   }
   return value
+}
+
+function hasToJSON(value: unknown): value is { toJSON(): unknown } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { toJSON?: unknown }).toJSON === 'function'
+  )
 }

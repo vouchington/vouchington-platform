@@ -9,7 +9,8 @@ export type AdmissionStoredEntry = AdmissionOwnerEntry & {
   expiresAt: number
 }
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+// Idempotency keys are sent as header values: visible ASCII only, bounded length.
+const KEY_PATTERN = /^[\x21-\x7e]{1,255}$/
 
 export function parseStoredAdmissionEntry(
   value: string,
@@ -22,7 +23,7 @@ export function parseStoredAdmissionEntry(
     (intentFingerprint !== undefined && persisted.intentFingerprint !== intentFingerprint) ||
     typeof persisted.intentFingerprint !== 'string' ||
     typeof persisted.key !== 'string' ||
-    !UUID_PATTERN.test(persisted.key) ||
+    !KEY_PATTERN.test(persisted.key) ||
     typeof persisted.expiresAt !== 'number' ||
     !Number.isFinite(persisted.expiresAt) ||
     persisted.expiresAt <= now ||
