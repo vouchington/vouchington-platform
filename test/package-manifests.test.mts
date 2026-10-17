@@ -15,6 +15,7 @@ const packages = [
   'localization-compiler',
   'phone-validation',
   'uuid-v7',
+  'dynamic-config',
   'frontmatter',
   'browser-crawl',
   'domain-verification',
