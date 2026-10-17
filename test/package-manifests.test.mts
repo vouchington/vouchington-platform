@@ -34,7 +34,9 @@ describe('runtime package manifests', () => {
       exports: Record<string, { import: string; types: string }>
       files: string[]
     }
-    expect(Object.keys(manifest.exports)).toEqual(['.'])
+    expect(Object.keys(manifest.exports)).toEqual(
+      directory === 'worker-runtime' ? ['.', './testing'] : ['.'],
+    )
     const entry = manifest.exports['.']!
     expect(existsSync(`packages/${directory}/${entry.import.replace('./', '')}`)).toBe(true)
     expect(existsSync(`packages/${directory}/${entry.types.replace('./', '')}`)).toBe(true)
@@ -80,6 +82,31 @@ describe('runtime package manifests', () => {
     expectCaretSemverRange(developmentRange)
     expectCaretSemverRange(peerRange)
     expect(caretRangeIncludesLowerBound(peerRange, developmentRange)).toBe(true)
+  })
+
+  it('declares Vitest as an optional peer for the worker-runtime testing subpath only', () => {
+    const manifest = JSON.parse(readFileSync('packages/worker-runtime/package.json', 'utf8')) as {
+      devDependencies: Record<string, string>
+      peerDependencies: Record<string, string>
+      peerDependenciesMeta: Record<string, { optional?: boolean }>
+      exports: Record<string, { import: string; types: string }>
+    }
+    expect(manifest.peerDependenciesMeta['vitest']).toEqual({ optional: true })
+    expectCaretSemverRange(manifest.peerDependencies['vitest'])
+    expect(
+      caretRangeIncludesLowerBound(
+        manifest.peerDependencies['vitest'],
+        manifest.devDependencies['vitest'],
+      ),
+    ).toBe(true)
+    const testing = manifest.exports['./testing']!
+    expect(existsSync(`packages/worker-runtime/${testing.import.replace('./', '')}`)).toBe(true)
+    expect(existsSync(`packages/worker-runtime/${testing.types.replace('./', '')}`)).toBe(true)
+    const root = readFileSync('packages/worker-runtime/dist/index.mjs', 'utf8')
+    expect(root).not.toContain('vitest')
+    expect(readFileSync('packages/worker-runtime/dist/queue-selection.mjs', 'utf8')).not.toContain(
+      'vitest',
+    )
   })
 })
 
