@@ -72,6 +72,11 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
 - `utm`: `createUtmParser({ sourceAliases, fallbackSourceParam? })` lowercases and trims UTM fields
   and resolves `utm_source` through caller-owned aliases. The package has no default shortcode map.
 - `fetch-ports`: the Fetch standard forbidden-port list and membership predicates.
+- `api-errors`: the house JSON error envelope (`message`, optional `code`, `request_id`, `stack`),
+  status/message/code extraction helpers, and `buildApiErrorEnvelope`, which redacts 5xx details
+  unless the caller sets `exposeDetails`. Callers own serialization, logging, and environment policy.
+- `api-response-contract`: identity markers (`apiResponse`, `apiRequest`, `apiQuery`, ...) and
+  response-variant types read by a static contract extractor; no runtime effect.
 - `http-body`: bounded Fetch response-body reads with abort propagation and typed missing/oversize
   errors.
 - `http-link-pagination`: fail-closed RFC 8288 next-link parsing with same-origin URL and
