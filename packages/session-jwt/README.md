@@ -50,6 +50,14 @@ caller may set `clockTolerance` in seconds when its deployment policy permits cl
 `decodeJwt(token)` only parses untrusted claims. It does not verify the signature, expiry, issuer, or
 audience and its result must never be used to authorize access.
 
+## Key material from environment variables
+
+`parseBase64JwkSet(encoded, label)` decodes base64 JSON (a JWK array, a `{ keys }` JWKS, or a single
+JWK) and validates it with `parseJwkSet`; `encodeJwkSet(jwks)` is the inverse. Both use only
+`atob`/`btoa`, so they run in worker runtimes without `Buffer`. Applications choose variable names.
+`ContentAndIdentityCache` memoizes expensive per-configuration work (such as key import) by object
+identity with a content-key fallback; it never evicts, so keep the key space small.
+
 ## Identifiers
 
 `mintUuidv7`, `isUuidv7`, and `validateUuidv7` provide UUIDv7 helpers without application identifier

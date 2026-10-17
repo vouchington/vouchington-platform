@@ -16,6 +16,10 @@
   "files": [
     "dist/index.d.mts",
     "dist/index.mjs",
+    "dist/content-identity-cache.d.mts",
+    "dist/content-identity-cache.mjs",
+    "dist/jwk-set-codec.d.mts",
+    "dist/jwk-set-codec.mjs",
     "dist/jwt.d.mts",
     "dist/jwt.mjs",
     "dist/keys.d.mts",
