@@ -39,6 +39,7 @@ SKU names.
 | [`@vouchington/robots`](packages/robots)                                           | Transport- and cache-injected robots.txt evaluation                |
 | [`@vouchington/typed-entities`](packages/typed-entities)                           | Transaction-scoped typed entity aliases, hierarchy, and hostnames  |
 | [`@vouchington/request-contract-validation`](packages/request-contract-validation) | Caller-injected Ajv request carrier validation                     |
+| [`@vouchington/rate-limit`](packages/rate-limit)                                   | Valkyries house layer: api-server middleware and edge bindings     |
 
 ## Commands
 

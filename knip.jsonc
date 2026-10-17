@@ -55,6 +55,10 @@
       "entry": ["src/index.mts!"],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
     },
+    "packages/rate-limit": {
+      "entry": ["src/index.mts!", "src/edge/index.mts!"],
+      "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
+    },
     "packages/pagination": {
       "entry": ["src/index.mts!"],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],

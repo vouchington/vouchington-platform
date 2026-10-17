@@ -191,6 +191,15 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(express@5.2.1(supports-color@7.2.0))
 
+  packages/rate-limit:
+    devDependencies:
+      '@jongleberry/api-server':
+        specifier: ^3.0.1
+        version: 3.0.1
+      valkyries:
+        specifier: ^0.8.2
+        version: 0.8.2
+
   packages/request-contract-validation:
     dependencies:
       ajv:
