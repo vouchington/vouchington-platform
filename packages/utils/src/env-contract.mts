@@ -75,3 +75,26 @@ export function envNamesBySensitivity<Source extends string, Surface extends str
     ),
   ].toSorted()
 }
+
+export type EnvContractManifestEntry<
+  Source extends string = string,
+  Surface extends string = string,
+> = {
+  name: string
+  contractKey: string
+  sourceOfTruth: Source
+  sensitivity: EnvVarSensitivity
+  runtimeSurfaces: Surface[]
+}
+
+export function envContractManifest<Source extends string, Surface extends string>(
+  contract: readonly EnvVarContract<Source, Surface>[],
+): EnvContractManifestEntry<Source, Surface>[] {
+  return contract.map((entry) => ({
+    name: entry.name,
+    contractKey: entry.key,
+    sourceOfTruth: entry.sourceOfTruth,
+    sensitivity: entry.sensitivity,
+    runtimeSurfaces: [...entry.surfaces],
+  }))
+}

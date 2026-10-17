@@ -41,7 +41,7 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
   the caller's catalog. `allocateProportionalAmount(amount, numerator, denominator, rounding)`
   allocates an inclusive fraction with `down` or `up` integer rounding chosen explicitly by the
   caller; it uses exact integer arithmetic rather than floating-point division.
-- `env-contract`: `groupEnvContracts()` and `normalizeEnvContractGroups()` produce delimiter-safe
+- `env-contract`: `groupEnvContracts()`, `normalizeEnvContractGroups()`, and `envContractManifest()` produce delimiter-safe
   metadata keys and surface/sensitivity lookups.
 - `cookies`: `serializeCookie(name, value, attributes)` validates cookie grammar and requires the
   caller to supply every policy attribute. `SameSite=None` requires `Secure`.
