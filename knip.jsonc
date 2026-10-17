@@ -101,6 +101,7 @@
         "src/openai/index.mts!",
         "src/providers/index.mts!",
         "src/structured-decisions/index.mts!",
+        "src/usage/index.mts!",
       ],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
     },

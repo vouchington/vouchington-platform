@@ -124,6 +124,7 @@ describe('runtime package manifests', () => {
       './openai',
       './providers',
       './structured-decisions',
+      './usage',
     ])
     for (const entry of Object.values(manifest.exports)) {
       expect(existsSync(`packages/ai/${entry.import.replace('./', '')}`)).toBe(true)
