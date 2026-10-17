@@ -43,6 +43,7 @@ export interface ButtonProps
 // Anchors ignore `disabled`, so a disabled asChild link is made inert via aria-disabled.
 function blockClick(event: MouseEvent) {
   event.preventDefault()
+  event.stopPropagation()
 }
 
 export function Button({
@@ -64,7 +65,9 @@ export function Button({
       disabled={asChild ? disabled : disabled || loading}
       aria-busy={!asChild && loading ? true : undefined}
       {...props}
-      {...(asChild && disabled ? { 'aria-disabled': true, tabIndex: -1, onClick: blockClick } : {})}
+      {...(asChild && disabled
+        ? { 'aria-disabled': true, tabIndex: -1, onClickCapture: blockClick }
+        : {})}
     >
       {asChild ? (
         children

@@ -11,7 +11,7 @@ export interface SpinnerProps extends Omit<ComponentProps<'svg'>, 'aria-label'> 
 export function Spinner({ className, label, ...props }: SpinnerProps) {
   return (
     <Loader2Icon
-      role="status"
+      role={label ? 'status' : undefined}
       aria-label={label}
       className={cn('size-4 animate-spin', className)}
       {...props}

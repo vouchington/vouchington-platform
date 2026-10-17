@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { createRef } from 'react'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   Badge,
@@ -68,6 +68,19 @@ describe('Button', () => {
     expect(fireEvent.click(link)).toBe(false)
   })
 
+  it('does not run a disabled asChild child click handler', () => {
+    const onClick = vi.fn()
+    render(
+      <Button asChild disabled>
+        <a href="/x" onClick={onClick}>
+          Nope
+        </a>
+      </Button>,
+    )
+    fireEvent.click(screen.getByRole('link'))
+    expect(onClick).not.toHaveBeenCalled()
+  })
+
   it('leaves an enabled asChild link interactive', () => {
     render(
       <Button asChild>
@@ -83,6 +96,11 @@ describe('Button', () => {
 })
 
 describe('Spinner', () => {
+  it('is not a status region without a label', () => {
+    const { container } = render(<Spinner aria-hidden />)
+    expect(container.querySelector('svg')?.getAttribute('role')).toBeNull()
+  })
+
   it('uses the injected label as its accessible name', () => {
     render(<Spinner label="Chargement" />)
     expect(screen.getByRole('status', { name: 'Chargement' })).toBeTruthy()
