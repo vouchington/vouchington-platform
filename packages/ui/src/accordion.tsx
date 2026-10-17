@@ -1,3 +1,5 @@
+'use client'
+
 import * as React from 'react'
 import * as AccordionPrimitive from '@radix-ui/react-accordion'
 import { ChevronDown } from 'lucide-react'
@@ -51,7 +53,7 @@ function AccordionContent({
   children,
   ref,
   ...props
-}: React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content> & {
+}: Omit<React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content>, 'asChild'> & {
   ref?: React.Ref<React.ComponentRef<typeof AccordionPrimitive.Content>>
 }) {
   return (

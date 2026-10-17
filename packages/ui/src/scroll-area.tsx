@@ -1,3 +1,5 @@
+'use client'
+
 import * as React from 'react'
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area'
 
@@ -33,11 +35,14 @@ function ScrollArea({
   className,
   children,
   horizontalScrollbar = false,
+  viewportTabIndex = 0,
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> & {
   /** Also render a horizontal scrollbar (scrollbars must be siblings of the viewport). */
   horizontalScrollbar?: boolean
+  /** Tab stop of the scrollable viewport; pass -1 to skip it. */
+  viewportTabIndex?: number
   ref?: React.Ref<React.ComponentRef<typeof ScrollAreaPrimitive.Root>>
 }) {
   return (
@@ -47,7 +52,7 @@ function ScrollArea({
       {...props}
     >
       <ScrollAreaPrimitive.Viewport
-        tabIndex={0}
+        tabIndex={viewportTabIndex}
         className="h-full w-full rounded-[inherit] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
       >
         {children}

@@ -1,3 +1,5 @@
+'use client'
+
 import * as React from 'react'
 import * as TabsPrimitive from '@radix-ui/react-tabs'
 
@@ -16,7 +18,7 @@ function TabsList({
     <TabsPrimitive.List
       ref={ref}
       className={cn(
-        'inline-flex h-9 items-center justify-center rounded-md bg-muted p-0.5 text-foreground',
+        'inline-flex h-9 items-center justify-center rounded-md bg-muted p-0.5 text-foreground data-[orientation=vertical]:h-auto data-[orientation=vertical]:flex-col',
         className,
       )}
       {...props}
