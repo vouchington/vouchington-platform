@@ -58,6 +58,7 @@ the migration advisory lock is per database, and `VITEST_MAX_WORKERS` overrides 
 - `@vouchington/uuid-v7` — UUIDv7 creation, validation, date bounds, and base36 suffixes
 - `@vouchington/dynamic-config` — registry, descriptor, validator, and injected-authorization admin layer over valkyries dynamic-config
 - `@vouchington/edge` — Cloudflare Worker builders with injected routes, origins, and CSP sources
+- `@vouchington/oauth-server` — OAuth 2.0 authorization-server primitives with injected stores
 - `@vouchington/frontmatter` — Deterministic YAML frontmatter serialization
 
 Extracted APIs must be opinionated generic utilities, never orchestration or workflows. State

@@ -7,6 +7,7 @@
       "@vouchington/edge": ["./packages/edge/src/index.mts"],
       "@vouchington/http-transport": ["./packages/http-transport/src/index.mts"],
       "@vouchington/localization": ["./packages/localization/src/index.mts"],
+      "@vouchington/oauth-server": ["./packages/oauth-server/src/index.mts"],
       "@vouchington/pagination": ["./packages/pagination/src/index.mts"],
       "@vouchington/postgres": ["./packages/postgres/src/index.mts"],
       "@vouchington/rate-limit": ["./packages/rate-limit/src/index.mts"],
@@ -15,6 +16,7 @@
       "@vouchington/session-jwt": ["./packages/session-jwt/src/index.mts"],
       "@vouchington/utils/cookies": ["./packages/utils/src/cookies.mts"],
       "@vouchington/utils/sentry-envelope": ["./packages/utils/src/sentry-envelope.mts"],
+      "@vouchington/utils/scopes": ["./packages/utils/src/scopes.mts"],
       "@vouchington/utils/strings": ["./packages/utils/src/strings.mts"],
       "@vouchington/utils/urls": ["./packages/utils/src/urls.mts"],
       "@vouchington/uuid-v7": ["./packages/uuid-v7/src/index.mts"]
