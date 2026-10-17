@@ -164,6 +164,37 @@ describe('addBulk', () => {
     expect(jobs).toHaveLength(3)
   })
 
+  it('keeps the default deadline for entries without an override', async () => {
+    const queueName = name('bulk-default')
+    track(new Worker(queueName, () => new Promise<void>((resolve) => setTimeout(resolve, 120))))
+    const jobs = await new Queue(queueName).addBulk([
+      { name: 'a', data: {}, opts: { flushTimeoutMs: 20 } },
+      { name: 'b', data: {} },
+    ])
+    expect(jobs).toHaveLength(2)
+  })
+
+  it('admits the whole bulk before a batch worker starts', async () => {
+    const queueName = name('bulk-batch')
+    const sizes: number[] = []
+    track(
+      new Worker(
+        queueName,
+        (jobs: unknown) => {
+          sizes.push((jobs as unknown[]).length)
+          return Promise.resolve((jobs as unknown[]).map(() => 'ok'))
+        },
+        { batch: { size: 3 } },
+      ),
+    )
+    await new Queue(queueName).addBulk([
+      { name: 'a', data: {} },
+      { name: 'b', data: {} },
+      { name: 'c', data: {} },
+    ])
+    expect(sizes).toEqual([3])
+  })
+
   it('skips the flush for an empty bulk and tolerates unadmitted jobs', async () => {
     const queueName = name('bulk-empty')
     track(new Worker(queueName, () => undefined))

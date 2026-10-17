@@ -1,7 +1,7 @@
 import type { JobOptions } from 'glide-mq'
 import type { TestJob } from 'glide-mq/testing'
 
-import { type FlushQueue, flushJobs } from './flush-wait.mts'
+import { DEFAULT_FLUSH_TIMEOUT_MS, type FlushQueue, flushJobs } from './flush-wait.mts'
 import { isInsideTestWorkerProcessor } from './processor-context.mts'
 
 export type TestJobOptions = JobOptions & {
@@ -41,24 +41,24 @@ export async function addBulkAndFlush<D, R>(
   queue: FlushQueue<D, R>,
   jobs: Array<{ name: string; data: D; opts?: TestJobOptions }>,
 ) {
+  // Admit every entry before yielding so batch workers see the whole bulk, as the SDK would.
+  const admitted = await Promise.all(
+    jobs.map(async (job) => ({
+      job,
+      added: await queue.enqueue(job.name, job.data, stripTestJobOptions(job.opts)),
+    })),
+  )
   const result: TestJob<D, R>[] = []
   const expectedDeadLetterJobIds = new Set<string>()
-  for (const job of jobs) {
-    const added = await queue.enqueue(job.name, job.data, stripTestJobOptions(job.opts))
+  for (const { job, added } of admitted) {
     if (!added) continue
     result.push(added)
     if (job.opts?.expectDeadLetter === true) expectedDeadLetterJobIds.add(added.id)
   }
-  const timeouts = jobs.flatMap((job) =>
-    typeof job.opts?.flushTimeoutMs === 'number' ? [job.opts.flushTimeoutMs] : [],
-  )
+  // Unconfigured entries keep the default deadline; the longest effective deadline bounds the flush.
+  const timeouts = jobs.map((job) => job.opts?.flushTimeoutMs ?? DEFAULT_FLUSH_TIMEOUT_MS)
   if (result.length > 0 && !isInsideTestWorkerProcessor()) {
-    await flushJobs(
-      queue,
-      result,
-      expectedDeadLetterJobIds,
-      timeouts.length > 0 ? Math.max(...timeouts) : undefined,
-    )
+    await flushJobs(queue, result, expectedDeadLetterJobIds, Math.max(...timeouts))
   }
   return result
 }

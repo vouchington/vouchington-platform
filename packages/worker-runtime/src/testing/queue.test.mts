@@ -147,6 +147,18 @@ describe('Worker', () => {
     expect(await job?.getState()).toBe('completed')
   })
 
+  it('forwards the rate limiter', async () => {
+    const queueName = name('limiter')
+    track(new Worker(queueName, () => 'ok', { limiter: { max: 1, duration: 60_000 } }))
+    const queue = new Queue(queueName)
+    const first = await queue.add('work', {})
+    expect(await first?.getState()).toBe('completed')
+    // The window is still full, so the second job is held back and the flush times out.
+    await expect(queue.add('work', {}, { flushTimeoutMs: 50 })).rejects.toThrow(
+      /Timed out waiting for test queue jobs/,
+    )
+  })
+
   it('dispatches batches immediately', async () => {
     const queueName = name('batch')
     const sizes: number[] = []

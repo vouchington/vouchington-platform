@@ -61,6 +61,7 @@ export class Worker<D = any, R = any> extends TestWorker<D, R> {
       {
         concurrency: clampTestWorkerConcurrency(options?.concurrency),
         ...(deadLetterQueue && { deadLetterQueue }),
+        ...(options?.limiter && { limiter: options.limiter }),
         ...(batch && { batch }),
         ...(tokenLimiterOpts && { tokenLimiter: tokenLimiterOpts }),
       },
