@@ -36,13 +36,15 @@ describe('extractViewDeclarations', () => {
       extractViewDeclarations(`
         CREATE OR REPLACE VIEW public.a AS SELECT 1;
         CREATE MATERIALIZED VIEW IF NOT EXISTS "Mixed Case" AS SELECT 1;
+        CREATE VIEW "user" AS SELECT 1;
         CREATE TEMP VIEW scratch AS SELECT 1;
         CREATE TABLE plain AS SELECT 1;
         CREATE INDEX a_idx ON plain (generate_series);
       `),
     ).toEqual([
-      { type: 'view', name: 'public.a' },
+      { type: 'view', name: '"public"."a"' },
       { type: 'materialized view', name: '"Mixed Case"' },
+      { type: 'view', name: '"user"' },
     ])
   })
 
@@ -90,6 +92,35 @@ describe('runViews', () => {
       2,
     )
     expect(logger.error).not.toHaveBeenCalled()
+  })
+
+  it('runs each file atomically so a retried file does not repeat committed statements', async () => {
+    const folder = viewFolder({
+      'a_two.sql':
+        'CREATE VIEW first_v AS SELECT 1 AS id; CREATE VIEW second_v AS SELECT id FROM dep_v;',
+      'b_dep.sql': 'CREATE VIEW dep_v AS SELECT 2 AS id;',
+    })
+    await withPsql(async (psql) => {
+      await runViews({
+        folder,
+        writer: psql.write,
+        withTransaction: (handler) => psql.withTransaction(handler),
+      })
+      const { rows } = await psql.write<{ id: number }>('/* read */ SELECT id FROM second_v')
+      expect(rows).toEqual([{ id: 2 }])
+    })
+  })
+
+  it('fails on the first blocked pass when retries are disabled, naming the files', async () => {
+    const folder = viewFolder({
+      'a_dependent.sql': 'CREATE VIEW dependent AS SELECT id FROM base_view;',
+      'b_base.sql': 'CREATE VIEW base_view AS SELECT 1 AS id;',
+    })
+    await withPsql(async (psql) => {
+      await expect(runViews({ folder, writer: psql.write, retryBlocked: false })).rejects.toThrow(
+        'Blocked views: a_dependent.sql',
+      )
+    })
   })
 
   it('does nothing for an empty or missing folder, silently by default', async () => {

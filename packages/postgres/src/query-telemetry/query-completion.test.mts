@@ -1,4 +1,7 @@
+import sql from 'sql-template-strings'
 import { describe, expect, it, vi } from 'vitest'
+
+import { allowUnannotatedQuery } from '../prepared-statement-name.mts'
 
 import type { QueryExecutor } from '../types.mts'
 import { errorSummary } from './completion-audience.mts'
@@ -125,6 +128,15 @@ describe('query completion diagnostics', () => {
     })
     await completionDrain
     expect(second).toHaveBeenCalledOnce()
+  })
+
+  it('records the positional values of value-free allowed statements', async () => {
+    const { completedTransactions } = await runWithQueryCompletionDiagnostics(async () => {
+      observe([allowUnannotatedQuery('SELECT $1'), ['v']], ok())
+      observe([sql`/* named */ SELECT ${'own'}`, ['ignored']], ok())
+      await new Promise((resolve) => setImmediate(resolve))
+    })
+    expect(completedTransactions.map((entry) => entry.values)).toEqual([['v'], ['own']])
   })
 
   it('drains queries still in flight when the scope ends', async () => {

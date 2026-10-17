@@ -3,7 +3,7 @@ import { escapeIdentifier } from 'pg'
 
 export type ManagedViewDeclaration = {
   type: 'view' | 'materialized view'
-  /** SQL-ready, schema-qualified and quoted only when required. */
+  /** SQL-ready: every part quoted, so keywords and mixed case survive. */
   name: string
 }
 
@@ -13,19 +13,13 @@ type StatementNode = {
   CreateTableAsStmt?: { into?: { rel?: RangeVarNode }; objtype?: string }
 }
 
-const PLAIN_IDENTIFIER = /^[a-z_][a-z0-9_$]*$/u
-
-function quoteIdentifier(identifier: string): string {
-  return PLAIN_IDENTIFIER.test(identifier) ? identifier : escapeIdentifier(identifier)
-}
-
 function declarationFor(
   type: ManagedViewDeclaration['type'],
   rel: RangeVarNode | undefined,
 ): ManagedViewDeclaration[] {
   if (!rel?.relname || rel.relpersistence === 't') return []
   const parts = rel.schemaname ? [rel.schemaname, rel.relname] : [rel.relname]
-  return [{ type, name: parts.map(quoteIdentifier).join('.') }]
+  return [{ type, name: parts.map((part) => escapeIdentifier(part)).join('.') }]
 }
 
 /**

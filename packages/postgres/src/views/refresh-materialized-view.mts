@@ -57,7 +57,7 @@ export async function refreshMaterializedView(
     const unlockError = await unlock(client, advisoryLockKey)
     client.release(unlockError)
     released = true
-    if (unlockError && refreshError) options.reportError?.(unlockError)
+    if (unlockError && refreshError) reportSafely(options.reportError, unlockError)
     if (refreshError ?? unlockError) throw refreshError ?? unlockError
   } catch (err) {
     if (!released) client.release(toError(err))
@@ -76,5 +76,13 @@ async function unlock(client: pg.PoolClient, key: string): Promise<Error | undef
       : new Error('Materialized view advisory lock was not held at release')
   } catch (err) {
     return toError(err)
+  }
+}
+
+function reportSafely(report: ((error: Error) => void) | undefined, error: Error): void {
+  try {
+    report?.(error)
+  } catch {
+    // the refresh failure takes precedence over a failing reporter
   }
 }

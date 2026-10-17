@@ -11,6 +11,13 @@ export interface RunViewsOptions {
   folder: string
   /** Executes each statement. Callers choose the pool or transaction. */
   writer: QueryExecutor
+  /**
+   * Runs one file's statements atomically (e.g. `psql.withTransaction`), so a retried file never
+   * re-runs statements that already committed. Defaults to running directly on `writer`.
+   */
+  withTransaction?: <Result>(handler: (writer: QueryExecutor) => Promise<Result>) => Promise<Result>
+  /** Retry files that fail until a pass makes no progress. Set false to fail on first error. */
+  retryBlocked?: boolean
   /** Drop every declared view first, dependents before dependencies. */
   forced?: boolean
   /** Defaults to silent. */
@@ -29,7 +36,8 @@ const silentLogger: ViewLogger = { error: () => {}, log: () => {} }
  * `loadSqlParserModule()` to have resolved.
  */
 export async function runViews(options: RunViewsOptions): Promise<void> {
-  const { folder, writer, logger = silentLogger } = options
+  const { folder, writer, logger = silentLogger, retryBlocked = true } = options
+  const inTransaction = options.withTransaction ?? ((handler) => handler(writer))
   const files = getFilesFromFolder(folder, ['.sql'])
   let pending: PendingView[] = await Promise.all(
     files.map(async (view) => ({ view, sql: await readMigrationFile(folder, view) })),
@@ -49,7 +57,7 @@ export async function runViews(options: RunViewsOptions): Promise<void> {
   let lastError: unknown = null
   const attempt = async (view: PendingView): Promise<Attempt> => {
     try {
-      await runViewStatements(writer, view.sql)
+      await inTransaction((target) => runViewStatements(target, view.sql))
       logger.log('View %s updated!', view.view)
       return { pending: view, success: true }
     } catch (err) {
@@ -69,7 +77,9 @@ export async function runViews(options: RunViewsOptions): Promise<void> {
       Promise.resolve(),
     )
     const remaining = attempts.flatMap((result) => (result.success ? [] : [result.pending]))
-    if (remaining.length === attempts.length) throwBlockedViews(remaining, lastError, logger)
+    if (remaining.length > 0 && (!retryBlocked || remaining.length === attempts.length)) {
+      throwBlockedViews(remaining, lastError, logger)
+    }
     pending = remaining
   }
 }
@@ -88,6 +98,8 @@ function throwBlockedViews(blocked: PendingView[], lastError: unknown, logger: V
   const names = blocked.map((view) => view.view).join(', ')
   logger.error('ERROR: view recreation made no progress; blocked views: %s', names)
   logger.error(lastError)
-  if (lastError instanceof Error) throw new Error(lastError.message, { cause: lastError })
+  if (lastError instanceof Error) {
+    throw new Error(`${lastError.message}\nBlocked views: ${names}`, { cause: lastError })
+  }
   throw new Error(`View recreation made no progress for: ${names}`)
 }

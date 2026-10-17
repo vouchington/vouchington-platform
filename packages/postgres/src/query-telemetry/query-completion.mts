@@ -4,6 +4,7 @@ import {
   errorSummary,
   type QueryCompletion,
 } from './completion-audience.mts'
+import { isUnannotatedQueryAllowed } from '../prepared-statement-name.mts'
 import type { QueryExecutor } from '../types.mts'
 
 export type { QueryCompletion } from './completion-audience.mts'
@@ -46,6 +47,14 @@ export function reportQueryCaptureFailure(reason: unknown): boolean {
   return true
 }
 
+/** Mirrors `executeClientQuery`: a value-free allowed statement runs its positional values. */
+function executedValues(input: Parameters<QueryExecutor>[0], values: unknown): readonly unknown[] {
+  if (typeof input === 'string') return (values as readonly unknown[] | undefined) ?? []
+  const positional =
+    isUnannotatedQueryAllowed(input) && input.values.length === 0 && values !== undefined
+  return positional ? (values as readonly unknown[]) : (input.values ?? [])
+}
+
 function freezeDiagnosticValues(value: unknown): void {
   if (!value || typeof value !== 'object') return
   for (const child of Object.values(value)) freezeDiagnosticValues(child)
@@ -69,9 +78,7 @@ export function observeQueryCompletion(
     const [input, values] = args
     metadata = {
       text: typeof input === 'string' ? input : input.text,
-      values: Object.freeze([
-        ...(typeof input === 'string' ? (values ?? []) : (input.values ?? [])),
-      ]),
+      values: Object.freeze([...executedValues(input, values)]),
       executor,
       promise,
     }

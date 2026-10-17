@@ -80,6 +80,20 @@ describe('refreshMaterializedView', () => {
     expect(client.release).toHaveBeenCalledWith(expect.any(Error))
   })
 
+  it('keeps the refresh failure when the reporter throws', async () => {
+    const { pool } = fakePool([locked, new Error('refresh failed'), { rows: [] }])
+    await expect(
+      refreshMaterializedView({
+        pool,
+        viewName: 'mv',
+        allowedViews: ['mv'],
+        reportError: () => {
+          throw new Error('reporter broke')
+        },
+      }),
+    ).rejects.toThrow('refresh failed')
+  })
+
   it('throws the unlock error when the refresh succeeded', async () => {
     const { pool } = fakePool([locked, { rows: [] }, new Error('unlock query failed')])
     await expect(
