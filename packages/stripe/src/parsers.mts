@@ -36,22 +36,17 @@ export type VerificationResult =
     }
   | { outcome: 'requires_input' | 'processing' | 'canceled' | 'failed' }
 
+/** The subset of a VerificationSession retrieved with IDENTITY_RESULT_EXPAND that is read. */
 export type StripeVerificationSessionResult = {
   status: string
-  verified_outputs?: {
-    first_name?: string | null
-    last_name?: string | null
-    id_number?: string | null
-    id_number_type?: string | null
-    address?: { country?: string | null } | null
-  } | null
+  verified_outputs?: { first_name?: string | null; last_name?: string | null } | null
   last_verification_report?: {
     document?: {
       type?: string | null
       issuing_country?: string | null
-      number?: { value?: string | null } | null
-      first_name?: { value?: string | null } | null
-      last_name?: { value?: string | null } | null
+      number?: string | null
+      first_name?: string | null
+      last_name?: string | null
     } | null
   } | null
 }
@@ -67,13 +62,14 @@ export function parseVerificationSession(
 
   const doc = session.last_verification_report?.document
   const outputs = session.verified_outputs
-  const firstName = outputs?.first_name ?? doc?.first_name?.value ?? null
-  const lastName = outputs?.last_name ?? doc?.last_name?.value ?? null
+  const firstName = outputs?.first_name ?? doc?.first_name ?? null
+  const lastName = outputs?.last_name ?? doc?.last_name ?? null
   const fullName =
     firstName && lastName ? `${firstName} ${lastName}` : (firstName ?? lastName ?? null)
-  const documentNumber = outputs?.id_number ?? doc?.number?.value ?? null
-  const issuingCountry = doc?.issuing_country ?? outputs?.address?.country ?? null
-  const documentType = doc?.type ?? outputs?.id_number_type ?? null
+  // Document fields come only from the report; national id numbers are a separate check.
+  const documentNumber = doc?.number ?? null
+  const issuingCountry = doc?.issuing_country ?? null
+  const documentType = doc?.type ?? null
   if (!documentNumber || !issuingCountry || !documentType) return { outcome: 'requires_input' }
   return {
     outcome: 'verified',

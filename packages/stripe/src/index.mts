@@ -20,7 +20,6 @@ export {
   SUBSCRIPTION_SCHEDULE_EXPAND,
   buildBillingPortalParams,
   buildCustomerCreateParams,
-  buildCustomerRedactionParams,
   buildCustomerSearchParams,
   buildIdentityVerificationParams,
   buildOneTimeCheckoutParams,

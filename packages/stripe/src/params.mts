@@ -93,13 +93,6 @@ export function buildCustomerCreateParams(
   return email === undefined ? { metadata } : { email, metadata }
 }
 
-/** Blanks identifying fields and marks the customer with the given metadata. */
-export function buildCustomerRedactionParams(
-  metadata: Record<string, string> = { redacted: 'true' },
-): Stripe.CustomerUpdateParams {
-  return { email: '', name: '', metadata }
-}
-
 export type RefundInput = {
   chargeId?: string
   paymentIntentId?: string
@@ -150,17 +143,20 @@ export function buildPauseCollectionParams(
   return behavior === 'void' ? { pause_collection: { behavior: 'void' } } : { pause_collection: '' }
 }
 
+/** Identity session params. The verification type and options are caller policy. */
 export function buildIdentityVerificationParams(input: {
+  type: 'document' | 'id_number'
+  options: Stripe.Identity.VerificationSessionCreateParams.Options
   returnUrl: string
   metadata: Record<string, string>
 }): Stripe.Identity.VerificationSessionCreateParams {
   return {
-    type: 'document',
+    type: input.type,
+    options: input.options,
     metadata: input.metadata,
-    options: { document: { require_matching_selfie: true, require_live_capture: true } },
     return_url: input.returnUrl,
   }
 }
 
 export const SUBSCRIPTION_SCHEDULE_EXPAND = ['schedule.phases.items.price']
-export const IDENTITY_RESULT_EXPAND = ['verified_outputs', 'last_verification_report.document']
+export const IDENTITY_RESULT_EXPAND = ['verified_outputs', 'last_verification_report']

@@ -11,7 +11,6 @@ import {
 import {
   buildBillingPortalParams,
   buildCustomerCreateParams,
-  buildCustomerRedactionParams,
   buildCustomerSearchParams,
   buildIdentityVerificationParams,
   buildOneTimeCheckoutParams,
@@ -71,12 +70,6 @@ describe('param builders', () => {
     expect(() => buildCustomerSearchParams('', 'x')).toThrow('Invalid Stripe metadata key')
     expect(buildCustomerCreateParams(metadata)).toEqual({ metadata })
     expect(buildCustomerCreateParams(metadata, 'e@x.test')).toEqual({ email: 'e@x.test', metadata })
-    expect(buildCustomerRedactionParams()).toEqual({
-      email: '',
-      name: '',
-      metadata: { redacted: 'true' },
-    })
-    expect(buildCustomerRedactionParams(metadata).metadata).toBe(metadata)
   })
 
   it('builds refund params', () => {
@@ -118,8 +111,16 @@ describe('param builders', () => {
   it('builds pause and identity params', () => {
     expect(buildPauseCollectionParams('void')).toEqual({ pause_collection: { behavior: 'void' } })
     expect(buildPauseCollectionParams('clear')).toEqual({ pause_collection: '' })
-    expect(buildIdentityVerificationParams({ returnUrl: 'r', metadata })).toMatchObject({
+    expect(
+      buildIdentityVerificationParams({
+        type: 'document',
+        options: { document: { require_live_capture: true } },
+        returnUrl: 'r',
+        metadata,
+      }),
+    ).toMatchObject({
       type: 'document',
+      options: { document: { require_live_capture: true } },
       return_url: 'r',
     })
   })
@@ -149,13 +150,12 @@ describe('parsers', () => {
     expect(parseVerificationSession({ status: 'processing' })).toEqual({ outcome: 'processing' })
     expect(parseVerificationSession({ status: 'weird' })).toEqual({ outcome: 'failed' })
     expect(parseVerificationSession({ status: 'verified' })).toEqual({ outcome: 'requires_input' })
+    const doc = { type: 'passport', issuing_country: 'US', number: '9' }
     expect(
       parseVerificationSession({
         status: 'verified',
         verified_outputs: { first_name: 'A', last_name: 'B' },
-        last_verification_report: {
-          document: { type: 'passport', issuing_country: 'US', number: { value: '9' } },
-        },
+        last_verification_report: { document: doc },
       }),
     ).toEqual({
       outcome: 'verified',
@@ -169,33 +169,17 @@ describe('parsers', () => {
     expect(
       parseVerificationSession({
         status: 'verified',
-        verified_outputs: { id_number: '1', id_number_type: 'ssn', address: { country: 'CA' } },
-        last_verification_report: { document: { first_name: { value: 'Solo' } } },
+        last_verification_report: { document: { ...doc, first_name: 'Solo' } },
       }),
-    ).toMatchObject({
-      fullName: 'Solo',
-      documentNumber: '1',
-      issuingCountry: 'CA',
-      documentType: 'ssn',
-    })
+    ).toMatchObject({ firstName: 'Solo', lastName: null, fullName: 'Solo' })
     expect(
       parseVerificationSession({
         status: 'verified',
-        last_verification_report: {
-          document: {
-            last_name: { value: 'L' },
-            type: 't',
-            issuing_country: 'US',
-            number: { value: '1' },
-          },
-        },
+        last_verification_report: { document: { ...doc, last_name: 'L' } },
       }),
     ).toMatchObject({ firstName: null, fullName: 'L' })
     expect(
-      parseVerificationSession({
-        status: 'verified',
-        verified_outputs: { id_number: '1', id_number_type: 't', address: { country: 'US' } },
-      }),
+      parseVerificationSession({ status: 'verified', last_verification_report: { document: doc } }),
     ).toMatchObject({ fullName: null })
   })
 
