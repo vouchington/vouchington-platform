@@ -12,7 +12,7 @@ import type {
 
 export type NamespacePermissions = { can_view: boolean; can_update: boolean }
 
-export function toNamespaceSummary(
+export function toAdminNamespaceSummary(
   entry: DynamicConfigRegistryEntry,
   permissions: NamespacePermissions,
 ): DynamicConfigNamespaceSummary {
@@ -26,13 +26,13 @@ export function toNamespaceSummary(
 }
 
 /** Projects an entry and its live values for admin display. Call after `waitForInitialization`. */
-export function toNamespace(
+export function toAdminNamespaceView(
   entry: DynamicConfigRegistryEntry,
   permissions: NamespacePermissions,
 ): DynamicConfigNamespace {
   const config = normalizeFields(entry, entry.config.getFields())
   return {
-    ...toNamespaceSummary(entry, permissions),
+    ...toAdminNamespaceSummary(entry, permissions),
     config,
     fields: Object.entries(entry.config.fieldTypes).map(([name, rawType]) => {
       const defaultValue = entry.config.defaultFields[name]
@@ -44,9 +44,9 @@ export function toNamespace(
         default_value:
           defaultValue === undefined ? null : normalizeFieldValue(name, rawType, defaultValue),
         description: metadata?.description ?? humanizeFieldName(name),
-        min_value: metadata?.min_value,
-        max_value: metadata?.max_value,
-        max_value_exemption: metadata?.max_value_exemption,
+        min_value: metadata?.minValue,
+        max_value: metadata?.maxValue,
+        max_value_exemption: metadata?.maxValueExemption,
         integer: metadata?.integer,
       }
     }),

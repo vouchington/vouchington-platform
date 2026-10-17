@@ -24,7 +24,7 @@ SKU names.
 | [`@vouchington/phone-validation`](packages/phone-validation)                       | Phone normalization and predicates                                                   |
 | [`@vouchington/edge`](packages/edge)                                               | Injected Cloudflare Worker header, CSP, auth, and cache builders                     |
 | [`@vouchington/uuid-v7`](packages/uuid-v7)                                         | UUIDv7 generation, validation, and date bounds                                       |
-| [`@vouchington/dynamic-config`](packages/dynamic-config)                           | Registry, validators, and authorized admin service over valkyries                    |
+| [`@vouchington/dynamic-config`](packages/dynamic-config)                           | Role authorizer and admin view primitives for valkyries                              |
 | [`@vouchington/frontmatter`](packages/frontmatter)                                 | Deterministic YAML frontmatter serialization                                         |
 | [`@vouchington/email`](packages/email)                                             | React Email render helpers, style factories, catalog copy, and locale resolution     |
 | [`@vouchington/sentry`](packages/sentry)                                           | Sentry init options, data-collection policy, filters, and capture                    |
@@ -59,7 +59,7 @@ SKU names.
 | [`@vouchington/phone-validation`](packages/phone-validation)                       | Phone normalization and predicates                                                   |
 | [`@vouchington/edge`](packages/edge)                                               | Injected Cloudflare Worker header, CSP, auth, and cache builders                     |
 | [`@vouchington/uuid-v7`](packages/uuid-v7)                                         | UUIDv7 generation, validation, and date bounds                                       |
-| [`@vouchington/dynamic-config`](packages/dynamic-config)                           | Registry, validators, and authorized admin service over valkyries                    |
+| [`@vouchington/dynamic-config`](packages/dynamic-config)                           | Role authorizer and admin view primitives for valkyries                              |
 | [`@vouchington/frontmatter`](packages/frontmatter)                                 | Deterministic YAML frontmatter serialization                                         |
 | [`@vouchington/email`](packages/email)                                             | React Email render helpers, style factories, catalog copy, and locale resolution     |
 | [`@vouchington/http-transport`](packages/http-transport)                           | Redirect-safe transport with injected fetch/address pinning                          |

@@ -1,4 +1,4 @@
-import type { DynamicConfigAuthorizer } from './types.mts'
+import type { DynamicConfigPermission, DynamicConfigRegistryEntry } from './types.mts'
 
 export type RoleAuthorizerOptions<TUser> = {
   getRoles(user: TUser): readonly string[]
@@ -8,10 +8,14 @@ export type RoleAuthorizerOptions<TUser> = {
   viewerRoles: readonly string[]
 }
 
-/** A safe default role-based policy. Applications may pass any `DynamicConfigAuthorizer` instead. */
+/** A safe default role-based policy. The result is a synchronous predicate and satisfies `DynamicConfigAuthorizer`. */
 export function createRoleAuthorizer<TUser>(
   options: RoleAuthorizerOptions<TUser>,
-): DynamicConfigAuthorizer<TUser> {
+): (
+  user: TUser,
+  entry: DynamicConfigRegistryEntry,
+  permission: DynamicConfigPermission,
+) => boolean {
   return (user, entry, permission) => {
     const roles = options.getRoles(user)
     if (roles.some((role) => options.adminRoles.includes(role))) return true
