@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  envContractManifest,
   envContractsByName,
   envNamesBySensitivity,
   envNamesForSurface,
@@ -17,6 +18,13 @@ describe('environment contracts', () => {
     expect(envNamesForSurface(contract, 'runtime')).toEqual(['TOKEN', 'PUBLIC_URL'])
     expect(envNamesBySensitivity(contract, 'public')).toEqual(['PUBLIC_URL'])
     expect(envContractsByName(contract).get('PUBLIC_URL')).toHaveLength(1)
+    expect(envContractManifest(contract)[0]).toEqual({
+      name: 'TOKEN',
+      contractKey: 'deployment:runtime:TOKEN',
+      sourceOfTruth: 'deployment',
+      sensitivity: 'secret',
+      runtimeSurfaces: ['runtime'],
+    })
   })
 
   it('rejects delimiter collisions and duplicate normalized keys', () => {
