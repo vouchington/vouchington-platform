@@ -46,6 +46,7 @@ import {
   SelectTrigger,
   SelectValue,
   Toaster,
+  toast,
 } from './index.js'
 
 beforeAll(() => {
@@ -334,6 +335,10 @@ describe('ErrorBoundary', () => {
 })
 
 describe('Toaster', () => {
+  it('re-exports the paired toast emitter', () => {
+    expect(typeof toast).toBe('function')
+  })
+
   it('renders with an injected theme', () => {
     const { container } = render(<Toaster theme="dark" />)
     expect(container.querySelector('section')).toBeTruthy()
