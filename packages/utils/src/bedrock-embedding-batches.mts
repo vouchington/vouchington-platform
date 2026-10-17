@@ -3,7 +3,7 @@ import {
   extractEmbedding,
   NOVA_EMBEDDING_DEFAULTS,
   type EmbeddingOptions,
-} from './single.mts'
+} from './bedrock-embeddings.mts'
 
 /**
  * Nova accepts inline media up to 25 MB after Base64 encoding; 18,000,000 raw bytes encode to

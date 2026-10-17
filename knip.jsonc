@@ -23,6 +23,9 @@
     "packages/utils": {
       "entry": [
         "src/token-secrets.mts!",
+        "src/ai-moderation.mts!",
+        "src/bedrock-embeddings.mts!",
+        "src/bedrock-embedding-batches.mts!",
         "src/deploy-environment.mts!",
         "src/url-signing.mts!",
         "src/request-client-info.mts!",
@@ -95,8 +98,6 @@
     },
     "packages/ai": {
       "entry": [
-        "src/bedrock-embeddings/index.mts!",
-        "src/moderation/index.mts!",
         "src/openai/index.mts!",
         "src/providers/index.mts!",
         "src/structured-decisions/index.mts!",

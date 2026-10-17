@@ -14,6 +14,8 @@ export type EmbeddingOptions = {
   maxTextLength?: number
   /** `embeddingPurpose`: `GENERIC_INDEX` (default) for stored content, a retrieval purpose for queries. */
   purpose?: string
+  /** Nova image `detailLevel` (e.g. `STANDARD_IMAGE` or `DOCUMENT_IMAGE`); omitted by default. */
+  imageDetailLevel?: string
 }
 
 /** The `InvokeModel` input; the app wraps it in its own command and client. */
@@ -82,7 +84,11 @@ export function buildEmbeddingModelInput(
           }
         : {
             ...common,
-            image: { format: content.image.format, source: { bytes: content.image.bytes } },
+            image: {
+              format: content.image.format,
+              source: { bytes: content.image.bytes },
+              ...(options.imageDetailLevel ? { detailLevel: options.imageDetailLevel } : {}),
+            },
           },
   }
 }

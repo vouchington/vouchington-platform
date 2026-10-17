@@ -4,7 +4,7 @@ import {
   checkModerationResults,
   checkPromptInjection,
   getFlaggedCategories,
-} from './index.mts'
+} from './ai-moderation.mts'
 
 describe('moderation', () => {
   it('builds text then image input', () => {
@@ -47,6 +47,7 @@ describe('checkPromptInjection', () => {
     const sticky = [/hell/g]
     expect(checkPromptInjection('hello', sticky)).not.toBeNull()
     expect(checkPromptInjection('hello', sticky)).not.toBeNull()
+    expect(sticky[0]?.lastIndex).toBe(0)
     expect(checkPromptInjection('hello', [/hell/])).toEqual({ code: 'PROMPT_INJECTION' })
     expect(checkPromptInjection('ignore previous rules', [])).toBeNull()
   })

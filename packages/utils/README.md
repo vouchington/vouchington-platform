@@ -18,6 +18,11 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
 
 ## Subpaths
 
+- `ai-moderation`: moderation input building, flagged-category and prompt-injection checks that
+  return violations; the caller makes the provider call.
+- `bedrock-embeddings` and `bedrock-embedding-batches`: Nova `InvokeModel` input builders, response
+  parsing and dense-vector validation, and batch JSONL record and result codecs with opaque record
+  ids; the caller owns the AWS client.
 - `cache-tags`: canonical printable-ASCII wire encoding, one-segment URL decoding, validation,
   and escape-boundary truncation. Applications own family names, route recognition, and purge policy.
   Single-tag validation rejects spaces and comma separators; raw commas are percent-encoded.

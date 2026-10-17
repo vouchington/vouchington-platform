@@ -41,26 +41,8 @@ Pure OpenAI/OpenRouter Responses error semantics (`openai` is an optional peer).
 - `getOpenAIFlexFallback(params, error)` returns the default-tier resend params and trigger, or null.
   Resending (and re-checking spend caps first) is the application's call; `toOpenRouterModel` maps names.
 
-## `@vouchington/ai/moderation`
-
-- `buildModerationInput(texts, imageUrls)` builds the multimodal input; the app makes the call.
-- `checkPromptInjection(message, patterns)` and `checkModerationResults(results)` each return a
-  `MessageSafetyViolation` (`PROMPT_INJECTION` or `MODERATION_VIOLATION` with categories) or null.
-  Mapping a violation to an HTTP error, metrics, and persistence of results are the app's.
-
-## `@vouchington/ai/bedrock-embeddings`
-
-No AWS SDK dependency: builders return the `InvokeModel` input and parsers take the response bytes,
-so the application keeps its own Bedrock client and command.
-
-- Single: `buildInvokeEmbeddingInput`, `parseEmbeddingResponseBody`,
-  `truncateEmbeddingText`, `estimateEmbeddingTokens`, `requireDenseEmbedding`, `InvalidEmbeddingError`.
-  Model id, dimension, and text cap default to Nova values and are overridable.
-  `purpose` (default `GENERIC_INDEX`) selects index vs retrieval embeddings.
-- Batch: `createEmbeddingTextRecordLine`, `createEmbeddingImageRecordLine` (opaque `recordId`
-  supplied and decoded by the app), `minimumTextBatchSizeMB`, `minimumImageBatchSizeMB` (image bound
-  and record-id length injected), `parseBatchResult` (one line at a time; streaming, batching,
-  applying updates, and mapping provider job statuses to lifecycle state are the app's).
+Moderation and Bedrock embedding helpers have no third-party dependency, so they live in
+`@vouchington/utils`: `ai-moderation`, `bedrock-embeddings`, and `bedrock-embedding-batches`.
 
 ## `@vouchington/ai/structured-decisions`
 
