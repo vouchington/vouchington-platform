@@ -22,7 +22,7 @@ function AccordionTrigger({
   children,
   ref,
   ...props
-}: React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger> & {
+}: Omit<React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger>, 'asChild'> & {
   ref?: React.Ref<React.ComponentRef<typeof AccordionPrimitive.Trigger>>
 }) {
   return (
@@ -30,13 +30,16 @@ function AccordionTrigger({
       <AccordionPrimitive.Trigger
         ref={ref}
         className={cn(
-          'flex flex-1 items-center justify-between py-4 text-sm font-medium transition-all hover:underline text-left [&[data-state=open]>svg]:rotate-180',
+          'flex flex-1 items-center justify-between py-4 text-sm font-medium transition-all hover:underline text-left [&[data-state=open]>[data-accordion-chevron]]:rotate-180',
           className,
         )}
         {...props}
       >
         {children}
-        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
+        <ChevronDown
+          data-accordion-chevron=""
+          className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200"
+        />
       </AccordionPrimitive.Trigger>
     </AccordionPrimitive.Header>
   )

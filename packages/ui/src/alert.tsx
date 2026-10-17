@@ -37,15 +37,15 @@ function AlertTitle({
   children,
   ref,
   ...props
-}: React.HTMLAttributes<HTMLHeadingElement> & { ref?: React.Ref<HTMLHeadingElement> }) {
+}: React.HTMLAttributes<HTMLDivElement> & { ref?: React.Ref<HTMLDivElement> }) {
   return (
-    <h5
+    <div
       ref={ref}
       className={cn('mb-1 font-medium leading-none tracking-tight', className)}
       {...props}
     >
       {children}
-    </h5>
+    </div>
   )
 }
 AlertTitle.displayName = 'AlertTitle'

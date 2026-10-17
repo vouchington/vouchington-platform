@@ -13,15 +13,17 @@ function PopoverContent({
   className,
   align = 'start',
   sideOffset = 4,
+  forceMount,
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content> & {
   ref?: React.Ref<React.ComponentRef<typeof PopoverPrimitive.Content>>
 }) {
   return (
-    <PopoverPrimitive.Portal>
+    <PopoverPrimitive.Portal forceMount={forceMount}>
       <PopoverPrimitive.Content
         ref={ref}
+        forceMount={forceMount}
         align={align}
         sideOffset={sideOffset}
         className={cn(

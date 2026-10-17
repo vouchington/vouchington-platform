@@ -32,9 +32,12 @@ ScrollBar.displayName = ScrollAreaPrimitive.ScrollAreaScrollbar.displayName
 function ScrollArea({
   className,
   children,
+  horizontalScrollbar = false,
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> & {
+  /** Also render a horizontal scrollbar (scrollbars must be siblings of the viewport). */
+  horizontalScrollbar?: boolean
   ref?: React.Ref<React.ComponentRef<typeof ScrollAreaPrimitive.Root>>
 }) {
   return (
@@ -50,6 +53,7 @@ function ScrollArea({
         {children}
       </ScrollAreaPrimitive.Viewport>
       <ScrollBar />
+      {horizontalScrollbar && <ScrollBar orientation="horizontal" />}
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
   )

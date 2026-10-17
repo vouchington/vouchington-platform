@@ -25,7 +25,10 @@ function ToggleGroup({
   return (
     <ToggleGroupPrimitive.Root
       ref={ref}
-      className={cn('flex items-center justify-center gap-1', className)}
+      className={cn(
+        'flex items-center justify-center gap-1 data-[orientation=vertical]:flex-col',
+        className,
+      )}
       {...props}
     >
       <ToggleGroupContext.Provider value={toggleGroupContextValue}>

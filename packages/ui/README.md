@@ -22,6 +22,11 @@ value; the package never sets them):
 `primary-foreground`, `secondary`, `secondary-foreground`, `muted`, `muted-foreground`, `accent`,
 `accent-foreground`, `destructive`, `destructive-foreground`, `border`, `input`, `ring`.
 
+Floating surfaces and accordions use `animate-in`/`fade-in-0`/`zoom-in-95`/`slide-in-from-*` (the
+`tw-animate-css` utilities) and `animate-accordion-down`/`animate-accordion-up`. Add `tw-animate-css` and
+define `--animate-accordion-down`/`--animate-accordion-up` plus their keyframes (height from 0 to
+`var(--radix-accordion-content-height)`) in your theme; the package ships no CSS.
+
 ## Components
 
 `Button` (`loading`, `asChild`, `buttonVariants`), `Badge`, `Input`, `Textarea`, `Label`,

@@ -25,7 +25,6 @@ import {
   PopoverContent,
   PopoverTrigger,
   ScrollArea,
-  ScrollBar,
   Table,
   TableBody,
   TableCaption,
@@ -67,7 +66,7 @@ describe('Alert', () => {
       </Alert>,
     )
     expect(screen.getByRole('alert').className).toContain('text-destructive')
-    expect(screen.getByText('Title').tagName).toBe('H5')
+    expect(screen.getByText('Title').tagName).toBe('DIV')
     expect(screen.getByText('Body')).toBeTruthy()
     for (const ref of refs) expect(ref.current).toBeTruthy()
   })
@@ -168,9 +167,8 @@ describe('ScrollArea', () => {
   it('renders children in a focusable viewport', () => {
     const root = createRef<HTMLDivElement>()
     render(
-      <ScrollArea ref={root}>
+      <ScrollArea ref={root} horizontalScrollbar>
         <p>Content</p>
-        <ScrollBar orientation="horizontal" />
       </ScrollArea>,
     )
     expect(
@@ -211,6 +209,15 @@ describe('floating surfaces', () => {
     )
     expect(screen.getByText('Popover body')).toBeTruthy()
     expect(ref.current).toBeTruthy()
+  })
+
+  it('Popover can force-mount closed content', () => {
+    render(
+      <Popover>
+        <PopoverContent forceMount>Mounted</PopoverContent>
+      </Popover>,
+    )
+    expect(screen.getByText('Mounted')).toBeTruthy()
   })
 
   it('Popover and HoverCard use their default alignment', () => {

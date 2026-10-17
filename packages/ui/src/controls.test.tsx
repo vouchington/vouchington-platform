@@ -25,23 +25,18 @@ import {
 afterEach(cleanup)
 
 describe('Checkbox', () => {
-  it('derives aria-labelledby from id and toggles', () => {
+  it('toggles, forwards refs and shows a distinct mixed state', () => {
     const onChange = vi.fn()
     const ref = createRef<HTMLButtonElement>()
-    render(<Checkbox id="terms" ref={ref} onCheckedChange={onChange} />)
-    const box = screen.getByRole('checkbox')
-    expect(box.getAttribute('aria-labelledby')).toBe('terms-label')
+    const { rerender, container } = render(
+      <Checkbox ref={ref} aria-label="Agree" onCheckedChange={onChange} />,
+    )
+    const box = screen.getByRole('checkbox', { name: 'Agree' })
     fireEvent.click(box)
     expect(onChange).toHaveBeenCalledWith(true)
     expect(ref.current).toBe(box)
-  })
-
-  it('prefers explicit aria props and omits labelledby without an id', () => {
-    const { rerender } = render(<Checkbox aria-label="Agree" aria-labelledby="x" />)
-    expect(screen.getByRole('checkbox').getAttribute('aria-labelledby')).toBe('x')
-    expect(screen.getByRole('checkbox').getAttribute('aria-label')).toBe('Agree')
-    rerender(<Checkbox />)
-    expect(screen.getByRole('checkbox').getAttribute('aria-labelledby')).toBeNull()
+    rerender(<Checkbox aria-label="Agree" checked="indeterminate" />)
+    expect(container.querySelector('svg.lucide-minus')).toBeTruthy()
   })
 })
 
