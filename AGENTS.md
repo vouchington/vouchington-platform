@@ -55,6 +55,7 @@ the migration advisory lock is per database, and `VITEST_MAX_WORKERS` overrides 
 - `@vouchington/html-utils` — HTML entity and text helpers
 - `@vouchington/phone-validation` — E.164 normalization and predicates
 - `@vouchington/uuid-v7` — UUIDv7 creation, validation, date bounds, and base36 suffixes
+- `@vouchington/dynamic-config` — registry, descriptor, validator, and injected-authorization admin layer over valkyries dynamic-config
 - `@vouchington/frontmatter` — Deterministic YAML frontmatter serialization
 
 Extracted APIs must be opinionated generic utilities, never orchestration or workflows. State
