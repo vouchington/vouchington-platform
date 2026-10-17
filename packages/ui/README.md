@@ -27,6 +27,10 @@ Floating surfaces and accordions use `animate-in`/`fade-in-0`/`zoom-in-95`/`slid
 define `--animate-accordion-down`/`--animate-accordion-up` plus their keyframes (height from 0 to
 `var(--radix-accordion-content-height)`) in your theme; the package ships no CSS.
 
+InputOTP uses `animate-caret-blink`; define `--animate-caret-blink` and its keyframes in your theme.
+CommandList and Toaster expose cmdk and Sonner accessibility labels (`label`, `containerAriaLabel`); supply
+localized values because the dependencies default to English.
+
 ## Components
 
 `Accordion` is vertical only; its `orientation` prop is not styled.

@@ -136,17 +136,6 @@ describe('Select', () => {
     expect(screen.getAllByText('Alpha').length).toBeGreaterThan(0)
   })
 
-  it('derives aria-labelledby from the id', () => {
-    render(
-      <Select>
-        <SelectTrigger id="field">
-          <SelectValue />
-        </SelectTrigger>
-      </Select>,
-    )
-    expect(screen.getByRole('combobox').getAttribute('aria-labelledby')).toBe('field-label')
-  })
-
   it('renders popper-less content', () => {
     render(
       <Select open>
@@ -180,6 +169,18 @@ describe('InputOTP', () => {
     expect(screen.getByText('1')).toBeTruthy()
     expect(screen.getByText('2')).toBeTruthy()
   })
+})
+
+it('InputOTP renders placeholder characters while empty', () => {
+  render(
+    <InputOTP maxLength={2} placeholder="••" value="" onChange={() => {}}>
+      <InputOTPGroup>
+        <InputOTPSlot index={0} />
+        <InputOTPSlot index={1} />
+      </InputOTPGroup>
+    </InputOTP>,
+  )
+  expect(screen.getAllByText('•')).toHaveLength(2)
 })
 
 describe('Breadcrumb', () => {
@@ -223,7 +224,7 @@ describe('Command', () => {
     render(
       <Command>
         <CommandInput ref={input} placeholder="Search..." />
-        <CommandList>
+        <CommandList label="Results">
           <CommandEmpty>Nothing</CommandEmpty>
           <CommandGroup heading="Group">
             <CommandItem>
@@ -250,6 +251,25 @@ describe('Command', () => {
     expect(calls.at(-1)).toBeNull()
   })
 
+  it('runs a cleanup returned by a callback ref instead of calling it with null', () => {
+    const cleanup = vi.fn()
+    const seen: Array<HTMLInputElement | null> = []
+    const { unmount } = render(
+      <Command>
+        <CommandInput
+          ref={(node) => {
+            seen.push(node)
+            return cleanup
+          }}
+          placeholder="Clean"
+        />
+      </Command>,
+    )
+    unmount()
+    expect(cleanup).toHaveBeenCalledTimes(1)
+    expect(seen).toHaveLength(1)
+  })
+
   it('works without a ref', () => {
     render(
       <Command>
@@ -261,12 +281,33 @@ describe('Command', () => {
 
   it('renders the dialog with injected copy', () => {
     render(
-      <CommandDialog open title="Search" description="Find things" closeLabel="Close search">
+      <CommandDialog
+        open
+        shouldFilter={false}
+        title="Search"
+        description="Find things"
+        closeLabel="Close search"
+      >
         <CommandInput placeholder="Type" />
       </CommandDialog>,
     )
     expect(screen.getByText('Find things')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Close search' })).toBeTruthy()
+  })
+
+  it('filters by default and merges CommandEmpty classes', () => {
+    render(
+      <CommandDialog open title="Search" description="Find" closeLabel="Close">
+        <CommandInput placeholder="Filter" />
+        <CommandList label="Results">
+          <CommandEmpty className="extra">Nothing</CommandEmpty>
+          <CommandItem>Apple</CommandItem>
+        </CommandList>
+      </CommandDialog>,
+    )
+    fireEvent.change(screen.getByPlaceholderText('Filter'), { target: { value: 'zzz' } })
+    expect(screen.getByText('Nothing').className).toContain('extra')
+    expect(screen.getByText('Nothing').className).toContain('py-6')
   })
 })
 

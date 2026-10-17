@@ -12,15 +12,15 @@ type CommandInputProps = React.ComponentPropsWithoutRef<typeof CommandPrimitive.
 export function CommandInput({ className, ref, ...props }: CommandInputProps) {
   const setInputRef = React.useCallback(
     (node: HTMLInputElement) => {
-      const assign = (value: HTMLInputElement | null) => {
-        if (typeof ref === 'function') ref(value)
-        else if (ref) ref.current = value
-      }
-      assign(node)
+      let cleanupRef: void | (() => void)
+      if (typeof ref === 'function') cleanupRef = ref(node)
+      else if (ref) ref.current = node
       const stopWatching = watchStaleAriaReferences(node)
       return () => {
         stopWatching()
-        assign(null)
+        if (cleanupRef) cleanupRef()
+        else if (typeof ref === 'function') ref(null)
+        else if (ref) ref.current = null
       }
     },
     [ref],

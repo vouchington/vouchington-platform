@@ -44,7 +44,7 @@ function InputOTPSlot({
 }: React.ComponentPropsWithoutRef<'div'> & { index: number; ref?: React.Ref<HTMLDivElement> }) {
   const inputOTPContext = React.use(OTPInputContext)
   const slots = (inputOTPContext as { slots: RenderProps['slots'] }).slots
-  const { char, hasFakeCaret, isActive } = slots[index]!
+  const { char, placeholderChar, hasFakeCaret, isActive } = slots[index]!
 
   return (
     <div
@@ -56,7 +56,7 @@ function InputOTPSlot({
       )}
       {...props}
     >
-      {char}
+      {char ?? placeholderChar}
       {hasFakeCaret && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="animate-caret-blink h-4 w-px bg-foreground duration-1000" />

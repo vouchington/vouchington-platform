@@ -31,14 +31,22 @@ const CommandDialog = ({
   title,
   description,
   closeLabel,
+  shouldFilter = true,
   ...props
-}: DialogProps & { title: string; description: string; closeLabel: string }) => (
+}: DialogProps & {
+  title: string
+  description: string
+  closeLabel: string
+  /** Defaults to cmdk filtering; pass false when the caller filters items itself. */
+  shouldFilter?: boolean
+}) => (
   <Dialog {...props}>
     <DialogContent closeLabel={closeLabel} className="overflow-hidden p-0">
       <DialogTitle className="sr-only">{title}</DialogTitle>
       <DialogDescription className="sr-only">{description}</DialogDescription>
       <Command
-        shouldFilter={false}
+        label={title}
+        shouldFilter={shouldFilter}
         className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[data-cmdk-input-wrapper]_svg]:h-5 [&_[data-cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5"
       >
         {children}
@@ -52,6 +60,8 @@ function CommandList({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof CommandPrimitive.List> & {
+  /** Accessible name for the listbox. */
+  label: string
   ref?: React.Ref<React.ComponentRef<typeof CommandPrimitive.List>>
 }) {
   return (
@@ -65,12 +75,19 @@ function CommandList({
 CommandList.displayName = CommandPrimitive.List.displayName
 
 function CommandEmpty({
+  className,
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof CommandPrimitive.Empty> & {
   ref?: React.Ref<React.ComponentRef<typeof CommandPrimitive.Empty>>
 }) {
-  return <CommandPrimitive.Empty ref={ref} className="py-6 text-center text-sm" {...props} />
+  return (
+    <CommandPrimitive.Empty
+      ref={ref}
+      className={cn('py-6 text-center text-sm', className)}
+      {...props}
+    />
+  )
 }
 CommandEmpty.displayName = CommandPrimitive.Empty.displayName
 

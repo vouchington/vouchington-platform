@@ -54,7 +54,7 @@ function DialogContent({
   hideOverlay,
   ref,
   ...props
-}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
+}: Omit<React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>, 'asChild'> & {
   ref?: React.Ref<React.ComponentRef<typeof DialogPrimitive.Content>>
   hideOverlay?: boolean
 } & CloseProps) {
