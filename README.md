@@ -26,6 +26,7 @@ SKU names.
 | [`@vouchington/uuid-v7`](packages/uuid-v7)                                         | UUIDv7 generation, validation, and date bounds                                       |
 | [`@vouchington/dynamic-config`](packages/dynamic-config)                           | Role authorizer and admin view primitives for valkyries                              |
 | [`@vouchington/stripe`](packages/stripe)                                           | Stripe client factory, webhook verification, event narrowing, param builders         |
+| [`@vouchington/ui`](packages/ui)                                                   | Presentational React primitives on Tailwind semantic tokens, copy via props          |
 | [`@vouchington/dynamic-config`](packages/dynamic-config)                           | Registry, validators, and authorized admin service over valkyries                    |
 | [`@vouchington/frontmatter`](packages/frontmatter)                                 | Deterministic YAML frontmatter serialization                                         |
 | [`@vouchington/email`](packages/email)                                             | React Email render helpers, style factories, catalog copy, and locale resolution     |
@@ -65,6 +66,7 @@ SKU names.
 | [`@vouchington/uuid-v7`](packages/uuid-v7)                                         | UUIDv7 generation, validation, and date bounds                                       |
 | [`@vouchington/dynamic-config`](packages/dynamic-config)                           | Role authorizer and admin view primitives for valkyries                              |
 | [`@vouchington/stripe`](packages/stripe)                                           | Stripe client factory, webhook verification, event narrowing, param builders         |
+| [`@vouchington/ui`](packages/ui)                                                   | Presentational React primitives on Tailwind semantic tokens, copy via props          |
 | [`@vouchington/dynamic-config`](packages/dynamic-config)                           | Registry, validators, and authorized admin service over valkyries                    |
 | [`@vouchington/frontmatter`](packages/frontmatter)                                 | Deterministic YAML frontmatter serialization                                         |
 | [`@vouchington/email`](packages/email)                                             | React Email render helpers, style factories, catalog copy, and locale resolution     |

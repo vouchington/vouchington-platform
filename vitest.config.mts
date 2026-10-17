@@ -29,13 +29,18 @@ export default defineConfig({
   },
   test: {
     fileParallelism: false,
-    include: ['packages/*/src/**/*.test.mts', 'test/**/*.test.mts'],
+    include: [
+      'packages/*/src/**/*.test.mts',
+      'packages/ui/src/**/*.test.tsx',
+      'test/**/*.test.mts',
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
-      include: ['packages/*/src/**/*.mts'],
+      include: ['packages/*/src/**/*.mts', 'packages/ui/src/**/*.{ts,tsx}'],
       exclude: [
         'packages/*/src/**/*.test.mts',
+        'packages/ui/src/**/*.test.tsx',
         'packages/*/src/**/test-helpers.mts',
         'packages/*/src/**/*-test-helpers.mts',
         'packages/*/src/**/types.mts',
