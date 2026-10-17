@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/localization/package.json"],
+  "changedManifests": ["packages/utils/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "localization",
-      "fromVersion": "0.2.0",
-      "name": "@vouchington/localization",
-      "toVersion": "0.2.1"
+      "directory": "utils",
+      "fromVersion": "0.7.2",
+      "name": "@vouchington/utils",
+      "toVersion": "0.7.3"
     }
   ],
-  "selectedPackage": "@vouchington/localization"
+  "selectedPackage": "@vouchington/utils"
 }

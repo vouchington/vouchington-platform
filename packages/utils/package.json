@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/utils",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "description": "Dependency-free runtime utilities for Vouchington-style applications.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/utils#readme",
   "bugs": {
