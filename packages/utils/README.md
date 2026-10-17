@@ -85,9 +85,12 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
   descriptors. Catalog segments cannot contain dots because dots delimit nested keys. Plural values
   and configured number parameters must be finite numbers; callers own catalog content, locale
   choice, and number formatting.
-- `observability`: SDK-free URL, request, event, and span scrubbing plus a bounded spike-window
-  tracker. Callers provide credential headers and environment or spike policy; this package has no
-  product defaults.
+- `observability`: SDK-free (structural types only) URL, request, breadcrumb, event, and span
+  scrubbing plus a bounded spike-window tracker. All scrubbers are copy-on-write: unchanged input is
+  returned by identity. Callers provide `credentialHeaders`, an optional `redactUrl` hook (applied
+  after query and fragment stripping, for path-borne credentials), and an opt-in `dropRequestBody`.
+  URL-only and credential-only passes are exported separately, and `composeBeforeSend` accepts
+  either `ScrubOptions` or a final scrubber function. This package has no product defaults.
 
 ```ts
 const money = createMoneyCatalog([{ code: 'credit', minorUnitExponent: 2 }] as const, 6)
