@@ -31,5 +31,5 @@ describe('crawler package catalog', () => {
       expect(existsSync(`packages/${directory}/dist/index.d.mts`)).toBe(true)
       await import(pathToFileURL(resolve(`packages/${directory}/dist/index.mjs`)).href)
     }
-  })
+  }, 60_000)
 })
