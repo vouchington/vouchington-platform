@@ -6,7 +6,7 @@ import { parseSchemaValidJson } from './validate-output.mts'
 
 export type CreateAnthropicMessage = (
   params: Anthropic.MessageCreateParamsNonStreaming,
-  options?: { signal?: AbortSignal },
+  options?: { signal?: AbortSignal; maxRetries?: number },
 ) => PromiseLike<Anthropic.Message>
 
 /** Builds the Messages params for a JSON answer constrained by `output_config.format`. */
@@ -27,7 +27,7 @@ export function buildAnthropicJsonParams(
   }
 }
 
-function unusable(
+export function unusable(
   code: 'refusal' | 'output-truncated' | 'invalid-response',
   message: string,
   billedResponse: BilledModelResponse,
@@ -47,6 +47,33 @@ export function anthropicBilledResponse(message: Anthropic.Message): BilledModel
   }
 }
 
+/** Throws (with the billed response) for a refusal or a turn cut off by a token or context limit. */
+export function assertAnthropicCompleted(
+  message: Anthropic.Message,
+  billed: BilledModelResponse,
+): void {
+  if (message.stop_reason === 'refusal') {
+    throw unusable('refusal', 'Anthropic declined the request.', billed)
+  }
+  // `model_context_window_exceeded` is newer than some SDK type versions.
+  const stop: string | null = message.stop_reason
+  if (stop === 'max_tokens' || stop === 'model_context_window_exceeded') {
+    throw unusable('output-truncated', `Anthropic output was cut off (${stop}).`, billed)
+  }
+}
+
+/** Per-request SDK options: the abort signal and the caller's retry budget (0 disables retries). */
+export function anthropicRequestOptions(
+  maxRetries: number | undefined,
+  signal: AbortSignal | undefined,
+): { signal?: AbortSignal; maxRetries?: number } | undefined {
+  if (maxRetries === undefined && !signal) return undefined
+  return {
+    ...(maxRetries === undefined ? {} : { maxRetries }),
+    ...(signal ? { signal } : {}),
+  }
+}
+
 /**
  * Turns a 2xx Messages answer into a result. A refusal, truncation, missing text or schema-invalid
  * answer still billed, so the thrown `ModelProviderError` carries the billed response.
@@ -56,12 +83,7 @@ export function parseAnthropicJsonMessage<T>(
   request: GenerateJsonRequest<T>,
 ): ModelCallResult<T> {
   const billed = anthropicBilledResponse(message)
-  if (message.stop_reason === 'refusal') {
-    throw unusable('refusal', 'Anthropic declined the request.', billed)
-  }
-  if (message.stop_reason === 'max_tokens') {
-    throw unusable('output-truncated', 'Anthropic output hit max_tokens.', billed)
-  }
+  assertAnthropicCompleted(message, billed)
   const text = message.content.find((block) => block.type === 'text')
   if (!text) throw unusable('invalid-response', 'Anthropic returned no text.', billed)
   try {
@@ -85,7 +107,7 @@ export async function callAnthropicJson<T>(
   try {
     message = await createMessage(
       buildAnthropicJsonParams(model, request),
-      signal ? { signal } : undefined,
+      anthropicRequestOptions(request.maxRetries, signal),
     )
   } catch (err) {
     throw classifyAnthropicError(err)

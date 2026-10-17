@@ -21,6 +21,11 @@ client). Tests use fakes and recorded-shape fixtures only; no live provider call
   one schema-validated JSON call through an injected client function. OpenRouter is the same
   Responses shape; the app maps the model name and picks the endpoint inside `createResponse`.
 - `parseSchemaValidJson(text, { schema, parse })`.
+- Tool turns: `buildAnthropicToolTurnParams` / `parseAnthropicToolTurn` / `callAnthropicToolTurn` and
+  `buildOpenAIToolTurnParams` / `parseOpenAIToolTurn` / `callOpenAIToolTurn` turn one provider-neutral
+  transcript (`AgentTurnMessage[]`) into one required-tool-call turn. The agent loop, tool
+  execution, and validation of tool input stay with the application.
+- `openAIBilledResponse` and `assertCompletedOpenAIResponse`: shared response bookkeeping.
 
 ## `@vouchington/ai/structured-decisions`
 
