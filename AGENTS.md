@@ -71,7 +71,8 @@ the migration advisory lock is per database, and `VITEST_MAX_WORKERS` overrides 
 Extracted APIs must be opinionated generic utilities, never business-logic orchestration. Generic
 orchestration utilities are fine when they know nothing about the domain and callers inject the
 work: retry loops, per-item transaction runners, middleware installers, idempotency managers, and
-dependency-ordered appliers. Business workflows, domain state transitions, product identifiers,
+dependency-ordered appliers. An extraction must earn its place: it must reduce lines of code in its
+dependents without adding indirection to their business logic. Business workflows, domain state transitions, product identifiers,
 product defaults, policy, persistence, and authorization belong in application adapters. Packages may encode safe, reusable implementation defaults when callers
 can override product-facing choices. Code with no third-party runtime dependencies belongs in an explicit
 `@vouchington/utils/<subpath>` export. Code requiring any third-party runtime dependency must be its
