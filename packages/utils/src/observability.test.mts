@@ -4,6 +4,7 @@ import {
   SENSITIVE_VALUE,
   composeBeforeSend,
   createSpikeWindowTracker,
+  DEFAULT_MAX_SPIKE_FINGERPRINTS,
   isAllowedEnvironment,
   scrubEvent,
   scrubHeaders,
@@ -114,5 +115,18 @@ describe('observability scrubbing', () => {
     const tracker = createSpikeWindowTracker(0, 1)
     expect(() => tracker.recordAndCheck('a', Number.NaN)).toThrow(RangeError)
     expect(tracker.recordAndCheck('a', 0)).toBe(false)
+  })
+
+  it('bounds distinct fingerprints and evicts the least recently seen', () => {
+    const tracker = createSpikeWindowTracker(1, 1_000, 2)
+    tracker.recordAndCheck('a', 0)
+    tracker.recordAndCheck('b', 1)
+    tracker.recordAndCheck('a', 2)
+    tracker.recordAndCheck('c', 3)
+    expect(tracker.size).toBe(2)
+    expect(tracker.recordAndCheck('b', 4)).toBe(true)
+    expect(tracker.recordAndCheck('a', 5)).toBe(true)
+    expect(() => createSpikeWindowTracker(1, 1_000, 0)).toThrow(RangeError)
+    expect(DEFAULT_MAX_SPIKE_FINGERPRINTS).toBe(1000)
   })
 })
