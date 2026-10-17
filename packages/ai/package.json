@@ -1,0 +1,50 @@
+{
+  "name": "@vouchington/ai",
+  "version": "0.0.0",
+  "description": "Provider-neutral model-call primitives: usage, pricing, JSON-output adapters, and structured-decision codecs.",
+  "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/ai#readme",
+  "license": "MIT",
+  "author": "Jonathan Ong",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vouchington/vouchington-platform.git",
+    "directory": "packages/ai"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "exports": {
+    "./providers": {
+      "types": "./dist/providers/index.d.mts",
+      "import": "./dist/providers/index.mjs",
+      "default": "./dist/providers/index.mjs"
+    },
+    "./structured-decisions": {
+      "types": "./dist/structured-decisions/index.d.mts",
+      "import": "./dist/structured-decisions/index.mjs",
+      "default": "./dist/structured-decisions/index.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0"
+  },
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.135.0"
+  },
+  "peerDependencies": {
+    "@anthropic-ai/sdk": "^0.135.0"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}
