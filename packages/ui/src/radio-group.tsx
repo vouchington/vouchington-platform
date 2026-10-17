@@ -27,7 +27,7 @@ function RadioGroupItem({
   className,
   ref,
   ...props
-}: React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item> & {
+}: Omit<React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item>, 'asChild'> & {
   ref?: React.Ref<React.ComponentRef<typeof RadioGroupPrimitive.Item>>
 }) {
   return (

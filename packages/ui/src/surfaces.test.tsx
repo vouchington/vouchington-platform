@@ -136,6 +136,8 @@ describe('Table region', () => {
     expect(scroller.getAttribute('tabindex')).toBe('0')
     expect(scroller.getAttribute('role')).toBe('region')
     expect(scroller.getAttribute('aria-label')).toBe('Results')
+    rerender(<Table scrollTabIndex={-1} />)
+    expect(container.firstElementChild!.getAttribute('tabindex')).toBe('-1')
     rerender(<Table />)
     expect(container.firstElementChild!.getAttribute('role')).toBeNull()
   })

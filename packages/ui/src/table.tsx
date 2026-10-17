@@ -5,17 +5,20 @@ import { cn } from './cn.js'
 function Table({
   className,
   label,
+  scrollTabIndex = 0,
   ref,
   ...props
 }: React.HTMLAttributes<HTMLTableElement> & {
   /** Accessible name for the scrollable region (e.g. the caption text). */
   label?: string
+  /** Tab stop of the scroll container; pass -1 to skip it. */
+  scrollTabIndex?: number
   ref?: React.Ref<HTMLTableElement>
 }) {
   return (
     <div
       className="relative w-full overflow-auto focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-      tabIndex={0}
+      tabIndex={scrollTabIndex}
       role={label ? 'region' : undefined}
       aria-label={label}
     >

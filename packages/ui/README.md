@@ -29,6 +29,8 @@ define `--animate-accordion-down`/`--animate-accordion-up` plus their keyframes 
 
 ## Components
 
+`Accordion` is vertical only; its `orientation` prop is not styled.
+
 `Button` (`loading`, `asChild`, `buttonVariants`), `Badge`, `Input`, `Textarea`, `Label`,
 `Separator`, `Skeleton`, `Spinner`, `Kbd`, `KbdGroup`, `Checkbox`, `Switch`, `RadioGroup`, `Toggle`,
 `ToggleGroup`, `Tabs`, `Accordion`, `Tooltip`, `Popover`, `HoverCard`, `ScrollArea`, `Avatar`, `Alert`,
