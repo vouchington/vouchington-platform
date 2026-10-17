@@ -15,13 +15,18 @@ const ADMISSION_STORAGE_PREFIX = admissionStoragePrefix('vouchington')
 
 describe('AdmissionEntryStore bounded persistence', () => {
   it('falls back when browser storage access throws', () => {
-    const localStorage = vi.spyOn(globalThis, 'localStorage', 'get').mockImplementation(() => {
-      throw new Error('Storage access rejected')
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      get() {
+        throw new Error('Storage access rejected')
+      },
     })
     try {
       expect(getAdmissionStorage()).toBeNull()
     } finally {
-      localStorage.mockRestore()
+      if (original) Object.defineProperty(globalThis, 'localStorage', original)
+      else delete (globalThis as { localStorage?: unknown }).localStorage
     }
   })
 

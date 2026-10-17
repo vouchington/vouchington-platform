@@ -13,6 +13,7 @@ const PREFIX = 'ns:admission-idempotency:v1:'
 afterEach(() => {
   vi.useRealTimers()
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
 })
 
 describe('AdmissionIdempotency defaults', () => {
@@ -31,20 +32,22 @@ describe('AdmissionIdempotency defaults', () => {
 
 describe('getAdmissionLockManager', () => {
   it('returns null when navigator access throws', () => {
-    vi.spyOn(globalThis, 'navigator', 'get').mockImplementation(() => {
-      throw new Error('blocked')
+    vi.stubGlobal('navigator', {
+      get locks(): never {
+        throw new Error('blocked')
+      },
     })
     expect(getAdmissionLockManager()).toBeNull()
   })
 
   it('returns navigator.locks when present', () => {
     const locks = new MemoryLockManager()
-    vi.spyOn(globalThis, 'navigator', 'get').mockReturnValue({ locks } as unknown as Navigator)
+    vi.stubGlobal('navigator', { locks })
     expect(getAdmissionLockManager()).toBe(locks)
   })
 
   it('returns null when navigator has no locks', () => {
-    vi.spyOn(globalThis, 'navigator', 'get').mockReturnValue({} as unknown as Navigator)
+    vi.stubGlobal('navigator', {})
     expect(getAdmissionLockManager()).toBeNull()
   })
 })
