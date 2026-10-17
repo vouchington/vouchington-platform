@@ -1,4 +1,3 @@
-export * from './content-identity-cache.mts'
 export * from './jwk-set-codec.mts'
 export * from './jwt.mts'
 export * from './keys.mts'

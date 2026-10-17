@@ -70,6 +70,11 @@
       "import": "./dist/cookies.mjs",
       "default": "./dist/cookies.mjs"
     },
+    "./content-identity-cache": {
+      "types": "./dist/content-identity-cache.d.mts",
+      "import": "./dist/content-identity-cache.mjs",
+      "default": "./dist/content-identity-cache.mjs"
+    },
     "./collections": {
       "types": "./dist/collections.d.mts",
       "import": "./dist/collections.mjs",
