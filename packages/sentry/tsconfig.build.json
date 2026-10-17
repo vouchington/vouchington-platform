@@ -1,5 +1,11 @@
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": { "noEmit": false, "outDir": "dist", "rootDir": "src", "declaration": true },
+  "compilerOptions": {
+    "paths": {},
+    "noEmit": false,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "declaration": true
+  },
   "exclude": ["src/**/*.test.mts"]
 }

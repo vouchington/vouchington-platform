@@ -18,6 +18,7 @@
       "@vouchington/sentry": ["./packages/sentry/src/index.mts"],
       "@vouchington/session-jwt": ["./packages/session-jwt/src/index.mts"],
       "@vouchington/utils/cookies": ["./packages/utils/src/cookies.mts"],
+      "@vouchington/utils/observability": ["./packages/utils/src/observability.mts"],
       "@vouchington/utils/sentry-envelope": ["./packages/utils/src/sentry-envelope.mts"],
       "@vouchington/utils/scopes": ["./packages/utils/src/scopes.mts"],
       "@vouchington/utils/strings": ["./packages/utils/src/strings.mts"],
