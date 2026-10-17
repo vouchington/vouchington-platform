@@ -1,3 +1,5 @@
+'use client'
+
 import * as React from 'react'
 import { OTPInput, OTPInputContext, type RenderProps } from 'input-otp'
 import { Minus } from 'lucide-react'
