@@ -38,7 +38,7 @@ function ScrollArea({
   viewportTabIndex = 0,
   ref,
   ...props
-}: React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> & {
+}: Omit<React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>, 'asChild'> & {
   /** Also render a horizontal scrollbar (scrollbars must be siblings of the viewport). */
   horizontalScrollbar?: boolean
   /** Tab stop of the scrollable viewport; pass -1 to skip it. */

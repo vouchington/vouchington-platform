@@ -129,7 +129,25 @@ describe('Table', () => {
   })
 })
 
+describe('Table region', () => {
+  it('is a focusable named region only when a label is supplied', () => {
+    const { container, rerender } = render(<Table label="Results" />)
+    const scroller = container.firstElementChild!
+    expect(scroller.getAttribute('tabindex')).toBe('0')
+    expect(scroller.getAttribute('role')).toBe('region')
+    expect(scroller.getAttribute('aria-label')).toBe('Results')
+    rerender(<Table />)
+    expect(container.firstElementChild!.getAttribute('role')).toBeNull()
+  })
+})
+
 describe('ButtonGroup', () => {
+  it('forwards its ref', () => {
+    const ref = createRef<HTMLDivElement>()
+    render(<ButtonGroup ref={ref} />)
+    expect(ref.current?.getAttribute('role')).toBe('group')
+  })
+
   it('lays out by orientation', () => {
     const { rerender } = render(<ButtonGroup aria-label="Group" />)
     expect(screen.getByRole('group').className).toContain('flex-row')
@@ -152,14 +170,35 @@ describe('Avatar', () => {
     expect(refs[1]!.current).toBeTruthy()
   })
 
-  it('forwards the image ref type through AvatarImage', () => {
+  it('forwards the image ref once the image has loaded', async () => {
+    vi.stubGlobal(
+      'Image',
+      class {
+        complete = false
+        naturalWidth = 0
+        listeners: Array<(event: unknown) => void> = []
+        addEventListener(type: string, listener: (event: unknown) => void) {
+          if (type === 'load') this.listeners.push(listener)
+        }
+        removeEventListener() {}
+        set src(_value: string) {
+          this.complete = true
+          this.naturalWidth = 1
+          queueMicrotask(() =>
+            this.listeners.forEach((listener) => listener({ currentTarget: this })),
+          )
+        }
+      },
+    )
     const ref = createRef<HTMLImageElement>()
     render(
       <Avatar>
         <AvatarImage ref={ref} src="/a.png" alt="a" />
       </Avatar>,
     )
-    expect(ref.current === null || ref.current.tagName === 'IMG').toBe(true)
+    await screen.findByRole('img')
+    expect(ref.current?.tagName).toBe('IMG')
+    vi.unstubAllGlobals()
   })
 })
 
@@ -218,6 +257,25 @@ describe('floating surfaces', () => {
       </Popover>,
     )
     expect(screen.getByText('Mounted')).toBeTruthy()
+  })
+
+  it('Tooltip and HoverCard can force-mount closed content', () => {
+    render(
+      <>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>T</TooltipTrigger>
+            <TooltipContent forceMount>Tip mounted</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <HoverCard>
+          <HoverCardTrigger>H</HoverCardTrigger>
+          <HoverCardContent forceMount>Card mounted</HoverCardContent>
+        </HoverCard>
+      </>,
+    )
+    expect(screen.getAllByText('Tip mounted').length).toBeGreaterThan(0)
+    expect(screen.getByText('Card mounted')).toBeTruthy()
   })
 
   it('Popover and HoverCard use their default alignment', () => {

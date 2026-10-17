@@ -13,15 +13,17 @@ function HoverCardContent({
   className,
   align = 'center',
   sideOffset = 4,
+  forceMount,
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof HoverCardPrimitive.Content> & {
   ref?: React.Ref<React.ComponentRef<typeof HoverCardPrimitive.Content>>
 }) {
   return (
-    <HoverCardPrimitive.Portal>
+    <HoverCardPrimitive.Portal forceMount={forceMount}>
       <HoverCardPrimitive.Content
         ref={ref}
+        forceMount={forceMount}
         align={align}
         sideOffset={sideOffset}
         className={cn(

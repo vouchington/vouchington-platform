@@ -23,7 +23,7 @@ value; the package never sets them):
 `accent-foreground`, `destructive`, `destructive-foreground`, `border`, `input`, `ring`.
 
 Floating surfaces and accordions use `animate-in`/`fade-in-0`/`zoom-in-95`/`slide-in-from-*` (the
-`tw-animate-css` utilities) and `animate-accordion-down`/`animate-accordion-up`. Add `tw-animate-css` and
+`tw-animate-css` utilities) and `animate-accordion-down`/`animate-accordion-up`. Add `tw-animate-css` (install it and `@import 'tw-animate-css';` in your stylesheet) and
 define `--animate-accordion-down`/`--animate-accordion-up` plus their keyframes (height from 0 to
 `var(--radix-accordion-content-height)`) in your theme; the package ships no CSS.
 

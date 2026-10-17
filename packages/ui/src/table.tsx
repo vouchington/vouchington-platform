@@ -4,11 +4,21 @@ import { cn } from './cn.js'
 
 function Table({
   className,
+  label,
   ref,
   ...props
-}: React.HTMLAttributes<HTMLTableElement> & { ref?: React.Ref<HTMLTableElement> }) {
+}: React.HTMLAttributes<HTMLTableElement> & {
+  /** Accessible name for the scrollable region (e.g. the caption text). */
+  label?: string
+  ref?: React.Ref<HTMLTableElement>
+}) {
   return (
-    <div className="relative w-full overflow-auto">
+    <div
+      className="relative w-full overflow-auto focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      tabIndex={0}
+      role={label ? 'region' : undefined}
+      aria-label={label}
+    >
       <table ref={ref} className={cn('w-full caption-bottom text-sm', className)} {...props} />
     </div>
   )

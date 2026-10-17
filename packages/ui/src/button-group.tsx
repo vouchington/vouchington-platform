@@ -1,5 +1,5 @@
 /* oxlint-disable jsx-a11y/prefer-tag-over-role -- button groups use role=group; no semantic HTML element maps to a non-form button group */
-import type { HTMLAttributes } from 'react'
+import type { HTMLAttributes, Ref } from 'react'
 import { type VariantProps, cva } from 'class-variance-authority'
 import { cn } from './cn.js'
 
@@ -14,10 +14,17 @@ const buttonGroupVariants = cva('flex gap-2', {
 })
 
 export interface ButtonGroupProps
-  extends HTMLAttributes<HTMLDivElement>, VariantProps<typeof buttonGroupVariants> {}
+  extends HTMLAttributes<HTMLDivElement>, VariantProps<typeof buttonGroupVariants> {
+  ref?: Ref<HTMLDivElement>
+}
 
-export function ButtonGroup({ className, orientation, ...props }: ButtonGroupProps) {
+export function ButtonGroup({ className, orientation, ref, ...props }: ButtonGroupProps) {
   return (
-    <div role="group" className={cn(buttonGroupVariants({ orientation }), className)} {...props} />
+    <div
+      ref={ref}
+      role="group"
+      className={cn(buttonGroupVariants({ orientation }), className)}
+      {...props}
+    />
   )
 }
