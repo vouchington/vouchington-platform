@@ -4,6 +4,7 @@ export {
 } from './attachment-guard-runner.mts'
 export * from './flush-diagnostics.mts'
 export { DEFAULT_FLUSH_TIMEOUT_MS, type FlushQueue, flushJobs } from './flush-wait.mts'
+export { settleRunnableQueueJobs } from './runnable-settle.mts'
 export { addAndFlush, addBulkAndFlush, type TestJobOptions } from './flush.mts'
 export { isInsideTestWorkerProcessor, runInsideTestWorkerProcessor } from './processor-context.mts'
 export {

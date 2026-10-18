@@ -68,6 +68,11 @@ await worker.close()
   `TestQueueFlushTimeoutError`, which carries worker and queue diagnostics. Per-add options:
   `flushTimeoutMs` and `expectDeadLetter`.
 - Adds made from inside a processor never auto-flush.
+- `settleRunnableQueueJobs(queue)` waits for all runnable work on one shared test queue before a
+  resource snapshot. It includes waiting and prioritized jobs any attached worker may claim, and
+  active processor callbacks even after record removal, revocation, or worker detachment. Delayed,
+  suspended, and waiting-for-children jobs remain parked. The wait is bounded by the same default
+  deadline and timeout diagnostics as per-add flush; callers may override the timeout in milliseconds.
 - `Worker` accepts the production option shape, clamps concurrency, dispatches batches
   immediately, and takes a `wrapProcessor(processor, queueName)` hook. Subclass it to inject
   profiling or context propagation; the package knows nothing about your application.
