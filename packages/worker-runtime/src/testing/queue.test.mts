@@ -53,6 +53,15 @@ describe('ShimTestQueue', () => {
     expect(promote).toHaveBeenCalledOnce()
   })
 
+  it('prunes an admission when a delayed revocation event finds no record', async () => {
+    const queue = new Queue(name('revoked-missing'))
+    const job = await queue.enqueue('work', {})
+    expect(queue.unsettledJobIds.has(job!.id)).toBe(true)
+    queue.jobs.delete(job!.id)
+    queue.emit('revoked', job!.id)
+    expect(queue.unsettledJobIds.has(job!.id)).toBe(false)
+  })
+
   it('close leaves the shared store and workers alive', async () => {
     const queueName = name('close')
     track(new Worker(queueName, () => undefined))

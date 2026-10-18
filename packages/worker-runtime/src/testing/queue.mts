@@ -1,7 +1,14 @@
-import { type TestJob, TestQueue, type TestQueueOptions } from 'glide-mq/testing'
+import {
+  type TestJob,
+  type TestJobRecord,
+  TestQueue,
+  type TestQueueOptions,
+  type TestWorker,
+} from 'glide-mq/testing'
 
 import { addAndFlush, addBulkAndFlush, type TestJobOptions } from './flush.mts'
 import { runInsideTestWorkerProcessor } from './processor-context.mts'
+import { observeTestWorkerActivity } from './worker-activity.mts'
 
 const queues = new Map<string, ShimTestQueue>()
 
@@ -10,6 +17,11 @@ const queues = new Map<string, ShimTestQueue>()
  * shared by name for the lifetime of the module, so producers and workers meet on one store.
  */
 export class ShimTestQueue<D = any, R = any> extends TestQueue<D, R> {
+  /** Candidates that have not reached a terminal state; avoids scanning retained history. */
+  readonly unsettledJobIds = new Set<string>()
+  /** Worker identities with active processor slots, including detached workers. */
+  readonly activeWorkers = new Set<TestWorker>()
+  readonly #observedWorkers = new WeakSet<TestWorker>()
   /** Flush waiters, woken by actual job transitions. */
   readonly settleWaiters = new Set<() => void>()
   readonly #notifySettleWaiters = () => {
@@ -25,6 +37,22 @@ export class ShimTestQueue<D = any, R = any> extends TestQueue<D, R> {
     }
     super(name, options)
     queues.set(name, this)
+    this.on('added', (job: TestJob) => {
+      this.unsettledJobIds.add(job.id)
+      this.#notifySettleWaiters()
+    })
+    for (const event of ['completed', 'failed']) {
+      this.on(event, (job: TestJob) => this.unsettledJobIds.delete(job.id))
+    }
+    this.on('removed', (id: string) => this.unsettledJobIds.delete(id))
+    this.on('revoked', (id: string) => {
+      const record = this.jobs.get(id)
+      // Revocation can leave a processor active until its awaited work returns.
+      if (!record || record.state === 'completed' || record.state === 'failed') {
+        this.unsettledJobIds.delete(id)
+      }
+    })
+    this.on('drained', () => this.#pruneMissingJobIds())
     this.#configureDeadLetterQueue(options)
     this.on('retrying', (job: TestJob) => {
       // Native promote changes the record synchronously and emits the wake-up event.
@@ -43,6 +71,32 @@ export class ShimTestQueue<D = any, R = any> extends TestQueue<D, R> {
       this.on(event, this.#notifySettleWaiters)
     }
   }
+  override onWorkerAttached(): void {
+    for (const worker of this.workers) {
+      if (this.#observedWorkers.has(worker)) continue
+      observeTestWorkerActivity(worker, this.activeWorkers, this.#notifySettleWaiters)
+      this.#observedWorkers.add(worker)
+    }
+    super.onWorkerAttached()
+  }
+
+  override onWorkerDetached(): void {
+    super.onWorkerDetached()
+    this.#notifySettleWaiters()
+  }
+
+  override enqueueWaiting(record: TestJobRecord<D, R>): void {
+    this.unsettledJobIds.add(record.id)
+    super.enqueueWaiting(record)
+    this.#notifySettleWaiters()
+  }
+
+  #pruneMissingJobIds(): void {
+    for (const id of this.unsettledJobIds) {
+      if (!this.jobs.has(id)) this.unsettledJobIds.delete(id)
+    }
+  }
+
   #configureDeadLetterQueue(options?: TestQueueOptions) {
     if (!options?.deadLetterQueue) return
     this.deadLetterQueueName = options.deadLetterQueue.name
@@ -83,6 +137,8 @@ export class ShimTestQueue<D = any, R = any> extends TestQueue<D, R> {
     if (visited.has(this.name)) return
     visited.add(this.name)
     await super.obliterate({ force: true })
+    // Preserve admissions made while the native obliteration awaited.
+    this.#pruneMissingJobIds()
     await this.resume()
     this.#notifySettleWaiters()
     if (this.deadLetterQueueName) {
