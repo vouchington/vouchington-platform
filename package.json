@@ -16,7 +16,7 @@
   "type": "module",
   "scripts": {
     "build": "pnpm -r run build",
-    "typecheck": "tsc --noEmit --project tsconfig.json && tsc --noEmit --project packages/ui/tsconfig.json",
+    "typecheck": "tsc --noEmit --project tsconfig.json",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "lint": "pnpm run oxlint && pnpm run oxfmt:check && pnpm run knip && pnpm run dependency-cruiser",

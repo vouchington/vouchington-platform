@@ -27,7 +27,6 @@ const packages = [
   'oauth-server',
   'email',
   'stripe',
-  'ui',
 ]
 
 describe('runtime package manifests', () => {

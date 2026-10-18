@@ -105,10 +105,6 @@
       ],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
     },
-    "packages/ui": {
-      "entry": ["src/index.ts!"],
-      "project": ["src/**/*.{ts,tsx}!", "!src/**/*.test.tsx!"],
-    },
     "packages/localization-compiler": {
       "entry": ["src/index.mts!", "src/cli.mts!", "src/bin.mts!"],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!", "!src/**/test-helpers.mts!"],
