@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/dynamic-config",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Role authorizer and snake_case admin view primitives for valkyries dynamic-config.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/dynamic-config#readme",
   "license": "MIT",

@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/worker-runtime/package.json"],
+  "changedManifests": ["packages/dynamic-config/package.json"],
   "releases": [
     {
-      "bump": "patch",
-      "directory": "worker-runtime",
-      "fromVersion": "0.1.2",
-      "name": "@vouchington/worker-runtime",
-      "toVersion": "0.1.3"
+      "bump": "minor",
+      "directory": "dynamic-config",
+      "fromVersion": "0.2.0",
+      "name": "@vouchington/dynamic-config",
+      "toVersion": "0.3.0"
     }
   ],
-  "selectedPackage": "@vouchington/worker-runtime"
+  "selectedPackage": "@vouchington/dynamic-config"
 }
