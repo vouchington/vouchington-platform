@@ -27,7 +27,6 @@ on:
           - '@vouchington/html-utils'
           - '@vouchington/phone-validation'
           - '@vouchington/uuid-v7'
-          - '@vouchington/ui'
           - '@vouchington/dynamic-config'
           - '@vouchington/frontmatter'
           - '@vouchington/localization'

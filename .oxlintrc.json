@@ -7,7 +7,7 @@
   },
   "overrides": [
     {
-      "files": ["**/*.test.mts", "**/*.test.tsx", "**/__tests__/**/*.mts"],
+      "files": ["**/*.test.mts", "**/__tests__/**/*.mts"],
       "rules": {
         "max-lines": ["error", 500]
       }

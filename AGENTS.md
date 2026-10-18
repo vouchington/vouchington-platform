@@ -59,7 +59,6 @@ the migration advisory lock is per database, and `VITEST_MAX_WORKERS` overrides 
 - `@vouchington/uuid-v7` — UUIDv7 creation, validation, date bounds, and base36 suffixes
 - `@vouchington/dynamic-config` — role authorizer and snake_case admin view primitives for valkyries dynamic-config
 - `@vouchington/stripe` — Stripe client factory, webhook verification, event narrowing, and param builders/parsers
-- `@vouchington/ui` — presentational React primitives on Tailwind semantic tokens; copy via props
 - `@vouchington/dynamic-config` — registry, descriptor, validator, and injected-authorization admin layer over valkyries dynamic-config
 - `@vouchington/edge` — Cloudflare Worker builders with injected routes, origins, and CSP sources
 - `@vouchington/oauth-server` — OAuth 2.0 authorization-server primitives with injected stores
@@ -68,6 +67,8 @@ the migration advisory lock is per database, and `VITEST_MAX_WORKERS` overrides 
 - `@vouchington/sentry` — Sentry SDK init options, least-data policy, event filtering, coded errors, and Node/browser capture helpers
 - `@vouchington/ai` — subpath-only model-call primitives: `/providers` (usage, pricing, JSON-output adapters) and `/structured-decisions` (codecs, classification)
 - `@vouchington/aws` — SES, SQS, Firehose, and CloudWatch command builders, batching, codecs, and throttling classifiers
+
+Do not extract shadcn/ui components: applications generate and own them with the shadcn CLI. Custom, product-agnostic React components, hooks, and helpers that are not shadcn output may be extracted under the normal rules.
 
 Extracted APIs must be opinionated generic utilities, never business-logic orchestration. Generic
 orchestration utilities are fine when they know nothing about the domain and callers inject the
