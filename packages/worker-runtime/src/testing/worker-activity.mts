@@ -14,7 +14,7 @@ export function observeTestWorkerActivity(
   if (activeCount > 0) activeWorkers.add(worker)
   Object.defineProperty(worker, 'activeCount', {
     configurable: descriptor.configurable,
-    enumerable: descriptor.enumerable ?? false,
+    enumerable: descriptor.enumerable!,
     get: () => activeCount,
     set: (next: number) => {
       activeCount = next

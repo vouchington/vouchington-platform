@@ -21,10 +21,8 @@ export async function settleRunnableQueueJobs(
   const deadline = AbortSignal.timeout(flushTimeoutMs)
   let pendingJobIds: string[] = []
   let transition = Promise.withResolvers<void>()
-  let notified = false
   const expiration = Promise.withResolvers<never>()
   function notify(): void {
-    notified = true
     transition.resolve()
   }
   function timedOut(): void {
@@ -42,9 +40,7 @@ export async function settleRunnableQueueJobs(
   async function inspect(): Promise<void> {
     while (!deadline.aborted) {
       transition = Promise.withResolvers<void>()
-      notified = false
       pendingJobIds = listRunnableJobIds(queue)
-      if (notified) continue
       if (pendingJobIds.length === 0) return
       await transition.promise
     }
@@ -52,7 +48,6 @@ export async function settleRunnableQueueJobs(
   queue.settleWaiters.add(notify)
   deadline.addEventListener('abort', timedOut, { once: true })
   try {
-    if (deadline.aborted) timedOut()
     await Promise.race([expiration.promise, inspect()])
   } finally {
     queue.settleWaiters.delete(notify)
@@ -73,7 +68,7 @@ function listRunnableJobIds(queue: ShimTestQueue): string[] {
     }
   }
   for (const worker of queue.activeWorkers) {
-    if (worker.getActiveCount() > 0) pending.push(`active-processor:${worker.id}`)
+    pending.push(`active-processor:${worker.id}`)
   }
   return pending
 }
