@@ -1,7 +1,7 @@
 # @vouchington/dynamic-config
 
 Pure primitives for building a dynamic-config admin on top of
-[`valkyries/dynamic-config`](https://www.npmjs.com/package/valkyries) (>= 0.9). There is no
+[`valkyries/dynamic-config`](https://www.npmjs.com/package/valkyries) (^0.10.0). There is no
 orchestration here: the application owns the sequence of authorize, validate, record, and write.
 
 - `createRoleAuthorizer`: a pure role predicate `(user, entry, permission) => boolean`.

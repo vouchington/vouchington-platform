@@ -138,8 +138,8 @@ importers:
   packages/dynamic-config:
     devDependencies:
       valkyries:
-        specifier: ^0.9.0
-        version: 0.9.0
+        specifier: ^0.10.0
+        version: 0.10.0
 
   packages/edge:
     dependencies:
@@ -3696,12 +3696,12 @@ packages:
     resolution: {integrity: sha512-Sc5u1VVln93y1Xnz4R+CunOZc7R9LUcTmhj7Rc7Eg3HVcf7rVn2FOoa812fe0W8p3jD7xeoGSYbfqCGGH2B6xw==}
     hasBin: true
 
-  valkyries@0.8.2:
-    resolution: {integrity: sha512-IEDQlNChFLhKhikJgkOa1tTVt8HGU2wsbs3+zMEjCmcBz4NR6+m3zdjRGENI1RLfTgePbx90hnhvbaM15SJsmg==}
+  valkyries@0.10.0:
+    resolution: {integrity: sha512-pEqZ/wTEPTA++kjZyPsSHscbN+t1eCPMYHgKYi5rqENxJAWzt9iO85LWPWE8X/Jg+CKGKIWgDC5esKDNf7GUtQ==}
     engines: {node: '>=24.0.0'}
 
-  valkyries@0.9.0:
-    resolution: {integrity: sha512-8rrkDwr4GAOO3fKu1IG+NXyEk3Tn2NVsL9rEu0GXmiJvmdW7PQDCKMGptNArogR+1gr+DMmHUKpTpRvR3fiolw==}
+  valkyries@0.8.2:
+    resolution: {integrity: sha512-IEDQlNChFLhKhikJgkOa1tTVt8HGU2wsbs3+zMEjCmcBz4NR6+m3zdjRGENI1RLfTgePbx90hnhvbaM15SJsmg==}
     engines: {node: '>=24.0.0'}
 
   vary@1.1.2:
@@ -6936,11 +6936,11 @@ snapshots:
 
   uuid@14.0.3: {}
 
-  valkyries@0.8.2:
+  valkyries@0.10.0:
     dependencies:
       '@valkey/valkey-glide': 2.5.3
 
-  valkyries@0.9.0:
+  valkyries@0.8.2:
     dependencies:
       '@valkey/valkey-glide': 2.5.3
 
