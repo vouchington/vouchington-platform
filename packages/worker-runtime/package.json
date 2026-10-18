@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/worker-runtime",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Queue selection, GlideMQ worker loading, and schedule registration.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/worker-runtime#readme",
   "bugs": {
