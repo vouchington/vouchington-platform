@@ -25,6 +25,7 @@ on:
           - '@vouchington/domain-verification'
           - '@vouchington/csv'
           - '@vouchington/html-utils'
+          - '@vouchington/html-sanitizer'
           - '@vouchington/phone-validation'
           - '@vouchington/uuid-v7'
           - '@vouchington/dynamic-config'
