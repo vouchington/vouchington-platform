@@ -39,11 +39,11 @@
   },
   "devDependencies": {
     "@jongleberry/api-server": "^3.0.1",
-    "valkyries": "^0.8.2"
+    "valkyries": "^0.10.0"
   },
   "peerDependencies": {
     "@jongleberry/api-server": "^3.0.1",
-    "valkyries": "^0.8.2"
+    "valkyries": "^0.10.0"
   },
   "engines": {
     "node": ">=24.0.0"

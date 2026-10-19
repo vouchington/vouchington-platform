@@ -36,8 +36,8 @@ importers:
         specifier: ^7.0.2004
         version: 7.0.2004
       pr-shepherd:
-        specifier: ^0.59.0
-        version: 0.59.0(supports-color@7.2.0)
+        specifier: ^0.60.0
+        version: 0.60.0(supports-color@7.2.0)
       semver:
         specifier: ^7.8.5
         version: 7.8.5
@@ -315,8 +315,8 @@ importers:
         specifier: ^3.0.1
         version: 3.0.1
       valkyries:
-        specifier: ^0.8.2
-        version: 0.8.2
+        specifier: ^0.10.0
+        version: 0.10.0
 
   packages/request-contract-validation:
     dependencies:
@@ -3308,8 +3308,8 @@ packages:
     resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
     engines: {node: '>=0.10.0'}
 
-  pr-shepherd@0.59.0:
-    resolution: {integrity: sha512-YVHBHP38RqWKDCz4b7XYWgpwEzbot/sqb8hw6b3ugRzNsq0gli6meqq4vL4isduJO3anufvRyd2BpM+sRPZjuQ==}
+  pr-shepherd@0.60.0:
+    resolution: {integrity: sha512-ffWx2MrwM7rg6kZ3USXOP6yvmqhdtW8urqXZYs8eS9sr8C8mpU8eEeDOZOF7ONGySYVbNKFzTH63oeGBWbljLg==}
     engines: {node: '>=22.19.0'}
     hasBin: true
 
@@ -3698,10 +3698,6 @@ packages:
 
   valkyries@0.10.0:
     resolution: {integrity: sha512-pEqZ/wTEPTA++kjZyPsSHscbN+t1eCPMYHgKYi5rqENxJAWzt9iO85LWPWE8X/Jg+CKGKIWgDC5esKDNf7GUtQ==}
-    engines: {node: '>=24.0.0'}
-
-  valkyries@0.8.2:
-    resolution: {integrity: sha512-IEDQlNChFLhKhikJgkOa1tTVt8HGU2wsbs3+zMEjCmcBz4NR6+m3zdjRGENI1RLfTgePbx90hnhvbaM15SJsmg==}
     engines: {node: '>=24.0.0'}
 
   vary@1.1.2:
@@ -6462,7 +6458,7 @@ snapshots:
     dependencies:
       xtend: 4.0.2
 
-  pr-shepherd@0.59.0(supports-color@7.2.0):
+  pr-shepherd@0.60.0(supports-color@7.2.0):
     dependencies:
       '@modelcontextprotocol/sdk': 1.30.0(supports-color@7.2.0)(zod@4.6.5)
       picomatch: 4.0.7
@@ -6937,10 +6933,6 @@ snapshots:
   uuid@14.0.3: {}
 
   valkyries@0.10.0:
-    dependencies:
-      '@valkey/valkey-glide': 2.5.3
-
-  valkyries@0.8.2:
     dependencies:
       '@valkey/valkey-glide': 2.5.3
 
