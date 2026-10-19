@@ -82,11 +82,11 @@ export function useTurnstile({
     }
   }, [container, isLoaded, scriptSrc, siteKey])
 
-  function reset() {
+  const reset = useCallback(() => {
     const widgetId = widgetIdRef.current
     if (!widgetId || !window.turnstile) return
     window.turnstile.reset(widgetId)
-  }
+  }, [])
 
   return { ref, reset, isError }
 }
