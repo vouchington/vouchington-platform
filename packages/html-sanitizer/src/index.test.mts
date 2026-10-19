@@ -235,6 +235,9 @@ describe('isSafeUrl', () => {
     expect(isSafeUrl('   ', linkSchemes)).toBe(false)
     expect(isSafeUrl('//x', linkSchemes)).toBe(false)
     expect(isSafeUrl('  //x', linkSchemes)).toBe(false)
+    expect(isSafeUrl('/\n/attacker.example/x', new Set())).toBe(false)
+    expect(isSafeUrl('\\\\attacker.example', new Set())).toBe(false)
+    expect(isSafeUrl('docs\\file', linkSchemes)).toBe(true)
   })
 
   it('allows relative values, including a colon after a separator', () => {

@@ -1,9 +1,7 @@
 /** Allows relative URLs and the supplied schemes. Rejects scheme-relative and obfuscated schemes. */
 export function isSafeUrl(value: string, allowedSchemes: ReadonlySet<string>): boolean {
-  const trimmed = value.trim()
-  if (!trimmed || trimmed.startsWith('//')) return false
-
-  const normalized = trimmed.replace(/[\t\n\f\r ]+/g, '')
+  const normalized = value.trim().replace(/[\t\n\f\r ]+/g, '')
+  if (!normalized || normalized.replaceAll('\\', '/').startsWith('//')) return false
   const colonIndex = normalized.indexOf(':')
   if (colonIndex === -1) return true
 
