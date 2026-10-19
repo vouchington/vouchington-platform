@@ -96,6 +96,29 @@ describe('useTurnstile', () => {
     expect(unhandled.result.current.isError).toBe(true)
   })
 
+  it('reports onError when scriptSrc changes between sources that already failed', () => {
+    const firstError = vi.fn()
+    const secondError = vi.fn()
+    for (const src of [TURNSTILE_SCRIPT_SRC, CUSTOM_SRC]) {
+      const loaded = renderHook(() => useLoadScript(src))
+      act(() => {
+        const scripts = [...document.head.querySelectorAll('script')]
+        scripts.at(-1)?.onerror?.(new Event('error'))
+      })
+      loaded.unmount()
+    }
+
+    const hook = renderHook(
+      ({ scriptSrc, onError }) =>
+        useTurnstile({ siteKey: 'site-key', onSuccess: vi.fn(), scriptSrc, onError }),
+      { initialProps: { scriptSrc: TURNSTILE_SCRIPT_SRC, onError: firstError } },
+    )
+    expect(firstError).toHaveBeenCalledOnce()
+
+    hook.rerender({ scriptSrc: CUSTOM_SRC, onError: secondError })
+    expect(secondError).toHaveBeenCalledOnce()
+  })
+
   it('resets the rendered widget and removes it on unmount', () => {
     const turnstile = installTurnstile()
     const { result, unmount } = renderHook(() =>

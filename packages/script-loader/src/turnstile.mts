@@ -65,7 +65,7 @@ export function useTurnstile({
   useEffect(() => {
     if (!isError) return
     callbacksRef.current.onError?.()
-  }, [isError])
+  }, [isError, scriptSrc])
 
   useEffect(() => {
     if (!isLoaded || !container || !window.turnstile) return
