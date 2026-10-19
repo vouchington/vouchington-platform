@@ -33,6 +33,7 @@ SKU names.
 | [`@vouchington/sentry`](packages/sentry)                                           | Sentry init options, data-collection policy, filters, and capture                    |
 | [`@vouchington/ai`](packages/ai)                                                   | Model-call primitives: usage, pricing, JSON adapters, structured decisions           |
 | [`@vouchington/aws`](packages/aws)                                                 | AWS SES/SQS/Firehose/CloudWatch command builders, chunking, and error classifiers    |
+| [`@vouchington/script-loader`](packages/script-loader)                             | Shared script loader and a Cloudflare Turnstile widget hook                          |
 | [`@vouchington/http-transport`](packages/http-transport)                           | Redirect-safe transport with injected fetch/address pinning                          |
 | [`@vouchington/image-resize`](packages/image-resize)                               | Sharp transforms, file output, metadata, and negotiation                             |
 | [`@vouchington/media`](packages/media)                                             | Upload validation, streams, and split S3 primitives                                  |
@@ -87,6 +88,7 @@ SKU names.
 | [`@vouchington/rate-limit`](packages/rate-limit)                                   | Valkyries house layer: api-server middleware and edge bindings                       |
 | [`@vouchington/oauth-server`](packages/oauth-server)                               | Injected-store OAuth 2.0 authorization-server primitives                             |
 | [`@vouchington/api-client`](packages/api-client)                                   | Injected-config request wrappers, errors, admission idempotency, paginated-list hook |
+| [`@vouchington/script-loader`](packages/script-loader)                             | Shared script loader and a Cloudflare Turnstile widget hook                          |
 
 ## Commands
 
