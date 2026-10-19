@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { resetScriptLoaderForTests } from './index.mts'
+import { resetScriptLoaderForTests, useLoadScript } from './index.mts'
 import { TURNSTILE_SCRIPT_SRC, useTurnstile, type TurnstileRenderParameters } from './turnstile.mts'
 
 const CUSTOM_SRC = 'https://example.com/turnstile.js'
@@ -157,6 +157,31 @@ describe('useTurnstile', () => {
       expect.any(HTMLDivElement),
       expect.objectContaining({ sitekey: 'second' }),
     )
+  })
+
+  it('re-renders when scriptSrc changes between sources that are already loaded', () => {
+    const turnstile = installTurnstile()
+    const first = renderHook(() => useLoadScript(TURNSTILE_SCRIPT_SRC))
+    const second = renderHook(() => useLoadScript(CUSTOM_SRC))
+    act(() => {
+      for (const script of document.head.querySelectorAll('script')) {
+        script.onload?.(new Event('load'))
+      }
+    })
+    first.unmount()
+    second.unmount()
+
+    const hook = renderHook(
+      ({ scriptSrc }) => useTurnstile({ siteKey: 'site-key', onSuccess: vi.fn(), scriptSrc }),
+      { initialProps: { scriptSrc: TURNSTILE_SCRIPT_SRC } },
+    )
+    act(() => {
+      hook.result.current.ref(document.createElement('div'))
+    })
+    hook.rerender({ scriptSrc: CUSTOM_SRC })
+
+    expect(turnstile.remove).toHaveBeenCalledTimes(1)
+    expect(turnstile.render).toHaveBeenCalledTimes(2)
   })
 
   it('invokes omitted widget callbacks without throwing', () => {

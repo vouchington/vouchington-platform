@@ -53,6 +53,10 @@ function ensureScript(src: string, options: ResolvedScriptOptions): void {
 
   if (records.has(src)) return
   records.set(src, { status: 'loading' })
+  const callbacks = listeners.get(src)
+  if (callbacks) {
+    for (const callback of callbacks) callback()
+  }
   const script = document.createElement('script')
   script.src = src
   script.async = true
@@ -70,10 +74,10 @@ function subscribeToScript(
   onStoreChange: () => void,
 ): () => void {
   if (!src) return () => undefined
+  ensureScript(src, options)
   const callbacks = listeners.get(src) ?? new Set()
   listeners.set(src, callbacks)
   callbacks.add(onStoreChange)
-  ensureScript(src, options)
   return () => {
     callbacks.delete(onStoreChange)
     if (callbacks.size === 0) listeners.delete(src)

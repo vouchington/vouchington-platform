@@ -80,7 +80,7 @@ export function useTurnstile({
       widgetIdRef.current = null
       window.turnstile?.remove(widgetId)
     }
-  }, [container, isLoaded, siteKey])
+  }, [container, isLoaded, scriptSrc, siteKey])
 
   function reset() {
     const widgetId = widgetIdRef.current

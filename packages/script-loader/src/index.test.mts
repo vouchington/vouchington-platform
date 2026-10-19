@@ -88,6 +88,17 @@ describe('useLoadScript', () => {
     expect(document.head.querySelectorAll('script')).toHaveLength(2)
   })
 
+  it('clears isError on a still-mounted hook when another caller retries', async () => {
+    vi.useFakeTimers()
+    const mounted = renderHook(() => useLoadScript(SRC, { errorRetryMs: 1000 }))
+    act(() => {
+      scriptElement().onerror?.(new Event('error'))
+    })
+    await act(() => vi.advanceTimersByTimeAsync(1001))
+    renderHook(() => useLoadScript(SRC, { errorRetryMs: 1000 }))
+    expect(mounted.result.current).toEqual({ isLoaded: false, isError: false })
+  })
+
   it('stops notifying an unsubscribed hook and ignores a load with no listeners', () => {
     const first = renderHook(() => useLoadScript(SRC))
     const second = renderHook(() => useLoadScript(SRC))
