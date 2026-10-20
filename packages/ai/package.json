@@ -50,11 +50,11 @@
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.135.0",
-    "openai": "^7.36.0"
+    "openai": "^7.38.0"
   },
   "peerDependencies": {
     "@anthropic-ai/sdk": "^0.135.0",
-    "openai": "^7.36.0"
+    "openai": "^7.38.0"
   },
   "peerDependenciesMeta": {
     "@anthropic-ai/sdk": {
