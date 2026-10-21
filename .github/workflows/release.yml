@@ -44,6 +44,7 @@ on:
           - '@vouchington/edge'
           - '@vouchington/oauth-server'
           - '@vouchington/api-client'
+          - '@vouchington/script-loader'
           - '@vouchington/sentry'
           - '@vouchington/email'
           - '@vouchington/ai'

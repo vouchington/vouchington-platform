@@ -95,6 +95,28 @@ describe('runtime package manifests', () => {
     expect(root).not.toMatch(/from 'react'/u)
   })
 
+  it('publishes script-loader with React as a required peer and turnstile and testing subpaths', () => {
+    const manifest = JSON.parse(readFileSync('packages/script-loader/package.json', 'utf8')) as {
+      dependencies?: Record<string, string>
+      exports: Record<string, { import: string; types: string }>
+      peerDependencies: Record<string, string>
+      peerDependenciesMeta?: Record<string, { optional?: boolean }>
+    }
+    expect(Object.keys(manifest.exports)).toEqual(['.', './turnstile', './testing'])
+    expect(manifest.dependencies).toBeUndefined()
+    expect(manifest.peerDependenciesMeta?.react?.optional).not.toBe(true)
+    const react = manifest.peerDependencies['react']
+    if (!react) throw new Error('missing react peer')
+    expectCaretSemverRange(react)
+    for (const entry of Object.values(manifest.exports)) {
+      expect(existsSync(`packages/script-loader/${entry.import.replace('./', '')}`)).toBe(true)
+      expect(existsSync(`packages/script-loader/${entry.types.replace('./', '')}`)).toBe(true)
+      expect(() =>
+        importBuiltModule(`packages/script-loader/${entry.import.replace('./', '')}`),
+      ).not.toThrow()
+    }
+  })
+
   it('publishes the root, node, and browser entries for sentry with caret peer ranges', () => {
     const manifest = JSON.parse(readFileSync('packages/sentry/package.json', 'utf8')) as {
       exports: Record<string, { import: string; types: string }>

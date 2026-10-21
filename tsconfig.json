@@ -53,5 +53,6 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["packages/*/src/**/*.mts", "packages/*/src/**/*.d.ts", "scripts/**/*.mts"]
+  "include": ["packages/*/src/**/*.mts", "packages/*/src/**/*.d.ts", "scripts/**/*.mts"],
+  "exclude": ["packages/script-loader"]
 }
