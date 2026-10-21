@@ -3,7 +3,8 @@ import { createElement } from 'react'
 import { renderToString } from 'react-dom/server'
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { resetScriptLoaderForTests, useLoadScript } from './index.mts'
+import { useLoadScript } from './index.mts'
+import { resetScriptLoaderForTests } from './testing.mts'
 
 const SRC = 'https://cdn.example.com/sdk.js'
 

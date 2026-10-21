@@ -28,6 +28,11 @@
       "types": "./dist/turnstile.d.mts",
       "import": "./dist/turnstile.mjs",
       "default": "./dist/turnstile.mjs"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.mts",
+      "import": "./dist/testing.mjs",
+      "default": "./dist/testing.mjs"
     }
   },
   "publishConfig": {

@@ -90,7 +90,7 @@
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
     },
     "packages/script-loader": {
-      "entry": ["src/index.mts!", "src/turnstile.mts!"],
+      "entry": ["src/index.mts!", "src/turnstile.mts!", "src/testing.mts!"],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
     },
     "packages/api-client": {

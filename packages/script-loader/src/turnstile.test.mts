@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { resetScriptLoaderForTests, useLoadScript } from './index.mts'
+import { useLoadScript } from './index.mts'
+import { resetScriptLoaderForTests } from './testing.mts'
 import { TURNSTILE_SCRIPT_SRC, useTurnstile, type TurnstileRenderParameters } from './turnstile.mts'
 
 const CUSTOM_SRC = 'https://example.com/turnstile.js'

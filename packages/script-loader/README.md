@@ -10,7 +10,6 @@ import them from a client component.
 `useLoadScript(src, options)` returns `{ isLoaded, isError }`. An empty `src` loads nothing.
 Options are `nonce`, `integrity`, `crossOrigin`, and `errorRetryMs` (default 30 seconds before a
 failed URL may be requested again). Hooks share one `<script>` tag per `src`.
-`resetScriptLoaderForTests()` clears that shared state.
 
 ## `@vouchington/script-loader/turnstile`
 
@@ -18,3 +17,8 @@ failed URL may be requested again). Hooks share one `<script>` tag per `src`.
 `{ ref, reset, isError }`. `enabled: false` loads nothing. `scriptSrc` defaults to
 `TURNSTILE_SCRIPT_SRC`. The application supplies the site key and callbacks. This module declares
 `window.turnstile`.
+
+## `@vouchington/script-loader/testing`
+
+`resetScriptLoaderForTests()` clears the shared script state between tests. It does not remove
+`<script>` tags already in the document.

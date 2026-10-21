@@ -1,8 +1,7 @@
 import { useCallback, useSyncExternalStore } from 'react'
+import { listeners, records } from './registry.mts'
 
 type ScriptStatus = 'idle' | 'loading' | 'ready' | 'error'
-
-type ScriptRecord = { status: 'loading' | 'ready' } | { status: 'error'; errorAt: number }
 
 export interface UseLoadScriptOptions {
   nonce?: string
@@ -25,13 +24,6 @@ interface ResolvedScriptOptions {
 }
 
 const DEFAULT_ERROR_RETRY_MS = 30_000
-const records = new Map<string, ScriptRecord>()
-const listeners = new Map<string, Set<() => void>>()
-
-export function resetScriptLoaderForTests(): void {
-  records.clear()
-  listeners.clear()
-}
 
 function notify(src: string, status: 'ready' | 'error'): void {
   records.set(src, status === 'error' ? { status, errorAt: Date.now() } : { status })
