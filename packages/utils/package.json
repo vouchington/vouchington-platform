@@ -65,6 +65,11 @@
       "import": "./dist/web-push-binding.mjs",
       "default": "./dist/web-push-binding.mjs"
     },
+    "./service-worker-activation": {
+      "types": "./dist/service-worker-activation.d.mts",
+      "import": "./dist/service-worker-activation.mjs",
+      "default": "./dist/service-worker-activation.mjs"
+    },
     "./json-ld": {
       "types": "./dist/json-ld.d.mts",
       "import": "./dist/json-ld.mjs",

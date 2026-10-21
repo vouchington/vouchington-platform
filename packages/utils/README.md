@@ -36,6 +36,10 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
   request/acknowledge round trip with an injected message type and acceptance check, and a named
   Web Lock wrapper. Request actions, expected state transitions, and the bind/clear/reconcile
   sequence stay in the application.
+- `service-worker-activation`: `waitForActiveServiceWorker(registration, options)` resolves when
+  the registration has an active worker. An installing or waiting worker is preferred over
+  `serviceWorker.ready`. `timeoutMs` bounds the wait; omit it to wait without a deadline. The
+  caller supplies the timeout and may inject `serviceWorker` (default `navigator.serviceWorker`).
 - `json-ld`: schema.org JSON-LD builders (organization, website, navigation, collection, thing,
   comparison, item list, breadcrumb, profile) and script-safe serialization. Callers inject the
   absolute-URL resolver and site name; product schemas such as posts stay in the application.
