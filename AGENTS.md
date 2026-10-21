@@ -55,6 +55,7 @@ the migration advisory lock is per database, and `VITEST_MAX_WORKERS` overrides 
 - `@vouchington/localization` — browser-safe catalog contracts, selectors, and fallback
 - `@vouchington/localization-compiler` — SQLite compiler, CLI resolver, and native resource helpers
 - `@vouchington/html-utils` — HTML entity and text helpers
+- `@vouchington/html-sanitizer` — policy-injected HTML fragment sanitizer
 - `@vouchington/phone-validation` — E.164 normalization and predicates
 - `@vouchington/uuid-v7` — UUIDv7 creation, validation, date bounds, and base36 suffixes
 - `@vouchington/dynamic-config` — role authorizer and snake_case admin view primitives for valkyries dynamic-config

@@ -21,6 +21,7 @@ SKU names.
 | [`@vouchington/localization`](packages/localization)                               | Browser-safe catalog contracts, selectors, and locale fallback                       |
 | [`@vouchington/localization-compiler`](packages/localization-compiler)             | JSON-to-SQLite compiler, CLI resolver, and native resource helpers                   |
 | [`@vouchington/html-utils`](packages/html-utils)                                   | HTML entity decoding and text helpers                                                |
+| [`@vouchington/html-sanitizer`](packages/html-sanitizer)                           | Policy-injected HTML fragment sanitizer                                              |
 | [`@vouchington/phone-validation`](packages/phone-validation)                       | Phone normalization and predicates                                                   |
 | [`@vouchington/edge`](packages/edge)                                               | Injected Cloudflare Worker header, CSP, auth, and cache builders                     |
 | [`@vouchington/uuid-v7`](packages/uuid-v7)                                         | UUIDv7 generation, validation, and date bounds                                       |
@@ -60,6 +61,7 @@ SKU names.
 | [`@vouchington/localization`](packages/localization)                               | Browser-safe catalog contracts, selectors, and locale fallback                       |
 | [`@vouchington/localization-compiler`](packages/localization-compiler)             | JSON-to-SQLite compiler, CLI resolver, and native resource helpers                   |
 | [`@vouchington/html-utils`](packages/html-utils)                                   | HTML entity decoding and text helpers                                                |
+| [`@vouchington/html-sanitizer`](packages/html-sanitizer)                           | Policy-injected HTML fragment sanitizer                                              |
 | [`@vouchington/phone-validation`](packages/phone-validation)                       | Phone normalization and predicates                                                   |
 | [`@vouchington/edge`](packages/edge)                                               | Injected Cloudflare Worker header, CSP, auth, and cache builders                     |
 | [`@vouchington/uuid-v7`](packages/uuid-v7)                                         | UUIDv7 generation, validation, and date bounds                                       |
