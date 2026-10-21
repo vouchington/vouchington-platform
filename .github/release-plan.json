@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/html-sanitizer/package.json"],
+  "changedManifests": ["packages/script-loader/package.json"],
   "releases": [
     {
       "bump": "minor",
-      "directory": "html-sanitizer",
+      "directory": "script-loader",
       "fromVersion": "0.0.0",
-      "name": "@vouchington/html-sanitizer",
+      "name": "@vouchington/script-loader",
       "toVersion": "0.1.0"
     }
   ],
-  "selectedPackage": "@vouchington/html-sanitizer"
+  "selectedPackage": "@vouchington/script-loader"
 }
