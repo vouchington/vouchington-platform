@@ -222,11 +222,35 @@ describe('useTurnstile', () => {
     expect(() => options['expired-callback']?.()).not.toThrow()
     expect(() => options['error-callback']?.()).not.toThrow()
   })
+
+  it('reports onError and skips cleanup when render returns no widget id', () => {
+    const turnstile = installTurnstile()
+    turnstile.render.mockReturnValue(undefined)
+    const onError = vi.fn()
+    const handled = renderHook(() =>
+      useTurnstile({ siteKey: 'site-key', onSuccess: vi.fn(), onError }),
+    )
+    act(() => {
+      finishLoad()
+      handled.result.current.ref(document.createElement('div'))
+    })
+    act(() => handled.result.current.reset())
+    handled.unmount()
+
+    expect(onError).toHaveBeenCalledTimes(1)
+    expect(turnstile.reset).not.toHaveBeenCalled()
+    expect(turnstile.remove).not.toHaveBeenCalled()
+
+    const unhandled = renderHook(() => useTurnstile({ siteKey: 'site-key', onSuccess: vi.fn() }))
+    expect(() =>
+      act(() => unhandled.result.current.ref(document.createElement('div'))),
+    ).not.toThrow()
+  })
 })
 
 function installTurnstile() {
   const turnstile = {
-    render: vi.fn(() => 'widget-id'),
+    render: vi.fn((): string | undefined => 'widget-id'),
     reset: vi.fn(),
     remove: vi.fn(),
     getResponse: vi.fn(() => undefined),

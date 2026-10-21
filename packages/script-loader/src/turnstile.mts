@@ -12,7 +12,7 @@ export interface TurnstileRenderParameters {
 }
 
 export interface TurnstileApi {
-  render: (container: HTMLElement, options: TurnstileRenderParameters) => string
+  render: (container: HTMLElement, options: TurnstileRenderParameters) => string | undefined
   reset: (widgetId: string) => void
   remove: (widgetId: string) => void
   getResponse: (widgetId: string) => string | undefined
@@ -75,6 +75,10 @@ export function useTurnstile({
       'expired-callback': () => callbacksRef.current.onExpire?.(),
       'error-callback': () => callbacksRef.current.onError?.(),
     })
+    if (widgetId === undefined) {
+      callbacksRef.current.onError?.()
+      return
+    }
     widgetIdRef.current = widgetId
     return () => {
       widgetIdRef.current = null
