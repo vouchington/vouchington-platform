@@ -95,14 +95,14 @@ describe('runtime package manifests', () => {
     expect(root).not.toMatch(/from 'react'/u)
   })
 
-  it('publishes script-loader with React as a required peer and a turnstile subpath', () => {
+  it('publishes script-loader with React as a required peer and turnstile and testing subpaths', () => {
     const manifest = JSON.parse(readFileSync('packages/script-loader/package.json', 'utf8')) as {
       dependencies?: Record<string, string>
       exports: Record<string, { import: string; types: string }>
       peerDependencies: Record<string, string>
       peerDependenciesMeta?: Record<string, { optional?: boolean }>
     }
-    expect(Object.keys(manifest.exports)).toEqual(['.', './turnstile'])
+    expect(Object.keys(manifest.exports)).toEqual(['.', './turnstile', './testing'])
     expect(manifest.dependencies).toBeUndefined()
     expect(manifest.peerDependenciesMeta?.react?.optional).not.toBe(true)
     const react = manifest.peerDependencies['react']
