@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/utils/package.json"],
+  "changedManifests": ["packages/html-sanitizer/package.json"],
   "releases": [
     {
-      "bump": "patch",
-      "directory": "utils",
-      "fromVersion": "0.7.4",
-      "name": "@vouchington/utils",
-      "toVersion": "0.7.5"
+      "bump": "minor",
+      "directory": "html-sanitizer",
+      "fromVersion": "0.0.0",
+      "name": "@vouchington/html-sanitizer",
+      "toVersion": "0.1.0"
     }
   ],
-  "selectedPackage": "@vouchington/utils"
+  "selectedPackage": "@vouchington/html-sanitizer"
 }

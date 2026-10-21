@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/html-sanitizer",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Policy-injected HTML fragment sanitizer.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/html-sanitizer#readme",
   "license": "MIT",
