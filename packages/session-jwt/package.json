@@ -46,7 +46,7 @@
   },
   "dependencies": {
     "@vouchington/uuid-v7": "^0.0.0",
-    "jose": "^6.2.12"
+    "jose": "^6.2.13"
   },
   "engines": {
     "node": ">=24.0.0"
