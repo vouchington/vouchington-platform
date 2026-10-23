@@ -1,3 +1,14 @@
+export { createQueryProfiles } from './query-profiles.mts'
+export type {
+  QueryProfileObserverInput,
+  QueryProfiles,
+  QueryProfilesOptions,
+  RequestQueryProfile,
+  WorkerQueryIdentity,
+  WorkerQueryProfile,
+} from './query-profiles.mts'
+export { computeSerialDepth, summarizeRequestQueries } from './query-summary.mts'
+export type { RepeatedAnnotation, RequestQuery, RequestQuerySummary } from './query-summary.mts'
 export { createQueryTimingRecorder, parseQueryTimingSampleRate } from './timing-recorder.mts'
 export type { QueryTimingRecord, QueryTimingRecorderOptions } from './timing-recorder.mts'
 export {
