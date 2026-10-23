@@ -59,7 +59,7 @@ importers:
         version: 0.137.0(zod@4.6.5)
       openai:
         specifier: ^7.39.0
-        version: 7.39.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.4)(undici@8.12.1)(ws@8.21.3)(zod@4.6.5)
+        version: 7.39.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.4)(undici@8.12.3)(ws@8.21.3)(zod@4.6.5)
 
   packages/api-client:
     devDependencies:
@@ -200,7 +200,17 @@ importers:
         specifier: ^8.1.0
         version: 8.1.0
 
-  packages/http-transport: {}
+  packages/http-transport:
+    dependencies:
+      '@jongleberry/api-server':
+        specifier: ^3.0.1
+        version: 3.0.1
+      ssrf-guard:
+        specifier: ^1.0.0
+        version: 1.0.0
+      undici:
+        specifier: ^8.12.3
+        version: 8.12.3
 
   packages/image-resize:
     dependencies:
@@ -2861,6 +2871,10 @@ packages:
     resolution: {integrity: sha512-0KI/607xoxSToH7GjN1FfSbLoU0+btTicjsQSWQlh/hZykN8KpmMf7uYwPW3R+akZ6R/w18ZlXSHBYXiYUPO3g==}
     engines: {node: '>= 0.10'}
 
+  ipaddr.js@2.5.0:
+    resolution: {integrity: sha512-aq+t5NAc+cS6rZQQVWC2x98CPqGtKKTMDd4Gaodv0wShnItdKg/51djkGJ1hqH+Oy0ivDftCbSLCQob8zso01w==}
+    engines: {node: '>= 10'}
+
   is-core-module@2.17.0:
     resolution: {integrity: sha512-J/vG0zBCbIKOQFfufSwyXdMrsohyJIUNkrnmo6WZGzoM7tr/lsbfW5b2BvisL6zsyMzK9UxV9L6c7AoFbyXHOA==}
     engines: {node: '>= 0.4'}
@@ -3561,6 +3575,10 @@ packages:
     resolution: {integrity: sha512-UXhXR2869FQaD+GMly8jAMCRZ94nU5KcrFetZfWEMd+LVVG6y0ExgHAhatEcKZ/wk8YcKPdi+hiD2wm75lq3/Q==}
     engines: {node: '>=4.0.0'}
 
+  ssrf-guard@1.0.0:
+    resolution: {integrity: sha512-DpXh/QQIcyQqP8YtSL0fI0+0z7P02rBCBORj+YCh8UZd0qdGl/1xuQp15MAXjPHjpSdx+mML+iIwCSdRxfb1zQ==}
+    engines: {node: '>=24'}
+
   standardwebhooks@1.1.1:
     resolution: {integrity: sha512-bCbX9ZEyFkWPsRz7Bl3NuQUJohmwGSev/yhr7vhaGPlc4AfIrspIRa6cPTBuI1ItmrTDJ4d/S2hCsfe4+vQGnQ==}
 
@@ -3716,8 +3734,8 @@ packages:
   undici-types@8.9.0:
     resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
 
-  undici@8.12.1:
-    resolution: {integrity: sha512-usz3OVQBeh1LxNn0DzU0voLXMgn5CU/WUdpBsY6Ti5afNao+vTkmn4H/NxoXolc10cOqe2+YIG0Hspq2rsl64w==}
+  undici@8.12.3:
+    resolution: {integrity: sha512-+fdndUTwBP86cVjihTp21hZHo7d6oj1c/47XPA3lL8mM0XHs+C4EkcjmgRsFnFk2f/UONGDy9ItBItmXsLOQHw==}
     engines: {node: '>=22.19.0'}
 
   unpipe@1.0.0:
@@ -6034,6 +6052,8 @@ snapshots:
 
   ipaddr.js@1.9.1: {}
 
+  ipaddr.js@2.5.0: {}
+
   is-core-module@2.17.0:
     dependencies:
       hasown: 2.0.4
@@ -6081,7 +6101,7 @@ snapshots:
       parse5: 8.0.1
       saxes: 6.0.0
       tough-cookie: 6.0.2
-      undici: 8.12.1
+      undici: 8.12.3
       w3c-xmlserializer: 6.0.0
       webidl-conversions: 8.0.1
       whatwg-mimetype: 5.0.0
@@ -6262,11 +6282,11 @@ snapshots:
     dependencies:
       wrappy: 1.0.2
 
-  openai@7.39.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.4)(undici@8.12.1)(ws@8.21.3)(zod@4.6.5):
+  openai@7.39.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.4)(undici@8.12.3)(ws@8.21.3)(zod@4.6.5):
     optionalDependencies:
       '@aws-sdk/credential-provider-node': 3.972.87
       '@smithy/signature-v4': 5.7.4
-      undici: 8.12.1
+      undici: 8.12.3
       ws: 8.21.3
       zod: 4.6.5
 
@@ -6501,7 +6521,7 @@ snapshots:
     dependencies:
       '@modelcontextprotocol/sdk': 1.30.0(supports-color@7.2.0)(zod@4.6.5)
       picomatch: 4.0.7
-      undici: 8.12.1
+      undici: 8.12.3
       yaml: 2.9.1
       zod: 4.6.5
     transitivePeerDependencies:
@@ -6817,6 +6837,11 @@ snapshots:
 
   sql-template-strings@2.2.2: {}
 
+  ssrf-guard@1.0.0:
+    dependencies:
+      ipaddr.js: 2.5.0
+      undici: 8.12.3
+
   standardwebhooks@1.1.1:
     dependencies:
       '@stablelib/base64': 1.0.1
@@ -6965,7 +6990,7 @@ snapshots:
 
   undici-types@8.9.0: {}
 
-  undici@8.12.1: {}
+  undici@8.12.3: {}
 
   unpipe@1.0.0: {}
 
