@@ -49,11 +49,11 @@
     "ajv": "^8.20.0"
   },
   "devDependencies": {
-    "@anthropic-ai/sdk": "^0.135.0",
+    "@anthropic-ai/sdk": "^0.137.0",
     "openai": "^7.39.0"
   },
   "peerDependencies": {
-    "@anthropic-ai/sdk": "^0.135.0",
+    "@anthropic-ai/sdk": "^0.137.0",
     "openai": "^7.39.0"
   },
   "peerDependenciesMeta": {
