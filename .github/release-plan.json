@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/script-loader/package.json"],
+  "changedManifests": ["packages/rate-limit/package.json"],
   "releases": [
     {
       "bump": "minor",
-      "directory": "script-loader",
-      "fromVersion": "0.0.0",
-      "name": "@vouchington/script-loader",
-      "toVersion": "0.1.0"
+      "directory": "rate-limit",
+      "fromVersion": "0.2.0",
+      "name": "@vouchington/rate-limit",
+      "toVersion": "0.3.0"
     }
   ],
-  "selectedPackage": "@vouchington/script-loader"
+  "selectedPackage": "@vouchington/rate-limit"
 }
