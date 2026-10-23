@@ -20,17 +20,30 @@ export interface RouteRateLimiterOptions<TContext> extends BuildRateLimitKeysOpt
   onError?(error: Error): void
 }
 
+export interface RouteRateLimitCheckOptions {
+  /**
+   * Units to charge, all or nothing: either every identity is charged `cost` or none is. Omit it
+   * to charge one unit with `addAndCheck`, which counts refused requests too.
+   */
+  cost?: number | undefined
+}
+
 export type CheckRouteRateLimit<TContext> = (
   routeKey: string,
   identities: RateLimitIdentities,
   context: TContext,
+  options?: RouteRateLimitCheckOptions,
 ) => Promise<RouteRateLimitResult>
 
 /** Creates a per-route check that charges every identity dimension in one atomic backend call. */
 export function createRouteRateLimiter<TContext = undefined>(
   options: RouteRateLimiterOptions<TContext>,
 ): CheckRouteRateLimit<TContext> {
-  return async (routeKey, identities, context) => {
+  return async (routeKey, identities, context, checkOptions = {}) => {
+    const { cost } = checkOptions
+    if (cost !== undefined && (!Number.isSafeInteger(cost) || cost < 1)) {
+      throw new RangeError(`Rate-limit cost must be a positive integer, got ${cost}`)
+    }
     const policy = await options.resolvePolicy(routeKey, identities, context)
     const { threshold, ttlSeconds } = policy
     const ids = buildRateLimitKeys(routeKey, identities, options)
@@ -38,13 +51,15 @@ export function createRouteRateLimiter<TContext = undefined>(
       return { limited: false, retryAfterSeconds: 0, limit: threshold, remaining: threshold }
     }
     try {
-      const { counts, limited } = await options
-        .getBackend(routeKey, context)
-        .addAndCheck(ids, threshold, ttlSeconds)
+      const backend = options.getBackend(routeKey, context)
+      const { counts, limited, retryAfterSeconds } =
+        cost === undefined
+          ? { ...(await backend.addAndCheck(ids, threshold, ttlSeconds)), retryAfterSeconds: 0 }
+          : await consume(backend, ids, { threshold, ttlSeconds, cost })
       const maxCount = counts.length > 0 ? Math.max(...counts) : 0
       return {
         limited,
-        retryAfterSeconds: ttlSeconds,
+        retryAfterSeconds: limited && retryAfterSeconds > 0 ? retryAfterSeconds : ttlSeconds,
         limit: threshold,
         remaining: Math.max(0, threshold - maxCount),
       }
@@ -56,4 +71,13 @@ export function createRouteRateLimiter<TContext = undefined>(
       return { limited: false, retryAfterSeconds: 0, limit: threshold, remaining: threshold }
     }
   }
+}
+
+async function consume(
+  backend: RateLimitBackend,
+  ids: string[],
+  options: { threshold: number; ttlSeconds: number; cost: number },
+) {
+  const { counts, limited, retryAfterMs } = await backend.consume(ids, options)
+  return { counts, limited, retryAfterSeconds: Math.ceil(retryAfterMs / 1000) }
 }

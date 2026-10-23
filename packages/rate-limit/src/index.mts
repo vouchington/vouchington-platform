@@ -1,7 +1,11 @@
 export { chargeRoutes } from './charge.mts'
 export type { RouteCharge } from './charge.mts'
 export { createRouteRateLimiter } from './check.mts'
-export type { CheckRouteRateLimit, RouteRateLimiterOptions } from './check.mts'
+export type {
+  CheckRouteRateLimit,
+  RouteRateLimitCheckOptions,
+  RouteRateLimiterOptions,
+} from './check.mts'
 export { applyRateLimitResult } from './headers.mts'
 export type { ApplyRateLimitResultOptions } from './headers.mts'
 export { buildRateLimitKeys, sanitizeRouteKeySegment } from './keys.mts'

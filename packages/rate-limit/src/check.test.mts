@@ -14,7 +14,27 @@ function fakeBackend(
     limited: false,
   }),
 ) {
-  return { addAndCheck: vi.fn(impl) }
+  return {
+    addAndCheck: vi.fn(impl),
+    consume: vi.fn<RateLimitBackend['consume']>(async () => {
+      throw new Error('consume is not used without a cost')
+    }),
+  }
+}
+
+/** An in-memory all-or-nothing `consume`, one counter per key, matching valkyries semantics. */
+function weightedBackend(initial: Record<string, number> = {}) {
+  const counts = new Map(Object.entries(initial))
+  const backend = fakeBackend()
+  backend.consume.mockImplementation(async (ids, { threshold, cost = 1 }) => {
+    const before = ids.map((id) => counts.get(id) ?? 0)
+    if (before.some((count) => count + cost >= threshold)) {
+      return { counts: before, limited: true, retryAfterMs: 1500 }
+    }
+    for (const id of ids) counts.set(id, (counts.get(id) ?? 0) + cost)
+    return { counts: ids.map((id) => counts.get(id)!), limited: false, retryAfterMs: 0 }
+  })
+  return { backend, counts }
 }
 
 describe('buildRateLimitKeys', () => {
@@ -131,6 +151,65 @@ describe('createRouteRateLimiter', () => {
     })
     expect((await check('r', { ip: '1' }, undefined)).limited).toBe(false)
   })
+
+  it('charges exactly the cost on every identity when the batch fits', async () => {
+    const { backend, counts } = weightedBackend({ 'ip:1:r': 2 })
+    const check = createRouteRateLimiter({ getBackend: () => backend, resolvePolicy: () => policy })
+    expect(await check('r', { ip: '1', uid: 'u' }, undefined, { cost: 5 })).toEqual({
+      limited: false,
+      retryAfterSeconds: 60,
+      limit: 10,
+      remaining: 3,
+    })
+    expect(backend.consume).toHaveBeenCalledWith(['ip:1:r', 'uid:u:r'], {
+      threshold: 10,
+      ttlSeconds: 60,
+      cost: 5,
+    })
+    expect(backend.addAndCheck).not.toHaveBeenCalled()
+    expect(Object.fromEntries(counts)).toEqual({ 'ip:1:r': 7, 'uid:u:r': 5 })
+  })
+
+  it('consumes nothing when any identity would go over budget', async () => {
+    const { backend, counts } = weightedBackend({ 'ip:1:r': 6 })
+    const check = createRouteRateLimiter({ getBackend: () => backend, resolvePolicy: () => policy })
+    expect(await check('r', { ip: '1', uid: 'u' }, undefined, { cost: 4 })).toEqual({
+      limited: true,
+      retryAfterSeconds: 2,
+      limit: 10,
+      remaining: 4,
+    })
+    expect(Object.fromEntries(counts)).toEqual({ 'ip:1:r': 6 })
+  })
+
+  it('allows as many cost-1 charges as single addAndCheck requests', async () => {
+    const { backend } = weightedBackend()
+    const check = createRouteRateLimiter({ getBackend: () => backend, resolvePolicy: () => policy })
+    const results: boolean[] = []
+    for (let i = 0; i < 10; i++) {
+      // oxlint-disable-next-line no-await-in-loop -- requests in one window are charged in order
+      results.push((await check('r', { ip: '1' }, undefined, { cost: 1 })).limited)
+    }
+    // Like addAndCheck, the Nth request in a window is the first one refused.
+    expect(results.indexOf(true)).toBe(policy.threshold - 1)
+  })
+
+  it('falls back to the window when a refusal reports no retry delay', async () => {
+    const backend = fakeBackend()
+    backend.consume.mockResolvedValue({ counts: [10], limited: true, retryAfterMs: 0 })
+    const check = createRouteRateLimiter({ getBackend: () => backend, resolvePolicy: () => policy })
+    expect(await check('r', { ip: '1' }, undefined, { cost: 2 })).toMatchObject({
+      limited: true,
+      retryAfterSeconds: 60,
+    })
+  })
+
+  it.each([0, -1, 1.5, Number.NaN])('rejects a cost of %s before charging', async (cost) => {
+    const backend = fakeBackend()
+    const check = createRouteRateLimiter({ getBackend: () => backend, resolvePolicy: () => policy })
+    await expect(check('r', { ip: '1' }, undefined, { cost })).rejects.toThrow(RangeError)
+    expect(backend.consume).not.toHaveBeenCalled()
+  })
 })
 
 describe('applyRateLimitResult', () => {
@@ -194,5 +273,20 @@ describe('chargeRoutes', () => {
     )
     expect(seen).toEqual(['a', 'b', 'a', 'c'])
     expect([...refused]).toEqual([[1, 9]])
+  })
+
+  it('passes each charge weight through as the route cost', async () => {
+    const costs: (number | undefined)[] = []
+    await chargeRoutes(
+      [
+        { index: 0, routeKeys: ['a'], weight: 500 },
+        { index: 1, routeKeys: ['a'] },
+      ],
+      async (_routeKey, cost) => {
+        costs.push(cost)
+        return { limited: false, retryAfterSeconds: 0, limit: 1, remaining: 1 }
+      },
+    )
+    expect(costs).toEqual([500, undefined])
   })
 })
