@@ -77,6 +77,10 @@
       "entry": ["src/index.mts!", "src/edge/index.mts!"],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
     },
+    "packages/http-transport": {
+      "entry": ["src/index.mts!", "src/fetch.mts!", "src/dispatchers.mts!"],
+      "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
+    },
     "packages/sentry": {
       "entry": ["src/index.mts!", "src/node.mts!", "src/browser.mts!"],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],

@@ -31,6 +31,18 @@ describe('new package manifests and exports', () => {
     }
   })
 
+  it('publishes http-transport fetch and dispatchers subpaths', () => {
+    expect(Object.keys(readManifest('http-transport').exports as object)).toEqual([
+      '.',
+      './fetch',
+      './dispatchers',
+    ])
+    for (const name of ['fetch', 'dispatchers']) {
+      expect(existsSync(`packages/http-transport/dist/${name}.d.mts`)).toBe(true)
+      expect(() => importBuiltModule(`packages/http-transport/dist/${name}.mjs`)).not.toThrow()
+    }
+  })
+
   it('publishes separate media S3 object and presign subpaths', () => {
     expect(Object.keys(readManifest('media').exports as object)).toEqual([
       '.',
@@ -52,7 +64,7 @@ describe('new package manifests and exports', () => {
       '@vouchington/http-transport',
       'parse5',
     ])
-    expect(readManifest('http-transport').dependencies).toBeUndefined()
+    expectDependencyNames('http-transport', ['@jongleberry/api-server', 'ssrf-guard', 'undici'])
     expectDependencyNames('image-resize', ['negotiator', 'sharp'])
     expectDependencyNames('media', ['@aws-sdk/client-s3', '@aws-sdk/s3-request-presigner'])
     expectDependencyNames('wikimedia', ['@jongleberry/api-server'])

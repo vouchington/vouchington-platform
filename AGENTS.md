@@ -42,7 +42,7 @@ the migration advisory lock is per database, and `VITEST_MAX_WORKERS` overrides 
 - `@vouchington/robots` — transport- and cache-injected robots.txt evaluation
 - `@vouchington/browser-crawl` — injected Playwright rendered-page collection
 - `@vouchington/domain-verification` — DNS TXT and secure-transport verification primitives
-- `@vouchington/http-transport` — redirect-safe transport with injected fetch/address pinning
+- `@vouchington/http-transport` — redirect-safe transport with injected fetch/address pinning, plus `/fetch` (timed fetch, HTTP error mapping) and `/dispatchers` (injectable undici dispatcher factory)
 - `@vouchington/image-resize` — Sharp transforms, file output, metadata, and negotiation
 - `@vouchington/media` — media validation, stream lifecycle, and injected S3 primitives
 - `@vouchington/wikimedia` — injected Wikimedia search and page-summary client
