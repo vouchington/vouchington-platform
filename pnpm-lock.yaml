@@ -176,7 +176,7 @@ importers:
         specifier: ^0.0.1
         version: link:../crawler-html
       '@vouchington/http-transport':
-        specifier: ^0.0.0
+        specifier: ^0.1.0
         version: link:../http-transport
       parse5:
         specifier: ^8.0.0

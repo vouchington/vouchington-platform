@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/http-transport",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Redirect-safe HTTP transport primitives with injected fetch and address resolution.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/http-transport#readme",
   "bugs": {
