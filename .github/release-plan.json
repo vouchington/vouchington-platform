@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/rate-limit/package.json"],
+  "changedManifests": ["packages/postgres/package.json"],
   "releases": [
     {
-      "bump": "minor",
-      "directory": "rate-limit",
-      "fromVersion": "0.2.0",
-      "name": "@vouchington/rate-limit",
-      "toVersion": "0.3.0"
+      "bump": "patch",
+      "directory": "postgres",
+      "fromVersion": "0.0.16",
+      "name": "@vouchington/postgres",
+      "toVersion": "0.0.17"
     }
   ],
-  "selectedPackage": "@vouchington/rate-limit"
+  "selectedPackage": "@vouchington/postgres"
 }
