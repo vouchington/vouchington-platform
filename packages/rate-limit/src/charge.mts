@@ -5,6 +5,12 @@ export interface RouteCharge {
   index: number
   /** Routes the unit exercises, in precedence order. */
   routeKeys: readonly string[]
+  /**
+   * Units this charge spends on each route, passed to `check` as its cost. Omit it for one unit
+   * charged the default way. Each route is all or nothing, but routes are not atomic together:
+   * units already spent on earlier routes stay spent when a later route refuses.
+   */
+  weight?: number | undefined
 }
 
 /**
@@ -14,13 +20,13 @@ export interface RouteCharge {
  */
 export async function chargeRoutes(
   charges: readonly RouteCharge[],
-  check: (routeKey: string) => Promise<RouteRateLimitResult>,
+  check: (routeKey: string, cost: number | undefined) => Promise<RouteRateLimitResult>,
 ): Promise<ReadonlyMap<number, number>> {
   const refused = new Map<number, number>()
-  for (const { index, routeKeys } of charges) {
+  for (const { index, routeKeys, weight } of charges) {
     for (const routeKey of routeKeys) {
       // oxlint-disable-next-line no-await-in-loop -- a batch spends its budget in order, and a unit stops at its first spent route
-      const result = await check(routeKey)
+      const result = await check(routeKey, weight)
       if (!result.limited) continue
       refused.set(index, result.retryAfterSeconds)
       break

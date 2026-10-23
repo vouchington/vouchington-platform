@@ -1,7 +1,7 @@
 import type { RateLimiter } from 'valkyries/rate-limiter'
 
 /** The slice of a valkyries `RateLimiter` this package drives. Any structural fake satisfies it. */
-export type RateLimitBackend = Pick<RateLimiter, 'addAndCheck'>
+export type RateLimitBackend = Pick<RateLimiter, 'addAndCheck' | 'consume'>
 
 /** Identity dimension name to value, e.g. `{ ip, did, uid }`. Falsy values are skipped. */
 export type RateLimitIdentities = Readonly<Record<string, string | undefined>>
