@@ -15,7 +15,9 @@ Routes, limits, identity sources, backends, and namespaces are all injected by t
   `onError`; the request fails open unless the policy sets `failClosed`. Pass
   `check(routeKey, identities, context, { cost })` to charge `cost` units all or nothing with one
   `consume`: every identity is charged or none is, and `retryAfterSeconds` is the time until the
-  window frees enough room.
+  window frees enough room. A cost at or above the route's `limit` can never succeed; callers that
+  need to tell that apart from a busy window compare `cost >= result.limit`. Weighted checks need a
+  valkyries `RateLimiter` with `consume` (0.11 or later).
 - `buildRateLimitKeys`, `sanitizeRouteKeySegment` — the key builder, with optional hashed dimensions.
 - `installRouteRateLimit(app, options)` — adds `applyRouteRateLimit`, `prepareRouteRateLimit`, and
   `settleRouteRateLimit` to the api-server `Context`. The application supplies `resolveIdentities`,
