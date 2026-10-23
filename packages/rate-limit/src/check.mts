@@ -35,14 +35,17 @@ export type CheckRouteRateLimit<TContext> = (
   options?: RouteRateLimitCheckOptions,
 ) => Promise<RouteRateLimitResult>
 
+/** valkyries `consume` refuses larger costs; reject them here so they never fail open. */
+const MAX_COST = 10_000
+
 /** Creates a per-route check that charges every identity dimension in one atomic backend call. */
 export function createRouteRateLimiter<TContext = undefined>(
   options: RouteRateLimiterOptions<TContext>,
 ): CheckRouteRateLimit<TContext> {
   return async (routeKey, identities, context, checkOptions = {}) => {
     const { cost } = checkOptions
-    if (cost !== undefined && (!Number.isSafeInteger(cost) || cost < 1)) {
-      throw new RangeError(`Rate-limit cost must be a positive integer, got ${cost}`)
+    if (cost !== undefined && (!Number.isSafeInteger(cost) || cost < 1 || cost > MAX_COST)) {
+      throw new RangeError(`Rate-limit cost must be an integer from 1 to ${MAX_COST}, got ${cost}`)
     }
     const policy = await options.resolvePolicy(routeKey, identities, context)
     const { threshold, ttlSeconds } = policy

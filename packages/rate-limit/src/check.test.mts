@@ -204,12 +204,18 @@ describe('createRouteRateLimiter', () => {
     })
   })
 
-  it.each([0, -1, 1.5, Number.NaN])('rejects a cost of %s before charging', async (cost) => {
-    const backend = fakeBackend()
-    const check = createRouteRateLimiter({ getBackend: () => backend, resolvePolicy: () => policy })
-    await expect(check('r', { ip: '1' }, undefined, { cost })).rejects.toThrow(RangeError)
-    expect(backend.consume).not.toHaveBeenCalled()
-  })
+  it.each([0, -1, 1.5, Number.NaN, 10_001])(
+    'rejects a cost of %s before charging',
+    async (cost) => {
+      const backend = fakeBackend()
+      const check = createRouteRateLimiter({
+        getBackend: () => backend,
+        resolvePolicy: () => policy,
+      })
+      await expect(check('r', { ip: '1' }, undefined, { cost })).rejects.toThrow(RangeError)
+      expect(backend.consume).not.toHaveBeenCalled()
+    },
+  )
 })
 
 describe('applyRateLimitResult', () => {

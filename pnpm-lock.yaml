@@ -321,8 +321,8 @@ importers:
         specifier: ^3.0.1
         version: 3.0.1
       valkyries:
-        specifier: ^0.10.0
-        version: 0.10.0
+        specifier: ^0.11.0
+        version: 0.11.0
 
   packages/request-contract-validation:
     dependencies:
@@ -3737,6 +3737,10 @@ packages:
     resolution: {integrity: sha512-pEqZ/wTEPTA++kjZyPsSHscbN+t1eCPMYHgKYi5rqENxJAWzt9iO85LWPWE8X/Jg+CKGKIWgDC5esKDNf7GUtQ==}
     engines: {node: '>=24.0.0'}
 
+  valkyries@0.11.0:
+    resolution: {integrity: sha512-/1ts58dfqPT2oc9zxtDpPQmh21O3nZuvPouCAJy2JOHX0rTsExee5vDejjstSli7DDWrfw8LbpCrss7HUNJ2DA==}
+    engines: {node: '>=24.0.0'}
+
   vary@1.1.2:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
@@ -6975,6 +6979,10 @@ snapshots:
   uuid@14.0.3: {}
 
   valkyries@0.10.0:
+    dependencies:
+      '@valkey/valkey-glide': 2.5.3
+
+  valkyries@0.11.0:
     dependencies:
       '@valkey/valkey-glide': 2.5.3
 
