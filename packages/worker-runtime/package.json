@@ -32,6 +32,11 @@
       "import": "./dist/glide-mq/index.mjs",
       "default": "./dist/glide-mq/index.mjs"
     },
+    "./sqs": {
+      "types": "./dist/sqs/index.d.mts",
+      "import": "./dist/sqs/index.mjs",
+      "default": "./dist/sqs/index.mjs"
+    },
     "./testing": {
       "types": "./dist/testing/index.d.mts",
       "import": "./dist/testing/index.mjs",
@@ -46,14 +51,19 @@
     "prepack": "pnpm run build"
   },
   "devDependencies": {
+    "@aws-sdk/client-sqs": "^3.1156.0",
     "glide-mq": "^0.19.0",
     "vitest": "^5.0.5"
   },
   "peerDependencies": {
+    "@aws-sdk/client-sqs": "^3.1156.0",
     "glide-mq": "^0.19.0",
     "vitest": "^5.0.5"
   },
   "peerDependenciesMeta": {
+    "@aws-sdk/client-sqs": {
+      "optional": true
+    },
     "vitest": {
       "optional": true
     }
