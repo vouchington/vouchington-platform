@@ -84,6 +84,27 @@ whose `load()` returns `null`; pass `loadSqsConsumers` to `initializeWorkerRunti
 `addSqsConsumerEventListeners(consumer, hooks)` maps the events to `onEvent`, `onMessageReceived`,
 `onMessageFinished` (with elapsed time), and `onError` (tagged with the queue and message id).
 
+## Scheduled-job manifests (`@vouchington/worker-runtime/schedule-manifest`)
+
+A manifest lists scheduled jobs for one queue: `schedulerId`, a `repeat` (`{ pattern }` with a
+5-field cron, or `{ every }` in milliseconds, optionally a thunk), a `template` (`name`, `opts`,
+and `data` or `dataFactory`), an optional `registration: 'sequential'`, a nonempty list of opaque
+`operatorSurfaces`, and an optional `subMinuteJustification`.
+
+- `defineScheduledJobManifest(queueName, jobs, { validateSurface })` and
+  `validateScheduledJobManifests(manifests, { validateSurface })` check names, unique scheduler
+  keys, `data` xor `dataFactory`, and non-thunk repeats. The operator-surface type is the
+  application's; `validateSurface(surface, schedulerKey)` is where it rejects bad surfaces.
+- `validateScheduledJobRepeat(repeat, key, justification?)` enforces exactly one of `pattern` and
+  `every`, a 5-field cron, a positive finite `every`, and the 60 000 ms floor
+  (`SCHEDULING_FLOOR_MS`) unless justified. Thunk repeats are validated when resolved.
+- `upsertScheduledJobManifest(queue, manifest, { include, transformRepeat })` registers jobs
+  (sequential jobs alone and in order, others in parallel batches), then removes schedulers on the
+  queue that are no longer in the manifest. `include` replaces an environment filter and
+  `transformRepeat` replaces a cadence clamp; both are application policy.
+- `removeScheduledJobScheduler(queue, id)` reports the scheduler names before and after.
+- `toSchedulerTemplateOptions(opts)` drops `delay`, `deduplication`, `parent`, and `jobId`.
+
 ## Lifecycle, serve, and queue classes
 
 `initializeWorkerRuntime(config, deps)` resolves one queue selection through the injected
