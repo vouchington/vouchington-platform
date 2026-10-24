@@ -128,6 +128,80 @@ describe('createEnqueueFunction', () => {
     )
   })
 
+  it('does not mutate the shared default backoff when a normalizer edits it', async () => {
+    const edited = single({
+      normalizeOptions: (options: { backoff?: { delay?: number } }) => {
+        options.backoff!.delay = 60_000
+        return options
+      },
+    })
+    const untouched = single()
+
+    await edited.enqueue({ a: 1 })
+    await untouched.enqueue({ a: 1 })
+
+    expect(ENQUEUE_BASE_DEFAULTS.backoff.delay).toBe(1000)
+    expect((untouched.queue.add.mock.calls[0] as unknown[])[2]).toMatchObject({
+      backoff: { delay: 1000 },
+    })
+  })
+
+  it('keeps numeric backoff overrides untouched', async () => {
+    const { queue, enqueue } = single({ defaults: { backoff: 5 } })
+
+    await enqueue({ a: 1 })
+
+    expect((queue.add.mock.calls[0] as unknown[])[2]).toMatchObject({ backoff: 5 })
+  })
+
+  it('contains failing reporters and decorators for rejected enqueues', async () => {
+    const failure = new Error('add failed')
+    const unhandled = vi.fn()
+    process.on('unhandledRejection', unhandled)
+    const enqueue = createEnqueueFunction<string, 'job'>({
+      queue: { add: vi.fn(() => Promise.reject(failure)) } as never,
+      queueName: 'q',
+      jobName: 'job',
+      reportError: () => {
+        throw new Error('reporter failed')
+      },
+      decorateError: () => {
+        throw new Error('decorator failed')
+      },
+    })
+
+    await expect(enqueue('x')).rejects.toBe(failure)
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    process.off('unhandledRejection', unhandled)
+
+    expect(unhandled).not.toHaveBeenCalled()
+  })
+
+  it('contains a failing onEnqueue hook, reporting it and returning the promise', async () => {
+    const hookFailure = new Error('metrics failed')
+    const { enqueue, reportError } = single({
+      onEnqueue: () => {
+        throw hookFailure
+      },
+    })
+
+    await expect(enqueue({ a: 1 })).resolves.toEqual({ id: '1' })
+    expect(reportError).toHaveBeenCalledWith(hookFailure)
+  })
+
+  it('wraps non-Error onEnqueue failures and survives a failing reporter', async () => {
+    const { enqueue } = single({
+      onEnqueue: () => {
+        throw 'text'
+      },
+      reportError: () => {
+        throw new Error('reporter failed')
+      },
+    })
+
+    await expect(enqueue({ a: 1 })).resolves.toEqual({ id: '1' })
+  })
+
   it('publishes an admission with the original promise and tracks the enqueue', async () => {
     const onEnqueue = vi.fn()
     const events: Array<{ completion: Promise<unknown>; inputs: readonly unknown[] }> = []

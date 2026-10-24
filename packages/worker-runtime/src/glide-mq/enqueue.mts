@@ -124,6 +124,8 @@ function finalizeOptions(
   ...layers: Array<Partial<JobOptions> | undefined>
 ): JobOptions {
   const merged = Object.assign({}, ENQUEUE_BASE_DEFAULTS, ...layers) as JobOptions
+  // Copy the nested backoff so a normalizer that edits it in place cannot change the shared default.
+  if (typeof merged.backoff === 'object') merged.backoff = { ...merged.backoff }
   const retained = options.sensitive
     ? { ...merged, removeOnComplete: true, removeOnFail: true }
     : merged
@@ -147,7 +149,11 @@ function track<T extends Promise<unknown>, TCallContext>(
     const err: ErrorWithReportingContext =
       error instanceof Error ? error : new Error(String(error), { cause: error })
     const context = { queueName: options.queueName, jobName: options.jobName, count, callContext }
-    options.reportError(options.decorateError?.(err, context) ?? err)
+    try {
+      options.reportError(options.decorateError?.(err, context) ?? err)
+    } catch {
+      // The caller still holds the original rejection; a failing reporter must not add another.
+    }
   })
   publishEnqueueAdmission(
     {
@@ -159,6 +165,17 @@ function track<T extends Promise<unknown>, TCallContext>(
     },
     options.reportError,
   )
-  options.onEnqueue?.(options.queueName, options.jobName, count)
+  try {
+    options.onEnqueue?.(options.queueName, options.jobName, count)
+  } catch (error) {
+    // Instrumentation must not turn an admitted enqueue into an apparent failure.
+    try {
+      options.reportError(
+        error instanceof Error ? error : new Error(String(error), { cause: error }),
+      )
+    } catch {
+      // Nothing further to do.
+    }
+  }
   return promise
 }
