@@ -26,6 +26,14 @@ describe('createTransactionLockOnce', () => {
     expect(text).toContain('ORDER BY position')
   })
 
+  it('records held ids once with a non-idempotent normalize', async () => {
+    const query = fakeQuery()
+    const { lock } = createTransactionLockOnce({ ...options, normalize: (id) => `k:${id}` })
+    await lock(query, ['a'])
+    await lock(query, ['a'])
+    expect(query).toHaveBeenCalledTimes(1)
+  })
+
   it('uses a custom normalize', async () => {
     const query = fakeQuery()
     const { lock } = createTransactionLockOnce({ ...options, normalize: (id) => id.trim() })

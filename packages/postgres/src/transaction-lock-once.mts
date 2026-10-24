@@ -70,8 +70,10 @@ export function createTransactionLockOnce<Query extends TransactionQuery = Trans
     const held = heldFor(query)
     const ids = [...new Set(requested.map(normalize))].toSorted().filter((id) => !held.has(id))
     if (ids.length === 0) return
-    const locked = (await acquire(query, ids)) ?? ids
-    for (const id of locked) held.add(normalize(id))
+    const reported = await acquire(query, ids)
+    // `ids` are already normalized; only ids a custom acquire reports need normalizing.
+    const locked = reported ? reported.map(normalize) : ids
+    for (const id of locked) held.add(id)
   }
 
   return {
