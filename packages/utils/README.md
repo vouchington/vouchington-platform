@@ -87,6 +87,11 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
   `iat` skew and an optional (hashed) nonce, and throws `OidcVerificationError` with a `code`.
   `googleProfileFromClaims` and `appleProfileFromClaims` map claims to a profile; account policy
   and HTTP error mapping stay in the application.
+- `oauth-providers`: authorization-code redemption for GitHub and X. Each
+  provider's `redeem(input, { fetch, signal, now })` returns `{ tokens, profile }`; `verifiedEmail`
+  follows each provider's own rule. Credentials, tenant, and the egress-guarded `fetch` are
+  injected; failures throw `OAuthProviderError` (`provider`, `kind`, `status`). Persistence and
+  HTTP error mapping stay in the application.
 - `collections`, `async`, and `stable-json`: collection deduplication/merging, bounded async mapping,
   and deterministic JSON serialization.
 - `feature-flags`: base64 JSON feature-flag cookie parsing and serialization with caller-injected

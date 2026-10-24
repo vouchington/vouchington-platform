@@ -55,6 +55,7 @@
         "src/oauth-pkce.mts!",
         "src/oauth-popup.mts!",
         "src/oidc-id-token.mts!",
+        "src/oauth-providers.mts!",
       ],
       "project": [
         "src/**/*.mts!",
@@ -62,6 +63,7 @@
         "!src/**/http-signatures-test-helpers.mts!",
         "!src/**/oauth-popup-test-helpers.mts!",
         "!src/**/oidc-id-token-test-helpers.mts!",
+        "!src/**/oauth-providers-test-helpers.mts!",
       ],
     },
     "packages/session-jwt": {
