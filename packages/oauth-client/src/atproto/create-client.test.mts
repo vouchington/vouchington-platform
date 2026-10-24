@@ -93,6 +93,18 @@ describe('createAtprotoOAuthClient', () => {
     expect(combined.aborted).toBe(true)
   })
 
+  it('keeps the signal carried by a Request input when combining', async () => {
+    const operation = new AbortController()
+    const fetch = vi.fn(async () => new Response('{}'))
+    const client = await build(fetch, { operationSignal: operation.signal })
+    const request = new AbortController()
+    await send(client, new Request('https://example.com/c', { signal: request.signal }))
+    const combined = ((fetch.mock.calls[0] as unknown[])[1] as RequestInit).signal!
+    expect(combined.aborted).toBe(false)
+    request.abort()
+    expect(combined.aborted).toBe(true)
+  })
+
   it('rejects literal loopback addresses before any request', async () => {
     const fetch = vi.fn()
     const client = await build(fetch)

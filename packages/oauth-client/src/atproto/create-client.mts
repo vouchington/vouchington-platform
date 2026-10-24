@@ -22,18 +22,15 @@ export interface AtprotoOAuthClientOptions {
  */
 export function createAtprotoOAuthClient(options: AtprotoOAuthClientOptions): NodeOAuthClient {
   const { operationSignal, fetch: injectedFetch } = options
-  const baseFetch: Fetch = async (input, init) =>
-    injectedFetch(
-      input,
-      operationSignal
-        ? {
-            ...init,
-            signal: init?.signal
-              ? AbortSignal.any([init.signal, operationSignal])
-              : operationSignal,
-          }
-        : init,
-    )
+  const baseFetch: Fetch = async (input, init) => {
+    if (!operationSignal) return injectedFetch(input, init)
+    // A Request carries its own signal; keep it when init does not override it.
+    const requestSignal = init?.signal ?? (input instanceof Request ? input.signal : undefined)
+    return injectedFetch(input, {
+      ...init,
+      signal: requestSignal ? AbortSignal.any([requestSignal, operationSignal]) : operationSignal,
+    })
+  }
   return new NodeOAuthClient({
     clientMetadata: options.clientMetadata,
     keyset: options.keyset,
