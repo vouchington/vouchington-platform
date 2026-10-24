@@ -16,9 +16,14 @@ export interface MicrosoftProviderConfig {
   clientSecret: string
   /** Defaults to `common`. */
   tenantId?: string
+  /**
+   * Treat Graph `mail` as verified. Off by default: a tenant admin can set `mail` without proving
+   * ownership, so only enable it when every accepted tenant is trusted.
+   */
+  trustMailAsVerified?: boolean
 }
 
-/** v2.0 token exchange with required PKCE; Graph `mail` is the verified email. */
+/** v2.0 token exchange with required PKCE; Graph `mail` is unverified unless trusted. */
 export function microsoftProvider(config: MicrosoftProviderConfig): OAuthProvider {
   return {
     id: 'microsoft',
@@ -60,7 +65,7 @@ export function microsoftProvider(config: MicrosoftProviderConfig): OAuthProvide
         tokens,
         profile: {
           providerUserId: id,
-          verifiedEmail: email ?? null,
+          verifiedEmail: config.trustMailAsVerified ? (email ?? null) : null,
           data: compact({
             name: str(me.displayName),
             email,

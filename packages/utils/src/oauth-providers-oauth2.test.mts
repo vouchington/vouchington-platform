@@ -105,8 +105,19 @@ describe('microsoftProvider', () => {
       ...overrides,
     })
 
-  it('defaults the tenant to common and treats Graph mail as the verified email', async () => {
+  it('does not treat Graph mail as verified by default', async () => {
     const provider = microsoftProvider({ clientId: 'id', clientSecret: 'secret' })
+    const result = await provider.redeem(input, routes('common').ctx())
+    expect(result.profile.verifiedEmail).toBeNull()
+    expect(result.profile.data).toMatchObject({ email: 'mia@example.com' })
+  })
+
+  it('defaults the tenant to common and trusts Graph mail when configured', async () => {
+    const provider = microsoftProvider({
+      clientId: 'id',
+      clientSecret: 'secret',
+      trustMailAsVerified: true,
+    })
     const { ctx, init, urls } = routes('common')
     const result = await provider.redeem(input, ctx())
     expect(urls()[0]).toBe(TOKEN('common'))
@@ -134,6 +145,7 @@ describe('microsoftProvider', () => {
       clientId: 'id',
       clientSecret: 'secret',
       tenantId: 'contoso',
+      trustMailAsVerified: true,
     })
     const { ctx, urls } = routes('contoso', {
       [ME]: json({ id: 'ms-2', userPrincipalName: 'm@example.com' }),
