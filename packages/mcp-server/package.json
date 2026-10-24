@@ -31,6 +31,16 @@
       "types": "./dist/tools/index.d.mts",
       "import": "./dist/tools/index.mjs",
       "default": "./dist/tools/index.mjs"
+    },
+    "./results": {
+      "types": "./dist/results/index.d.mts",
+      "import": "./dist/results/index.mjs",
+      "default": "./dist/results/index.mjs"
+    },
+    "./untrusted": {
+      "types": "./dist/untrusted/index.d.mts",
+      "import": "./dist/untrusted/index.mjs",
+      "default": "./dist/untrusted/index.mjs"
     }
   },
   "publishConfig": {
@@ -41,8 +51,15 @@
     "prepack": "pnpm run build"
   },
   "dependencies": {
+    "@jongleberry/vurst-prompt": "^0.4.3",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2"
+  },
+  "peerDependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2"
   },
   "engines": {
     "node": ">=24.0.0"
