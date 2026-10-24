@@ -280,6 +280,11 @@
       "import": "./dist/oauth-popup.mjs",
       "default": "./dist/oauth-popup.mjs"
     },
+    "./oidc-id-token": {
+      "types": "./dist/oidc-id-token.d.mts",
+      "import": "./dist/oidc-id-token.mjs",
+      "default": "./dist/oidc-id-token.mjs"
+    },
     "./http-signatures": {
       "types": "./dist/http-signatures.d.mts",
       "import": "./dist/http-signatures.mjs",

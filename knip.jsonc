@@ -54,12 +54,14 @@
         "src/speculation-rules.mts!",
         "src/oauth-pkce.mts!",
         "src/oauth-popup.mts!",
+        "src/oidc-id-token.mts!",
       ],
       "project": [
         "src/**/*.mts!",
         "!src/**/*.test.mts!",
         "!src/**/http-signatures-test-helpers.mts!",
         "!src/**/oauth-popup-test-helpers.mts!",
+        "!src/**/oidc-id-token-test-helpers.mts!",
       ],
     },
     "packages/session-jwt": {
