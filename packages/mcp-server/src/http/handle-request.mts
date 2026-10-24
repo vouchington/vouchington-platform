@@ -29,7 +29,7 @@ export type StatelessMcpHooks = {
   /** Awaited after an admitted tool call returns an error result, so it can be recorded. */
   onToolError?: (toolName: string, option?: string) => Promise<void>
   onToolRateLimited?: (toolName: string, messageIndex: number, option?: string) => Promise<void>
-  /** Fired once when a dispatched `tools/call` settles. Observation only; it cannot change the result. */
+  /** Fired once when a dispatched `tools/call` settles. Observation only: a throw is swallowed. */
   onToolCallSettled?: (messageIndex: number, settlement: ToolCallSettlement) => void
 }
 
@@ -66,6 +66,11 @@ export type StatelessMcpRequest = {
  */
 export async function handleStatelessMcpRequest(options: StatelessMcpRequest): Promise<Response> {
   const { request } = options
+  // Stateless: there is no server-to-client stream to open and no session to close, so anything
+  // but POST is refused up front instead of answering a stream that ends at once and is retried.
+  if (request.method !== 'POST') {
+    return new Response(null, { status: 405, headers: { Allow: 'POST' } })
+  }
   const invalid = (options.validateRequest ?? validateToolsRequest)(options.parsedBody)
   if (invalid) return invalid
   // The SDK answers a request by id, so a batch that reuses an id would return only the first
@@ -130,7 +135,11 @@ async function runToolCall(
   const settle = (settlement: ToolCallSettlement) => {
     if (messageIndex === undefined || settled) return
     settled = true
-    hooks?.onToolCallSettled?.(messageIndex, settlement)
+    try {
+      hooks?.onToolCallSettled?.(messageIndex, settlement)
+    } catch {
+      // Observation only: a failing observer never replaces the tool's result or its error.
+    }
   }
   const retryAfterSeconds = options.rateLimitedCalls.get(messageIndex ?? -1)
   if (retryAfterSeconds !== undefined) {

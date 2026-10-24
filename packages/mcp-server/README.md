@@ -116,7 +116,9 @@ const response = await handleStatelessMcpRequest({
   runs.
 - `callTool` receives `{ onInvoked, onRateLimited }`: report the tool duration and a rate limit
   found while running, so `onToolError` fires only for real tool errors.
-- `onToolCallSettled` fires once per dispatched call, including a call that throws.
+- `onToolCallSettled` fires once per dispatched call, including a call that throws. It only
+  observes: if it throws, the error is swallowed and the tool's result is unchanged.
+- Any method but POST is refused with `405` and `Allow: POST`.
 - All started calls finish before the response returns, and the transport and server are closed
   even on error.
 - `validateRequest` defaults to `validateToolsRequest`, which answers a malformed `tools/list` or

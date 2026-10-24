@@ -121,6 +121,25 @@ describe('handleStatelessMcpRequest', () => {
     expect((await post(call(1), { validateRequest: () => null })).status).toBe(200)
   })
 
+  it.each(['GET', 'DELETE', 'PUT'])('refuses %s with 405 and Allow: POST', async (method) => {
+    const callTool = vi.fn()
+    const response = await handleStatelessMcpRequest({
+      serverInfo: { name: 'example-server', version: '2.0.0' },
+      request: new Request('http://localhost/mcp', { method }),
+      parsedBody: undefined,
+      listTools: () => [],
+      callTool,
+      isDispatchedToolCall: isDispatched,
+      rateLimitedCalls: new Map(),
+      buildRateLimitedResult: () => ({ content: [] }),
+    })
+
+    expect(response.status).toBe(405)
+    expect(response.headers.get('Allow')).toBe('POST')
+    expect(response.body).toBeNull()
+    expect(callTool).not.toHaveBeenCalled()
+  })
+
   it('acknowledges a notification with an empty 202', async () => {
     const response = await post({ jsonrpc: '2.0', method: 'notifications/initialized' })
 
@@ -280,6 +299,22 @@ describe('handleStatelessMcpRequest', () => {
         rateLimited: false,
       })
       expect(spy.onToolError).not.toHaveBeenCalled()
+    })
+
+    it('keeps the tool result when the settle hook throws', async () => {
+      const throwing = hooks()
+      throwing.onToolCallSettled.mockImplementation(() => {
+        throw new Error('meter down')
+      })
+
+      const ok200 = await json(post(call(1), { hooks: throwing }))
+      const failing = await json(
+        post(call(2), { hooks: throwing, callTool: () => Promise.reject(new Error('tool broke')) }),
+      )
+
+      expect(texts(ok200.result)).toEqual(['ran read'])
+      expect(failing.error.message).toContain('tool broke')
+      expect(throwing.onToolCallSettled).toHaveBeenCalledTimes(2)
     })
 
     it('works without hooks or an audit option resolver', async () => {
