@@ -91,9 +91,24 @@ an error flush or a 2100 ms timer; `unhandledRejection` reports only), an option
 closes the prewarm server and every worker. Process, console, timers, and the server factory are
 injected.
 
+## Observability and logging
+
+`addWorkerEventListeners(worker, hooks)` wires a GlideMQ worker's events to injected hooks:
+`onError`, `onWorkerEvent` (`drained`, `closed`, `closing`, `ready`), `onJobProgress` (`active`,
+`stalled`, `progress`), and `onJobCompleted` with the duration. Failed jobs are decorated with
+`tags` (`queue`, `job_name`, `job_id`) and `extra` (`job_name`, `attempts`, and `job_data`) before
+`onError` runs. Job data is attached only when a `scrubJobData` hook is supplied (for example
+`@vouchington/utils/job-data-scrub`), so raw payloads never reach error context by default.
+`isExpectedError` suppresses console output for expected failures, and `formatError` (for example
+`@vouchington/utils/error-tree`) controls the printed failure text.
+
+`WorkerLogger` is a dev-only one-line-per-job logger with timing colors. `enabled` is a required
+injected boolean; `level` (`'error'` or `'info'`), timing thresholds, and the `write` sink are
+options. Failures and completions go through it when it is enabled.
+
 ## Application-owned concerns
 
-This package deliberately does not implement process-wide observability, warmups, worker
+This package deliberately does not implement warmups, worker
 inventories, or queue placement. Cloudflare routing and CSP also remain application-owned: they
 encode each application's routes, origins, authentication, cache, and security policy.
 

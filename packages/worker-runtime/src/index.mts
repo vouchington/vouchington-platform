@@ -1,4 +1,6 @@
 export * from './lifecycle.mts'
+export * from './logger.mts'
+export * from './observability.mts'
 export * from './queue-class.mts'
 export * from './queue-policy.mts'
 export * from './queue-selection.mts'
