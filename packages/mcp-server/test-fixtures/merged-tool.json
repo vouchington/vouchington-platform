@@ -1,0 +1,140 @@
+{
+  "options": [
+    {
+      "option": "get",
+      "source": {
+        "schema": {
+          "description": "Read one item",
+          "parameters": {
+            "type": "object",
+            "properties": { "id": { "type": "string" }, "filter": { "$ref": "#/$defs/Filter" } },
+            "required": ["id"],
+            "$defs": { "Filter": { "type": "object", "properties": { "q": { "type": "string" } } } }
+          }
+        },
+        "roles": { "member": true },
+        "meta": {
+          "audience": "user",
+          "plan": "free",
+          "requiredScopes": ["items:read"],
+          "annotations": { "readOnlyHint": true },
+          "title": "Get",
+          "api": [{ "method": "GET", "path": "/items/:id" }],
+          "outputSchema": {
+            "type": "object",
+            "properties": { "success": { "const": true }, "item": { "$ref": "#/$defs/Item" } },
+            "required": ["success", "item"],
+            "additionalProperties": false,
+            "$defs": {
+              "Item": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "name": { "type": "string", "minLength": 1, "maxLength": 200 }
+                },
+                "required": ["id", "name"]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "option": "list",
+      "source": {
+        "schema": {
+          "description": "List items",
+          "parameters": {
+            "type": "object",
+            "properties": { "page": { "type": "integer" }, "filter": { "$ref": "#/$defs/Filter" } },
+            "$defs": { "Filter": { "type": "object", "properties": { "q": { "type": "string" } } } }
+          }
+        },
+        "roles": { "member": true },
+        "meta": {
+          "audience": "user",
+          "plan": "free",
+          "requiredScopes": ["items:read"],
+          "annotations": { "readOnlyHint": true },
+          "title": "List",
+          "api": [{ "method": "GET", "path": "/items" }],
+          "outputSchema": {
+            "type": "object",
+            "properties": {
+              "success": { "const": true },
+              "items": { "type": "array", "items": { "$ref": "#/$defs/Item" } }
+            },
+            "required": ["success", "items"],
+            "additionalProperties": false,
+            "$defs": {
+              "Item": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "name": { "type": "string", "minLength": 1, "maxLength": 200 }
+                },
+                "required": ["id", "name"]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "option": "peek",
+      "source": {
+        "schema": { "description": null, "parameters": null },
+        "roles": { "member": true },
+        "meta": {
+          "audience": "user",
+          "plan": "free",
+          "requiredScopes": ["items:read"],
+          "annotations": { "readOnlyHint": true },
+          "title": "Peek",
+          "api": [{ "method": "GET", "path": "/items/:id" }],
+          "outputSchema": {
+            "type": "object",
+            "properties": { "success": { "const": true }, "item": { "$ref": "#/$defs/Item" } },
+            "required": ["success", "item"],
+            "additionalProperties": false,
+            "$defs": {
+              "Item": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "name": { "type": "string", "minLength": 1, "maxLength": 200 }
+                },
+                "required": ["id", "name"]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "option": "count",
+      "source": {
+        "schema": {
+          "description": "Count items",
+          "parameters": { "type": "object", "properties": {} }
+        },
+        "roles": { "member": true },
+        "meta": {
+          "audience": "user",
+          "plan": "free",
+          "requiredScopes": ["items:read"],
+          "annotations": { "readOnlyHint": true },
+          "title": "Count",
+          "api": null,
+          "outputSchema": {
+            "type": "object",
+            "properties": { "success": { "const": true }, "total": { "type": "integer" } },
+            "required": ["success", "total"],
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  ],
+  "expected": "{\"roles\":{\"member\":true},\"schema\":{\"name\":\"read_items\",\"type\":\"function\",\"description\":\"get: Read one item\\nlist: List items\\npeek: \\ncount: Count items\",\"parameters\":{\"type\":\"object\",\"oneOf\":[{\"type\":\"object\",\"properties\":{\"option\":{\"enum\":[\"get\"]},\"arguments\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\"},\"filter\":{\"$ref\":\"#/$defs/Option0_Filter\"}},\"required\":[\"id\"],\"additionalProperties\":false}},\"required\":[\"option\",\"arguments\"],\"additionalProperties\":false},{\"type\":\"object\",\"properties\":{\"option\":{\"enum\":[\"list\"]},\"arguments\":{\"type\":\"object\",\"properties\":{\"page\":{\"type\":\"integer\"},\"filter\":{\"$ref\":\"#/$defs/Option1_Filter\"}},\"additionalProperties\":false}},\"required\":[\"option\",\"arguments\"],\"additionalProperties\":false},{\"type\":\"object\",\"properties\":{\"option\":{\"enum\":[\"peek\"]},\"arguments\":{\"$ref\":\"#/$defs/S1\"}},\"required\":[\"option\",\"arguments\"],\"additionalProperties\":false},{\"type\":\"object\",\"properties\":{\"option\":{\"enum\":[\"count\"]},\"arguments\":{\"$ref\":\"#/$defs/S1\"}},\"required\":[\"option\",\"arguments\"],\"additionalProperties\":false}],\"$defs\":{\"Option0_Filter\":{\"type\":\"object\",\"properties\":{\"q\":{\"type\":\"string\"}},\"additionalProperties\":false},\"Option1_Filter\":{\"type\":\"object\",\"properties\":{\"q\":{\"type\":\"string\"}},\"additionalProperties\":false},\"S1\":{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}}},\"strict\":null},\"meta\":{\"audience\":\"user\",\"plan\":\"free\",\"requiredScopes\":[\"items:read\"],\"annotations\":{\"readOnlyHint\":true},\"title\":\"Read Items\",\"api\":[{\"method\":\"GET\",\"path\":\"/items/:id\"},{\"method\":\"GET\",\"path\":\"/items\"}],\"outputSchema\":{\"type\":\"object\",\"anyOf\":[{\"type\":\"object\",\"properties\":{\"success\":{\"const\":true},\"item\":{\"$ref\":\"#/$defs/Option0_Item\"}},\"required\":[\"success\",\"item\"],\"additionalProperties\":false},{\"type\":\"object\",\"properties\":{\"success\":{\"const\":true},\"items\":{\"type\":\"array\",\"items\":{\"$ref\":\"#/$defs/Option0_Item\"}}},\"required\":[\"success\",\"items\"],\"additionalProperties\":false},{\"type\":\"object\",\"properties\":{\"success\":{\"const\":true},\"total\":{\"type\":\"integer\"}},\"required\":[\"success\",\"total\"],\"additionalProperties\":false}],\"$defs\":{\"Option0_Item\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\"},\"name\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":200}},\"required\":[\"id\",\"name\"]}}},\"optionOutputPointers\":{\"get\":\"#/anyOf/0\",\"list\":\"#/anyOf/1\",\"peek\":\"#/anyOf/0\",\"count\":\"#/anyOf/2\"}}}"
+}

@@ -8,6 +8,7 @@ authorization, audit, and persistence.
 | ---------- | ----------------------------------------------------------------------------------- |
 | `./types`  | Structural `McpTool`, `McpToolMeta`, `ToolOutputSchema`                             |
 | `./schema` | JSON Schema validation, traversal, closing, factoring, pruning, and output pointers |
+| `./tools`  | Merged tools, the add/update/remove tool, and per-argument REST route selection     |
 
 ## Types
 
@@ -40,6 +41,25 @@ const violation = findSchemaViolation(schema, args) // string | null, never cont
 - `objectSchema`, `successSchema`, `oneOfSchema`, `outcomeSchema`, `nullable`: output shape helpers.
 - `validateOptionOutputPointers` and `getOptionOutputSchema`: validate and resolve the local
   pointers that map each merged-tool option to its output branch.
+- `resolveRouteResponse(endpoint, responses, components, { missingContractHint? })`,
+  `inlineSchemaReferences`, `routePropertySchema`, and `successResultSchema`: derive a
+  self-contained output schema from `#/components/schemas/*` contracts the application injects.
+  A self-referencing component stays a `$ref` into a root `$defs`.
+
+## Tools
+
+- `createMergedTool(name, title, options, { compatibilityKey })`: one tool with an `option`
+  discriminator. Each source keeps its own validator, handler, REST routes, and output contract.
+  Input `$defs` are scoped as `Option{n}_*`, output branches with equal schemas are shared, and
+  `meta.optionOutputPointers` maps every option to its branch. `compatibilityKey` is required: it
+  returns a string that must be equal for every source, so the application decides which declared
+  fields (scopes, audience, plan, roles, annotations) must match before sources may merge.
+- `createManageEntityTool({ toolName, description, addProperties, updateProperties, requireUser,
+  addFn, updateFn, removeFn, entitySchema, meta })`: add, update, and remove actions. The
+  application injects the active-user check and the entity schema. A missing id raises a
+  `ManageEntityInputError` carrying status `422`.
+- `selectApiByArgument(argument, endpoints)`: builds `meta.selectApi` so a call names only the REST
+  route its argument exercises.
 
 ## Limitations
 
@@ -51,3 +71,9 @@ style objects with local `#/$defs/*` references. They do not handle:
 - `$id` rebasing. Factoring skips any subtree that declares its own `$id`;
 - `dependentSchemas`, `unevaluatedProperties`, and other keywords that change which properties
   are declared. `pruneToSchema` reads only `properties`, `items`, `anyOf`, `oneOf`, and local refs.
+- merged tools and route-response inlining read only `$defs`, local `#/$defs/*` references and
+  schema positions: draft-07 `definitions`, `$ref: '#'` recursion, a property literally named
+  `$ref`, `$ref` objects inside `const` or `enum` data, and keywords written beside a `$ref` (they
+  win over the referenced schema) are not supported;
+- the manage tool publishes `result` as `oneOf` the entity or `{ id }`, so an entity schema that
+  also accepts `{ id }` alone needs its own discriminator.
