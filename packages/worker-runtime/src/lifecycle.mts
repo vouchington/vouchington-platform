@@ -82,26 +82,39 @@ export async function initializeWorkerRuntime<
     // A blank selection means "all"; never fall back to process.env.QUEUES.
     const queues = deps.resolveQueueSelection(deps.env, config.queueClasses, knownQueueNames) ?? ''
 
-    const [workers, sqsConsumers] = await Promise.all([
-      Promise.all([
-        loadWorkers(config.workerDefinitions, queues),
-        deps.loadUniversalWorkers?.() ?? [],
-      ]).then(([runtimeWorkers, universalWorkers]) => [...runtimeWorkers, ...universalWorkers]),
-      loadConsumers(config, deps, queues),
+    // Wait for every loader, so a failure can release whatever the others created.
+    const outcomes = await Promise.allSettled([
+      loadWorkers(config.workerDefinitions, queues),
+      Promise.resolve().then(() => deps.loadUniversalWorkers?.() ?? []),
+      Promise.resolve().then(() => loadConsumers(config, deps, queues)),
     ])
+    const failure = outcomes.find((outcome) => outcome.status === 'rejected')
+    if (failure) {
+      await closeLoaded(outcomes)
+      throw failure.reason
+    }
+    const [runtimeWorkers, universalWorkers, sqsConsumers] = outcomes.map(
+      (outcome) => (outcome as PromiseFulfilledResult<unknown[]>).value,
+    ) as [Worker[], Worker[], K[]]
+    const workers = [...runtimeWorkers, ...universalWorkers]
     config.hooks?.afterLoad?.()
 
     let successfulStartHookRan = false
+    let listenersAttached = false
     return {
       workers,
       sqsConsumers,
       async startWorkerRuntime() {
-        for (const worker of workers) deps.attachWorker(worker)
-        for (const consumer of sqsConsumers) deps.attachSqsConsumer(consumer)
+        // Retries rerun schedules, setup, and the hook without reinstalling listeners.
+        if (!listenersAttached) {
+          listenersAttached = true
+          for (const worker of workers) deps.attachWorker(worker)
+          for (const consumer of sqsConsumers) deps.attachSqsConsumer(consumer)
+        }
 
         const results = await Promise.allSettled([
-          upsertSchedules(config.scheduleDefinitions, queues),
-          deps.setup?.(),
+          Promise.resolve().then(() => upsertSchedules(config.scheduleDefinitions, queues)),
+          Promise.resolve().then(() => deps.setup?.()),
         ])
         for (const result of results) {
           if (result.status === 'rejected') deps.onError(toError(result.reason))
@@ -122,6 +135,14 @@ export async function initializeWorkerRuntime<
   } catch (error) {
     reportWorkerLoadFailure(error, deps.onError)
   }
+}
+
+// Best-effort release of workers and consumers created by loaders that succeeded.
+async function closeLoaded(outcomes: PromiseSettledResult<unknown[]>[]): Promise<void> {
+  const closers = outcomes.flatMap((outcome) =>
+    outcome.status === 'fulfilled' ? outcome.value : [],
+  ) as Array<{ close?: () => unknown }>
+  await Promise.allSettled(closers.map((item) => item.close?.()))
 }
 
 async function loadConsumers<C extends string, S extends QueueNamed, K>(

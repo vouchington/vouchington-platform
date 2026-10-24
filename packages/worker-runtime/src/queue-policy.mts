@@ -1,3 +1,5 @@
+import { assertSelectorSafeQueueName } from './selector-names.mts'
+
 export interface QueuePolicyOptions {
   /**
    * Maps a group to the group that must contain all of its names (for example consumers that must
@@ -62,6 +64,7 @@ function requireUniqueQueueNames(value: unknown, group: string): string[] {
     throw new Error(`Queue policy ${group} must contain nonempty queue names`)
   }
   const names = value as string[]
+  for (const name of names) assertSelectorSafeQueueName(name, group)
   if (names.some((name) => name !== name.trim())) {
     throw new Error(
       `Queue policy ${group} must contain canonical queue names without surrounding whitespace`,

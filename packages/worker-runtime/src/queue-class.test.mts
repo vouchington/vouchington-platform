@@ -58,6 +58,12 @@ describe('createQueueClassResolver', () => {
     )
   })
 
+  it('rejects empty classes and selector-unsafe names when the resolver is created', () => {
+    expect(() => createQueueClassResolver({ none: [] })).toThrow('must list at least one queue')
+    expect(() => createQueueClassResolver({ x: ['-a'] })).toThrow('must not contain a comma')
+    expect(() => createQueueClassResolver({ x: ['a,b'] })).toThrow('must not contain a comma')
+  })
+
   it('names the error and leaves empty entries for the selection parser', () => {
     const error = new WorkerQueueClassError('UNKNOWN_QUEUE_NAMES', 'x')
     expect(error.name).toBe('WorkerQueueClassError')

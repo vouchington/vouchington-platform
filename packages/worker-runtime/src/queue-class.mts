@@ -1,3 +1,5 @@
+import { assertSelectorSafeQueueName } from './selector-names.mts'
+
 export type QueueSelectionEnv = {
   WORKER_QUEUE_CLASS?: string | undefined
   QUEUES?: string | undefined
@@ -38,6 +40,12 @@ export function createQueueClassResolver<C extends string>(
   policy: Readonly<Record<C, readonly string[]>>,
 ): QueueClassResolver<C> {
   const isClass = (value: string): value is C => Object.hasOwn(policy, value)
+  for (const [queueClass, names] of Object.entries<readonly string[]>(policy)) {
+    // An empty include list would parse as "select everything".
+    if (names.length === 0)
+      throw new Error(`Queue class "${queueClass}" must list at least one queue`)
+    for (const name of names) assertSelectorSafeQueueName(name, `queue class "${queueClass}"`)
+  }
 
   return (env, acceptedClasses, knownQueueNames) => {
     const queueClass = env.WORKER_QUEUE_CLASS?.trim()

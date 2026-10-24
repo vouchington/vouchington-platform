@@ -55,6 +55,15 @@ describe('validateQueuePolicy', () => {
     )
   })
 
+  it('rejects names that would become selector syntax', () => {
+    expect(() => validateQueuePolicy({ ...valid, cpu: ['-a'] }, groups, options)).toThrow(
+      'must not contain a comma or start with "-"',
+    )
+    expect(() => validateQueuePolicy({ ...valid, cpu: ['a,b'] }, groups, options)).toThrow(
+      'must not contain a comma',
+    )
+  })
+
   it('rejects overlapping exclusive groups', () => {
     expect(() => validateQueuePolicy({ ...valid, cpu: ['b'] }, groups, options)).toThrow(
       'cpu and io overlap: b',

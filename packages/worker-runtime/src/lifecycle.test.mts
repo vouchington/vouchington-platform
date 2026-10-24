@@ -147,7 +147,84 @@ describe('initializeWorkerRuntime loading', () => {
   })
 })
 
+describe('initializeWorkerRuntime cleanup', () => {
+  it('closes workers and consumers that loaded when another loader fails', async () => {
+    const closeWorker = vi.fn(async () => undefined)
+    const closeConsumer = vi.fn(async () => undefined)
+    const { config, deps } = setup(
+      {
+        workerDefinitions: [
+          { queueName: 'a', load: async () => ({ close: closeWorker }) as never },
+        ],
+      },
+      {
+        loadSqsConsumers: async () => [{ close: closeConsumer }] as never,
+        loadUniversalWorkers: async () => {
+          throw new Error('universal failed')
+        },
+      },
+    )
+
+    await expect(initializeWorkerRuntime(config, deps)).rejects.toThrow('universal failed')
+
+    expect(closeWorker).toHaveBeenCalledTimes(1)
+    expect(closeConsumer).toHaveBeenCalledTimes(1)
+    expect(deps.onError).toHaveBeenCalledTimes(1)
+  })
+
+  it('tolerates loaded items without close and failing closers', async () => {
+    const { config, deps } = setup(
+      {
+        workerDefinitions: [
+          {
+            queueName: 'a',
+            load: async () => ({ close: () => Promise.reject(new Error('x')) }) as never,
+          },
+        ],
+      },
+      {
+        loadSqsConsumers: async () => [{}] as never,
+        loadUniversalWorkers: () => Promise.reject(new Error('boom')),
+      },
+    )
+
+    await expect(initializeWorkerRuntime(config, deps)).rejects.toThrow('boom')
+  })
+})
+
 describe('startWorkerRuntime', () => {
+  it('attaches listeners once across retries', async () => {
+    const afterSuccessfulStart = vi
+      .fn()
+      .mockImplementationOnce(() => {
+        throw new Error('hook failed')
+      })
+      .mockImplementation(() => undefined)
+    const { config, deps } = setup({ hooks: { afterSuccessfulStart } })
+    const runtime = await initializeWorkerRuntime(config, deps)
+
+    await runtime.startWorkerRuntime().catch(() => undefined)
+    await runtime.startWorkerRuntime()
+
+    expect(deps.attachWorker).toHaveBeenCalledTimes(1)
+    expect(deps.attachSqsConsumer).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports a synchronously throwing setup and still settles schedules', async () => {
+    const { config, deps } = setup(
+      {},
+      {
+        setup: () => {
+          throw new Error('sync setup failed')
+        },
+      },
+    )
+    const runtime = await initializeWorkerRuntime(config, deps)
+
+    await expect(runtime.startWorkerRuntime()).resolves.toBeUndefined()
+    expect(deps.onError).toHaveBeenCalledWith(new Error('sync setup failed'))
+  })
+
   it('attaches every worker and consumer, then runs setup', async () => {
     const setupFn = vi.fn(async () => undefined)
     const { config, deps, upsert } = setup({}, { setup: setupFn })
