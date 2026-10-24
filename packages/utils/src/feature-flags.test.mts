@@ -14,6 +14,19 @@ const codec = {
 }
 
 describe('feature flag cookies', () => {
+  it('accepts a decoder-only codec and requires its decoder', () => {
+    const encoded = codec.encodeBase64('{"enabled":true}')
+    const decoderOnlyCodec = { decodeBase64: codec.decodeBase64 }
+    expect(parseFeatureFlagCookie(encoded, decoderOnlyCodec)).toEqual({ enabled: true })
+
+    const encodeOnlyCodec = { encodeBase64: codec.encodeBase64 }
+    function assertMissingDecoderRejected(): void {
+      // @ts-expect-error The parser needs a decoder; encoding is not part of its input contract.
+      parseFeatureFlagCookie(encoded, encodeOnlyCodec)
+    }
+    void assertMissingDecoderRejected
+  })
+
   it('round-trips boolean feature flags through an injected codec', () => {
     const encoded = encodeFeatureFlagCookie({ enabled: true, disabled: false }, codec)
     expect(parseFeatureFlagCookie(encoded, codec)).toEqual({ enabled: true, disabled: false })
