@@ -119,6 +119,26 @@ describe('findSchemaViolation', () => {
     )
   })
 
+  it('resolves draft-07 definitions when reporting a selected option argument error', () => {
+    const schema = {
+      oneOf: [
+        {
+          properties: {
+            option: { enum: ['get'] },
+            arguments: { $ref: '#/definitions/Args' },
+          },
+          required: ['option', 'arguments'],
+        },
+      ],
+      definitions: { Args: { type: 'object', properties: { id: { type: 'string' } } } },
+    }
+
+    expect(findSchemaViolation(schema, { option: 'get', arguments: { id: 'ok' } })).toBeNull()
+    expect(findSchemaViolation(schema, { option: 'get', arguments: { id: 42 } })).toBe(
+      '/id must be string',
+    )
+  })
+
   it('reports a selected option argument error when the union has no definitions', () => {
     const schema = {
       oneOf: [

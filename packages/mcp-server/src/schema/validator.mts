@@ -44,7 +44,12 @@ function findSelectedArgumentViolation(schema: object, value: unknown): string |
     if (!Array.isArray(options) || !options.includes(input['option']) || !argumentsSchema) continue
     const cached = selectedSchemas.get(schema) ?? new Map<object, object>()
     selectedSchemas.set(schema, cached)
-    const selected = cached.get(branch) ?? { ...argumentsSchema, $defs: root['$defs'] ?? {} }
+    const selected = cached.get(branch) ?? {
+      ...argumentsSchema,
+      $defs: root['$defs'] ?? {},
+      // Draft-07 definitions referenced from the argument schema must resolve here too.
+      ...(root['definitions'] ? { definitions: root['definitions'] } : {}),
+    }
     cached.set(branch, selected)
     return findSchemaViolation(selected, input['arguments'])
   }

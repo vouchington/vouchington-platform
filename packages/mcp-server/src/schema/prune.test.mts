@@ -41,6 +41,55 @@ describe('pruneToSchema', () => {
     expect(pruneToSchema(schema, 'text')).toBe('text')
   })
 
+  it('prunes a property declared by several branches against every declaration', () => {
+    const union = {
+      anyOf: [
+        { properties: { payload: { properties: { a: {} } } } },
+        { properties: { payload: { properties: { b: {} } } } },
+      ],
+    }
+
+    expect(pruneToSchema(union, { payload: { a: 'keep me', b: 'too', c: 'drop' } })).toEqual({
+      payload: { a: 'keep me', b: 'too' },
+    })
+  })
+
+  it('resolves local $defs references, including factored schemas and self-references', () => {
+    const item = {
+      type: 'object',
+      properties: { id: { type: 'string' } },
+      additionalProperties: false,
+    }
+    const schema = {
+      type: 'object',
+      properties: {
+        a: { $ref: '#/$defs/Item' },
+        b: { $ref: '#/$defs/Item' },
+        loop: { $ref: '#/$defs/Loop' },
+      },
+      $defs: { Item: item, Loop: { $ref: '#/$defs/Loop' } },
+    }
+    const value = { a: { id: '1', internal: 1 }, b: [{ id: '2', internal: 2 }], extra: 1 }
+
+    expect(pruneToSchema(schema, { a: value.a, loop: { x: 1 } })).toEqual({
+      a: { id: '1' },
+      loop: { x: 1 },
+    })
+    expect(
+      pruneToSchema(
+        {
+          properties: { b: { type: 'array', items: { $ref: '#/$defs/Item' } } },
+          $defs: { Item: item },
+        },
+        { b: value.b },
+      ),
+    ).toEqual({
+      b: [{ id: '2' }],
+    })
+    expect(pruneToSchema({ $ref: '#/$defs/Missing' }, { a: 1 })).toEqual({ a: 1 })
+    expect(pruneToSchema({ $ref: '#/components/x', $defs: {} }, { a: 1 })).toEqual({ a: 1 })
+  })
+
   it('merges the properties of every object branch of nested anyOf', () => {
     const union = { anyOf: [{ anyOf: [{ properties: { a: {} } }] }, { properties: { b: {} } }] }
 
