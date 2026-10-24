@@ -322,8 +322,8 @@ importers:
   packages/queue-errors:
     devDependencies:
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@7.2.0))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@7.2.0))
 
   packages/rate-limit:
     devDependencies:
@@ -448,8 +448,8 @@ importers:
   packages/worker-runtime:
     devDependencies:
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@7.2.0))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@7.2.0))
       vitest:
         specifier: ^5.0.5
         version: 5.0.5(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@5.0.5)(jsdom@30.1.3)(vite@8.2.2(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
@@ -2775,8 +2775,8 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
-  glide-mq@0.18.0:
-    resolution: {integrity: sha512-hzXqId45Yk7NJID3K7EBymS+FoS6ZDmtGhOfWCih4BvVjH7IIWmdaw3Av6iThS3mz/5G6fstjKU6h98kh/h+Zg==}
+  glide-mq@0.19.0:
+    resolution: {integrity: sha512-Qp2NgHPP5SgsDcYkBl1LZ4Wfh3yRVzW0eEpBdDQViw32L34+u8kQFQQzi/E2hfNRbDduVyzg/Y1gQq9qQUBD4A==}
     engines: {node: '>=20'}
     peerDependencies:
       '@opentelemetry/api': ^1.0.0
@@ -5961,7 +5961,7 @@ snapshots:
       adm-zip: 0.5.18
       tar: 7.5.22
 
-  glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@7.2.0)):
+  glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@7.2.0)):
     dependencies:
       '@glidemq/speedkey': 0.4.2
     optionalDependencies:

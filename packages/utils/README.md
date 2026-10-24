@@ -130,6 +130,15 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
   URL-only and credential-only passes are exported separately, and `composeBeforeSend` accepts
   either `ScrubOptions` or a final scrubber function. This package has no product defaults.
 
+- `error-tree`: `formatErrorTree(error, { maxDepth?, maxNested? })` renders an error with its
+  `errors[]` and `cause` chain, marks circular references, and reports how many nested errors the
+  depth and count limits omitted (defaults 5 and 20).
+- `job-data-scrub`: `scrubJobData(data, options?)`, a safe-scalar allowlist scrubber for queue job
+  payloads. Only booleans, numbers, UUID/ULID ids, and short slug-like strings survive; sensitive
+  keys redact regardless of value. The redaction marker (default `'[Filtered]'`), key substring and
+  exact-name lists, and depth/array/key limits are options, and the defaults list only generic keys.
+  It complements the key-based `observability` scrubbers.
+
 ```ts
 const money = createMoneyCatalog([{ code: 'credit', minorUnitExponent: 2 }] as const, 6)
 money.parseMajorUnitsToMoney('12.34', 'credit')
