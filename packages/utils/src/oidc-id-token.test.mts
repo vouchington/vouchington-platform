@@ -120,6 +120,27 @@ describe('createOidcIdTokenVerifier', () => {
     )
   })
 
+  describe('nbf', () => {
+    const check = (nbf: unknown) => {
+      const { verifier } = setup()
+      return verifier.verify(signToken(key, validClaims({ nbf })))
+    }
+
+    it('accepts a missing, past, or near-future (within skew) nbf', async () => {
+      await expect(check(undefined)).resolves.toBeTruthy()
+      await expect(check(NOW_S - 60)).resolves.toBeTruthy()
+      await expect(check(NOW_S + 300)).resolves.toBeTruthy()
+    })
+
+    it('rejects an nbf beyond the skew as not yet valid', async () => {
+      expect(await codeOf(check(NOW_S + 301))).toBe('not_yet_valid')
+    })
+
+    it('rejects a non-numeric nbf as a format error', async () => {
+      for (const nbf of ['soon', null, {}]) expect(await codeOf(check(nbf))).toBe('format')
+    })
+  })
+
   describe('nonce', () => {
     const hash = (value: string) => createHash('sha256').update(value).digest('hex')
 
@@ -216,12 +237,23 @@ describe('createOidcIdTokenVerifier', () => {
       expect(fetch).toHaveBeenCalledTimes(1)
     })
 
-    it('rejects immediately for an already-aborted signal', async () => {
-      const { verifier } = setup()
-      const signal = AbortSignal.abort(new Error('already aborted'))
-      await expect(verifier.verify(signToken(key, validClaims()), { signal })).rejects.toThrow(
-        'already aborted',
-      )
+    it('starts no JWKS load for an already-aborted signal, even if the fetch would fail', async () => {
+      const unhandled: unknown[] = []
+      const record = (reason: unknown) => unhandled.push(reason)
+      process.on('unhandledRejection', record)
+      try {
+        const fetch = vi.fn(async () => Promise.reject(new Error('down')))
+        const { verifier } = setup({ fetch })
+        const signal = AbortSignal.abort(new Error('already aborted'))
+        await expect(verifier.verify(signToken(key, validClaims()), { signal })).rejects.toThrow(
+          'already aborted',
+        )
+        await new Promise((resolve) => setTimeout(resolve, 10))
+        expect(fetch).not.toHaveBeenCalled()
+        expect(unhandled).toEqual([])
+      } finally {
+        process.off('unhandledRejection', record)
+      }
     })
 
     it('picks up a rotated key after the forced refresh', async () => {

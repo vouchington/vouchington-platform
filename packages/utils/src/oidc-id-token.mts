@@ -1,6 +1,7 @@
 import { createHash, createPublicKey, createVerify } from 'node:crypto'
 import type { OAuthFetch } from './oauth-types.mts'
 import type { OidcClaims } from './oidc-id-token-profiles.mts'
+import { abortable } from './oidc-id-token-util.mts'
 
 export {
   appleProfileFromClaims,
@@ -15,6 +16,7 @@ export type OidcVerificationCode =
   | 'signature'
   | 'expired'
   | 'future_iat'
+  | 'not_yet_valid'
   | 'issuer'
   | 'audience'
   | 'nonce'
@@ -71,17 +73,6 @@ function decodePart(part: string): Record<string, unknown> {
   throw new OidcVerificationError('format', 'ID token is malformed')
 }
 
-/** Rejects with the signal's reason when it aborts; the underlying promise keeps running. */
-function abortable<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
-  if (!signal) return promise
-  if (signal.aborted) return Promise.reject(signal.reason as Error)
-  return new Promise<T>((resolve, reject) => {
-    const onAbort = () => reject(signal.reason as Error)
-    signal.addEventListener('abort', onAbort, { once: true })
-    promise.finally(() => signal.removeEventListener('abort', onAbort)).then(resolve, reject)
-  })
-}
-
 export function createOidcIdTokenVerifier(options: OidcIdTokenVerifierOptions) {
   const now = options.now ?? Date.now
   const ttl = options.cacheTtlMs ?? 60 * 60 * 1000
@@ -118,6 +109,8 @@ export function createOidcIdTokenVerifier(options: OidcIdTokenVerifierOptions) {
 
   async function findKey(kid: unknown, signal?: AbortSignal): Promise<Jwk> {
     const match = (list: Jwk[]) => list.find((key) => key.kid === kid)
+    // Never start a load for a caller that is already cancelled: nobody would observe its failure.
+    signal?.throwIfAborted()
     const found = match(await abortable(loadKeys(false), signal))
     if (found) return found
     // The key may have rotated inside the cache window: refresh, at most once per cooldown.
@@ -146,6 +139,9 @@ export function createOidcIdTokenVerifier(options: OidcIdTokenVerifierOptions) {
     if (typeof claims.exp !== 'number' || typeof claims.iat !== 'number') {
       throw new OidcVerificationError('format', 'ID token is missing exp or iat')
     }
+    if (claims.nbf !== undefined && typeof claims.nbf !== 'number') {
+      throw new OidcVerificationError('format', 'ID token nbf is not a number')
+    }
     if (typeof claims.sub !== 'string' || claims.sub.length === 0) {
       throw new OidcVerificationError('format', 'ID token is missing sub')
     }
@@ -153,6 +149,9 @@ export function createOidcIdTokenVerifier(options: OidcIdTokenVerifierOptions) {
     if (claims.exp < seconds) throw new OidcVerificationError('expired', 'ID token has expired')
     if (claims.iat > seconds + skew) {
       throw new OidcVerificationError('future_iat', 'ID token was issued in the future')
+    }
+    if (claims.nbf !== undefined && claims.nbf > seconds + skew) {
+      throw new OidcVerificationError('not_yet_valid', 'ID token is not valid yet')
     }
     if (!options.issuers.includes(claims.iss)) {
       throw new OidcVerificationError('issuer', 'ID token issuer is invalid')
