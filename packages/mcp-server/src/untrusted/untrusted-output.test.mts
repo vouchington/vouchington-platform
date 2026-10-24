@@ -73,6 +73,17 @@ describe('wrapUntrustedOutput', () => {
     expect(wrap).toHaveBeenCalledTimes(3)
   })
 
+  it('removes private fields from objects wrapped as untrusted text', async () => {
+    const value = (await wrapUntrustedOutput(
+      { details: { secret: 'sensitive', safe: 'ok', list: [{ token_hash: 'x', n: 1 }] } },
+      fields,
+    )) as { details: string }
+
+    expect(value.details).toEqual(expect.stringContaining('ok'))
+    expect(value.details).not.toContain('sensitive')
+    expect(value.details).not.toContain('token_hash')
+  })
+
   it('supports an asynchronous injected wrap', async () => {
     const value = await wrapUntrustedOutput(
       { title: 'a' },
@@ -177,6 +188,28 @@ describe('adminOutputSchema', () => {
         },
       }),
     )
+  })
+
+  it('filters required on every node, even without properties beside it', () => {
+    expect(
+      adminOutputSchema(
+        { properties: { id: {}, secret: {} }, allOf: [{ required: ['secret', 'id'] }] },
+        fields,
+      ),
+    ).toEqual({ properties: { id: {} }, allOf: [{ required: ['id'] }] })
+  })
+
+  it('transforms a deeply nested schema in time proportional to its size', () => {
+    let schema: Record<string, unknown> = { type: 'string' }
+    for (let depth = 0; depth < 30; depth += 1) schema = { properties: { child: schema } }
+    const visits = vi.fn()
+    const counting = {
+      has: (key: string) => (visits(key), false),
+    } as unknown as ReadonlySet<string>
+
+    adminOutputSchema(schema, { ...fields, untrusted: counting })
+
+    expect(visits.mock.calls.length).toBeLessThan(100)
   })
 
   it('leaves scalars and non-object properties alone', () => {

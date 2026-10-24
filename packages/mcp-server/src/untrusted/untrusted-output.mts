@@ -46,22 +46,27 @@ export function adminOutputSchema(value: unknown, fields: UntrustedFieldSets): u
   if (!value || typeof value !== 'object') return value
   const schema = value as Record<string, unknown>
   const output = Object.fromEntries(
-    Object.entries(schema).map(([key, child]) => [key, adminOutputSchema(child, fields)]),
+    Object.entries(schema).map(([key, child]) => {
+      if (key === 'properties' && child && typeof child === 'object' && !Array.isArray(child))
+        return [key, schemaProperties(child as Record<string, unknown>, fields)]
+      // A required private field would reject the filtered output, wherever it is listed.
+      if (key === 'required' && Array.isArray(child))
+        return [key, child.filter((name) => !fields.private.has(String(name)))]
+      return [key, adminOutputSchema(child, fields)]
+    }),
   )
-  if (schema['properties'] && typeof schema['properties'] === 'object') {
-    const properties = schema['properties'] as Record<string, unknown>
-    output['properties'] = Object.fromEntries(
-      Object.entries(properties)
-        .filter(([key]) => !fields.private.has(key))
-        .map(([key, child]) => [
-          key,
-          fields.untrusted.has(key) ? untrustedText() : adminOutputSchema(child, fields),
-        ]),
-    )
-    if (Array.isArray(schema['required']))
-      output['required'] = schema['required'].filter((key) => !fields.private.has(String(key)))
-  }
   return output
+}
+
+function schemaProperties(properties: Record<string, unknown>, fields: UntrustedFieldSets) {
+  return Object.fromEntries(
+    Object.entries(properties)
+      .filter(([key]) => !fields.private.has(key))
+      .map(([key, child]) => [
+        key,
+        fields.untrusted.has(key) ? untrustedText() : adminOutputSchema(child, fields),
+      ]),
+  )
 }
 
 /**
@@ -82,7 +87,11 @@ export async function wrapUntrustedOutput(
       .filter(([key]) => !fields.private.has(key))
       .map(async ([key, child]) => {
         if (fields.untrusted.has(key) && child !== null && child !== undefined) {
-          const text = typeof child === 'string' ? child : JSON.stringify(child)
+          // Private fields inside an untrusted object or array must not survive as wrapped text.
+          const text =
+            typeof child === 'string'
+              ? child
+              : JSON.stringify(filterPrivateOutputFields(child, fields.private))
           return [key, await wrap(text, key)]
         }
         return [key, await wrapUntrustedOutput(child, { ...fields, wrap })]

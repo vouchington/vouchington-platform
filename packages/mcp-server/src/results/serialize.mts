@@ -22,7 +22,7 @@ class BoundedJsonSerializer {
 
   serializeValue(value: unknown, key: string, arrayValue: boolean): boolean {
     this.countTraversalStep()
-    const serializedValue = this.applyToJson(value, key)
+    const serializedValue = this.unbox(this.applyToJson(value, key))
     if (
       serializedValue === undefined ||
       typeof serializedValue === 'function' ||
@@ -53,6 +53,16 @@ class BoundedJsonSerializer {
       throw new TypeError('Do not know how to serialize a BigInt')
     }
     return this.serializeObject(serializedValue)
+  }
+
+  // JSON.stringify writes boxed Boolean, Number and String objects as their primitive values.
+  private unbox(value: unknown): unknown {
+    if (value instanceof Number || value instanceof String || value instanceof Boolean)
+      return value.valueOf()
+    if (value instanceof BigInt) {
+      throw new TypeError('Do not know how to serialize a BigInt')
+    }
+    return value
   }
 
   private applyToJson(value: unknown, key: string): unknown {

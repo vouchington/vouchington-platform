@@ -67,6 +67,19 @@ describe('serializeMcpToolResult', () => {
     expect(serializeMcpToolResult({ a: shared, b: [shared] })).toBe('{"a":{"id":1},"b":[{"id":1}]}')
   })
 
+  it('unboxes Boolean, Number and String objects the way JSON.stringify does', () => {
+    const value = {
+      yes: new Boolean(false),
+      n: new Number(3),
+      s: new String('a"b'),
+      list: [new Number(1)],
+    }
+
+    expect(serializeMcpToolResult(value)).toBe(JSON.stringify(value))
+    expect(serializeMcpToolResult(value)).toBe('{"yes":false,"n":3,"s":"a\\"b","list":[1]}')
+    expect(() => serializeMcpToolResult({ n: Object(1n) })).toThrow('BigInt')
+  })
+
   it('refuses a BigInt the way JSON.stringify does', () => {
     expect(() => serializeMcpToolResult({ n: 1n })).toThrow('BigInt')
   })
