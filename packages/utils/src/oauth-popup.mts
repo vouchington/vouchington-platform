@@ -9,6 +9,8 @@ export class OAuthCancelledError extends Error {
 
 export interface OAuthPopupHandle {
   readonly closed: boolean
+  location: { href: string }
+  close(): void
 }
 
 export interface OAuthPopupMessageEvent {
@@ -45,21 +47,44 @@ function defaultWindow(): OAuthPopupWindow {
   return (globalThis as unknown as { window: OAuthPopupWindow }).window
 }
 
+const DEFAULT_FEATURES = 'width=600,height=700'
+
+function openPopup(
+  win: OAuthPopupWindow,
+  url: string,
+  name: string,
+  features: string,
+  providerLabel: string,
+): OAuthPopupHandle {
+  const popup = win.open(url, name, features)
+  if (!popup) throw new OAuthCancelledError(providerLabel, 'Popup blocked')
+  return popup
+}
+
 /** Resolves with the authorization code posted back by the same-origin popup. */
 export function openOAuthPopup(options: OpenOAuthPopupOptions): Promise<{ code: string }> {
-  const { authUrl, popupName, provider, providerLabel, state } = options
   const win = options.window ?? defaultWindow()
-  return new Promise((resolve, reject) => {
-    const popup = win.open(
-      authUrl.toString(),
-      popupName,
-      options.features ?? 'width=600,height=700',
+  try {
+    const popup = openPopup(
+      win,
+      options.authUrl.toString(),
+      options.popupName,
+      options.features ?? DEFAULT_FEATURES,
+      options.providerLabel,
     )
-    if (!popup) {
-      reject(new OAuthCancelledError(providerLabel, 'Popup blocked'))
-      return
-    }
+    return awaitPopupCode(win, popup, options)
+  } catch (error) {
+    return Promise.reject(error as Error)
+  }
+}
 
+function awaitPopupCode(
+  win: OAuthPopupWindow,
+  popup: OAuthPopupHandle,
+  options: Pick<OpenOAuthPopupOptions, 'provider' | 'providerLabel' | 'state' | 'pollMs'>,
+): Promise<{ code: string }> {
+  const { provider, providerLabel, state } = options
+  return new Promise((resolve, reject) => {
     const finish = (callback: () => void): void => {
       win.clearInterval(checkClosed)
       win.removeEventListener('message', handleMessage)
@@ -130,27 +155,37 @@ export interface PopupOAuthLoginConfig<T> {
 /** Generates state (and PKCE), opens the popup, and maps the redeemed code. No in-flight guard. */
 export async function runPopupOAuthLogin<T>(config: PopupOAuthLoginConfig<T>): Promise<T> {
   const win = config.window ?? defaultWindow()
+  // Open before any await: browsers only allow window.open inside the user-gesture call stack.
+  const popup = openPopup(
+    win,
+    'about:blank',
+    config.popupName,
+    DEFAULT_FEATURES,
+    config.providerLabel,
+  )
   const state = generateState()
   const redirectUri = `${win.location.origin}${config.callbackPath}`
   const codeVerifier = config.pkce ? generateCodeVerifier() : undefined
-  const codeChallenge = codeVerifier ? await generateCodeChallenge(codeVerifier) : undefined
-  const authUrl = buildAuthorizationUrl({
-    authUrl: typeof config.authUrl === 'function' ? config.authUrl() : config.authUrl,
-    clientId: config.clientId,
-    redirectUri,
-    scope: config.scope,
-    state,
-    ...(config.responseType ? { responseType: config.responseType } : {}),
-    ...(config.responseMode ? { responseMode: config.responseMode } : {}),
-    ...(codeChallenge ? { codeChallenge } : {}),
-  })
-  const { code } = await openOAuthPopup({
-    authUrl,
-    popupName: config.popupName,
+  try {
+    const codeChallenge = codeVerifier ? await generateCodeChallenge(codeVerifier) : undefined
+    popup.location.href = buildAuthorizationUrl({
+      authUrl: typeof config.authUrl === 'function' ? config.authUrl() : config.authUrl,
+      clientId: config.clientId,
+      redirectUri,
+      scope: config.scope,
+      state,
+      ...(config.responseType ? { responseType: config.responseType } : {}),
+      ...(config.responseMode ? { responseMode: config.responseMode } : {}),
+      ...(codeChallenge ? { codeChallenge } : {}),
+    }).toString()
+  } catch (error) {
+    popup.close()
+    throw error
+  }
+  const { code } = await awaitPopupCode(win, popup, {
     provider: config.provider,
     providerLabel: config.providerLabel,
     state,
-    window: win,
   })
   return config.mapResult({ code, ...(codeVerifier ? { codeVerifier } : {}), redirectUri })
 }

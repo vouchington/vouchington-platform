@@ -1,7 +1,14 @@
 import type { OAuthPopupMessageEvent, OAuthPopupWindow } from './oauth-popup.mts'
 
 export function makeFakeWindow(options: { blocked?: boolean; origin?: string } = {}) {
-  const popup = { closed: false }
+  let closeCalls = 0
+  const popup = {
+    closed: false,
+    location: { href: 'about:blank' },
+    close() {
+      closeCalls += 1
+    },
+  }
   const listeners = new Set<(event: OAuthPopupMessageEvent) => void>()
   const intervals = new Map<number, () => void>()
   let nextId = 1
@@ -25,6 +32,7 @@ export function makeFakeWindow(options: { blocked?: boolean; origin?: string } =
     win,
     popup,
     opened,
+    closeCalls: () => closeCalls,
     listenerCount: () => listeners.size,
     intervalCount: () => intervals.size,
     tick: () => intervals.forEach((callback) => callback()),

@@ -153,23 +153,49 @@ describe('runPopupOAuthLogin', () => {
     scope: 'read',
   }
 
+  const navigated = (fake: ReturnType<typeof makeFakeWindow>) =>
+    vi.waitFor(() => expect(fake.popup.location.href).not.toBe('about:blank'))
+
   async function run(extra: Record<string, unknown>) {
     const fake = makeFakeWindow()
     const mapResult = vi.fn((result: unknown) => result)
     const login = runPopupOAuthLogin({ ...config, ...extra, mapResult, window: fake.win })
-    await vi.waitFor(() => expect(fake.opened).toHaveLength(1))
-    const url = new URL(fake.opened[0]!.url)
+    await navigated(fake)
+    const url = new URL(fake.popup.location.href)
     fake.post({
       data: { provider: 'github', code: 'the-code', state: url.searchParams.get('state')! },
     })
-    return { result: await login, url, mapResult }
+    return { result: await login, url, mapResult, fake }
   }
 
-  it('maps the code without PKCE', async () => {
-    const { result, url } = await run({})
+  it('opens a blank popup and navigates it without PKCE', async () => {
+    const { result, url, fake } = await run({})
+    expect(fake.opened).toEqual([
+      { url: 'about:blank', name: 'p', features: 'width=600,height=700' },
+    ])
     expect(result).toEqual({ code: 'the-code', redirectUri: 'https://app.example.com/callback' })
     expect(url.searchParams.has('code_challenge')).toBe(false)
     expect(url.searchParams.has('response_type')).toBe(false)
+    expect(fake.closeCalls()).toBe(0)
+  })
+
+  it('opens the popup synchronously, before the PKCE challenge resolves', async () => {
+    const fake = makeFakeWindow()
+    const login = runPopupOAuthLogin({
+      ...config,
+      pkce: true,
+      mapResult: (r) => r,
+      window: fake.win,
+    })
+    expect(fake.opened).toHaveLength(1)
+    expect(fake.popup.location.href).toBe('about:blank')
+    await navigated(fake)
+    const url = new URL(fake.popup.location.href)
+    expect(url.searchParams.get('code_challenge_method')).toBe('S256')
+    fake.post({ data: { provider: 'github', code: 'c', state: url.searchParams.get('state')! } })
+    await expect(login).resolves.toMatchObject({
+      codeVerifier: expect.stringMatching(/^[\w-]{43}$/),
+    })
   })
 
   it('passes the verifier, response type/mode and a dynamic auth URL', async () => {
@@ -181,19 +207,58 @@ describe('runPopupOAuthLogin', () => {
     })
     expect(url.pathname).toBe('/dynamic')
     expect(url.searchParams.get('response_mode')).toBe('query')
-    expect(url.searchParams.get('code_challenge_method')).toBe('S256')
-    expect(result).toMatchObject({
-      code: 'the-code',
-      codeVerifier: expect.stringMatching(/^[\w-]{43}$/),
+    expect(result).toMatchObject({ code: 'the-code' })
+  })
+
+  it('rejects immediately when the popup is blocked', async () => {
+    const fake = makeFakeWindow({ blocked: true })
+    const login = runPopupOAuthLogin({
+      ...config,
+      pkce: true,
+      mapResult: (r) => r,
+      window: fake.win,
     })
+    await expect(login).rejects.toThrow('Popup blocked')
+    expect(fake.listenerCount()).toBe(0)
+  })
+
+  it('closes the blank popup when building the URL throws', async () => {
+    const fake = makeFakeWindow()
+    const login = runPopupOAuthLogin({
+      ...config,
+      pkce: true,
+      authUrl: () => 'not a url',
+      mapResult: (r) => r,
+      window: fake.win,
+    })
+    await expect(login).rejects.toThrow()
+    expect(fake.closeCalls()).toBe(1)
+    expect(fake.popup.location.href).toBe('about:blank')
+    expect(fake.listenerCount()).toBe(0)
+  })
+
+  it('closes the blank popup when the challenge step throws', async () => {
+    const fake = makeFakeWindow()
+    const digest = vi
+      .spyOn(crypto.subtle, 'digest')
+      .mockRejectedValueOnce(new Error('digest failed'))
+    const login = runPopupOAuthLogin({
+      ...config,
+      pkce: true,
+      mapResult: (r) => r,
+      window: fake.win,
+    })
+    await expect(login).rejects.toThrow('digest failed')
+    expect(fake.closeCalls()).toBe(1)
+    digest.mockRestore()
   })
 
   it('defaults to globalThis.window', async () => {
     const fake = makeFakeWindow()
     vi.stubGlobal('window', fake.win)
     const login = runPopupOAuthLogin({ ...config, mapResult: (r) => r.redirectUri })
-    await vi.waitFor(() => expect(fake.opened).toHaveLength(1))
-    const state = new URL(fake.opened[0]!.url).searchParams.get('state')!
+    await navigated(fake)
+    const state = new URL(fake.popup.location.href).searchParams.get('state')!
     fake.post({ data: { provider: 'github', code: 'c', state } })
     await expect(login).resolves.toBe('https://app.example.com/callback')
     vi.unstubAllGlobals()
