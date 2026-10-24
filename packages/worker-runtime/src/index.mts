@@ -1,3 +1,7 @@
+export * from './lifecycle.mts'
+export * from './queue-class.mts'
+export * from './queue-policy.mts'
 export * from './queue-selection.mts'
 export * from './schedules.mts'
+export * from './serve.mts'
 export * from './workers.mts'
