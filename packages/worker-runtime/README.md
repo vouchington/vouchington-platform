@@ -62,6 +62,18 @@ rest through hooks:
 the real client on the first command, routes every command through the injected `retry` with
 `{ command, client }`, and its `close()` is idempotent and safe before connect.
 
+`createEnqueueFunction(options)` and `createBulkEnqueueFunction(options)` build typed enqueue
+helpers. Job options merge in the order `ENQUEUE_BASE_DEFAULTS` (3 attempts, exponential 1000 ms
+backoff with 0.5 jitter, keep 100 completed and 100 failed), `defaults`, the built job's options
+(bulk), then per-call options. `sensitive` forces removal of completed and failed jobs. The
+application injects `retryFn` (used unless `retry` is false), `normalizeOptions(options, job)` for
+policy such as a priority contract, `onEnqueue(queueName, jobName, count)` for tracking,
+`decorateError`, and `reportError`. A rejected enqueue is reported without replacing the returned
+promise; an empty bulk input resolves `[]`; a bulk `addBulk` hook replaces the queue call for
+fences or recovery. `onEnqueueAdmission(listener)` observes each admission with the original
+promise; a throwing listener is recorded in `observerErrors` and reported, and a throwing reporter
+in `reportingErrors`, neither affecting the enqueue.
+
 `getQueueStats(queue, name)`, `getAllQueueStats(queues)` (sorted by name), and
 `aggregateQueueStats(stats)` read job counts and paused state from plain GlideMQ queues.
 
