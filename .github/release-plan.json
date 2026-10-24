@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/queue-errors/package.json"],
+  "changedManifests": ["packages/oauth-client/package.json"],
   "releases": [
     {
       "bump": "minor",
-      "directory": "queue-errors",
-      "fromVersion": "0.1.3",
-      "name": "@vouchington/queue-errors",
-      "toVersion": "0.2.0"
+      "directory": "oauth-client",
+      "fromVersion": "0.0.0",
+      "name": "@vouchington/oauth-client",
+      "toVersion": "0.1.0"
     }
   ],
-  "selectedPackage": "@vouchington/queue-errors"
+  "selectedPackage": "@vouchington/oauth-client"
 }

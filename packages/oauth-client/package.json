@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/oauth-client",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "AT Protocol OAuth client builder with injected stores and fetch, and an EC keyset parser.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/oauth-client#readme",
   "license": "MIT",
