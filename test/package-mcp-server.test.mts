@@ -30,6 +30,7 @@ describe('mcp-server package publication boundary', () => {
       './tools',
       './results',
       './untrusted',
+      './http',
     ])
     for (const entry of Object.values(manifest.exports)) {
       expect(existsSync(`packages/mcp-server/${entry.types.replace('./', '')}`)).toBe(true)

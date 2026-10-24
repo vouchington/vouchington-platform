@@ -71,6 +71,7 @@ the migration advisory lock is per database, and `VITEST_MAX_WORKERS` overrides 
 - `@vouchington/aws` — SES, SQS, Firehose, and CloudWatch command builders, batching, codecs, and throttling classifiers
 - `@vouchington/oauth-client` — subpath-only `/atproto`: injected-store AT Protocol OAuth client builder and EC keyset parser
 - `@vouchington/script-loader` — shared script loader and a Cloudflare Turnstile widget hook
+- `@vouchington/mcp-server` — subpath-only MCP building blocks: `/types`, `/schema`, `/tools` (merged and manage-entity tools), `/results`, `/untrusted`, and a stateless `/http` handler
 
 Do not extract shadcn/ui components: applications generate and own them with the shadcn CLI. Custom, product-agnostic React components, hooks, and helpers that are not shadcn output may be extracted under the normal rules.
 

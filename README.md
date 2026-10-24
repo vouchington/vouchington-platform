@@ -35,6 +35,7 @@ SKU names.
 | [`@vouchington/ai`](packages/ai)                                                   | Model-call primitives: usage, pricing, JSON adapters, structured decisions           |
 | [`@vouchington/aws`](packages/aws)                                                 | AWS SES/SQS/Firehose/CloudWatch command builders, chunking, and error classifiers    |
 | [`@vouchington/script-loader`](packages/script-loader)                             | Shared script loader and a Cloudflare Turnstile widget hook                          |
+| [`@vouchington/mcp-server`](packages/mcp-server)                                   | MCP tool types, schema utilities, merged tools, bounded results, HTTP handler        |
 | [`@vouchington/http-transport`](packages/http-transport)                           | Redirect-safe transport with injected fetch/address pinning                          |
 | [`@vouchington/image-resize`](packages/image-resize)                               | Sharp transforms, file output, metadata, and negotiation                             |
 | [`@vouchington/media`](packages/media)                                             | Upload validation, streams, and split S3 primitives                                  |
@@ -91,6 +92,7 @@ SKU names.
 | [`@vouchington/oauth-server`](packages/oauth-server)                               | Injected-store OAuth 2.0 authorization-server primitives                             |
 | [`@vouchington/api-client`](packages/api-client)                                   | Injected-config request wrappers, errors, admission idempotency, paginated-list hook |
 | [`@vouchington/script-loader`](packages/script-loader)                             | Shared script loader and a Cloudflare Turnstile widget hook                          |
+| [`@vouchington/mcp-server`](packages/mcp-server)                                   | MCP tool types, schema utilities, merged tools, bounded results, HTTP handler        |
 
 ## Commands
 
