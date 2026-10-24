@@ -86,6 +86,7 @@ private fields that never leave the server.
 - `wrapUntrustedOutput(value, { untrusted, private, wrap? })`: removes private fields, serializes
   dates, and wraps each untrusted field. The default `wrap` is `wrapWithVurstPrompt`, which uses
   `@jongleberry/vurst-prompt`; pass your own `(text, field) => unknown` to replace it.
+
 ## Limitations
 
 The schema utilities target the schemas this package and its callers emit: JSON Schema 2020-12
