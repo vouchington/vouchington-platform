@@ -1,0 +1,101 @@
+{
+  "factor": {
+    "input": {
+      "type": "object",
+      "properties": {
+        "first": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "title": { "type": "string" },
+              "tags": {
+                "type": "array",
+                "items": { "type": "string", "enum": ["alpha", "beta", "gamma", "delta-long"] }
+              }
+            },
+            "required": ["id", "title"]
+          }
+        },
+        "second": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "title": { "type": "string" },
+              "tags": {
+                "type": "array",
+                "items": { "type": "string", "enum": ["alpha", "beta", "gamma", "delta-long"] }
+              }
+            },
+            "required": ["id", "title"]
+          }
+        },
+        "third": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string", "format": "uuid" },
+            "title": { "type": "string" },
+            "tags": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["alpha", "beta", "gamma", "delta-long"] }
+            }
+          },
+          "required": ["id", "title"]
+        },
+        "owner": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+            "email": { "type": "string", "format": "email" }
+          },
+          "required": ["name"]
+        },
+        "reviewer": {
+          "anyOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+                "email": { "type": "string", "format": "email" }
+              },
+              "required": ["name"]
+            }
+          ]
+        },
+        "short": { "type": "string" },
+        "shortAgain": { "type": "string" }
+      },
+      "$defs": {
+        "S1": {
+          "type": "string",
+          "description": "pre-existing definition occupying the first name"
+        }
+      }
+    },
+    "expected": "{\"type\":\"object\",\"properties\":{\"first\":{\"type\":\"array\",\"items\":{\"$ref\":\"#/$defs/S2\"}},\"second\":{\"type\":\"array\",\"items\":{\"$ref\":\"#/$defs/S2\"}},\"third\":{\"$ref\":\"#/$defs/S2\"},\"owner\":{\"$ref\":\"#/$defs/S3\"},\"reviewer\":{\"anyOf\":[{\"type\":\"null\"},{\"$ref\":\"#/$defs/S3\"}]},\"short\":{\"type\":\"string\"},\"shortAgain\":{\"type\":\"string\"}},\"$defs\":{\"S1\":{\"type\":\"string\",\"description\":\"pre-existing definition occupying the first name\"},\"S2\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\",\"format\":\"uuid\"},\"title\":{\"type\":\"string\"},\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"alpha\",\"beta\",\"gamma\",\"delta-long\"]}}},\"required\":[\"id\",\"title\"]},\"S3\":{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":120},\"email\":{\"type\":\"string\",\"format\":\"email\"}},\"required\":[\"name\"]}}}"
+  },
+  "close": {
+    "input": {
+      "type": "object",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "config": { "type": "object", "additionalProperties": true }
+          }
+        },
+        { "type": "object", "properties": { "ref": { "$ref": "#/$defs/Nested" }, "flag": false } }
+      ],
+      "$defs": {
+        "Nested": { "type": "object", "properties": { "x": { "type": "integer" } } },
+        "Map": { "type": "object" }
+      }
+    },
+    "expected": "{\"type\":\"object\",\"oneOf\":[{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\"},\"config\":{\"type\":\"object\",\"additionalProperties\":true}},\"additionalProperties\":false},{\"type\":\"object\",\"properties\":{\"ref\":{\"$ref\":\"#/$defs/Nested\"},\"flag\":false},\"additionalProperties\":false}],\"$defs\":{\"Nested\":{\"type\":\"object\",\"properties\":{\"x\":{\"type\":\"integer\"}},\"additionalProperties\":false},\"Map\":{\"type\":\"object\"}}}"
+  }
+}

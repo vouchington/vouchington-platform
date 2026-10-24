@@ -261,6 +261,15 @@ importers:
         specifier: ^0.2.0
         version: link:../localization
 
+  packages/mcp-server:
+    dependencies:
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
+      ajv-formats:
+        specifier: ^3.0.1
+        version: 3.0.1
+
   packages/media:
     dependencies:
       '@aws-sdk/client-s3':

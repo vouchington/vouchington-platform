@@ -45,6 +45,7 @@ on:
           - '@vouchington/oauth-server'
           - '@vouchington/api-client'
           - '@vouchington/script-loader'
+          - '@vouchington/mcp-server'
           - '@vouchington/sentry'
           - '@vouchington/email'
           - '@vouchington/ai'
