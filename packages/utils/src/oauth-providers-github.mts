@@ -37,7 +37,8 @@ export function githubProvider(config: GithubProviderConfig): OAuthProvider {
           }),
         },
       )
-      const { accessToken } = parseTokens('github', tokenPayload, nowOf(ctx))
+      const tokens = parseTokens('github', tokenPayload, nowOf(ctx))
+      const { accessToken } = tokens
       const init = {
         headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/vnd.github+json' },
       }
@@ -63,7 +64,7 @@ export function githubProvider(config: GithubProviderConfig): OAuthProvider {
       ) as { email?: unknown } | undefined
       const login = str(user.login)
       return {
-        tokens: { accessToken },
+        tokens,
         profile: {
           providerUserId: String(user.id),
           verifiedEmail: str(primary?.email) ?? null,

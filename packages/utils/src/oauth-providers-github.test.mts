@@ -16,7 +16,12 @@ const emails = [
 
 function routes(overrides: Record<string, Response> = {}) {
   return routeFetch({
-    [TOKEN]: json({ access_token: 'gh-token', token_type: 'bearer', expires_in: 60 }),
+    [TOKEN]: json({
+      access_token: 'gh-token',
+      token_type: 'bearer',
+      expires_in: 60,
+      refresh_token: 'gh-refresh',
+    }),
     [EMAILS]: json(emails),
     [USER]: json({ id: 42, login: 'octo', name: null, avatar_url: 'https://example.com/a.png' }),
     ...overrides,
@@ -44,7 +49,12 @@ describe('githubProvider', () => {
     })
     expect(urls()).toEqual([TOKEN, USER, EMAILS])
     expect(result).toEqual({
-      tokens: { accessToken: 'gh-token' },
+      // Expiring GitHub App user tokens keep their refresh token and expiry.
+      tokens: {
+        accessToken: 'gh-token',
+        refreshToken: 'gh-refresh',
+        accessTokenExpiresAt: expect.any(Date),
+      },
       profile: {
         providerUserId: '42',
         verifiedEmail: 'me@example.com',
