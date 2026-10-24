@@ -131,6 +131,10 @@
       ],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
     },
+    "packages/oauth-client": {
+      "entry": ["src/atproto/index.mts!"],
+      "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
+    },
     "packages/localization-compiler": {
       "entry": ["src/index.mts!", "src/cli.mts!", "src/bin.mts!"],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!", "!src/**/test-helpers.mts!"],

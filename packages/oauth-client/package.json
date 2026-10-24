@@ -1,0 +1,48 @@
+{
+  "name": "@vouchington/oauth-client",
+  "version": "0.0.0",
+  "description": "AT Protocol OAuth client builder with injected stores and fetch, and an EC keyset parser.",
+  "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/oauth-client#readme",
+  "license": "MIT",
+  "author": "Jonathan Ong",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vouchington/vouchington-platform.git",
+    "directory": "packages/oauth-client"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "exports": {
+    "./atproto": {
+      "types": "./dist/atproto/index.d.mts",
+      "import": "./dist/atproto/index.mjs",
+      "default": "./dist/atproto/index.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "@atproto-labs/fetch-node": "^0.4.3",
+    "@atproto-labs/handle-resolver-node": "^0.2.14",
+    "@atproto/jwk": "^0.7.4",
+    "@atproto/jwk-jose": "^0.2.4"
+  },
+  "devDependencies": {
+    "@atproto/oauth-client-node": "^0.5.12"
+  },
+  "peerDependencies": {
+    "@atproto/oauth-client-node": "^0.5.12"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

@@ -30,6 +30,7 @@ SKU names.
 | [`@vouchington/dynamic-config`](packages/dynamic-config)                           | Registry, validators, and authorized admin service over valkyries                    |
 | [`@vouchington/frontmatter`](packages/frontmatter)                                 | Deterministic YAML frontmatter serialization                                         |
 | [`@vouchington/email`](packages/email)                                             | React Email render helpers, style factories, catalog copy, and locale resolution     |
+| [`@vouchington/oauth-client`](packages/oauth-client)                               | AT Protocol OAuth client builder and EC keyset parser                                |
 | [`@vouchington/sentry`](packages/sentry)                                           | Sentry init options, data-collection policy, filters, and capture                    |
 | [`@vouchington/ai`](packages/ai)                                                   | Model-call primitives: usage, pricing, JSON adapters, structured decisions           |
 | [`@vouchington/aws`](packages/aws)                                                 | AWS SES/SQS/Firehose/CloudWatch command builders, chunking, and error classifiers    |
@@ -71,6 +72,7 @@ SKU names.
 | [`@vouchington/dynamic-config`](packages/dynamic-config)                           | Registry, validators, and authorized admin service over valkyries                    |
 | [`@vouchington/frontmatter`](packages/frontmatter)                                 | Deterministic YAML frontmatter serialization                                         |
 | [`@vouchington/email`](packages/email)                                             | React Email render helpers, style factories, catalog copy, and locale resolution     |
+| [`@vouchington/oauth-client`](packages/oauth-client)                               | AT Protocol OAuth client builder and EC keyset parser                                |
 | [`@vouchington/http-transport`](packages/http-transport)                           | Redirect-safe transport with injected fetch/address pinning                          |
 | [`@vouchington/image-resize`](packages/image-resize)                               | Sharp transforms, file output, metadata, and negotiation                             |
 | [`@vouchington/media`](packages/media)                                             | Upload validation, streams, and split S3 primitives                                  |

@@ -158,6 +158,23 @@ describe('runtime package manifests', () => {
     for (const range of Object.values(manifest.peerDependencies)) expectCaretSemverRange(range)
   })
 
+  it('publishes oauth-client as subpath-only with a caret SDK peer', () => {
+    const manifest = JSON.parse(readFileSync('packages/oauth-client/package.json', 'utf8')) as {
+      version: string
+      dependencies: Record<string, string>
+      exports: Record<string, { import: string; types: string }>
+      peerDependencies: Record<string, string>
+      files: string[]
+    }
+    expect(Object.keys(manifest.exports)).toEqual(['./atproto'])
+    const entry = manifest.exports['./atproto']!
+    expect(existsSync(`packages/oauth-client/${entry.import.replace('./', '')}`)).toBe(true)
+    expect(existsSync(`packages/oauth-client/${entry.types.replace('./', '')}`)).toBe(true)
+    expect(manifest.files).toEqual(['dist', 'README.md', 'LICENSE'])
+    for (const range of Object.values(manifest.dependencies)) expectCaretSemverRange(range)
+    for (const range of Object.values(manifest.peerDependencies)) expectCaretSemverRange(range)
+  })
+
   it('publishes per-service aws subpaths with optional caret SDK peers', () => {
     const manifest = JSON.parse(readFileSync('packages/aws/package.json', 'utf8')) as {
       exports: Record<string, { import: string; types: string }>
