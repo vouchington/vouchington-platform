@@ -114,5 +114,10 @@ function actionEndpoints(api: readonly ToolApiEndpoint[]): Record<string, ToolAp
 // return the entity view, remove returns the id it deleted.
 function deriveOutputSchema(toolName: string, entity: ToolOutputSchema | undefined) {
   if (!entity) throw new Error(`${toolName} must provide the entity schema its results return`)
-  return successSchema({ result: { oneOf: [entity, objectSchema({ id: { type: 'string' } })] } })
+  // The entity's own definitions move to the envelope root, where its references resolve.
+  const { $defs, ...body } = entity
+  const schema = successSchema({
+    result: { oneOf: [body, objectSchema({ id: { type: 'string' } })] },
+  })
+  return $defs ? { ...schema, $defs } : schema
 }

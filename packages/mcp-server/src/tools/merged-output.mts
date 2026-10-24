@@ -40,7 +40,11 @@ export function mergeOutputBranches(
         definitions[name] = definition
       }
     }
-    const rename = (name: string) => replacements.get(name) ?? name
+    // A reference may point below a definition (`Name/properties/id`); only `Name` is renamed.
+    const rename = (path: string) => {
+      const [name = '', ...rest] = path.split('/')
+      return [replacements.get(name) ?? name, ...rest].join('/')
+    }
     for (const name of Object.keys(scoped.definitions)) {
       if (Object.hasOwn(definitions, name))
         definitions[name] = rewriteRefs(definitions[name], rename)

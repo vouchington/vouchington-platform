@@ -71,6 +71,25 @@ describe('mergeOutputBranches', () => {
     })
   })
 
+  it('renames only the definition segment of a reference that points below it', () => {
+    const wrapper = { type: 'object', properties: { id } }
+    const branch = (key: string, ref: string) => ({
+      type: 'object' as const,
+      properties: { [key]: { $ref: ref } },
+      $defs: { Wrapper: wrapper },
+    })
+    const merged = mergeOutputBranches([
+      { option: 'first', outputSchema: branch('a', '#/$defs/Wrapper/properties/id') },
+      { option: 'second', outputSchema: branch('b', '#/$defs/Wrapper/properties/id') },
+    ])
+
+    expect(Object.keys(merged.definitions)).toEqual(['Option0_Wrapper'])
+    expect(merged.branches[1]).toEqual({
+      type: 'object',
+      properties: { b: { $ref: '#/$defs/Option0_Wrapper/properties/id' } },
+    })
+  })
+
   it('rewrites a kept definition that points at a deduplicated one', () => {
     const merged = mergeOutputBranches([
       { option: 'first', outputSchema: output('a', { Wrapper: id, Id: id }) },

@@ -168,6 +168,26 @@ describe('createManageEntityTool', () => {
       expect(findSchemaViolation(output, { success: false, result: { id: 'a' } })).not.toBeNull()
     })
 
+    it('hoists the entity definitions to the envelope root so its references resolve', () => {
+      const entity: ToolOutputSchema = {
+        type: 'object',
+        properties: { id: { type: 'string' }, owner: { $ref: '#/$defs/Owner' } },
+        required: ['id', 'owner'],
+        $defs: { Owner: { type: 'object', properties: { name: { type: 'string' } } } },
+      }
+      const output = harness({ entitySchema: entity, meta: { title: 'T', api: null } }).tool.meta!
+        .outputSchema!
+
+      expect(output['$defs']).toEqual(entity['$defs'])
+      expect(JSON.stringify(output['properties'])).not.toContain('"$defs"')
+      expect(
+        findSchemaViolation(output, { success: true, result: { id: 'a', owner: { name: 'n' } } }),
+      ).toBeNull()
+      expect(
+        findSchemaViolation(output, { success: true, result: { id: 'a', owner: { name: 1 } } }),
+      ).not.toBeNull()
+    })
+
     it('throws when meta is set without an entity schema', () => {
       expect(() => harness({ meta: { title: 'Things', api: null } })).toThrow(
         'manage_things must provide the entity schema its results return',

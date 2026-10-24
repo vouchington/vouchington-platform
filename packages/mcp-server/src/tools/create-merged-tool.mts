@@ -115,7 +115,12 @@ export function createMergedTool<TUser = unknown, TContext = unknown>(
         const optionArguments = args['arguments'] as Record<string, unknown>
         return source.meta?.selectApi?.(optionArguments) ?? source.meta?.api ?? []
       },
-      selectOutputSchema: (args) => selected(args)?.meta?.outputSchema,
+      selectOutputSchema: (args) => {
+        const source = selected(args)
+        const optionArguments = args['arguments'] as Record<string, unknown>
+        // A source that is itself a merged tool narrows to its own selected option.
+        return source?.meta?.selectOutputSchema?.(optionArguments) ?? source?.meta?.outputSchema
+      },
       auditOption: (args) => (selected(args) ? (args['option'] as string) : null),
     },
     function: (user) => (args, context) => {

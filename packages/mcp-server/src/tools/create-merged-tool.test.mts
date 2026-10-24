@@ -60,7 +60,7 @@ function source(option: 'get' | 'list', gates: Gates = {}): Source {
 }
 
 const compatibilityKey = (candidate: MergedToolSource<string, { request: string }>) => {
-  const { gates } = candidate as Source
+  const gates = (candidate as Partial<Source>).gates ?? {}
   return JSON.stringify({
     plan: gates.plan ?? 'free',
     scopes: gates.scopes ?? null,
@@ -117,6 +117,21 @@ describe('createMergedTool', () => {
       findSchemaViolation(selectedOutput!, { success: true, get: { id: 'one' } }),
     ).not.toBeNull()
     expect(meta.selectOutputSchema?.({ option: 'nope' })).toBeUndefined()
+  })
+
+  it('delegates output selection to a source that is itself a merged tool', () => {
+    const inner = build('inner', [
+      ['a', source('get')],
+      ['b', source('list')],
+    ])
+    const outer = build('outer', [['x', inner as never]])
+    const selected = (outer.meta as McpToolMeta).selectOutputSchema!({
+      option: 'x',
+      arguments: { option: 'b', arguments: {} },
+    })!
+
+    expect(findSchemaViolation(selected, { success: true, list: { after: 'c' } })).toBeNull()
+    expect(findSchemaViolation(selected, { success: true, get: { id: 'one' } })).not.toBeNull()
   })
 
   it("falls back to a source's whole api when it narrows nothing", () => {

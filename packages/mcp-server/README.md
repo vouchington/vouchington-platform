@@ -71,3 +71,9 @@ style objects with local `#/$defs/*` references. They do not handle:
 - `$id` rebasing. Factoring skips any subtree that declares its own `$id`;
 - `dependentSchemas`, `unevaluatedProperties`, and other keywords that change which properties
   are declared. `pruneToSchema` reads only `properties`, `items`, `anyOf`, `oneOf`, and local refs.
+- merged tools and route-response inlining read only `$defs`, local `#/$defs/*` references and
+  schema positions: draft-07 `definitions`, `$ref: '#'` recursion, a property literally named
+  `$ref`, `$ref` objects inside `const` or `enum` data, and keywords written beside a `$ref` (they
+  win over the referenced schema) are not supported;
+- the manage tool publishes `result` as `oneOf` the entity or `{ id }`, so an entity schema that
+  also accepts `{ id }` alone needs its own discriminator.
