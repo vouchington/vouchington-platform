@@ -40,7 +40,7 @@ describe('runtime package manifests', () => {
     }
     expect(Object.keys(manifest.exports)).toEqual(
       directory === 'worker-runtime'
-        ? ['.', './testing']
+        ? ['.', './glide-mq', './testing']
         : directory === 'localization'
           ? ['.', './react']
           : ['.'],
@@ -221,6 +221,20 @@ describe('runtime package manifests', () => {
     expect(root).not.toContain('vitest')
     expect(readFileSync('packages/worker-runtime/dist/queue-selection.mjs', 'utf8')).not.toContain(
       'vitest',
+    )
+  })
+
+  it('keeps the glide-mq runtime free of the testing entry and its decorator slot test-framework free', () => {
+    for (const file of [
+      'glide-mq/index.mjs',
+      'glide-mq/runtime.mjs',
+      'test-processor-decorator.mjs',
+    ]) {
+      const source = readFileSync(`packages/worker-runtime/dist/${file}`, 'utf8')
+      expect(source).not.toMatch(/from ['"][^'"]*(vitest|glide-mq\/testing|\/testing\/)/)
+    }
+    expect(readFileSync('packages/worker-runtime/dist/testing/index.mjs', 'utf8')).toContain(
+      'test-processor-decorator',
     )
   })
 })

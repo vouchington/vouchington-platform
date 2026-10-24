@@ -27,6 +27,11 @@
       "import": "./dist/index.mjs",
       "default": "./dist/index.mjs"
     },
+    "./glide-mq": {
+      "types": "./dist/glide-mq/index.d.mts",
+      "import": "./dist/glide-mq/index.mjs",
+      "default": "./dist/glide-mq/index.mjs"
+    },
     "./testing": {
       "types": "./dist/testing/index.d.mts",
       "import": "./dist/testing/index.mjs",

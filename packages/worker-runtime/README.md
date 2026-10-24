@@ -42,6 +42,29 @@ sibling runtime; those names are recognized but never loaded by these definition
 when an application intentionally needs it to bypass selection; which schedules may do that is an
 application policy, not a package rule.
 
+## GlideMQ runtime (`@vouchington/worker-runtime/glide-mq`)
+
+`createGlideMqRuntime(config)` returns `createQueue`, `createMaintenanceQueue`, `createWorker`,
+`createBatchWorker`, `createFlowProducer`, and `close(instance)`, all sharing an injected
+`connection`, optional `prefix`, and optional shared `commandClient`. The application supplies the
+rest through hooks:
+
+- `register` / `unregister` track every queue, flow producer, and worker for shutdown.
+- `guardAdd({ queueName, jobName, opts })` runs on `add`, `addBulk`, and `upsertJobScheduler` and
+  returns `'skip'` or `{ opts }`. Maintenance queues never guard, so they can never add jobs.
+- `wrapProcessor` / `wrapBatchProcessor` decorate processors before they reach the worker.
+- `defaultMaxStalledCount` (default 2) and `prefix` are defaults that callers can override per worker.
+- `createDedicatedCommandClient(name)` backs workers created with `dedicatedCommandClient: true`;
+  the client closes with the worker, even when the worker close fails, and a failed client close
+  goes to `onError`.
+
+`createRetryingCommandClient({ name, connect, retry })` builds a lazily connected proxy: it opens
+the real client on the first command, routes every command through the injected `retry` with
+`{ command, client }`, and its `close()` is idempotent and safe before connect.
+
+`getQueueStats(queue, name)`, `getAllQueueStats(queues)` (sorted by name), and
+`aggregateQueueStats(stats)` read job counts and paused state from plain GlideMQ queues.
+
 ## Application-owned concerns
 
 This package deliberately does not implement SQS polling, process lifecycle or shutdown,
@@ -74,6 +97,13 @@ await worker.close()
   processor callbacks even after record removal, revocation, or worker detachment. Delayed,
   suspended, and waiting-for-children jobs remain parked. The wait is bounded by the same default
   deadline and timeout diagnostics as per-add flush; callers may override the timeout in milliseconds.
+- `setTestWorkerProcessorDecorator(decorator)` and `getTestWorkerProcessorDecorator()` manage a
+  global processor decorator, keyed by
+  `Symbol.for('@vouchington/worker-runtime.testWorkerProcessorDecorator')` so it survives
+  `vi.resetModules()`. When one is set, the GlideMQ runtime wraps every single and batch processor
+  with `decorator(processor, queueName)`, outside any config-level wrapper. The slot module imports
+  neither Vitest nor `glide-mq/testing`; decorators themselves (for example query profilers) stay
+  in the application.
 - `Worker` accepts the production option shape, clamps concurrency, dispatches batches
   immediately, and takes a `wrapProcessor(processor, queueName)` hook. Subclass it to inject
   profiling or context propagation; the package knows nothing about your application.
