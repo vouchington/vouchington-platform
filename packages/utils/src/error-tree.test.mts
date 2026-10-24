@@ -121,6 +121,31 @@ describe('formatErrorTree', () => {
     expect(formatErrorTree(error, { maxDepth: 0 })).toContain('… 1 more nested errors omitted')
   })
 
+  it('keeps a hidden occurrence from suppressing a later visible one', () => {
+    const shared = new Error('shared')
+    const formatted = formatErrorTree(
+      new AggregateError([new Error('middle', { cause: shared }), shared], 'outer'),
+      { maxDepth: 1 },
+    )
+
+    expect(formatted).not.toContain('[circular]')
+    expect(formatted).toContain('errors[1]: Error: shared')
+  })
+
+  it('applies limits to object-shaped failures without printing their children twice', () => {
+    const failure = {
+      code: 7,
+      errors: Array.from({ length: 3 }, (_, i) => new Error(`failure-${i}`)),
+    }
+
+    const limited = formatErrorTree(failure, { maxNested: 0 })
+
+    expect(limited).toContain('code: 7')
+    expect(limited).not.toContain('failure-0')
+    expect(limited).toContain('… 3 more nested errors omitted')
+    expect(formatErrorTree({ cause: 'why', other: 1 }, { maxNested: 0 })).toContain('… 1 more')
+  })
+
   it('honors maxDepth and maxNested overrides', () => {
     const error = Object.assign(new Error('outer'), { cause: new Error('inner') })
 

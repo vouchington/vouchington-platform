@@ -82,11 +82,16 @@ function scrubArray(value: unknown[], depth: number, o: Resolved): unknown {
 
 function scrubObject(value: Record<string, unknown>, depth: number, o: Resolved): unknown {
   if (depth >= o.maxDepth) return o.redacted
-  const result: Record<string, unknown> = {}
-  for (const key of Object.keys(value).toSorted().slice(0, o.maxKeys)) {
-    result[key] = isSensitiveKey(key, o) ? o.redacted : scrubValue(value[key], depth + 1, o)
-  }
-  return result
+  // fromEntries defines own properties, so a JSON `__proto__` key cannot hit the prototype setter.
+  return Object.fromEntries(
+    Object.keys(value)
+      .toSorted()
+      .slice(0, o.maxKeys)
+      .map((key) => [
+        key,
+        isSensitiveKey(key, o) ? o.redacted : scrubValue(value[key], depth + 1, o),
+      ]),
+  )
 }
 
 function isSensitiveKey(key: string, o: Resolved): boolean {

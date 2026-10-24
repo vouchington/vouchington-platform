@@ -14,6 +14,9 @@ export function formatErrorTree(error: unknown, options: FormatErrorTreeOptions 
   const maxDepth = options.maxDepth ?? 5
   const maxNested = options.maxNested ?? 20
   const seen = new Set<object>()
+  // Nodes visited only while counting omitted subtrees; kept apart from `seen` so a hidden
+  // occurrence never turns a later visible occurrence into `[circular]`.
+  const omittedSeen = new Set<object>()
   let nestedCount = 0
   let omittedCount = 0
 
@@ -26,7 +29,7 @@ export function formatErrorTree(error: unknown, options: FormatErrorTreeOptions 
     const lines = indentLines(formatValue(value), depth, label)
     for (const child of getChildren(value)) {
       if (depth >= maxDepth || nestedCount >= maxNested) {
-        omittedCount += countOmitted(child.value, seen)
+        omittedCount += countOmitted(child.value, seen, omittedSeen)
       } else {
         nestedCount += 1
         lines.push(...render(child.value, depth + 1, child.label))
@@ -41,9 +44,18 @@ export function formatErrorTree(error: unknown, options: FormatErrorTreeOptions 
 }
 
 function formatValue(value: unknown): string {
-  if (!(value instanceof Error)) return inspect(value, { depth: 2 })
+  if (!(value instanceof Error)) return inspect(withoutChildren(value), { depth: 2 })
   if (typeof value.stack === 'string' && value.stack.length > 0) return value.stack
   return `${value.name || 'Error'}: ${value.message}`
+}
+
+// Child errors are traversed separately under the limits, so inspect must not print them too.
+function withoutChildren(value: unknown): unknown {
+  if (!isObject(value) || Array.isArray(value) || getChildren(value).length === 0) return value
+  const copy = { ...(value as Record<string, unknown>) }
+  if (Array.isArray(copy.errors)) delete copy.errors
+  if (copy.cause !== undefined) delete copy.cause
+  return copy
 }
 
 function getChildren(value: unknown): Child[] {
@@ -58,17 +70,17 @@ function getChildren(value: unknown): Child[] {
   return children
 }
 
-function countOmitted(value: unknown, seen: Set<object>): number {
+function countOmitted(value: unknown, seen: Set<object>, omittedSeen: Set<object>): number {
   const pending = [value]
   let count = 0
   while (pending.length > 0) {
     const current = pending.pop()
     if (isObject(current)) {
-      if (seen.has(current)) {
+      if (seen.has(current) || omittedSeen.has(current)) {
         count += 1
         continue
       }
-      seen.add(current)
+      omittedSeen.add(current)
     }
     count += 1
     const children = getChildren(current)

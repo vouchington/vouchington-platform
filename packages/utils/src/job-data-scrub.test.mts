@@ -75,6 +75,14 @@ describe('scrubJobData', () => {
     })
   })
 
+  it('keeps an own __proto__ key as data without touching the prototype', () => {
+    const scrubbed = scrubJobData(JSON.parse('{"__proto__":{"admin":true},"status":"ok"}'))!
+
+    expect(Object.getPrototypeOf(scrubbed)).toBe(Object.prototype)
+    expect((scrubbed as { admin?: boolean }).admin).toBeUndefined()
+    expect(Object.keys(scrubbed)).toEqual(['__proto__', 'status'])
+  })
+
   it('redacts unsupported value types', () => {
     expect(scrubJobData({ big: 10n, fn: () => 1 })).toEqual({
       big: '[Filtered]',
