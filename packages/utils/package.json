@@ -280,6 +280,11 @@
       "import": "./dist/oauth-popup.mjs",
       "default": "./dist/oauth-popup.mjs"
     },
+    "./oauth-providers": {
+      "types": "./dist/oauth-providers.d.mts",
+      "import": "./dist/oauth-providers.mjs",
+      "default": "./dist/oauth-providers.mjs"
+    },
     "./oidc-id-token": {
       "types": "./dist/oidc-id-token.d.mts",
       "import": "./dist/oidc-id-token.mjs",
