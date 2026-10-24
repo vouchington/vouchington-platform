@@ -37,6 +37,11 @@
       "import": "./dist/sqs/index.mjs",
       "default": "./dist/sqs/index.mjs"
     },
+    "./schedule-manifest": {
+      "types": "./dist/schedule-manifest/index.d.mts",
+      "import": "./dist/schedule-manifest/index.mjs",
+      "default": "./dist/schedule-manifest/index.mjs"
+    },
     "./testing": {
       "types": "./dist/testing/index.d.mts",
       "import": "./dist/testing/index.mjs",

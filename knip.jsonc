@@ -84,6 +84,7 @@
         "src/testing/index.mts!",
         "src/glide-mq/index.mts!",
         "src/sqs/index.mts!",
+        "src/schedule-manifest/index.mts!",
       ],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
     },
