@@ -50,6 +50,7 @@ on:
           - '@vouchington/email'
           - '@vouchington/ai'
           - '@vouchington/aws'
+          - '@vouchington/oauth-client'
       bump:
         description: Semver bump type
         type: choice
