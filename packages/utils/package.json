@@ -235,6 +235,16 @@
       "import": "./dist/observability.mjs",
       "default": "./dist/observability.mjs"
     },
+    "./error-tree": {
+      "types": "./dist/error-tree.d.mts",
+      "import": "./dist/error-tree.mjs",
+      "default": "./dist/error-tree.mjs"
+    },
+    "./job-data-scrub": {
+      "types": "./dist/job-data-scrub.d.mts",
+      "import": "./dist/job-data-scrub.mjs",
+      "default": "./dist/job-data-scrub.mjs"
+    },
     "./hashtags": {
       "types": "./dist/hashtags.d.mts",
       "import": "./dist/hashtags.mjs",
