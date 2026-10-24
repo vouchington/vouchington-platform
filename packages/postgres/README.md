@@ -212,6 +212,39 @@ await cleanupMonthlyPartitions({
 - `@vouchington/postgres/catalog-guarded-ddl` — idempotent `ADD CONSTRAINT ... NOT VALID` plus
   `VALIDATE CONSTRAINT` blocks guarded by `pg_constraint`, with lock-then-recheck serialization.
 
+## Transaction advisory locks
+
+`createTransactionLockOnce({ namespace, annotation })` returns `{ lock, markHeld }`. `lock(query, ids)`
+normalizes (lower-case by default), deduplicates and sorts the ids, skips ids already held on that
+transaction query object, and takes the rest with one
+`pg_advisory_xact_lock(hashtextextended(namespace || id, 0))` statement that locks in sorted order.
+Nothing is sent when every id is already held.
+
+```ts
+const topicLocks = createTransactionLockOnce({
+  namespace: 'topic-merge:',
+  annotation: 'lockTopicMerge',
+})
+await psql.withTransaction(async (query) => {
+  await Promise.all([topicLocks.lock(query, [a, b]), topicLocks.lock(query, [b, c])])
+})
+```
+
+Calls on one query object are serialized, so concurrent calls send each statement once, in
+submission order. Ids are recorded as held only after the statement succeeds, and a failed
+acquisition rejects only its own caller; later calls still run. `markHeld(query, ids)` records ids
+without locking, for rows the transaction just inserted. Pass `acquire(query, ids)` to run a custom
+statement over the sorted, not-yet-held ids; return the ids it actually locked (including any it
+expanded to), or nothing to mark the requested ids.
+
+Contract: never reuse a query object to lock again after rolling back a savepoint taken on it. The
+held set cannot see the rollback, so a lock released by it would be treated as still held.
+
+Lock order is JavaScript string order of the normalized ids. Pass every id for a namespace in one
+canonical form, and make any other code that takes the same namespace keys acquire them in the
+same order, or the two can deadlock. Lower-case canonical UUIDs (the default normalization) sort
+the same way as PostgreSQL's `uuid` ordering, so SQL that orders by a `uuid` column is compatible.
+
 ## Conventions
 
 - UUIDv7 primary keys

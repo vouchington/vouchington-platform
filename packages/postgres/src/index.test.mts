@@ -43,6 +43,7 @@ describe('package exports', () => {
     expect(typeof postgres.splitSqlStatements).toBe('function')
     expect(typeof postgres.getFilesFromFolder).toBe('function')
     expect(typeof postgres.Cursor).toBe('function')
+    expect(typeof postgres.createTransactionLockOnce).toBe('function')
     expect(typeof postgres.resolveMigrationTimeouts).toBe('function')
   })
 })

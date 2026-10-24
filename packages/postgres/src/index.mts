@@ -24,6 +24,8 @@ export { PIPELINE_BATCH_MAX } from './pipeline-batch.mts'
 export type { PipelineBatchOptions } from './pipeline-batch.mts'
 export { runBoundedTransactionWithClient } from './bounded-transaction.mts'
 export type { BoundedTransactionOptions } from './bounded-transaction.mts'
+export { createTransactionLockOnce } from './transaction-lock-once.mts'
+export type { TransactionLockOnce, TransactionLockOnceOptions } from './transaction-lock-once.mts'
 export { Cursor } from './cursor-support.mts'
 export { MigrationFileMissingError } from './migration-runner/migration-file-missing.mts'
 export {
