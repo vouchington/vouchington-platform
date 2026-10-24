@@ -8,87 +8,89 @@ SKU names.
 
 ## Packages
 
-| Package                                                                            | Description                                                                          |
-| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| [`@vouchington/auth`](packages/auth)                                               | Injected WebAuthn passkey ceremony primitives                                        |
-| [`@vouchington/postgres`](packages/postgres)                                       | PostgreSQL runtime, migrations, and structural schema snapshots                      |
-| [`@vouchington/utils`](packages/utils)                                             | Dependency-free explicit-subpath utilities, including moderation                     |
-| [`@vouchington/session-jwt`](packages/session-jwt)                                 | Portable RS512 JWT primitives and UUIDv7 identifiers                                 |
-| [`@vouchington/queue-errors`](packages/queue-errors)                               | glide-mq retry classification and rate-limit helpers                                 |
-| [`@vouchington/worker-runtime`](packages/worker-runtime)                           | Queue selection, GlideMQ worker loading, schedules, and a Vitest harness             |
-| [`@vouchington/pagination`](packages/pagination)                                   | Cursor codecs, guards, and configuration-owned query parsing                         |
-| [`@vouchington/csv`](packages/csv)                                                 | BOM-safe parsing and spreadsheet-safe CSV serialization                              |
-| [`@vouchington/localization`](packages/localization)                               | Browser-safe catalog contracts, selectors, and locale fallback                       |
-| [`@vouchington/localization-compiler`](packages/localization-compiler)             | JSON-to-SQLite compiler, CLI resolver, and native resource helpers                   |
-| [`@vouchington/html-utils`](packages/html-utils)                                   | HTML entity decoding and text helpers                                                |
-| [`@vouchington/html-sanitizer`](packages/html-sanitizer)                           | Policy-injected HTML fragment sanitizer                                              |
-| [`@vouchington/phone-validation`](packages/phone-validation)                       | Phone normalization and predicates                                                   |
-| [`@vouchington/edge`](packages/edge)                                               | Injected Cloudflare Worker header, CSP, auth, and cache builders                     |
-| [`@vouchington/uuid-v7`](packages/uuid-v7)                                         | UUIDv7 generation, validation, and date bounds                                       |
-| [`@vouchington/dynamic-config`](packages/dynamic-config)                           | Role authorizer and admin view primitives for valkyries                              |
-| [`@vouchington/stripe`](packages/stripe)                                           | Stripe client factory, webhook verification, event narrowing, param builders         |
-| [`@vouchington/dynamic-config`](packages/dynamic-config)                           | Registry, validators, and authorized admin service over valkyries                    |
-| [`@vouchington/frontmatter`](packages/frontmatter)                                 | Deterministic YAML frontmatter serialization                                         |
-| [`@vouchington/email`](packages/email)                                             | React Email render helpers, style factories, catalog copy, and locale resolution     |
-| [`@vouchington/sentry`](packages/sentry)                                           | Sentry init options, data-collection policy, filters, and capture                    |
-| [`@vouchington/ai`](packages/ai)                                                   | Model-call primitives: usage, pricing, JSON adapters, structured decisions           |
-| [`@vouchington/aws`](packages/aws)                                                 | AWS SES/SQS/Firehose/CloudWatch command builders, chunking, and error classifiers    |
-| [`@vouchington/script-loader`](packages/script-loader)                             | Shared script loader and a Cloudflare Turnstile widget hook                          |
-| [`@vouchington/http-transport`](packages/http-transport)                           | Redirect-safe transport with injected fetch/address pinning                          |
-| [`@vouchington/image-resize`](packages/image-resize)                               | Sharp transforms, file output, metadata, and negotiation                             |
-| [`@vouchington/media`](packages/media)                                             | Upload validation, streams, and split S3 primitives                                  |
-| [`@vouchington/wikimedia`](packages/wikimedia)                                     | Injected Wikimedia search and page-summary client                                    |
-| [`@vouchington/memberships`](packages/memberships)                                 | Membership catalog, SKU grouping, and status utilities                               |
-| [`@vouchington/browser-crawl`](packages/browser-crawl)                             | Injected Playwright rendered-page collection                                         |
-| [`@vouchington/domain-verification`](packages/domain-verification)                 | DNS TXT and secure-transport well-known verification                                 |
-| [`@vouchington/crawler-html`](packages/crawler-html)                               | HTML content decoding and extraction                                                 |
-| [`@vouchington/embeds`](packages/embeds)                                           | Policy-injected HTML unfurl and oEmbed resolution                                    |
-| [`@vouchington/rss-parser`](packages/rss-parser)                                   | RSS, Atom, and JSON feed parsing                                                     |
-| [`@vouchington/rss-crawler`](packages/rss-crawler)                                 | Transport-injected feed crawling                                                     |
-| [`@vouchington/robots`](packages/robots)                                           | Transport- and cache-injected robots.txt evaluation                                  |
-| [`@vouchington/typed-entities`](packages/typed-entities)                           | Transaction-scoped typed entity aliases, hierarchy, and hostnames                    |
-| [`@vouchington/request-contract-validation`](packages/request-contract-validation) | Caller-injected Ajv request carrier validation                                       |
-| [`@vouchington/rate-limit`](packages/rate-limit)                                   | Valkyries house layer: api-server middleware and edge bindings                       |
-| Package                                                                            | Description                                                                          |
-| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------                   |
-| [`@vouchington/auth`](packages/auth)                                               | Injected WebAuthn passkey ceremony primitives                                        |
-| [`@vouchington/postgres`](packages/postgres)                                       | PostgreSQL runtime, migrations, and structural schema snapshots                      |
-| [`@vouchington/utils`](packages/utils)                                             | Dependency-free explicit-subpath utilities, including moderation                     |
-| [`@vouchington/session-jwt`](packages/session-jwt)                                 | Portable RS512 JWT primitives and UUIDv7 identifiers                                 |
-| [`@vouchington/queue-errors`](packages/queue-errors)                               | glide-mq retry classification and rate-limit helpers                                 |
-| [`@vouchington/worker-runtime`](packages/worker-runtime)                           | Queue selection, GlideMQ worker loading, and schedule registration                   |
-| [`@vouchington/pagination`](packages/pagination)                                   | Cursor codecs, guards, and configuration-owned query parsing                         |
-| [`@vouchington/csv`](packages/csv)                                                 | BOM-safe parsing and spreadsheet-safe CSV serialization                              |
-| [`@vouchington/localization`](packages/localization)                               | Browser-safe catalog contracts, selectors, and locale fallback                       |
-| [`@vouchington/localization-compiler`](packages/localization-compiler)             | JSON-to-SQLite compiler, CLI resolver, and native resource helpers                   |
-| [`@vouchington/html-utils`](packages/html-utils)                                   | HTML entity decoding and text helpers                                                |
-| [`@vouchington/html-sanitizer`](packages/html-sanitizer)                           | Policy-injected HTML fragment sanitizer                                              |
-| [`@vouchington/phone-validation`](packages/phone-validation)                       | Phone normalization and predicates                                                   |
-| [`@vouchington/edge`](packages/edge)                                               | Injected Cloudflare Worker header, CSP, auth, and cache builders                     |
-| [`@vouchington/uuid-v7`](packages/uuid-v7)                                         | UUIDv7 generation, validation, and date bounds                                       |
-| [`@vouchington/dynamic-config`](packages/dynamic-config)                           | Role authorizer and admin view primitives for valkyries                              |
-| [`@vouchington/stripe`](packages/stripe)                                           | Stripe client factory, webhook verification, event narrowing, param builders         |
-| [`@vouchington/dynamic-config`](packages/dynamic-config)                           | Registry, validators, and authorized admin service over valkyries                    |
-| [`@vouchington/frontmatter`](packages/frontmatter)                                 | Deterministic YAML frontmatter serialization                                         |
-| [`@vouchington/email`](packages/email)                                             | React Email render helpers, style factories, catalog copy, and locale resolution     |
-| [`@vouchington/http-transport`](packages/http-transport)                           | Redirect-safe transport with injected fetch/address pinning                          |
-| [`@vouchington/image-resize`](packages/image-resize)                               | Sharp transforms, file output, metadata, and negotiation                             |
-| [`@vouchington/media`](packages/media)                                             | Upload validation, streams, and split S3 primitives                                  |
-| [`@vouchington/wikimedia`](packages/wikimedia)                                     | Injected Wikimedia search and page-summary client                                    |
-| [`@vouchington/memberships`](packages/memberships)                                 | Membership catalog, SKU grouping, and status utilities                               |
-| [`@vouchington/browser-crawl`](packages/browser-crawl)                             | Injected Playwright rendered-page collection                                         |
-| [`@vouchington/domain-verification`](packages/domain-verification)                 | DNS TXT and secure-transport well-known verification                                 |
-| [`@vouchington/crawler-html`](packages/crawler-html)                               | HTML content decoding and extraction                                                 |
-| [`@vouchington/embeds`](packages/embeds)                                           | Policy-injected HTML unfurl and oEmbed resolution                                    |
-| [`@vouchington/rss-parser`](packages/rss-parser)                                   | RSS, Atom, and JSON feed parsing                                                     |
-| [`@vouchington/rss-crawler`](packages/rss-crawler)                                 | Transport-injected feed crawling                                                     |
-| [`@vouchington/robots`](packages/robots)                                           | Transport- and cache-injected robots.txt evaluation                                  |
-| [`@vouchington/typed-entities`](packages/typed-entities)                           | Transaction-scoped typed entity aliases, hierarchy, and hostnames                    |
-| [`@vouchington/request-contract-validation`](packages/request-contract-validation) | Caller-injected Ajv request carrier validation                                       |
-| [`@vouchington/rate-limit`](packages/rate-limit)                                   | Valkyries house layer: api-server middleware and edge bindings                       |
-| [`@vouchington/oauth-server`](packages/oauth-server)                               | Injected-store OAuth 2.0 authorization-server primitives                             |
-| [`@vouchington/api-client`](packages/api-client)                                   | Injected-config request wrappers, errors, admission idempotency, paginated-list hook |
-| [`@vouchington/script-loader`](packages/script-loader)                             | Shared script loader and a Cloudflare Turnstile widget hook                          |
+| Package                                                                            | Description                                                                                   |
+| ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [`@vouchington/auth`](packages/auth)                                               | Injected WebAuthn passkey ceremony primitives                                                 |
+| [`@vouchington/postgres`](packages/postgres)                                       | PostgreSQL runtime, migrations, and structural schema snapshots                               |
+| [`@vouchington/utils`](packages/utils)                                             | Dependency-free explicit-subpath utilities, including moderation                              |
+| [`@vouchington/session-jwt`](packages/session-jwt)                                 | Portable RS512 JWT primitives and UUIDv7 identifiers                                          |
+| [`@vouchington/queue-errors`](packages/queue-errors)                               | glide-mq retry classification and rate-limit helpers                                          |
+| [`@vouchington/worker-runtime`](packages/worker-runtime)                           | Queue selection, GlideMQ worker loading, schedules, and a Vitest harness                      |
+| [`@vouchington/pagination`](packages/pagination)                                   | Cursor codecs, guards, and configuration-owned query parsing                                  |
+| [`@vouchington/csv`](packages/csv)                                                 | BOM-safe parsing and spreadsheet-safe CSV serialization                                       |
+| [`@vouchington/localization`](packages/localization)                               | Browser-safe catalog contracts, selectors, and locale fallback                                |
+| [`@vouchington/localization-compiler`](packages/localization-compiler)             | JSON-to-SQLite compiler, CLI resolver, and native resource helpers                            |
+| [`@vouchington/html-utils`](packages/html-utils)                                   | HTML entity decoding and text helpers                                                         |
+| [`@vouchington/html-sanitizer`](packages/html-sanitizer)                           | Policy-injected HTML fragment sanitizer                                                       |
+| [`@vouchington/phone-validation`](packages/phone-validation)                       | Phone normalization and predicates                                                            |
+| [`@vouchington/edge`](packages/edge)                                               | Injected Cloudflare Worker header, CSP, auth, and cache builders                              |
+| [`@vouchington/uuid-v7`](packages/uuid-v7)                                         | UUIDv7 generation, validation, and date bounds                                                |
+| [`@vouchington/dynamic-config`](packages/dynamic-config)                           | Role authorizer and admin view primitives for valkyries                                       |
+| [`@vouchington/stripe`](packages/stripe)                                           | Stripe client factory, webhook verification, event narrowing, param builders                  |
+| [`@vouchington/dynamic-config`](packages/dynamic-config)                           | Registry, validators, and authorized admin service over valkyries                             |
+| [`@vouchington/frontmatter`](packages/frontmatter)                                 | Deterministic YAML frontmatter serialization                                                  |
+| [`@vouchington/email`](packages/email)                                             | React Email render helpers, style factories, catalog copy, and locale resolution              |
+| [`@vouchington/sentry`](packages/sentry)                                           | Sentry init options, data-collection policy, filters, and capture                             |
+| [`@vouchington/ai`](packages/ai)                                                   | Model-call primitives: usage, pricing, JSON adapters, structured decisions                    |
+| [`@vouchington/aws`](packages/aws)                                                 | AWS SES/SQS/Firehose/CloudWatch command builders, chunking, and error classifiers             |
+| [`@vouchington/script-loader`](packages/script-loader)                             | Shared script loader and a Cloudflare Turnstile widget hook                                   |
+| [`@vouchington/mcp-server`](packages/mcp-server)                                   | MCP tool types, schema utilities, merged tools, bounded results, and a stateless HTTP handler |
+| [`@vouchington/http-transport`](packages/http-transport)                           | Redirect-safe transport with injected fetch/address pinning                                   |
+| [`@vouchington/image-resize`](packages/image-resize)                               | Sharp transforms, file output, metadata, and negotiation                                      |
+| [`@vouchington/media`](packages/media)                                             | Upload validation, streams, and split S3 primitives                                           |
+| [`@vouchington/wikimedia`](packages/wikimedia)                                     | Injected Wikimedia search and page-summary client                                             |
+| [`@vouchington/memberships`](packages/memberships)                                 | Membership catalog, SKU grouping, and status utilities                                        |
+| [`@vouchington/browser-crawl`](packages/browser-crawl)                             | Injected Playwright rendered-page collection                                                  |
+| [`@vouchington/domain-verification`](packages/domain-verification)                 | DNS TXT and secure-transport well-known verification                                          |
+| [`@vouchington/crawler-html`](packages/crawler-html)                               | HTML content decoding and extraction                                                          |
+| [`@vouchington/embeds`](packages/embeds)                                           | Policy-injected HTML unfurl and oEmbed resolution                                             |
+| [`@vouchington/rss-parser`](packages/rss-parser)                                   | RSS, Atom, and JSON feed parsing                                                              |
+| [`@vouchington/rss-crawler`](packages/rss-crawler)                                 | Transport-injected feed crawling                                                              |
+| [`@vouchington/robots`](packages/robots)                                           | Transport- and cache-injected robots.txt evaluation                                           |
+| [`@vouchington/typed-entities`](packages/typed-entities)                           | Transaction-scoped typed entity aliases, hierarchy, and hostnames                             |
+| [`@vouchington/request-contract-validation`](packages/request-contract-validation) | Caller-injected Ajv request carrier validation                                                |
+| [`@vouchington/rate-limit`](packages/rate-limit)                                   | Valkyries house layer: api-server middleware and edge bindings                                |
+| Package                                                                            | Description                                                                                   |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------                            |
+| [`@vouchington/auth`](packages/auth)                                               | Injected WebAuthn passkey ceremony primitives                                                 |
+| [`@vouchington/postgres`](packages/postgres)                                       | PostgreSQL runtime, migrations, and structural schema snapshots                               |
+| [`@vouchington/utils`](packages/utils)                                             | Dependency-free explicit-subpath utilities, including moderation                              |
+| [`@vouchington/session-jwt`](packages/session-jwt)                                 | Portable RS512 JWT primitives and UUIDv7 identifiers                                          |
+| [`@vouchington/queue-errors`](packages/queue-errors)                               | glide-mq retry classification and rate-limit helpers                                          |
+| [`@vouchington/worker-runtime`](packages/worker-runtime)                           | Queue selection, GlideMQ worker loading, and schedule registration                            |
+| [`@vouchington/pagination`](packages/pagination)                                   | Cursor codecs, guards, and configuration-owned query parsing                                  |
+| [`@vouchington/csv`](packages/csv)                                                 | BOM-safe parsing and spreadsheet-safe CSV serialization                                       |
+| [`@vouchington/localization`](packages/localization)                               | Browser-safe catalog contracts, selectors, and locale fallback                                |
+| [`@vouchington/localization-compiler`](packages/localization-compiler)             | JSON-to-SQLite compiler, CLI resolver, and native resource helpers                            |
+| [`@vouchington/html-utils`](packages/html-utils)                                   | HTML entity decoding and text helpers                                                         |
+| [`@vouchington/html-sanitizer`](packages/html-sanitizer)                           | Policy-injected HTML fragment sanitizer                                                       |
+| [`@vouchington/phone-validation`](packages/phone-validation)                       | Phone normalization and predicates                                                            |
+| [`@vouchington/edge`](packages/edge)                                               | Injected Cloudflare Worker header, CSP, auth, and cache builders                              |
+| [`@vouchington/uuid-v7`](packages/uuid-v7)                                         | UUIDv7 generation, validation, and date bounds                                                |
+| [`@vouchington/dynamic-config`](packages/dynamic-config)                           | Role authorizer and admin view primitives for valkyries                                       |
+| [`@vouchington/stripe`](packages/stripe)                                           | Stripe client factory, webhook verification, event narrowing, param builders                  |
+| [`@vouchington/dynamic-config`](packages/dynamic-config)                           | Registry, validators, and authorized admin service over valkyries                             |
+| [`@vouchington/frontmatter`](packages/frontmatter)                                 | Deterministic YAML frontmatter serialization                                                  |
+| [`@vouchington/email`](packages/email)                                             | React Email render helpers, style factories, catalog copy, and locale resolution              |
+| [`@vouchington/http-transport`](packages/http-transport)                           | Redirect-safe transport with injected fetch/address pinning                                   |
+| [`@vouchington/image-resize`](packages/image-resize)                               | Sharp transforms, file output, metadata, and negotiation                                      |
+| [`@vouchington/media`](packages/media)                                             | Upload validation, streams, and split S3 primitives                                           |
+| [`@vouchington/wikimedia`](packages/wikimedia)                                     | Injected Wikimedia search and page-summary client                                             |
+| [`@vouchington/memberships`](packages/memberships)                                 | Membership catalog, SKU grouping, and status utilities                                        |
+| [`@vouchington/browser-crawl`](packages/browser-crawl)                             | Injected Playwright rendered-page collection                                                  |
+| [`@vouchington/domain-verification`](packages/domain-verification)                 | DNS TXT and secure-transport well-known verification                                          |
+| [`@vouchington/crawler-html`](packages/crawler-html)                               | HTML content decoding and extraction                                                          |
+| [`@vouchington/embeds`](packages/embeds)                                           | Policy-injected HTML unfurl and oEmbed resolution                                             |
+| [`@vouchington/rss-parser`](packages/rss-parser)                                   | RSS, Atom, and JSON feed parsing                                                              |
+| [`@vouchington/rss-crawler`](packages/rss-crawler)                                 | Transport-injected feed crawling                                                              |
+| [`@vouchington/robots`](packages/robots)                                           | Transport- and cache-injected robots.txt evaluation                                           |
+| [`@vouchington/typed-entities`](packages/typed-entities)                           | Transaction-scoped typed entity aliases, hierarchy, and hostnames                             |
+| [`@vouchington/request-contract-validation`](packages/request-contract-validation) | Caller-injected Ajv request carrier validation                                                |
+| [`@vouchington/rate-limit`](packages/rate-limit)                                   | Valkyries house layer: api-server middleware and edge bindings                                |
+| [`@vouchington/oauth-server`](packages/oauth-server)                               | Injected-store OAuth 2.0 authorization-server primitives                                      |
+| [`@vouchington/api-client`](packages/api-client)                                   | Injected-config request wrappers, errors, admission idempotency, paginated-list hook          |
+| [`@vouchington/script-loader`](packages/script-loader)                             | Shared script loader and a Cloudflare Turnstile widget hook                                   |
+| [`@vouchington/mcp-server`](packages/mcp-server)                                   | MCP tool types, schema utilities, merged tools, bounded results, and a stateless HTTP handler |
 
 ## Commands
 

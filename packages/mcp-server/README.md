@@ -11,6 +11,7 @@ authorization, audit, and persistence.
 | `./tools`     | Merged tools, the add/update/remove tool, and per-argument REST route selection     |
 | `./results`   | Bounded, cycle-safe result serialization and validated MCP tool results             |
 | `./untrusted` | Private-field filtering and untrusted-text wrapping with injected field sets        |
+| `./http`      | Stateless Streamable HTTP request handler with injected tools and hooks             |
 
 ## Types
 
@@ -86,6 +87,43 @@ private fields that never leave the server.
 - `wrapUntrustedOutput(value, { untrusted, private, wrap? })`: removes private fields, serializes
   dates, and wraps each untrusted field. The default `wrap` is `wrapWithVurstPrompt`, which uses
   `@jongleberry/vurst-prompt`; pass your own `(text, field) => unknown` to replace it.
+
+## HTTP
+
+`handleStatelessMcpRequest` handles one Streamable HTTP request with a fresh server and transport
+in JSON-response mode, and needs `@modelcontextprotocol/sdk` as a peer.
+
+```ts
+import { handleStatelessMcpRequest } from '@vouchington/mcp-server/http'
+
+const response = await handleStatelessMcpRequest({
+  serverInfo: { name: 'example-mcp', version: '1.0.0' },
+  instructions,
+  request,
+  parsedBody,
+  listTools: () => listToolsFor(user),
+  callTool: (call, controls) => runTool(user, call, controls),
+  isDispatchedToolCall,
+  rateLimitedCalls,
+  buildRateLimitedResult,
+  resolveAuditOption: (call) => auditOptionFor(call),
+  hooks: { onToolError, onToolRateLimited, onToolCallSettled },
+})
+```
+
+- Calls are indexed by message position, so duplicate JSON-RPC ids in a batch stay distinct. A call
+  whose position is in `rateLimitedCalls` is refused in-band with `buildRateLimitedResult` and never
+  runs.
+- `callTool` receives `{ onInvoked, onRateLimited }`: report the tool duration and a rate limit
+  found while running, so `onToolError` fires only for real tool errors.
+- `onToolCallSettled` fires once per dispatched call, including a call that throws.
+- All started calls finish before the response returns, and the transport and server are closed
+  even on error.
+- `validateRequest` defaults to `validateToolsRequest`, which answers a malformed `tools/list` or
+  `tools/call` with a JSON-RPC `InvalidRequest` before the transport sees it.
+
+Authentication, scope and plan gating, route charging, audit persistence, usage metering, and
+error-code mapping stay in the application, behind `callTool` and the hooks.
 
 ## Limitations
 
