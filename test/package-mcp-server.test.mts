@@ -24,7 +24,7 @@ describe('mcp-server package publication boundary', () => {
   const manifest = JSON.parse(readFileSync('packages/mcp-server/package.json', 'utf8')) as Manifest
 
   it('publishes explicit subpaths only, with no root export', () => {
-    expect(Object.keys(manifest.exports)).toEqual(['./types', './schema'])
+    expect(Object.keys(manifest.exports)).toEqual(['./types', './schema', './tools'])
     for (const entry of Object.values(manifest.exports)) {
       expect(existsSync(`packages/mcp-server/${entry.types.replace('./', '')}`)).toBe(true)
       importBuiltModule(`packages/mcp-server/${entry.import.replace('./', '')}`)

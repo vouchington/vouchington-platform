@@ -26,6 +26,11 @@
       "types": "./dist/schema/index.d.mts",
       "import": "./dist/schema/index.mjs",
       "default": "./dist/schema/index.mjs"
+    },
+    "./tools": {
+      "types": "./dist/tools/index.d.mts",
+      "import": "./dist/tools/index.mjs",
+      "default": "./dist/tools/index.mjs"
     }
   },
   "publishConfig": {
