@@ -40,7 +40,7 @@ describe('runtime package manifests', () => {
     }
     expect(Object.keys(manifest.exports)).toEqual(
       directory === 'worker-runtime'
-        ? ['.', './glide-mq', './testing']
+        ? ['.', './glide-mq', './sqs', './testing']
         : directory === 'localization'
           ? ['.', './react']
           : ['.'],

@@ -65,6 +65,25 @@ the real client on the first command, routes every command through the injected 
 `getQueueStats(queue, name)`, `getAllQueueStats(queues)` (sorted by name), and
 `aggregateQueueStats(stats)` read job counts and paused state from plain GlideMQ queues.
 
+## SQS consumers (`@vouchington/worker-runtime/sqs`)
+
+`createSqsConsumer({ name, handleMessage, port, pollErrorBackoffMs })` runs a sequential long-poll
+loop over an injected port (`receive(signal)` and `delete(receiptHandle)`). A message is deleted
+only after its handler succeeds; a failed handler leaves it undeleted, so the visibility timeout
+redelivers it. Events: `closing`, `closed`, `poll-error`, `message-received`, `message-failed`,
+`message-deleted`, and `message-delete-failed`. A throwing listener does not stop the loop, a
+failed receive backs off (default 5000 ms, cut short by `close()`), and `close()` is idempotent,
+aborts the in-flight receive, and waits for the batch in progress.
+
+`createSqsClientPort(client, queueUrl, { maxMessages, waitTimeSeconds })` adapts any client with
+`send` (an SQS client). `@aws-sdk/client-sqs` is an optional peer, loaded on first use, so the rest
+of the subpath works without it. Messages missing an id, receipt handle, or body are dropped.
+`selectedSqsConsumerDefinitions` and `loadSqsConsumers` apply the process's queue selection
+(honoring `requiresExplicitInclusion` and ignoring other runtimes' names) and drop definitions
+whose `load()` returns `null`; pass `loadSqsConsumers` to `initializeWorkerRuntime`.
+`addSqsConsumerEventListeners(consumer, hooks)` maps the events to `onEvent`, `onMessageReceived`,
+`onMessageFinished` (with elapsed time), and `onError` (tagged with the queue and message id).
+
 ## Lifecycle, serve, and queue classes
 
 `initializeWorkerRuntime(config, deps)` resolves one queue selection through the injected
