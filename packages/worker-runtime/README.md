@@ -65,12 +65,37 @@ the real client on the first command, routes every command through the injected 
 `getQueueStats(queue, name)`, `getAllQueueStats(queues)` (sorted by name), and
 `aggregateQueueStats(stats)` read job counts and paused state from plain GlideMQ queues.
 
+## Lifecycle, serve, and queue classes
+
+`initializeWorkerRuntime(config, deps)` resolves one queue selection through the injected
+`resolveQueueSelection` and shares it with workers, other consumers, and schedules. Universal
+workers (`loadUniversalWorkers`) bypass selection but their `universalQueueNames` count as known
+queues. `afterLoad` runs after loading. `startWorkerRuntime()` attaches listeners through
+`attachWorker` / `attachSqsConsumer`, then registers schedules and runs `setup`; rejections are
+reported through `onError`, and `afterSuccessfulStart` runs once, only if both succeeded (if it
+throws, the failure is reported, rethrown, and the once-flag resets). Consumers other than GlideMQ
+workers load through the injected `loadSqsConsumers`. `reportWorkerLoadFailure(reason, onError)`
+reports, then throws.
+
+`createQueueClassResolver(policy)` maps `WORKER_QUEUE_CLASS` to an explicit include list from a
+policy of `class name -> queue names`; the class names are the application's. Setting both
+`WORKER_QUEUE_CLASS` and `QUEUES`, an unaccepted class, or an unknown `QUEUES` name (including
+`-name` excludes) throws `WorkerQueueClassError` with code `CONFLICTING_QUEUE_SELECTORS`,
+`UNSUPPORTED_QUEUE_CLASS`, or `UNKNOWN_QUEUE_NAMES`. Blank values count as unset.
+`validateQueuePolicy(raw, groups, { containedIn })` checks a policy object for exact fields,
+unique canonical names, no overlap, and subset groups.
+
+`registerWorkerServe(deps)` installs crash reporting (`uncaughtException` reports then exits 1 after
+an error flush or a 2100 ms timer; `unhandledRejection` reports only), an optional prewarm server
+(only when `NODE_PREWARM` and `NODE_PREWARM_PORT` are both set), and a shutdown callback that
+closes the prewarm server and every worker. Process, console, timers, and the server factory are
+injected.
+
 ## Application-owned concerns
 
-This package deliberately does not implement SQS polling, process lifecycle or shutdown,
-observability, warmups, worker inventories, or queue placement. Cloudflare routing and CSP also
-remain application-owned: they encode each application's routes, origins, authentication, cache,
-and security policy.
+This package deliberately does not implement process-wide observability, warmups, worker
+inventories, or queue placement. Cloudflare routing and CSP also remain application-owned: they
+encode each application's routes, origins, authentication, cache, and security policy.
 
 ## Testing harness (`@vouchington/worker-runtime/testing`)
 
