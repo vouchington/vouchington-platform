@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/oauth-client/package.json"],
+  "changedManifests": ["packages/mcp-server/package.json"],
   "releases": [
     {
       "bump": "minor",
-      "directory": "oauth-client",
+      "directory": "mcp-server",
       "fromVersion": "0.0.0",
-      "name": "@vouchington/oauth-client",
+      "name": "@vouchington/mcp-server",
       "toVersion": "0.1.0"
     }
   ],
-  "selectedPackage": "@vouchington/oauth-client"
+  "selectedPackage": "@vouchington/mcp-server"
 }
