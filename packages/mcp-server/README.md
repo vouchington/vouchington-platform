@@ -4,11 +4,13 @@ Generic building blocks for a Model Context Protocol server. The package is subp
 subpath is dependency-light and opinionated, and the application injects its tools, policy,
 authorization, audit, and persistence.
 
-| Subpath    | Contents                                                                            |
-| ---------- | ----------------------------------------------------------------------------------- |
-| `./types`  | Structural `McpTool`, `McpToolMeta`, `ToolOutputSchema`                             |
-| `./schema` | JSON Schema validation, traversal, closing, factoring, pruning, and output pointers |
-| `./tools`  | Merged tools, the add/update/remove tool, and per-argument REST route selection     |
+| Subpath       | Contents                                                                            |
+| ------------- | ----------------------------------------------------------------------------------- |
+| `./types`     | Structural `McpTool`, `McpToolMeta`, `ToolOutputSchema`                             |
+| `./schema`    | JSON Schema validation, traversal, closing, factoring, pruning, and output pointers |
+| `./tools`     | Merged tools, the add/update/remove tool, and per-argument REST route selection     |
+| `./results`   | Bounded, cycle-safe result serialization and validated MCP tool results             |
+| `./untrusted` | Private-field filtering and untrusted-text wrapping with injected field sets        |
 
 ## Types
 
@@ -61,6 +63,29 @@ const violation = findSchemaViolation(schema, args) // string | null, never cont
 - `selectApiByArgument(argument, endpoints)`: builds `meta.selectApi` so a call names only the REST
   route its argument exercises.
 
+## Results
+
+- `serializeMcpToolResult(result, maxBytes?)`: JSON with a byte bound (1 MiB by default,
+  `MAX_MCP_TOOL_RESULT_BYTES`) and a visit bound (`MAX_MCP_TOOL_RESULT_VISITS`). It honors
+  `toJSON`, rejects cycles and BigInt, and throws `McpToolResultTooLargeError` before it builds an
+  oversized string.
+- `buildToolResult(toolName, result, outputSchema?, selectedOutputSchema?)`: one text block, plus
+  `structuredContent` validated against the published schema when there is one. The assembled
+  response is held to the bound, since the escaped text copy is larger than the JSON it carries. A
+  result that breaks its own schema throws `McpToolOutputMismatchError`, naming the tool and the
+  rule but never the value.
+
+## Untrusted output
+
+The application injects two field-name sets: fields whose text an agent must treat as data, and
+private fields that never leave the server.
+
+- `filterPrivateOutputFields(value, privateFields)`: drops private fields at every depth.
+- `adminOutputSchema(schema, { untrusted, private })`: the matching schema transform. Untrusted
+  fields become `string | null`; private fields leave `properties` and `required`.
+- `wrapUntrustedOutput(value, { untrusted, private, wrap? })`: removes private fields, serializes
+  dates, and wraps each untrusted field. The default `wrap` is `wrapWithVurstPrompt`, which uses
+  `@jongleberry/vurst-prompt`; pass your own `(text, field) => unknown` to replace it.
 ## Limitations
 
 The schema utilities target the schemas this package and its callers emit: JSON Schema 2020-12
