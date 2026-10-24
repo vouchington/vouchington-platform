@@ -282,6 +282,24 @@ describe('createSqsConsumer', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
+  it('is idempotent when a closing listener calls close again', async () => {
+    const consumer = createSqsConsumer({
+      name: 'q',
+      handleMessage: async () => undefined,
+      port: oneShotPort([]),
+    })
+    const events: string[] = []
+    consumer.on('closing', () => {
+      events.push('closing')
+      void consumer.close()
+    })
+    consumer.on('closed', () => events.push('closed'))
+
+    await consumer.close()
+
+    expect(events).toEqual(['closing', 'closed'])
+  })
+
   it('closes idempotently, emitting closing then closed once', async () => {
     const consumer = createSqsConsumer({
       name: 'q',

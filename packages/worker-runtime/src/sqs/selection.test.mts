@@ -41,6 +41,19 @@ describe('loadSqsConsumers', () => {
     expect(definitions[1]!.load).not.toHaveBeenCalled()
   })
 
+  it('closes the consumers that loaded when another load fails', async () => {
+    const close = vi.fn(async () => undefined)
+    const definitions = [
+      definition('a', { load: async () => ({ name: 'a', close }) as unknown as SqsConsumer }),
+      definition('b', { load: async () => null }),
+      definition('c', { load: () => Promise.reject(new Error('load failed')) }),
+    ]
+
+    await expect(loadSqsConsumers(definitions, undefined)).rejects.toThrow('load failed')
+
+    expect(close).toHaveBeenCalledTimes(1)
+  })
+
   it('drops definitions whose load resolves null', async () => {
     const definitions = [definition('a', { load: async () => null }), definition('b')]
 

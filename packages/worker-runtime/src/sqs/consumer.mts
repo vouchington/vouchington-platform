@@ -26,7 +26,13 @@ class SqsConsumerImpl extends EventEmitter implements SqsConsumer {
 
   /** Every caller gets the same promise, so each one waits for the batch in progress. */
   close(): Promise<void> {
-    this.#closing ??= this.#shutdown()
+    if (this.#closing) return this.#closing
+    // Cache the promise before shutdown runs, so a listener that calls close() again gets it.
+    let start!: () => void
+    this.#closing = new Promise<void>((resolve, reject) => {
+      start = () => this.#shutdown().then(resolve, reject)
+    })
+    start()
     return this.#closing
   }
 

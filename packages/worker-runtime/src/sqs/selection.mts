@@ -25,8 +25,18 @@ export async function loadSqsConsumers(
   definitions: readonly SqsConsumerDefinition[],
   queues: string | undefined,
 ): Promise<SqsConsumer[]> {
-  const consumers = await Promise.all(
+  // Consumers start polling when created, so wait for every load and close the ones that
+  // succeeded if another fails.
+  const outcomes = await Promise.allSettled(
     selectedSqsConsumerDefinitions(definitions, queues).map((definition) => definition.load()),
   )
-  return consumers.filter((consumer) => consumer != null)
+  const loaded = outcomes.flatMap((outcome) =>
+    outcome.status === 'fulfilled' && outcome.value != null ? [outcome.value] : [],
+  )
+  const failure = outcomes.find((outcome) => outcome.status === 'rejected')
+  if (failure) {
+    await Promise.allSettled(loaded.map((consumer) => consumer.close()))
+    throw failure.reason
+  }
+  return loaded
 }
