@@ -34,7 +34,7 @@ describe('xProvider', () => {
       code_verifier: 'verifier-1',
     })
     expect(urls()[1]).toBe(`${ME}?user.fields=profile_image_url`)
-    expect(init(1)).toEqual({ headers: { Authorization: 'Bearer x-token' } })
+    expect(init(1)).toEqual({ headers: { Authorization: 'Bearer x-token' }, redirect: 'error' })
     expect(result).toEqual({
       tokens: {
         accessToken: 'x-token',

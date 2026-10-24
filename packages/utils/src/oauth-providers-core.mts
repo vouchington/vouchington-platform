@@ -82,7 +82,12 @@ export async function requestJson(
   url: string,
   init: RequestInit = {},
 ): Promise<unknown> {
-  const response = await ctx.fetch(url, ctx.signal ? { ...init, signal: ctx.signal } : init)
+  // Token and profile requests carry credentials; never follow a redirect with them.
+  const response = await ctx.fetch(url, {
+    ...init,
+    redirect: 'error',
+    ...(ctx.signal ? { signal: ctx.signal } : {}),
+  })
   if (!response.ok) {
     await response.body?.cancel().catch(() => undefined)
     throw new OAuthProviderError(

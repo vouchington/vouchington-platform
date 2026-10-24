@@ -64,13 +64,13 @@ describe('requestJson', () => {
     await expect(
       requestJson('p', 'Call', ctx({ signal }), url, { method: 'POST' }),
     ).resolves.toEqual({ ok: true })
-    expect(fetch).toHaveBeenCalledWith(url, { method: 'POST', signal })
+    expect(fetch).toHaveBeenCalledWith(url, { method: 'POST', redirect: 'error', signal })
   })
 
   it('omits the signal when none is supplied', async () => {
     const { fetch, ctx } = routeFetch({ [url]: json([]) })
     await requestJson('p', 'Call', ctx(), url)
-    expect(fetch).toHaveBeenCalledWith(url, {})
+    expect(fetch).toHaveBeenCalledWith(url, { redirect: 'error' })
   })
 
   it('throws http errors with the status and tolerates empty or failing bodies', async () => {

@@ -46,6 +46,7 @@ describe('githubProvider', () => {
     })
     expect(init(1)).toEqual({
       headers: { Authorization: 'Bearer gh-token', Accept: 'application/vnd.github+json' },
+      redirect: 'error',
     })
     expect(urls()).toEqual([TOKEN, USER, EMAILS])
     expect(result).toEqual({
