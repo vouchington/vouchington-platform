@@ -31,7 +31,7 @@ export function extractBooleanFeatureFlags(fields: Record<string, unknown>): Fea
 
 export function parseFeatureFlagCookie(
   cookieValue: string,
-  codec: Pick<FeatureFlagCookieCodec, 'decodeBase64'>,
+  codec: Partial<FeatureFlagCookieCodec> & Pick<FeatureFlagCookieCodec, 'decodeBase64'>,
   options: FeatureFlagCookieOptions = {},
 ): FeatureFlags {
   try {

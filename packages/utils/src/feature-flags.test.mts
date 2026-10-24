@@ -18,6 +18,12 @@ describe('feature flag cookies', () => {
     const encoded = codec.encodeBase64('{"enabled":true}')
     const decoderOnlyCodec = { decodeBase64: codec.decodeBase64 }
     expect(parseFeatureFlagCookie(encoded, decoderOnlyCodec)).toEqual({ enabled: true })
+    expect(
+      parseFeatureFlagCookie(encoded, {
+        encodeBase64: (value) => codec.encodeBase64(value),
+        decodeBase64: codec.decodeBase64,
+      }),
+    ).toEqual({ enabled: true })
 
     const encodeOnlyCodec = { encodeBase64: codec.encodeBase64 }
     function assertMissingDecoderRejected(): void {
