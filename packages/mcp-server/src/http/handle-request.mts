@@ -7,6 +7,7 @@ import {
   type ListToolsResult,
 } from '@modelcontextprotocol/sdk/types.js'
 
+import { restoreIds, withUniqueIds } from './batch-ids.mts'
 import { validateToolsRequest } from './validate-request.mts'
 
 /** What became of one dispatched `tools/call`. */
@@ -64,9 +65,12 @@ export type StatelessMcpRequest = {
  * server are closed even on error.
  */
 export async function handleStatelessMcpRequest(options: StatelessMcpRequest): Promise<Response> {
-  const { request, parsedBody } = options
-  const invalid = (options.validateRequest ?? validateToolsRequest)(parsedBody)
+  const { request } = options
+  const invalid = (options.validateRequest ?? validateToolsRequest)(options.parsedBody)
   if (invalid) return invalid
+  // The SDK answers a request by id, so a batch that reuses an id would return only the first
+  // reply. Such a batch is dispatched under unique ids and answered under the original ones.
+  const { parsedBody, originalIds } = withUniqueIds(options.parsedBody)
 
   // The SDK dispatches batches in source order. Positions distinguish duplicate ids whose calls
   // can have different route-limit or in-tool outcomes.
@@ -106,7 +110,8 @@ export async function handleStatelessMcpRequest(options: StatelessMcpRequest): P
     // The SDK correlates JSON responses by id and may resolve duplicate-id batches early.
     // Finish all started calls before the caller settles anything on response close.
     await Promise.allSettled(pendingToolCalls)
-    return response ?? new Response(null, { status: 202 })
+    if (!response) return new Response(null, { status: 202 })
+    return originalIds.size > 0 && response.body ? restoreIds(response, originalIds) : response
   } finally {
     await transport.close()
     await server.close()
@@ -120,8 +125,12 @@ async function runToolCall(
 ): Promise<CallToolResult> {
   const { hooks } = options
   const call = { name: params.name, arguments: params.arguments ?? {} }
+  // Settlement is reported once, even if a later hook rejects or the settlement hook throws.
+  let settled = false
   const settle = (settlement: ToolCallSettlement) => {
-    if (messageIndex !== undefined) hooks?.onToolCallSettled?.(messageIndex, settlement)
+    if (messageIndex === undefined || settled) return
+    settled = true
+    hooks?.onToolCallSettled?.(messageIndex, settlement)
   }
   const retryAfterSeconds = options.rateLimitedCalls.get(messageIndex ?? -1)
   if (retryAfterSeconds !== undefined) {

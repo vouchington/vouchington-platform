@@ -187,6 +187,48 @@ describe('handleStatelessMcpRequest', () => {
       ])
     })
 
+    it('answers every call of a batch that reuses an id, under the original id', async () => {
+      const callTool = vi.fn((request: { name: string }) =>
+        Promise.resolve(ok(`ran ${request.name}`)),
+      )
+
+      const replies = await json(
+        post([call('same', 'first'), call('same', 'second'), call(9, 'third')], { callTool }),
+      )
+
+      expect(callTool).toHaveBeenCalledTimes(3)
+      expect(replies.map((reply: { id: unknown }) => reply.id).toSorted()).toEqual([
+        9,
+        'same',
+        'same',
+      ])
+      expect(replies.map((reply: { result: never }) => texts(reply.result)[0]).toSorted()).toEqual([
+        'ran first',
+        'ran second',
+        'ran third',
+      ])
+    })
+
+    it('settles a call once even when onToolError rejects or the settle hook throws', async () => {
+      const failing = hooks()
+      failing.onToolError.mockRejectedValue(new Error('audit down'))
+      const callTool = vi.fn(() => Promise.resolve({ isError: true, content: [] }))
+
+      const reply = await json(post(call(1), { callTool, hooks: failing }))
+
+      expect(reply.error).toBeDefined()
+      expect(failing.onToolCallSettled).toHaveBeenCalledOnce()
+      expect(failing.onToolCallSettled.mock.calls[0]![1].toolError).toBe(true)
+      const throwing = hooks()
+      throwing.onToolCallSettled.mockImplementation(() => {
+        throw new Error('meter down')
+      })
+
+      await post(call(1), { callTool: () => Promise.resolve(ok('x')), hooks: throwing })
+
+      expect(throwing.onToolCallSettled).toHaveBeenCalledOnce()
+    })
+
     it('records a tool error once, with the audit option', async () => {
       const spy = hooks()
       const callTool = vi.fn(() => Promise.resolve({ isError: true, content: [] }))
