@@ -224,6 +224,64 @@ describe('createSqsConsumer', () => {
     expect(deleted).toEqual(['rh-1'])
   })
 
+  it('lets every close call wait for the batch in progress', async () => {
+    const started = deferred()
+    const release = deferred()
+    const consumer = createSqsConsumer({
+      name: 'q',
+      handleMessage: async () => {
+        started.resolve()
+        await release.promise
+      },
+      port: oneShotPort([message('1')]),
+    })
+    await started.promise
+    const first = consumer.close()
+    let secondDone = false
+    const second = consumer.close().then(() => void (secondDone = true))
+
+    await Promise.resolve()
+    expect(secondDone).toBe(false)
+    release.resolve()
+    await Promise.all([first, second])
+
+    expect(secondDone).toBe(true)
+  })
+
+  it('still shuts down when lifecycle listeners throw', async () => {
+    const consumer = createSqsConsumer({
+      name: 'q',
+      handleMessage: async () => undefined,
+      port: oneShotPort([]),
+    })
+    consumer.on('closing', () => {
+      throw new Error('closing listener failed')
+    })
+    consumer.on('closed', () => {
+      throw new Error('closed listener failed')
+    })
+
+    await expect(consumer.close()).resolves.toBeUndefined()
+  })
+
+  it('does not back off when a poll-error listener closes the consumer', async () => {
+    vi.useFakeTimers()
+    const port: SqsConsumerPort = {
+      receive: () => Promise.reject(new Error('network')),
+      delete: async () => undefined,
+    }
+    const consumer = createSqsConsumer({ name: 'q', handleMessage: async () => undefined, port })
+    let closed: Promise<void> | undefined
+    consumer.on('poll-error', () => {
+      closed = consumer.close()
+    })
+
+    await vi.advanceTimersByTimeAsync(0)
+
+    await expect(closed).resolves.toBeUndefined()
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
   it('closes idempotently, emitting closing then closed once', async () => {
     const consumer = createSqsConsumer({
       name: 'q',

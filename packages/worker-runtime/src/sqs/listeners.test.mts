@@ -90,6 +90,20 @@ describe('addSqsConsumerEventListeners', () => {
     expect(hooks.onMessageFinished).toHaveBeenCalledWith('queue-s', 'm1', 'completed', 0)
   })
 
+  it('clears timing state even when no completion hook is supplied', () => {
+    const bigint = vi.spyOn(process.hrtime, 'bigint').mockReturnValue(BigInt(1))
+    const consumer = Object.assign(new EventEmitter(), { name: 's' }) as unknown as SqsConsumer
+    addSqsConsumerEventListeners(consumer, { onError: vi.fn() })
+
+    consumer.emit('message-received', message)
+    consumer.emit('message-deleted', message)
+    consumer.emit('message-received', message)
+    consumer.emit('message-failed', message, new Error('x'))
+
+    // One read per receipt plus one per completion, even though no hook consumes the elapsed time.
+    expect(bigint).toHaveBeenCalledTimes(4)
+  })
+
   it('tolerates omitted optional hooks and untracked messages', () => {
     const consumer = Object.assign(new EventEmitter(), { name: 's' }) as unknown as SqsConsumer
     addSqsConsumerEventListeners(consumer, { onError: vi.fn() })

@@ -15,7 +15,7 @@ class SqsConsumerImpl extends EventEmitter implements SqsConsumer {
   readonly #abortController = new AbortController()
   readonly #loop: Promise<void>
   readonly #backoffMs: number
-  #closed = false
+  #closing: Promise<void> | null = null
 
   constructor(options: CreateSqsConsumerOptions) {
     super()
@@ -24,16 +24,20 @@ class SqsConsumerImpl extends EventEmitter implements SqsConsumer {
     this.#loop = this.#poll(options.port, options.handleMessage)
   }
 
-  async close(): Promise<void> {
-    if (this.#closed) return
-    this.#closed = true
-    this.emit('closing')
+  /** Every caller gets the same promise, so each one waits for the batch in progress. */
+  close(): Promise<void> {
+    this.#closing ??= this.#shutdown()
+    return this.#closing
+  }
+
+  async #shutdown(): Promise<void> {
+    this.#emitSafely('closing')
     // Abort the in-flight (or next) long poll so shutdown does not wait out an idle receive.
     // Messages already pulled from a prior batch finish handling; an unfinished handler leaves its
     // message undeleted, and the visibility timeout redelivers it.
     this.#abortController.abort()
     await this.#loop
-    this.emit('closed')
+    this.#emitSafely('closed')
   }
 
   async #poll(port: SqsConsumerPort, handleMessage: SqsConsumerHandler): Promise<void> {
@@ -90,6 +94,8 @@ class SqsConsumerImpl extends EventEmitter implements SqsConsumer {
 
 function waitForBackoff(signal: AbortSignal, ms: number): Promise<void> {
   return new Promise((resolve) => {
+    // Abort events are not replayed: a listener may have closed the consumer already.
+    if (signal.aborted) return resolve()
     const finish = () => {
       globalThis.clearTimeout(timer)
       signal.removeEventListener('abort', finish)

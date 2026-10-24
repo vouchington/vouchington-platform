@@ -39,15 +39,12 @@ export function addSqsConsumerEventListeners(
     hooks.onMessageReceived?.(name, message.messageId)
   })
   consumer.on('message-deleted', (message: SqsMessage) => {
-    hooks.onMessageFinished?.(
-      name,
-      message.messageId,
-      'completed',
-      takeElapsedMs(startTimes, message),
-    )
+    const elapsedMs = takeElapsedMs(startTimes, message)
+    hooks.onMessageFinished?.(name, message.messageId, 'completed', elapsedMs)
   })
   consumer.on('message-failed', (message: SqsMessage, error: unknown) => {
-    hooks.onMessageFinished?.(name, message.messageId, 'failed', takeElapsedMs(startTimes, message))
+    const elapsedMs = takeElapsedMs(startTimes, message)
+    hooks.onMessageFinished?.(name, message.messageId, 'failed', elapsedMs)
     reportError(error, message.messageId)
   })
   // The handler succeeded and only the delete failed: the message is redelivered (and re-handled)
