@@ -74,6 +74,18 @@ describe('pruneToSchema', () => {
     expect(pruneToSchema({ anyOf: [{ type: 'null' }] }, [1])).toEqual([1])
   })
 
+  it('prunes against oneOf alternatives, as built by oneOfSchema and outcomeSchema', () => {
+    const union = {
+      type: 'object',
+      oneOf: [{ properties: { success: {}, id: {} } }, { properties: { success: {}, error: {} } }],
+    }
+
+    expect(pruneToSchema(union, { success: false, error: 'x', internal: 1 })).toEqual({
+      success: false,
+      error: 'x',
+    })
+  })
+
   it('resolves local $defs references, including factored schemas and self-references', () => {
     const item = {
       type: 'object',

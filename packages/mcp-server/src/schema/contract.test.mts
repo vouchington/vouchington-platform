@@ -124,6 +124,29 @@ describe('factorToolSchema', () => {
     expect(Object.keys(defs)).toEqual(['S1'])
   })
 
+  it('does not factor nodes beneath a nested $id resource', () => {
+    const node = { type: 'string', title: 'x'.repeat(60) }
+    const schema = {
+      type: 'object',
+      properties: {
+        a: node,
+        b: node,
+        inner: {
+          $id: 'https://example.test/inner',
+          type: 'object',
+          properties: { c: node, d: node },
+        },
+      },
+    }
+    const factored = factorToolSchema(schema)
+    const inner = (factored['properties'] as Record<string, unknown>)['inner']
+
+    expect(inner).toEqual(schema.properties.inner)
+    expect(JSON.stringify(inner)).not.toContain('#/$defs')
+    expect(Object.keys(factored['$defs'] as object)).toEqual(['S1'])
+    expect(closeDeclaredInputObjects(schema).properties).toBeDefined()
+  })
+
   it('is idempotent and cached per schema object', () => {
     const schema = { type: 'object', properties: { a: item, b: item } }
     const factored = factorToolSchema(schema)

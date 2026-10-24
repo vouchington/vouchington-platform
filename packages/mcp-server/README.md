@@ -40,3 +40,14 @@ const violation = findSchemaViolation(schema, args) // string | null, never cont
 - `objectSchema`, `successSchema`, `oneOfSchema`, `outcomeSchema`, `nullable`: output shape helpers.
 - `validateOptionOutputPointers` and `getOptionOutputSchema`: validate and resolve the local
   pointers that map each merged-tool option to its output branch.
+
+## Limitations
+
+The schema utilities target the schemas this package and its callers emit: JSON Schema 2020-12
+style objects with local `#/$defs/*` references. They do not handle:
+
+- draft-07 tuple `items` arrays (use `prefixItems`), which traversal and closing leave untouched;
+- remote or non-local `$ref` values, and `$dynamicRef` or `$anchor` resolution;
+- `$id` rebasing. Factoring skips any subtree that declares its own `$id`;
+- `dependentSchemas`, `unevaluatedProperties`, and other keywords that change which properties
+  are declared. `pruneToSchema` reads only `properties`, `items`, `anyOf`, `oneOf`, and local refs.

@@ -28,13 +28,18 @@ export function factorToolSchema(schema: Schema): Schema {
   let index = 1
   while (true) {
     const occurrences = new Map<string, { count: number; node: Schema }>()
-    visitSchema(result, (node, root) => {
-      if (root || '$ref' in node) return
-      const key = stableStringify(node)
-      const entry = occurrences.get(key)
-      if (entry) entry.count += 1
-      else occurrences.set(key, { count: 1, node })
-    })
+    visitSchema(
+      result,
+      (node, root) => {
+        if (root || '$ref' in node) return
+        const key = stableStringify(node)
+        const entry = occurrences.get(key)
+        if (entry) entry.count += 1
+        else occurrences.set(key, { count: 1, node })
+      },
+      true,
+      true,
+    )
     const candidates = [...occurrences.entries()]
       .filter(([key, entry]) => entry.count > 1 && key.length > 40)
       .toSorted((a, b) => b[0].length * b[1].count - a[0].length * a[1].count)
@@ -43,8 +48,12 @@ export function factorToolSchema(schema: Schema): Schema {
       const defs = result['$defs'] as Schema | undefined
       const name = nextDefinitionName(defs, index)
       const ref = `#/$defs/${name}`
-      const replaced = mapSchema(result, (current, root) =>
-        !root && stableStringify(current) === key ? { $ref: ref } : current,
+      const replaced = mapSchema(
+        result,
+        (current, root) => (!root && stableStringify(current) === key ? { $ref: ref } : current),
+        true,
+        false,
+        true,
       )
       const trial = { ...replaced, $defs: { ...defs, [name]: node } }
       if (JSON.stringify(trial).length < JSON.stringify(result).length) {

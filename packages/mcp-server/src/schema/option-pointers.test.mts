@@ -42,6 +42,15 @@ describe('selected output pointer publication', () => {
     })
   })
 
+  it('carries draft-07 definitions into a selected branch', () => {
+    const withDefinitions = { ...union, definitions: { Old: { type: 'string' } } }
+
+    expect(getOptionOutputSchema(withDefinitions, '#/anyOf/0')).toMatchObject({
+      definitions: { Old: { type: 'string' } },
+    })
+    expect(getOptionOutputSchema(union, '#/anyOf/0')).not.toHaveProperty('definitions')
+  })
+
   it.each([
     {},
     { oneOf: [] },

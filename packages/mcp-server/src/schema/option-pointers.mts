@@ -38,6 +38,7 @@ export function getOptionOutputSchema(outputSchema: Schema, pointer: string): Sc
   return {
     ...branches[Number(pointer.slice('#/anyOf/'.length))],
     $defs: outputSchema['$defs'] ?? {},
+    ...(outputSchema['definitions'] ? { definitions: outputSchema['definitions'] } : {}),
   }
 }
 

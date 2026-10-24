@@ -22,22 +22,25 @@ export function visitSchema(
   schema: Schema,
   visit: (node: Schema, root: boolean) => void,
   root = true,
+  skipIds = false,
 ): void {
+  // A nested `$id` starts its own resource, which references outside it cannot reach into.
+  if (!root && skipIds && typeof schema['$id'] === 'string') return
   visit(schema, root)
   for (const keyword of schemaMaps) {
     const entries = schema[keyword]
     if (isSchema(entries))
       for (const child of Object.values(entries))
-        if (isSchema(child)) visitSchema(child, visit, false)
+        if (isSchema(child)) visitSchema(child, visit, false, skipIds)
   }
   for (const keyword of schemaSingles) {
     const child = schema[keyword]
-    if (isSchema(child)) visitSchema(child, visit, false)
+    if (isSchema(child)) visitSchema(child, visit, false, skipIds)
   }
   for (const keyword of schemaArrays) {
     const children = schema[keyword]
     if (Array.isArray(children))
-      for (const child of children) if (isSchema(child)) visitSchema(child, visit, false)
+      for (const child of children) if (isSchema(child)) visitSchema(child, visit, false, skipIds)
   }
 }
 
@@ -47,7 +50,9 @@ export function mapSchema(
   transform: (node: Schema, root: boolean) => Schema,
   root = true,
   visitDefinitions = false,
+  skipIds = false,
 ): Schema {
+  if (!root && skipIds && typeof schema['$id'] === 'string') return schema
   const mapped: Schema = { ...schema }
   for (const keyword of schemaMaps) {
     const entries = schema[keyword]
@@ -55,19 +60,20 @@ export function mapSchema(
       mapped[keyword] = Object.fromEntries(
         Object.entries(entries).map(([key, child]) => [
           key,
-          isSchema(child) ? mapSchema(child, transform, false, visitDefinitions) : child,
+          isSchema(child) ? mapSchema(child, transform, false, visitDefinitions, skipIds) : child,
         ]),
       )
   }
   for (const keyword of schemaSingles) {
     const child = schema[keyword]
-    if (isSchema(child)) mapped[keyword] = mapSchema(child, transform, false, visitDefinitions)
+    if (isSchema(child))
+      mapped[keyword] = mapSchema(child, transform, false, visitDefinitions, skipIds)
   }
   for (const keyword of schemaArrays) {
     const children = schema[keyword]
     if (Array.isArray(children))
       mapped[keyword] = children.map((child) =>
-        isSchema(child) ? mapSchema(child, transform, false, visitDefinitions) : child,
+        isSchema(child) ? mapSchema(child, transform, false, visitDefinitions, skipIds) : child,
       )
   }
   if (visitDefinitions) {
@@ -77,7 +83,7 @@ export function mapSchema(
         mapped[keyword] = Object.fromEntries(
           Object.entries(definitions).map(([key, child]) => [
             key,
-            isSchema(child) ? mapSchema(child, transform, false, true) : child,
+            isSchema(child) ? mapSchema(child, transform, false, true, skipIds) : child,
           ]),
         )
     }
