@@ -260,6 +260,16 @@
       "import": "./dist/http-link-pagination.mjs",
       "default": "./dist/http-link-pagination.mjs"
     },
+    "./oauth-pkce": {
+      "types": "./dist/oauth-pkce.d.mts",
+      "import": "./dist/oauth-pkce.mjs",
+      "default": "./dist/oauth-pkce.mjs"
+    },
+    "./oauth-popup": {
+      "types": "./dist/oauth-popup.d.mts",
+      "import": "./dist/oauth-popup.mjs",
+      "default": "./dist/oauth-popup.mjs"
+    },
     "./http-signatures": {
       "types": "./dist/http-signatures.d.mts",
       "import": "./dist/http-signatures.mjs",

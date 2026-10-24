@@ -78,6 +78,10 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
 - `http-signatures`: Node-only (`node:crypto`) Cavage-12 HTTP Signatures. Callers pass signed
   headers, allowed algorithms, and `maxAgeSeconds` on both sign and verify. The package has no
   default header set or product keyId policy.
+- `oauth-pkce`: WebCrypto `generateCodeVerifier`, `generateState`, and S256 `generateCodeChallenge`.
+- `oauth-popup` (browser): `openOAuthPopup`, `buildAuthorizationUrl`, `runPopupOAuthLogin`, and
+  `OAuthCancelledError`. The flow takes an injectable `window`; callers keep their own in-flight
+  guard and map the code, PKCE verifier, and redirect URI to their token shape.
 - `collections`, `async`, and `stable-json`: collection deduplication/merging, bounded async mapping,
   and deterministic JSON serialization.
 - `feature-flags`: base64 JSON feature-flag cookie parsing and serialization with caller-injected

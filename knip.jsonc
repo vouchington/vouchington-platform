@@ -50,11 +50,14 @@
         "src/json-ld.mts!",
         "src/seo-metadata.mts!",
         "src/speculation-rules.mts!",
+        "src/oauth-pkce.mts!",
+        "src/oauth-popup.mts!",
       ],
       "project": [
         "src/**/*.mts!",
         "!src/**/*.test.mts!",
         "!src/**/http-signatures-test-helpers.mts!",
+        "!src/**/oauth-popup-test-helpers.mts!",
       ],
     },
     "packages/session-jwt": {
