@@ -240,6 +240,11 @@ expanded to), or nothing to mark the requested ids.
 Contract: never reuse a query object to lock again after rolling back a savepoint taken on it. The
 held set cannot see the rollback, so a lock released by it would be treated as still held.
 
+Lock order is JavaScript string order of the normalized ids. Pass every id for a namespace in one
+canonical form, and make any other code that takes the same namespace keys acquire them in the
+same order, or the two can deadlock. Lower-case canonical UUIDs (the default normalization) sort
+the same way as PostgreSQL's `uuid` ordering, so SQL that orders by a `uuid` column is compatible.
+
 ## Conventions
 
 - UUIDv7 primary keys

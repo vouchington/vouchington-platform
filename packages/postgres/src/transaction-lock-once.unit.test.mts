@@ -153,6 +153,26 @@ describe('createTransactionLockOnce', () => {
     expect(second).toHaveBeenCalledTimes(1)
   })
 
+  it('orders lower-case UUIDs the way PostgreSQL orders uuid values', async () => {
+    const query = fakeQuery()
+    const { lock } = createTransactionLockOnce(options)
+    const ids = [
+      'F0000000-0000-7000-8000-000000000000',
+      '0a000000-0000-7000-8000-000000000000',
+      '9f000000-0000-7000-8000-000000000000',
+    ]
+    await lock(query, ids)
+    // Byte order of the hex digits: 0-9 sort before a-f, matching uuid comparison.
+    expect(query.mock.calls[0]![1]).toEqual([
+      'ns:',
+      [
+        '0a000000-0000-7000-8000-000000000000',
+        '9f000000-0000-7000-8000-000000000000',
+        'f0000000-0000-7000-8000-000000000000',
+      ],
+    ])
+  })
+
   it('rejects unusable annotations', () => {
     expect(() => createTransactionLockOnce({ ...options, annotation: '  ' })).toThrow(TypeError)
     expect(() => createTransactionLockOnce({ ...options, annotation: 'a */ SELECT 1' })).toThrow(
