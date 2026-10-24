@@ -1,0 +1,45 @@
+{
+  "name": "@vouchington/mcp-server",
+  "version": "0.0.0",
+  "description": "Generic MCP server building blocks: structural tool types, JSON Schema utilities, merged tools, bounded results, untrusted-output wrapping, and a stateless HTTP handler.",
+  "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/mcp-server#readme",
+  "license": "MIT",
+  "author": "Jonathan Ong",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vouchington/vouchington-platform.git",
+    "directory": "packages/mcp-server"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "exports": {
+    "./types": {
+      "types": "./dist/types.d.mts",
+      "import": "./dist/types.mjs",
+      "default": "./dist/types.mjs"
+    },
+    "./schema": {
+      "types": "./dist/schema/index.d.mts",
+      "import": "./dist/schema/index.mjs",
+      "default": "./dist/schema/index.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

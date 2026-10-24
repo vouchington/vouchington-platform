@@ -100,6 +100,10 @@
       "entry": ["src/index.mts!"],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
     },
+    "packages/mcp-server": {
+      "entry": ["src/types.mts!", "src/schema/index.mts!"],
+      "project": ["src/**/*.mts!", "!src/**/*.test.mts!", "!src/**/test-helpers.mts!"],
+    },
     "packages/script-loader": {
       "entry": ["src/index.mts!", "src/turnstile.mts!", "src/testing.mts!"],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
