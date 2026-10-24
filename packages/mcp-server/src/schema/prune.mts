@@ -9,8 +9,12 @@ function branchesOf(
   schema: JsonSchema,
   seen: readonly string[] = [],
 ): JsonSchema[] {
+  // Declarations written beside `anyOf` apply too, so the node itself is one of the alternatives.
   if (Array.isArray(schema['anyOf']))
-    return (schema['anyOf'] as JsonSchema[]).flatMap((branch) => branchesOf(root, branch, seen))
+    return [
+      schema,
+      ...(schema['anyOf'] as JsonSchema[]).flatMap((branch) => branchesOf(root, branch, seen)),
+    ]
   const name =
     typeof schema['$ref'] === 'string' ? LOCAL_DEFINITION.exec(schema['$ref'])?.[1] : undefined
   const definitions = root['$defs'] as Record<string, JsonSchema> | undefined
@@ -42,22 +46,27 @@ export function pruneToSchema(schema: JsonSchema, value: unknown): unknown {
 function prune(root: JsonSchema, schema: JsonSchema, value: unknown): unknown {
   const branches = branchesOf(root, schema)
   if (Array.isArray(value)) {
-    const items = branches.find((branch) => branch['items'])?.['items'] as JsonSchema | undefined
-    return items ? value.map((item) => prune(root, items, item)) : value
+    const alternatives = branches.flatMap((branch) =>
+      branch['items'] ? [branch['items'] as JsonSchema] : [],
+    )
+    if (alternatives.length === 0) return value
+    const items = alternatives.length === 1 ? alternatives[0]! : { anyOf: alternatives }
+    return value.map((item) => prune(root, items, item))
   }
   if (value === null || typeof value !== 'object') return value
 
-  const declared: Record<string, JsonSchema[]> = {}
+  const declared = new Map<string, JsonSchema[]>()
   for (const branch of branches) {
     const properties = branch['properties'] as Record<string, JsonSchema> | undefined
-    for (const [key, child] of Object.entries(properties ?? {})) (declared[key] ??= []).push(child)
+    for (const [key, child] of Object.entries(properties ?? {}))
+      declared.set(key, [...(declared.get(key) ?? []), child])
   }
-  if (Object.keys(declared).length === 0) return value
+  if (declared.size === 0) return value
   return Object.fromEntries(
     Object.entries(value)
-      .filter(([key]) => key in declared)
+      .filter(([key]) => declared.has(key))
       .map(([key, child]) => {
-        const alternatives = declared[key]!
+        const alternatives = declared.get(key)!
         return [
           key,
           prune(

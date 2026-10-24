@@ -54,6 +54,26 @@ describe('pruneToSchema', () => {
     })
   })
 
+  it('keeps every alternative item shape, sibling declarations and prototype-named keys', () => {
+    const items = {
+      anyOf: [
+        { type: 'array', items: { properties: { a: {} } } },
+        { type: 'array', items: { properties: { b: {} } } },
+      ],
+    }
+    const withSiblings = {
+      properties: { id: {}, constructor: {} },
+      anyOf: [{ properties: { a: {} } }, { properties: { b: {} } }],
+    }
+
+    expect(pruneToSchema(items, [{ b: 'keep', c: 'drop' }])).toEqual([{ b: 'keep' }])
+    expect(pruneToSchema(withSiblings, { id: 'keep', a: 1, x: 2 })).toEqual({ id: 'keep', a: 1 })
+    expect(pruneToSchema(withSiblings, { constructor: 'kept', toString: 'dropped' })).toEqual({
+      constructor: 'kept',
+    })
+    expect(pruneToSchema({ anyOf: [{ type: 'null' }] }, [1])).toEqual([1])
+  })
+
   it('resolves local $defs references, including factored schemas and self-references', () => {
     const item = {
       type: 'object',
