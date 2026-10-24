@@ -132,6 +132,30 @@ describe('WorkerLogger', () => {
     expect(lines[3]).toContain('[unformattable error]')
   })
 
+  it('release drops the timing entry without logging', () => {
+    const bigint = vi.spyOn(process.hrtime, 'bigint')
+    bigint.mockReturnValueOnce(0n)
+    const { logger, lines } = create()
+
+    logger.onActive('q', job())
+    logger.release('q', job())
+    logger.onFailed('q', job({ processedOn: 1, finishedOn: 8 }), 'x')
+
+    expect(lines).toHaveLength(1)
+    expect(lines[0]).toContain('  7ms')
+  })
+
+  it('prints a supplied payload and error text instead of the job data and error', () => {
+    const { logger, lines } = create({ level: 'info' })
+
+    logger.onCompleted('q', job(), { safe: true })
+    logger.onFailed('q', job(), new Error('ignored'), { safe: 1 }, 'full\ntext')
+
+    expect(lines[0]).toContain('{"safe":true}')
+    expect(lines[1]).toContain('{"safe":1} full\ntext')
+    expect(lines.join('')).not.toContain('"a":1')
+  })
+
   it('writes to stdout by default', () => {
     const write = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
 

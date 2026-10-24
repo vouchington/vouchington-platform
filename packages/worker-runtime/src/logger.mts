@@ -45,7 +45,13 @@ export class WorkerLogger {
     this.#startTimes.set(`${queueName}:${job.id}`, process.hrtime.bigint())
   }
 
-  onCompleted(queueName: string, job: Job): void {
+  /** Releases a job's timing entry without logging, for failures that are suppressed. */
+  release(queueName: string, job: Job): void {
+    this.#startTimes.delete(`${queueName}:${job.id}`)
+  }
+
+  /** `data` is the payload to print; it defaults to `job.data`, so callers should pass a scrubbed one. */
+  onCompleted(queueName: string, job: Job, data: unknown = job.data): void {
     if (!this.#enabled) return
     const key = `${queueName}:${job.id}`
     if (this.#level === 'error') {
@@ -53,13 +59,26 @@ export class WorkerLogger {
       return
     }
     const ms = this.#takeElapsedMs(key, job)
-    this.#print(`${GREEN} ok${RESET}`, ms, `${queueName}/${job.name}`, formatData(job.data))
+    this.#print(`${GREEN} ok${RESET}`, ms, `${queueName}/${job.name}`, formatData(data))
   }
 
-  onFailed(queueName: string, job: Job, error: unknown): void {
+  /** `errorText`, when given, is printed as is instead of the formatted `error`. */
+  onFailed(
+    queueName: string,
+    job: Job,
+    error: unknown,
+    data: unknown = job.data,
+    errorText?: string,
+  ): void {
     if (!this.#enabled) return
     const ms = this.#takeElapsedMs(`${queueName}:${job.id}`, job)
-    this.#print(`${RED}ERR${RESET}`, ms, `${queueName}/${job.name}`, formatData(job.data), error)
+    this.#print(
+      `${RED}ERR${RESET}`,
+      ms,
+      `${queueName}/${job.name}`,
+      formatData(data),
+      errorText ?? formatError(error),
+    )
   }
 
   #takeElapsedMs(key: string, job: Job): number {
@@ -69,9 +88,9 @@ export class WorkerLogger {
     return job.processedOn && job.finishedOn ? job.finishedOn - job.processedOn : 0
   }
 
-  #print(status: string, ms: number, label: string, data: string, error?: unknown): void {
+  #print(status: string, ms: number, label: string, data: string, error?: string): void {
     const timing = this.#colorTiming(ms, `${Math.round(ms)}ms`.padStart(5, ' '))
-    const suffix = error === undefined ? '' : ` ${formatError(error)}`
+    const suffix = error === undefined ? '' : ` ${error}`
     this.#write(`${status} ${timing} ${label} ${data}${suffix}\n`)
   }
 

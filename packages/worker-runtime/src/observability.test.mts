@@ -176,6 +176,55 @@ describe('addWorkerEventListeners', () => {
     expect(lines[0]).toContain('ERR')
   })
 
+  it('logs scrubbed payloads only, and omits them without a scrubber', () => {
+    const lines: string[] = []
+    const write = (line: string) => void lines.push(line)
+    const scrubbed = setup({
+      logger: new WorkerLogger({ enabled: true, level: 'info', write }),
+      scrubJobData: () => ({ status: 'ok' }),
+    })
+    const bare = setup({ logger: new WorkerLogger({ enabled: true, level: 'info', write }) })
+    const empty = setup({
+      logger: new WorkerLogger({ enabled: true, level: 'info', write }),
+      scrubJobData: () => undefined,
+    })
+
+    scrubbed.worker.emit('completed', makeJob())
+    scrubbed.worker.emit('failed', makeJob(), new Error('x'))
+    bare.worker.emit('completed', makeJob())
+    bare.worker.emit('failed', makeJob(), new Error('x'))
+    empty.worker.emit('completed', makeJob())
+    empty.worker.emit('failed', makeJob(), new Error('x'))
+
+    expect(lines.join('')).not.toContain('secret')
+    expect(lines[0]).toContain('{"status":"ok"}')
+    expect(lines[1]).toContain('{"status":"ok"}')
+    expect(lines[2]).toContain('"[omitted]"')
+    expect(lines[3]).toContain('"[omitted]"')
+    expect(lines[4]).toContain(' {}')
+    expect(lines[5]).toContain(' {}')
+  })
+
+  it('prints the injected error format through an enabled logger', () => {
+    const lines: string[] = []
+    const logger = new WorkerLogger({ enabled: true, write: (l) => lines.push(l) })
+    const { worker } = setup({ logger, formatError: () => `tree\n  cause: ${'x'.repeat(200)}` })
+
+    worker.emit('failed', makeJob(), new Error('failed'))
+
+    expect(lines[0]).toContain(`tree\n  cause: ${'x'.repeat(200)}`)
+  })
+
+  it('releases logger timing for suppressed expected failures', () => {
+    const logger = new WorkerLogger({ enabled: true, write: () => undefined })
+    const release = vi.spyOn(logger, 'release')
+    const { worker } = setup({ logger, isExpectedError: () => true })
+
+    worker.emit('failed', makeJob(), new Error('expected'))
+
+    expect(release).toHaveBeenCalledWith('queue-a', expect.anything())
+  })
+
   it('skips console output for expected errors but still tracks and reports them', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     const { worker, hooks } = setup({ isExpectedError: () => true })

@@ -47,7 +47,7 @@ export function addWorkerEventListeners(worker: Worker, hooks: WorkerObservabili
 
   worker.on('failed', (job: Job | undefined, error: Error) => onFailed(queue, hooks, job, error))
   worker.on('completed', (job: Job) => {
-    logger?.onCompleted(queue, job)
+    if (logger?.isEnabled()) logger.onCompleted(queue, job, loggableData(hooks, job.data))
     hooks.onJobCompleted?.(queue, job.name, 'completed', getDuration(job))
   })
 }
@@ -60,7 +60,8 @@ function onFailed(
 ): void {
   if (job) {
     const jobData = hooks.scrubJobData?.(job.data)
-    if (!hooks.isExpectedError?.(error)) logFailure(queue, hooks, job, error, jobData)
+    if (hooks.isExpectedError?.(error)) hooks.logger?.release(queue, job)
+    else logFailure(queue, hooks, job, error, jobData)
     hooks.onJobCompleted?.(queue, job.name, 'failed', getDuration(job))
 
     // Attach job context so the error reporter receives queue and job metadata.
@@ -89,7 +90,8 @@ function logFailure(
   jobData: Record<string, unknown> | undefined,
 ): void {
   if (hooks.logger?.isEnabled()) {
-    hooks.logger.onFailed(queue, job, error)
+    const text = hooks.formatError?.(error)
+    hooks.logger.onFailed(queue, job, error, jobData ?? (hooks.scrubJobData ? {} : OMITTED), text)
     return
   }
   console.error(
@@ -99,6 +101,13 @@ function logFailure(
     getDuration(job),
     hooks.formatError?.(error) ?? error.stack ?? String(error),
   )
+}
+
+const OMITTED = '[omitted]'
+
+// Payloads reach logs only through the injected scrubber; without one they are omitted.
+function loggableData(hooks: WorkerObservabilityHooks, data: unknown): unknown {
+  return hooks.scrubJobData ? (hooks.scrubJobData(data) ?? {}) : OMITTED
 }
 
 function getDuration(job: Job): number {
