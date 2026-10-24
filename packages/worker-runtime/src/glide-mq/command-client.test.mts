@@ -58,6 +58,43 @@ describe('createRetryingCommandClient', () => {
     await expect(handle.client.get('a')).rejects.toThrow('connect failed')
   })
 
+  it('retries the connection after a failed attempt', async () => {
+    let attempts = 0
+    const { handle, real } = setup({
+      connect: async () => {
+        attempts += 1
+        if (attempts === 1) throw new Error('down')
+        return real
+      },
+    })
+
+    await expect(handle.client.get('a')).rejects.toThrow('down')
+    await expect(handle.client.get('a')).resolves.toBe('value:a')
+    expect(attempts).toBe(2)
+  })
+
+  it('refuses to connect after close, so a late command cannot leak a client', async () => {
+    const { handle, connect } = setup()
+    await handle.close()
+
+    await expect(handle.client.get('a')).rejects.toThrow('is closed')
+    expect(connect).not.toHaveBeenCalled()
+  })
+
+  it('does not fabricate absent properties such as clusterScan', () => {
+    const { handle } = setup()
+    expect((handle.client as { clusterScan?: unknown }).clusterScan).toBeUndefined()
+
+    const custom = createRetryingCommandClient<Fake>({
+      name: 'x',
+      connect: async () => ({}) as Fake,
+      retry: (fn) => fn(),
+      absentProperties: ['other'],
+    })
+    expect((custom.client as { other?: unknown }).other).toBeUndefined()
+    expect(typeof (custom.client as { clusterScan?: unknown }).clusterScan).toBe('function')
+  })
+
   it('closes safely before connect without opening a connection', async () => {
     const { handle, connect, close } = setup()
 

@@ -14,6 +14,12 @@ export interface RetryingCommandClientOptions<C extends object> {
   retry<T>(fn: () => Promise<T>, context: RetryContext): Promise<T>
   /** Value returned for `proxy.constructor`, for callers that check the client class. */
   clientConstructor?: unknown
+  /**
+   * Property names the proxy reports as absent instead of fabricating a command. glide-mq detects
+   * cluster clients by `typeof client.clusterScan === 'function'`, so a standalone client must not
+   * appear to have it. Default `['clusterScan']`.
+   */
+  absentProperties?: readonly string[]
 }
 
 export interface RetryingCommandClient<C extends object> {
@@ -34,19 +40,29 @@ export function createRetryingCommandClient<C extends object>(
   let connected: C | null = null
   let connecting: Promise<C> | null = null
   let closing: Promise<void> | null = null
+  const absent = new Set<string | symbol>(options.absentProperties ?? ['clusterScan'])
 
   const getRealClient = (): Promise<C> => {
-    connecting ??= options.connect().then((real) => {
-      connected = real
-      return real
-    })
+    // A closed client never opens a connection, so a late command cannot leak one.
+    if (closing) return Promise.reject(new Error(`Command client "${options.name}" is closed`))
+    connecting ??= options.connect().then(
+      (real) => {
+        connected = real
+        return real
+      },
+      (error: unknown) => {
+        // Forget a failed attempt so later commands retry the connection.
+        connecting = null
+        throw error
+      },
+    )
     return connecting
   }
 
   const client = new Proxy({} as C, {
     get(target, property) {
       // A thenable client would be unwrapped by `await`.
-      if (property === 'then') return undefined
+      if (property === 'then' || absent.has(property)) return undefined
       if (property === 'constructor') {
         return 'clientConstructor' in options ? options.clientConstructor : target.constructor
       }
