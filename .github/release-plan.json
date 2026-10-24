@@ -1,20 +1,13 @@
 {
-  "changedManifests": ["packages/embeds/package.json", "packages/http-transport/package.json"],
+  "changedManifests": ["packages/postgres/package.json"],
   "releases": [
     {
-      "bump": "minor",
-      "directory": "http-transport",
-      "fromVersion": "0.0.0",
-      "name": "@vouchington/http-transport",
-      "toVersion": "0.1.0"
-    },
-    {
-      "bump": "minor",
-      "directory": "embeds",
-      "fromVersion": "0.0.2",
-      "name": "@vouchington/embeds",
-      "toVersion": "0.1.0"
+      "bump": "patch",
+      "directory": "postgres",
+      "fromVersion": "0.0.17",
+      "name": "@vouchington/postgres",
+      "toVersion": "0.0.18"
     }
   ],
-  "selectedPackage": "@vouchington/http-transport"
+  "selectedPackage": "@vouchington/postgres"
 }
