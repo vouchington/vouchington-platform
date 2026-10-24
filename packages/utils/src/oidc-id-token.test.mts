@@ -36,18 +36,25 @@ async function codeOf(promise: Promise<unknown>): Promise<string> {
 }
 
 describe('createOidcIdTokenVerifier', () => {
-  it('returns claims for a valid token and sends the signal to the JWKS fetch', async () => {
+  it('returns claims for a valid token without forwarding the caller signal to the shared fetch', async () => {
     const { verifier, fetch } = setup()
     const signal = new AbortController().signal
     const claims = await verifier.verify(signToken(key, validClaims()), { signal })
     expect(claims.sub).toBe('user-1')
-    expect(fetch).toHaveBeenCalledWith('https://issuer.example.com/jwks', { signal })
+    expect(fetch).toHaveBeenCalledWith('https://issuer.example.com/jwks')
   })
 
-  it('omits init when no signal is given and accepts array audiences', async () => {
+  it('rejects a missing, empty, or non-string sub', async () => {
+    const { verifier } = setup()
+    for (const sub of [undefined, null, '', 42, { id: 'x' }]) {
+      expect(await codeOf(verifier.verify(signToken(key, validClaims({ sub }))))).toBe('format')
+    }
+  })
+
+  it('accepts array audiences', async () => {
     const { verifier, fetch } = setup()
     await verifier.verify(signToken(key, validClaims({ aud: ['x', 'client-2'] })))
-    expect(fetch).toHaveBeenCalledWith('https://issuer.example.com/jwks', undefined)
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 
   it('uses Date.now and the default skew when not injected', async () => {
@@ -154,17 +161,41 @@ describe('createOidcIdTokenVerifier', () => {
       expect(fetch).toHaveBeenCalledTimes(2)
     })
 
-    it('forces exactly one refresh on a kid miss, then fails', async () => {
+    it('does not refetch for an unknown kid right after a fetch', async () => {
       const { verifier, fetch } = setup()
       const unknown = makeKey('rotated')
       expect(await codeOf(verifier.verify(signToken(unknown, validClaims())))).toBe('key_not_found')
+      expect(fetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('refreshes once per cooldown on unknown kids, and joins concurrent refreshes', async () => {
+      const { verifier, fetch, advance } = setup()
+      await verifier.verify(signToken(key, validClaims()))
+      advance(60_000)
+      const unknown = signToken(makeKey('rotated'), validClaims())
+      const results = await Promise.all(
+        Array.from({ length: 5 }, () => codeOf(verifier.verify(unknown))),
+      )
+      expect(results).toEqual(Array(5).fill('key_not_found'))
+      expect(fetch).toHaveBeenCalledTimes(2)
+      for (let i = 0; i < 10; i += 1) await codeOf(verifier.verify(unknown))
+      expect(fetch).toHaveBeenCalledTimes(2)
+      advance(60_000)
+      await codeOf(verifier.verify(unknown))
+      expect(fetch).toHaveBeenCalledTimes(3)
+    })
+
+    it('honors a custom refresh cooldown', async () => {
+      const { verifier, fetch, advance } = setup({ refreshCooldownMs: 10 })
+      await verifier.verify(signToken(key, validClaims()))
+      advance(10)
+      await codeOf(verifier.verify(signToken(makeKey('rotated'), validClaims())))
       expect(fetch).toHaveBeenCalledTimes(2)
     })
 
-    it('picks up a rotated key after the forced refresh', async () => {
-      const rotated = makeKey('k2')
-      const responses = [[key.jwk], [key.jwk, rotated.jwk]]
-      const fetch = vi.fn(async () => jsonResponse({ keys: responses.shift() }))
+    it('isolates one caller cancelling from other callers sharing the fetch', async () => {
+      let release!: (response: Response) => void
+      const fetch = vi.fn(() => new Promise<Response>((resolve) => (release = resolve)))
       const verifier = createOidcIdTokenVerifier({
         jwksUri: 'https://issuer.example.com/jwks',
         issuers: ['https://issuer.example.com'],
@@ -172,8 +203,44 @@ describe('createOidcIdTokenVerifier', () => {
         fetch,
         now: () => NOW_MS,
       })
+      const token = signToken(key, validClaims())
+      const controller = new AbortController()
+      const cancelled = verifier.verify(token, { signal: controller.signal })
+      const surviving = verifier.verify(token)
+      const other = verifier.verify(token, { signal: new AbortController().signal })
+      controller.abort(new Error('caller gave up'))
+      await expect(cancelled).rejects.toThrow('caller gave up')
+      release(jsonResponse({ keys: [key.jwk] }))
+      await expect(surviving).resolves.toMatchObject({ sub: 'user-1' })
+      await expect(other).resolves.toMatchObject({ sub: 'user-1' })
+      expect(fetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('rejects immediately for an already-aborted signal', async () => {
+      const { verifier } = setup()
+      const signal = AbortSignal.abort(new Error('already aborted'))
+      await expect(verifier.verify(signToken(key, validClaims()), { signal })).rejects.toThrow(
+        'already aborted',
+      )
+    })
+
+    it('picks up a rotated key after the forced refresh', async () => {
+      const rotated = makeKey('k2')
+      const responses = [[key.jwk], [key.jwk, rotated.jwk]]
+      const fetch = vi.fn(async () => jsonResponse({ keys: responses.shift() }))
+      let now = NOW_MS
+      const verifier = createOidcIdTokenVerifier({
+        jwksUri: 'https://issuer.example.com/jwks',
+        issuers: ['https://issuer.example.com'],
+        audiences: () => ['client-1'],
+        fetch,
+        now: () => now,
+      })
       await verifier.verify(signToken(key, validClaims()))
-      await expect(verifier.verify(signToken(rotated, validClaims()))).resolves.toBeTruthy()
+      now += 60_000
+      await expect(
+        verifier.verify(signToken(rotated, validClaims({ exp: NOW_S + 1000 }))),
+      ).resolves.toBeTruthy()
       expect(fetch).toHaveBeenCalledTimes(2)
     })
 
