@@ -130,7 +130,7 @@ describe('facebookProvider', () => {
       grant_type: 'fb_exchange_token',
       fb_exchange_token: 'short',
     })
-    expect(init(2)).toEqual({ headers: { Authorization: 'Bearer long' } })
+    expect(init(2)).toEqual({ headers: { Authorization: 'Bearer long' }, redirect: 'error' })
     expect(result).toEqual({
       tokens: { accessToken: 'long', accessTokenExpiresAt: new Date(NOW + 5_184_000_000) },
       profile: {
