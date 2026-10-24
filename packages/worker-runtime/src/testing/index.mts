@@ -33,3 +33,8 @@ export {
   UnrecoverableError,
   WaitingChildrenError,
 } from 'glide-mq/testing'
+export {
+  getTestWorkerProcessorDecorator,
+  setTestWorkerProcessorDecorator,
+  type TestWorkerProcessorDecorator,
+} from '../test-processor-decorator.mts'

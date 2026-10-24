@@ -34,7 +34,7 @@ the migration advisory lock is per database, and `VITEST_MAX_WORKERS` overrides 
 - `@vouchington/session-jwt` — portable RS512 JWT primitives
 - `@vouchington/pagination` — cursor codecs, guards, and configurable query parsing
 - `@vouchington/queue-errors` — GlideMQ retry classification and rate-limit helpers
-- `@vouchington/worker-runtime` — queue selection, GlideMQ worker/schedule loading, and `/testing` Vitest harness
+- `@vouchington/worker-runtime` — queue selection, GlideMQ worker/schedule loading, `/glide-mq` runtime factory, command client and stats, and `/testing` Vitest harness
 - `@vouchington/crawler-html` — HTML content decoding and extraction
 - `@vouchington/embeds` — policy-injected HTML unfurl and oEmbed resolution
 - `@vouchington/rss-parser` — RSS, Atom, and JSON feed parsing

@@ -75,7 +75,7 @@
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
     },
     "packages/worker-runtime": {
-      "entry": ["src/index.mts!", "src/testing/index.mts!"],
+      "entry": ["src/index.mts!", "src/testing/index.mts!", "src/glide-mq/index.mts!"],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
     },
     "packages/rate-limit": {
