@@ -6,7 +6,9 @@ import type {
 } from './types.mts'
 
 /**
- * Validates manifests: nonempty trimmed names, unique scheduler keys across all manifests,
+ * Validates manifests: nonempty trimmed names, one manifest per queue (stale-scheduler removal is
+ * scoped to a queue, so two manifests for one queue would delete each other's schedulers),
+ * unique scheduler keys across all manifests,
  * `data` xor `dataFactory`, a valid repeat for non-thunk repeats (thunks are validated when they
  * are resolved at registration), and a nonempty list of operator surfaces, each passed to
  * `validateSurface`.
@@ -16,8 +18,12 @@ export function validateScheduledJobManifests<J extends ScheduledJobDefinition<a
   { validateSurface }: ManifestValidationOptions<J> = {},
 ): void {
   const schedulerKeys = new Set<string>()
+  const queueNames = new Set<string>()
   for (const manifest of manifests) {
     assertNonEmptyString(manifest.queueName, 'queueName')
+    if (queueNames.has(manifest.queueName))
+      throw new Error(`Duplicate manifest for queue: ${manifest.queueName}`)
+    queueNames.add(manifest.queueName)
     for (const job of manifest.jobs) {
       assertNonEmptyString(job.schedulerId, 'schedulerId')
       assertNonEmptyString(job.template.name, 'job name')

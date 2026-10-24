@@ -47,14 +47,15 @@ describe('validateScheduledJobManifests', () => {
     expect(fn).toThrow(message)
   })
 
-  it('rejects duplicate scheduler keys, within and across manifests', () => {
+  it('rejects duplicate scheduler keys and a second manifest for the same queue', () => {
     expect(() => validate([job(), job()])).toThrow('Duplicate scheduled job: queue/daily')
+    // Stale-scheduler removal is per queue, so a second manifest would remove the first's jobs.
     expect(() =>
       validateScheduledJobManifests([
         { queueName: 'q', jobs: [job()] },
-        { queueName: 'q', jobs: [job()] },
+        { queueName: 'q', jobs: [job({ schedulerId: 'hourly' })] },
       ]),
-    ).toThrow('Duplicate scheduled job: q/daily')
+    ).toThrow('Duplicate manifest for queue: q')
     expect(() =>
       validateScheduledJobManifests([
         { queueName: 'a', jobs: [job()] },
