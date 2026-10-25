@@ -52,7 +52,10 @@ rest through hooks:
 - `register` / `unregister` track every queue, flow producer, and worker for shutdown.
 - `guardAdd({ queueName, jobName, opts })` runs on `add`, `addBulk`, and `upsertJobScheduler` and
   returns `'skip'` or `{ opts }`. Maintenance queues never guard, so they can never add jobs.
-- `wrapProcessor` / `wrapBatchProcessor` decorate processors before they reach the worker.
+- `wrapProcessor(processor, queueName, workerOptions)` and
+  `wrapBatchProcessor(processor, queueName, workerOptions)` decorate processors before they reach
+  the worker. `workerOptions` is the original per-worker options object (or `{}` when omitted),
+  before runtime defaults are applied.
 - `defaultMaxStalledCount` (default 2) and `prefix` are defaults that callers can override per worker.
 - `createDedicatedCommandClient(name)` backs workers created with `dedicatedCommandClient: true`;
   the client closes with the worker, even when the worker close fails, and a failed client close

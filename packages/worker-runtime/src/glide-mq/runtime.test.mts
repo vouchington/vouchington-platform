@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { setTestWorkerProcessorDecorator } from '../test-processor-decorator.mts'
-import { createGlideMqRuntime, type GlideMqRuntimeConfig } from './runtime.mts'
+import {
+  createGlideMqRuntime,
+  type GlideMqRuntimeConfig,
+  type RuntimeWorkerOptions,
+} from './runtime.mts'
 
 const created = vi.hoisted(() => ({
   queues: [] as { name: string; options: any; add: ReturnType<typeof vi.fn> }[],
@@ -179,6 +183,22 @@ describe('createGlideMqRuntime workers', () => {
     expect(inner.wrapped).toBe(true)
   })
 
+  it("passes each worker's exact options to its processor wrapper", () => {
+    const wrapProcessor = vi.fn(
+      (processor: any, _queue: string, _options: RuntimeWorkerOptions) => processor,
+    )
+    const { runtime } = setup({ wrapProcessor })
+    const options = { concurrency: 3, dedicatedCommandClient: true }
+    const processor = async () => 1
+
+    runtime.createWorker('configured', processor, options)
+    runtime.createWorker('default', processor)
+
+    expect(wrapProcessor).toHaveBeenNthCalledWith(1, processor, 'configured', options)
+    expect(wrapProcessor.mock.calls[0]?.[2]).toBe(options)
+    expect(wrapProcessor).toHaveBeenNthCalledWith(2, processor, 'default', {})
+  })
+
   it('does not wrap when neither wrapper nor decorator is set', () => {
     const { runtime } = setup()
     const processor = async () => 1
@@ -194,10 +214,11 @@ describe('createGlideMqRuntime workers', () => {
     setTestWorkerProcessorDecorator(decorator)
     const { runtime } = setup({ wrapBatchProcessor })
 
-    runtime.createBatchWorker('q', async () => [], { batch: { size: 5 } })
+    const options = { batch: { size: 5 } }
+    runtime.createBatchWorker('q', async () => [], options)
 
     expect(created.workers[0]?.options.batch).toEqual({ size: 5 })
-    expect(wrapBatchProcessor).toHaveBeenCalledWith(expect.any(Function), 'q')
+    expect(wrapBatchProcessor).toHaveBeenCalledWith(expect.any(Function), 'q', options)
     expect(decorator).toHaveBeenCalledWith(expect.any(Function), 'q')
     expect(() => runtime.createBatchWorker('q', async () => [], {} as never)).toThrow(TypeError)
   })
