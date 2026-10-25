@@ -1,3 +1,4 @@
+import { redactEmails } from './observability-email.mts'
 import { SENSITIVE_VALUE, isRecord, transformRecord } from './observability-records.mts'
 
 export const EMAIL_REDACTED = '[Filtered email]'
@@ -7,7 +8,6 @@ export const DEFAULT_MAX_DEPTH = 12
 
 const DEFAULT_KEY_PATTERN =
   /authorization|cookie|password|passwd|secret|token|api[_-]?key|access[_-]?key|email|dsn|credential/i
-const EMAIL_PATTERN = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi
 const AUTH_TOKEN_PATTERN = /\b(Bearer|Basic)\s+[A-Za-z0-9._~+/=-]+/gi
 const TOKEN_ASSIGNMENT_PATTERN =
   /\b((?:access[_-]?token|refresh[_-]?token|id[_-]?token|token|secret|password|passwd|api[_-]?key)=)[^&\s]+/gi
@@ -23,10 +23,12 @@ export interface DeepScrubOptions {
 
 /** Default text redactor: bearer/basic credentials, token assignments, then email addresses. */
 export function redactText(text: string): string {
-  return text
-    .replace(AUTH_TOKEN_PATTERN, `$1 ${TOKEN_REDACTED}`)
-    .replace(TOKEN_ASSIGNMENT_PATTERN, `$1${TOKEN_REDACTED}`)
-    .replace(EMAIL_PATTERN, EMAIL_REDACTED)
+  return redactEmails(
+    text
+      .replace(AUTH_TOKEN_PATTERN, `$1 ${TOKEN_REDACTED}`)
+      .replace(TOKEN_ASSIGNMENT_PATTERN, `$1${TOKEN_REDACTED}`),
+    EMAIL_REDACTED,
+  )
 }
 
 /** Stateless copy of a pattern, so `g` and `y` flags cannot make `test` order-dependent. */
