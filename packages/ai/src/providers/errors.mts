@@ -29,8 +29,31 @@ export type ModelProviderErrorOptions = {
   cause?: unknown
 }
 
-/** A classified provider failure. Whether and when to retry is the caller's decision. */
+/** Brand shared by every copy of this package, so errors are recognized across module copies. */
+export const MODEL_PROVIDER_ERROR_BRAND = Symbol.for('@vouchington/ai/ModelProviderError')
+
+/**
+ * Recognizes a `ModelProviderError` from this or any other installed copy of the package (for
+ * example the two copies pnpm creates for different optional-peer contexts).
+ */
+export function isModelProviderError(value: unknown): value is ModelProviderError {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    (value as Record<symbol, unknown>)[MODEL_PROVIDER_ERROR_BRAND] === true
+  )
+}
+
+/**
+ * A classified provider failure. Whether and when to retry is the caller's decision. `instanceof`
+ * works across package copies because it checks the shared brand.
+ */
 export class ModelProviderError extends Error {
+  static [Symbol.hasInstance](value: unknown): boolean {
+    return isModelProviderError(value)
+  }
+
+  readonly [MODEL_PROVIDER_ERROR_BRAND] = true as const
   readonly code: ModelProviderErrorCode
   readonly retryClass: ModelProviderRetryClass
   readonly status: number | undefined

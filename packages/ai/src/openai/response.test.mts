@@ -38,6 +38,7 @@ describe('validateCompletedResponse', () => {
     })
     expect(
       validateCompletedResponse({
+        id: 'r2',
         status: 'completed',
         output: [],
         usage: null,
@@ -78,6 +79,13 @@ describe('validateCompletedResponse', () => {
       expect((error as Error).message).toContain(message)
       expect(error).toMatchObject({ usage, code, reason, model: 'm', id: 'r' })
     }
+  })
+
+  it('rejects a completed response without an id, keeping its usage', () => {
+    const usage = { input_tokens: 1, output_tokens: 1 }
+    expect(() => validateCompletedResponse({ status: 'completed', output: [], usage })).toThrow(
+      expect.objectContaining({ message: 'OpenAI response has no id.', usage }),
+    )
   })
 
   it('tolerates a missing id', () => {
