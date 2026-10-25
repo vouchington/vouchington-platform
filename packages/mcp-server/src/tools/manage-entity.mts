@@ -27,6 +27,7 @@ export type ManageEntityToolConfig<
   TUpdate extends Record<string, unknown>,
   TUser,
   TActiveUser,
+  TMeta extends McpToolMeta = McpToolMeta,
 > = {
   toolName: string
   description: string
@@ -40,7 +41,7 @@ export type ManageEntityToolConfig<
   /** The entity `addFn` and `updateFn` return, as an output schema. Required with `meta`. */
   entitySchema?: ToolOutputSchema
   /** Published metadata. `selectApi` and `outputSchema` are derived and replace any given. */
-  meta?: McpToolMeta
+  meta?: TMeta
 }
 
 /** Add, update and remove actions behind one tool, with REST route selection per action. */
@@ -50,9 +51,17 @@ export function createManageEntityTool<
   TUser = unknown,
   TActiveUser = TUser,
   TContext = unknown,
+  TMeta extends McpToolMeta = McpToolMeta,
 >(
-  config: ManageEntityToolConfig<TAdd, TUpdate, TUser, TActiveUser>,
-): McpTool<TUser, TContext, ManageEntityArgs<TAdd, TUpdate>, ManageEntityResult> {
+  config: ManageEntityToolConfig<TAdd, TUpdate, TUser, TActiveUser, TMeta>,
+): McpTool<
+  TUser,
+  TContext,
+  ManageEntityArgs<TAdd, TUpdate>,
+  ManageEntityResult,
+  readonly [],
+  TMeta
+> {
   const meta = config.meta && {
     ...config.meta,
     selectApi: selectApiByArgument('action', actionEndpoints(config.meta.api ?? [])),
@@ -75,7 +84,7 @@ export function createManageEntityTool<
       },
       strict: null,
     },
-    ...(meta ? { meta } : {}),
+    ...(meta ? { meta: meta as TMeta } : {}),
     function: (user) => async (args) => {
       const active = await config.requireUser(user)
       switch (args.action) {

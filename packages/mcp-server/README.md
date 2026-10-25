@@ -18,7 +18,8 @@ authorization, audit, and persistence.
 `McpTool` is a structural type. An application's own tool type satisfies it as long as its
 declaration, curried handler, and optional `roles` and `meta` have the same shape. Application
 meta fields (annotations, scopes, audiences, plans) pass through the `McpToolMeta` index
-signature.
+signature. Pass an application metadata type as the final generic argument to `McpTool` or the
+tool helpers to require fields such as `annotations` and retain their types in the returned tool.
 
 ## Schema
 
@@ -113,7 +114,8 @@ const response = await handleStatelessMcpRequest({
 
 - Calls are indexed by message position, so duplicate JSON-RPC ids in a batch stay distinct. A call
   whose position is in `rateLimitedCalls` is refused in-band with `buildRateLimitedResult` and never
-  runs.
+  runs. Each map value is `{ retryAfterSeconds, message? }`, and the builder receives that exact
+  value so it can explain the refusal.
 - `callTool` receives `{ onInvoked, onRateLimited }`: report the tool duration and a rate limit
   found while running, so `onToolError` fires only for real tool errors.
 - `onToolCallSettled` fires once per dispatched call, including a call that throws. It only

@@ -43,9 +43,11 @@ function post(body: unknown, overrides: Overrides = {}): Promise<Response> {
     callTool: (request) => Promise.resolve(ok(`ran ${request.name}`)),
     isDispatchedToolCall: isDispatched,
     rateLimitedCalls: new Map(),
-    buildRateLimitedResult: (retryAfter) => ({
+    buildRateLimitedResult: ({ retryAfterSeconds, message }) => ({
       isError: true,
-      content: [{ type: 'text', text: `limited ${retryAfter}` }],
+      content: [
+        { type: 'text', text: `limited ${retryAfterSeconds}${message ? `: ${message}` : ''}` },
+      ],
     }),
     ...overrides,
   })
@@ -171,7 +173,11 @@ describe('handleStatelessMcpRequest', () => {
       const callTool = vi.fn()
 
       const reply = await json(
-        post(call(1), { callTool, hooks: spy, rateLimitedCalls: new Map([[0, 30]]) }),
+        post(call(1), {
+          callTool,
+          hooks: spy,
+          rateLimitedCalls: new Map([[0, { retryAfterSeconds: 30 }]]),
+        }),
       )
 
       expect(texts(reply.result)).toEqual(['limited 30'])
@@ -189,20 +195,48 @@ describe('handleStatelessMcpRequest', () => {
       const callTool = vi.fn((request: { name: string }) =>
         Promise.resolve(ok(`ran ${request.name}`)),
       )
+      const first = { retryAfterSeconds: 5, message: 'split the batch' }
+      const third = { retryAfterSeconds: 8, message: 'try later' }
+      const buildRateLimitedResult = vi.fn(
+        (entry: { retryAfterSeconds: number; message?: string }) =>
+          ok(`${entry.retryAfterSeconds}: ${entry.message}`),
+      )
 
-      await post([call('same', 'first'), call('same', 'second')], {
-        callTool,
-        hooks: spy,
-        rateLimitedCalls: new Map([[0, 5]]),
-      })
+      const replies = await json(
+        post([call('same', 'first'), call('same', 'second'), call(9, 'third')], {
+          callTool,
+          hooks: spy,
+          rateLimitedCalls: new Map([
+            [0, first],
+            [2, third],
+          ]),
+          buildRateLimitedResult,
+        }),
+      )
 
       expect(callTool).toHaveBeenCalledExactlyOnceWith(
         { name: 'second', arguments: {} },
         expect.anything(),
       )
-      expect(spy.onToolCallSettled.mock.calls.map(([index, s]) => [index, s.rateLimited])).toEqual([
+      expect(buildRateLimitedResult.mock.calls).toEqual([[first], [third]])
+      expect(replies.map((reply: { id: unknown }) => reply.id).toSorted()).toEqual([
+        9,
+        'same',
+        'same',
+      ])
+      expect(replies.map((reply: { result: never }) => texts(reply.result)[0]).toSorted()).toEqual([
+        '5: split the batch',
+        '8: try later',
+        'ran second',
+      ])
+      expect(
+        spy.onToolCallSettled.mock.calls
+          .map(([index, s]) => [index, s.rateLimited])
+          .toSorted((a, b) => Number(a[0]) - Number(b[0])),
+      ).toEqual([
         [0, true],
         [1, false],
+        [2, true],
       ])
     })
 
@@ -325,7 +359,8 @@ describe('handleStatelessMcpRequest', () => {
 
       expect((await json(post(call(1), { callTool }))).result.isError).toBe(true)
       expect(
-        (await json(post(call(1), { rateLimitedCalls: new Map([[0, 1]]) }))).result.isError,
+        (await json(post(call(1), { rateLimitedCalls: new Map([[0, { retryAfterSeconds: 1 }]]) })))
+          .result.isError,
       ).toBe(true)
     })
 
