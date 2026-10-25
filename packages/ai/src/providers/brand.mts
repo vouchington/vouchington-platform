@@ -1,10 +1,9 @@
-/** True when `value` carries `brand`, which every installed copy of this package sets alike. */
+/**
+ * True when `value` is an `Error` carrying `brand`, which every installed copy of this package
+ * sets alike. Package copies share the realm's `Error`, so a branded plain object is rejected.
+ */
 export function hasBrand(value: unknown, brand: symbol): boolean {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    (value as Record<symbol, unknown>)[brand] === true
-  )
+  return value instanceof Error && (value as unknown as Record<symbol, unknown>)[brand] === true
 }
 
 /**

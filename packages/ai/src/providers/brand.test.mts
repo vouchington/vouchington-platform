@@ -67,6 +67,15 @@ describe.each(cases)('$name brand', ({ load, make }) => {
     expect(is(Object.setPrototypeOf(base, Sub.prototype))).toBe(true)
   })
 
+  it('rejects a plain object carrying the brand', async () => {
+    const { Class, is } = await load()
+    const [brand] = Object.getOwnPropertySymbols(make(Class as never))
+    expect(brand).toBeDefined()
+    const forged = { [brand!]: true }
+    expect(is(forged)).toBe(false)
+    expect(forged instanceof Class).toBe(false)
+  })
+
   it.each([null, undefined, 'x', 1, {}, new Error('plain'), { [Symbol.for('other')]: true }])(
     'rejects %#',
     async (value) => {
