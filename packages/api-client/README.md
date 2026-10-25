@@ -49,6 +49,7 @@ const server = new ServerRequest({
   boundary, and a `loadMore` still in flight at the commit is discarded (it started from the old
   boundary), so no record is lost and `hasNextPage`/`endCursor` come from the refreshed last page.
   A refresh superseded by a reset, a query change, or a newer refresh is discarded, a callback
-  retained from an earlier query is a no-op, and a failure keeps the current pages and surfaces
+  retained from an earlier query is a no-op (a superseded refresh also stops following cursors),
+  a non-terminal page without an end cursor is an error, and a failure keeps the current pages and surfaces
   through `fetchError`. `PaginatedRequestLifecycle` and `appendPaginatedPage` are exported from the
   same subpath for driving pagination lifecycles outside the hook.

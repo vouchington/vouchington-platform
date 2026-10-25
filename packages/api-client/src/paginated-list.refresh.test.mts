@@ -176,6 +176,90 @@ describe('refreshLoadedPages', () => {
     })
   })
 
+  it('does not revalidate an invalidated continuation when a newer one starts', async () => {
+    const calls: { after: string | undefined; result: ReturnType<typeof deferred<Page>> }[] = []
+    const fetchPage = vi.fn((_endpoint: string, params: { after?: string }) => {
+      const result = deferred<Page>()
+      calls.push({ after: params.after, result })
+      return result.promise
+    })
+    const initial = page(['a', 'b'], 'cB')
+    const { result } = renderHook(() => usePaginatedList(initial, '/items', {}, { fetchPage }))
+    let oldLoad!: Promise<boolean>
+    let newLoad!: Promise<boolean>
+    act(() => {
+      oldLoad = result.current.loadMore()
+    })
+    await act(async () => {
+      await result.current.refreshLoadedPages(async () => page(['new', 'a'], 'cA'))
+    })
+    act(() => {
+      newLoad = result.current.loadMore()
+    })
+    expect(calls.map((call) => call.after)).toEqual(['cB', 'cA'])
+
+    await act(async () => {
+      calls[0]!.result.resolve(page(['stale'], null))
+      await oldLoad
+    })
+    expect(ids(result.current.pages)).toEqual(['new', 'a'])
+    expect(result.current.loadingMore).toBe(true)
+
+    await act(async () => {
+      calls[1]!.result.resolve(page(['b'], 'cB'))
+      await newLoad
+    })
+    expect(ids(result.current.pages)).toEqual(['new', 'a', 'b'])
+    expect(result.current.loadingMore).toBe(false)
+  })
+
+  it('stops following cursors once a refresh is superseded', async () => {
+    const fetchPage = vi.fn(async (_endpoint: string, params: { after?: string }) =>
+      params.after === 'c1' ? page(['a2'], 'c2') : page(['a3'], 'c3'),
+    )
+    const { result } = setup(fetchPage)
+    await loadPages(result)
+    await loadPages(result)
+    fetchPage.mockClear()
+
+    const pendingNext = deferred<Page>()
+    fetchPage.mockImplementationOnce(() => pendingNext.promise)
+    let refresh!: Promise<void>
+    act(() => {
+      refresh = result.current.refreshLoadedPages(async () => page(['a1'], 'c1'))
+    })
+    await act(async () => {})
+    let newer!: Promise<void>
+    act(() => {
+      newer = result.current.refreshLoadedPages(async () => page(['n1'], null))
+    })
+    await act(async () => {
+      pendingNext.resolve(page(['a2'], 'c2'))
+      await Promise.all([refresh, newer])
+    })
+    expect(fetchPage).toHaveBeenCalledTimes(1)
+    expect(ids(result.current.pages)).toEqual(['n1'])
+  })
+
+  it('treats a non-terminal page without a cursor as a refresh error', async () => {
+    const { result } = setup(vi.fn(async () => page(['a2'], 'c2')))
+    await loadPages(result)
+    await act(async () => {
+      await result.current.refreshLoadedPages(async () => ({
+        results: [{ id: 'a1' }],
+        page_info: { has_next_page: true, end_cursor: null },
+      }))
+    })
+    expect(ids(result.current.pages)).toEqual(['a1', 'a2'])
+    expect(result.current.fetchError?.message).toMatch(/no end cursor/)
+
+    await act(async () => {
+      await result.current.refreshLoadedPages(async () => page(['a1'], null))
+    })
+    expect(ids(result.current.pages)).toEqual(['a1'])
+    expect(result.current.fetchError).toBeNull()
+  })
+
   it('ignores a refresh retained from an earlier query without superseding the current one', async () => {
     const fetchPage = vi.fn(async () => page([], null))
     const pageA = page(['a1'], 'c1')

@@ -98,25 +98,25 @@ export function usePaginatedList<T extends PaginatedData>(
     if (!has_next_page || !end_cursor || !endpoint) return false
     const requestToken = requestLifecycle.start(currentQueryToken)
     if (!requestToken) return false
-    updateCurrent(requestToken, () => ({ loadingMore: true }))
+    updateCurrent(currentQueryToken, () => ({ loadingMore: true }))
     try {
       const nextPage = await fetchAfter(end_cursor)
       if (requestLifecycle.isCurrent(requestToken)) {
-        updateCurrent(requestToken, (prev) => ({
+        updateCurrent(currentQueryToken, (prev) => ({
           pages: appendPaginatedPage(prev.pages, nextPage),
           fetchError: null,
         }))
       }
     } catch (err) {
       if (requestLifecycle.isCurrent(requestToken)) {
-        updateCurrent(requestToken, () => ({
+        updateCurrent(currentQueryToken, () => ({
           fetchError: err instanceof Error ? err : new Error('Failed to load more'),
         }))
       }
     } finally {
       if (requestLifecycle.isCurrent(requestToken)) {
         requestLifecycle.finish(requestToken)
-        updateCurrent(requestToken, () => ({ loadingMore: false }))
+        updateCurrent(currentQueryToken, () => ({ loadingMore: false }))
       }
     }
     return true
@@ -153,6 +153,7 @@ export function usePaginatedList<T extends PaginatedData>(
         () => latestPages.current.length,
         fetchFirstPage,
         fetchAfter,
+        isCurrent,
       )
       if (!isCurrent()) return
       requestLifecycle.reset(currentQueryToken)
