@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { isModelProviderError, ModelProviderError } from './errors.mts'
+import { isModelProviderError, MODEL_PROVIDER_ERROR_BRAND, ModelProviderError } from './errors.mts'
 
 type ErrorsModule = typeof import('./errors.mts')
 
@@ -42,11 +42,17 @@ describe('ModelProviderError brand', () => {
     expect(new Sibling('refusal', 'x', options) instanceof Sub).toBe(false)
   })
 
-  it.each([null, undefined, 'x', 1, {}, new Error('plain'), { [Symbol.for('other')]: true }])(
-    'rejects %#',
-    (value) => {
-      expect(isModelProviderError(value)).toBe(false)
-      expect(value instanceof ModelProviderError).toBe(false)
-    },
-  )
+  it.each([
+    null,
+    undefined,
+    'x',
+    1,
+    {},
+    new Error('plain'),
+    { [Symbol.for('other')]: true },
+    { [MODEL_PROVIDER_ERROR_BRAND]: true },
+  ])('rejects %#', (value) => {
+    expect(isModelProviderError(value)).toBe(false)
+    expect(value instanceof ModelProviderError).toBe(false)
+  })
 })

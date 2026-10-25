@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { brandedHasInstance, hasBrand } from './brand.mts'
 import { isAmbiguousBilledHttpStatus, parseRetryAfter, readHeader } from './http.mts'
 import type { BilledModelResponse } from './types.mts'
 
@@ -37,11 +38,7 @@ export const MODEL_PROVIDER_ERROR_BRAND = Symbol.for('@vouchington/ai/ModelProvi
  * example the two copies pnpm creates for different optional-peer contexts).
  */
 export function isModelProviderError(value: unknown): value is ModelProviderError {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    (value as Record<symbol, unknown>)[MODEL_PROVIDER_ERROR_BRAND] === true
-  )
+  return hasBrand(value, MODEL_PROVIDER_ERROR_BRAND)
 }
 
 /**
@@ -50,11 +47,7 @@ export function isModelProviderError(value: unknown): value is ModelProviderErro
  */
 export class ModelProviderError extends Error {
   static [Symbol.hasInstance](this: unknown, value: unknown): boolean {
-    // Only the base class uses the shared brand; subclasses keep prototype-based checks.
-    if (this !== ModelProviderError) {
-      return Function.prototype[Symbol.hasInstance].call(this, value)
-    }
-    return isModelProviderError(value)
+    return brandedHasInstance(ModelProviderError, MODEL_PROVIDER_ERROR_BRAND, this, value)
   }
 
   readonly [MODEL_PROVIDER_ERROR_BRAND] = true as const
