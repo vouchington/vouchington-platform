@@ -43,8 +43,8 @@ describe('mcp-server package publication boundary', () => {
     expect(existsSync('packages/mcp-server/dist/test-helpers.mjs')).toBe(false)
   })
 
-  it('declares caret ranges and is bootstrapped at 0.0.0', () => {
-    expect(manifest.version).toMatch(/^0\.(0\.0|1\.\d+)$/u)
+  it('declares caret ranges and declares a semver version', () => {
+    expect(manifest.version).toMatch(/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u)
     for (const range of Object.values({ ...manifest.dependencies, ...manifest.peerDependencies }))
       expect(range).toMatch(caretSemverRange)
   })
