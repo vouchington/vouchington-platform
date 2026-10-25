@@ -144,7 +144,7 @@ importers:
   packages/edge:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.9.0
+        specifier: ^0.10.0
         version: link:../utils
     devDependencies:
       '@cloudflare/workers-types':
@@ -310,7 +310,7 @@ importers:
   packages/oauth-server:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.9.0
+        specifier: ^0.10.0
         version: link:../utils
 
   packages/pagination:
@@ -426,7 +426,7 @@ importers:
   packages/sentry:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.9.0
+        specifier: ^0.10.0
         version: link:../utils
       http-errors:
         specifier: ^2.0.1
@@ -463,7 +463,7 @@ importers:
   packages/typed-entities:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.9.0
+        specifier: ^0.10.0
         version: link:../utils
 
   packages/utils: {}

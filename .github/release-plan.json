@@ -10,37 +10,37 @@
     {
       "bump": "minor",
       "directory": "utils",
-      "fromVersion": "0.8.0",
+      "fromVersion": "0.9.0",
       "name": "@vouchington/utils",
-      "toVersion": "0.9.0"
+      "toVersion": "0.10.0"
     },
     {
       "bump": "minor",
       "directory": "edge",
-      "fromVersion": "0.3.0",
+      "fromVersion": "0.4.0",
       "name": "@vouchington/edge",
-      "toVersion": "0.4.0"
+      "toVersion": "0.5.0"
     },
     {
       "bump": "minor",
       "directory": "oauth-server",
-      "fromVersion": "0.3.0",
+      "fromVersion": "0.4.0",
       "name": "@vouchington/oauth-server",
-      "toVersion": "0.4.0"
+      "toVersion": "0.5.0"
     },
     {
       "bump": "minor",
       "directory": "sentry",
-      "fromVersion": "0.2.0",
+      "fromVersion": "0.3.0",
       "name": "@vouchington/sentry",
-      "toVersion": "0.3.0"
+      "toVersion": "0.4.0"
     },
     {
       "bump": "minor",
       "directory": "typed-entities",
-      "fromVersion": "0.4.0",
+      "fromVersion": "0.5.0",
       "name": "@vouchington/typed-entities",
-      "toVersion": "0.5.0"
+      "toVersion": "0.6.0"
     }
   ],
   "selectedPackage": "@vouchington/utils"
