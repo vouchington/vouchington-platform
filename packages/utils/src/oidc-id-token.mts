@@ -6,6 +6,7 @@ import { abortable } from './oidc-id-token-util.mts'
 export {
   appleProfileFromClaims,
   googleProfileFromClaims,
+  microsoftProfileFromClaims,
   type OidcClaims,
 } from './oidc-id-token-profiles.mts'
 
@@ -35,6 +36,8 @@ export class OidcVerificationError extends Error {
 export interface OidcIdTokenVerifierOptions {
   jwksUri: string
   issuers: readonly string[]
+  /** Additional issuer rule evaluated only after the token signature is verified. */
+  issuerMatches?: (claims: OidcClaims, keyIssuer?: string) => boolean
   /** Read on every verification so configuration can change at runtime. */
   audiences: () => readonly string[]
   fetch: OAuthFetch
@@ -59,6 +62,7 @@ interface Jwk {
   kty: string
   n: string
   e: string
+  issuer?: string
 }
 
 function decodePart(part: string): Record<string, unknown> {
@@ -135,7 +139,7 @@ export function createOidcIdTokenVerifier(options: OidcIdTokenVerifierOptions) {
     if (!valid) throw new OidcVerificationError('signature', 'ID token signature is invalid')
   }
 
-  function checkClaims(claims: OidcClaims, verify: OidcVerifyOptions): void {
+  function checkClaims(claims: OidcClaims, verify: OidcVerifyOptions, key: Jwk): void {
     if (typeof claims.exp !== 'number' || typeof claims.iat !== 'number') {
       throw new OidcVerificationError('format', 'ID token is missing exp or iat')
     }
@@ -153,7 +157,7 @@ export function createOidcIdTokenVerifier(options: OidcIdTokenVerifierOptions) {
     if (claims.nbf !== undefined && claims.nbf > seconds + skew) {
       throw new OidcVerificationError('not_yet_valid', 'ID token is not valid yet')
     }
-    if (!options.issuers.includes(claims.iss)) {
+    if (!options.issuers.includes(claims.iss) && !options.issuerMatches?.(claims, key.issuer)) {
       throw new OidcVerificationError('issuer', 'ID token issuer is invalid')
     }
     const accepted = options.audiences()
@@ -183,7 +187,7 @@ export function createOidcIdTokenVerifier(options: OidcIdTokenVerifierOptions) {
       const key = await findKey(kid, verify.signal)
       checkSignature(`${header}.${payload}`, signature, key)
       const claims = decodePart(payload) as OidcClaims
-      checkClaims(claims, verify)
+      checkClaims(claims, verify, key)
       return claims
     },
   }

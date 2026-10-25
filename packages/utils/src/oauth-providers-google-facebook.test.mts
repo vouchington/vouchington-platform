@@ -135,7 +135,7 @@ describe('facebookProvider', () => {
       tokens: { accessToken: 'long', accessTokenExpiresAt: new Date(NOW + 5_184_000_000) },
       profile: {
         providerUserId: 'fb-1',
-        verifiedEmail: 'fay@example.com',
+        verifiedEmail: null,
         data: { id: 'fb-1', name: 'Fay', email: 'fay@example.com' },
       },
     })
@@ -144,6 +144,32 @@ describe('facebookProvider', () => {
   it('returns a null verified email when /me has none', async () => {
     const { ctx } = routes({ me: json({ id: 'fb-2', name: 'No Mail' }) })
     expect((await provider.redeem(input, ctx())).profile.verifiedEmail).toBeNull()
+  })
+
+  it('upgrades a native token and fetches its profile without a code exchange', async () => {
+    const { ctx, init, urls } = routes({
+      exchange: [json({ access_token: 'long', expires_in: 60 })],
+    })
+    const result = await provider.redeemAccessToken('native', ctx())
+    expect(urls()).toEqual([OAUTH, `${ME}?fields=name,email`])
+    expect(form(init(0))).toMatchObject({
+      grant_type: 'fb_exchange_token',
+      fb_exchange_token: 'native',
+    })
+    expect(result.profile).toEqual({
+      providerUserId: 'fb-1',
+      verifiedEmail: null,
+      data: { id: 'fb-1', name: 'Fay', email: 'fay@example.com' },
+    })
+  })
+
+  it('rejects an empty native token before contacting Graph', async () => {
+    const { ctx, fetch } = routes()
+    expect(await failure(provider.redeemAccessToken('', ctx()))).toMatchObject({
+      kind: 'malformed',
+      provider: 'facebook',
+    })
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('maps Graph error objects from either exchange', async () => {
