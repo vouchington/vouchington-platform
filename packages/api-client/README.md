@@ -45,7 +45,10 @@ const server = new ServerRequest({
   `getPaginatedQueryKey`. The application supplies the page fetcher, and `initialData` must keep a stable identity across renders.
   The hook also returns `replaceFirstPage`, `resetToFirstPage`, and `refreshLoadedPages(fetchFirstPage)`,
   which re-reads every loaded page from the first (following cursors) and swaps the result in at
-  once. Pages appended by a concurrent `loadMore` are kept without duplicates, a refresh superseded
-  by a reset or a newer refresh is discarded, and a failure keeps the current pages and surfaces
+  once. Pages a concurrent `loadMore` appended before the commit are refetched from the refreshed
+  boundary, and a `loadMore` still in flight at the commit is discarded (it started from the old
+  boundary), so no record is lost and `hasNextPage`/`endCursor` come from the refreshed last page.
+  A refresh superseded by a reset, a query change, or a newer refresh is discarded, a callback
+  retained from an earlier query is a no-op, and a failure keeps the current pages and surfaces
   through `fetchError`. `PaginatedRequestLifecycle` and `appendPaginatedPage` are exported from the
   same subpath for driving pagination lifecycles outside the hook.

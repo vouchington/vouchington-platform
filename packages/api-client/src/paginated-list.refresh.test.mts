@@ -90,7 +90,7 @@ describe('refreshLoadedPages', () => {
     expect(result.current.pages).toHaveLength(1)
   })
 
-  it('keeps pages appended by a concurrent loadMore without duplicates', async () => {
+  it('refetches pages appended by a concurrent loadMore without duplicates', async () => {
     const firstPage = deferred<Page>()
     const fetchPage = vi.fn(async (_endpoint: string, params: { after?: string }) =>
       params.after === 'c1' ? page(['a2'], 'c2') : page(['a3', 'a2'], null),
@@ -110,6 +110,99 @@ describe('refreshLoadedPages', () => {
       await refresh
     })
     expect(ids(result.current.pages)).toEqual(['a1', 'a0', 'a2', 'a3'])
+  })
+
+  describe('concurrent loadMore against a shifted boundary', () => {
+    const initial = page(['a', 'b'], 'cB')
+
+    function boundaryHarness() {
+      const continuation = deferred<Page>()
+      const fetchPage = vi.fn(async (_endpoint: string, params: { after?: string }) =>
+        params.after === 'cB' ? continuation.promise : page(['b'], 'cB'),
+      )
+      const hook = renderHook(() => usePaginatedList(initial, '/items', {}, { fetchPage }))
+      return { ...hook, continuation, fetchPage }
+    }
+
+    it('refetches from the refreshed boundary when the continuation finished first', async () => {
+      const { result, continuation } = boundaryHarness()
+      const firstPage = deferred<Page>()
+      let refresh!: Promise<void>
+      act(() => {
+        refresh = result.current.refreshLoadedPages(() => firstPage.promise)
+      })
+      await act(async () => {
+        const load = result.current.loadMore()
+        continuation.resolve(page(['c', 'd'], null))
+        await load
+      })
+      expect(ids(result.current.pages)).toEqual(['a', 'b', 'c', 'd'])
+
+      await act(async () => {
+        firstPage.resolve(page(['new', 'a'], 'cA'))
+        await refresh
+      })
+      expect(ids(result.current.pages)).toEqual(['new', 'a', 'b'])
+      expect(result.current.hasNextPage).toBe(true)
+      expect(result.current.endCursor).toBe('cB')
+    })
+
+    it('drops a continuation still pending at commit and allows loading again', async () => {
+      const { result, continuation, fetchPage } = boundaryHarness()
+      const firstPage = deferred<Page>()
+      let refresh!: Promise<void>
+      let load!: Promise<boolean>
+      act(() => {
+        refresh = result.current.refreshLoadedPages(() => firstPage.promise)
+        load = result.current.loadMore()
+      })
+      expect(result.current.loadingMore).toBe(true)
+      await act(async () => {
+        firstPage.resolve(page(['new', 'a'], 'cA'))
+        await refresh
+      })
+      expect(result.current.loadingMore).toBe(false)
+      await act(async () => {
+        continuation.resolve(page(['c', 'd'], null))
+        await load
+      })
+      expect(ids(result.current.pages)).toEqual(['new', 'a'])
+      expect(result.current.hasNextPage).toBe(true)
+      expect(result.current.endCursor).toBe('cA')
+
+      await loadPages(result)
+      expect(fetchPage).toHaveBeenLastCalledWith('/items', { after: 'cA' })
+      expect(ids(result.current.pages)).toEqual(['new', 'a', 'b'])
+    })
+  })
+
+  it('ignores a refresh retained from an earlier query without superseding the current one', async () => {
+    const fetchPage = vi.fn(async () => page([], null))
+    const pageA = page(['a1'], 'c1')
+    const pageB = page(['b1'], 'd1')
+    const { result, rerender } = renderHook(
+      ({ initial, endpoint }) => usePaginatedList(initial, endpoint, {}, { fetchPage }),
+      { initialProps: { initial: pageA, endpoint: '/a' } },
+    )
+    const retained = result.current.refreshLoadedPages
+    rerender({ initial: pageB, endpoint: '/b' })
+
+    const pending = deferred<Page>()
+    let current!: Promise<void>
+    act(() => {
+      current = result.current.refreshLoadedPages(() => pending.promise)
+    })
+    const staleFetch = vi.fn(async () => page(['stale'], null))
+    await act(async () => {
+      await retained(staleFetch)
+    })
+    expect(staleFetch).not.toHaveBeenCalled()
+
+    await act(async () => {
+      pending.resolve(page(['b1', 'b0'], null))
+      await current
+    })
+    expect(ids(result.current.pages)).toEqual(['b1', 'b0'])
   })
 
   it('discards a refresh superseded by a newer refresh', async () => {

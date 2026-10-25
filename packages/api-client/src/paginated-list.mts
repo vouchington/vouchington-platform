@@ -59,6 +59,7 @@ export function usePaginatedList<T extends PaginatedData>(
   const currentKey = pageInfoKey(initialData, endpoint, params)
   const requestLifecycle = useMemo(() => new PaginatedRequestLifecycle(), [])
   const refreshGeneration = useRef(0)
+  const latestPages = useRef<T[]>([])
   const [listState, setListState] = useState<ListState<T>>(() =>
     freshState(currentKey, initialData, requestLifecycle.queryToken),
   )
@@ -80,6 +81,7 @@ export function usePaginatedList<T extends PaginatedData>(
     }
   }, [listState.queryToken, requestLifecycle])
   const { pages, fetchError, loadingMore, queryToken: currentQueryToken } = currentListState
+  latestPages.current = pages
   const { has_next_page, end_cursor } = pages.at(-1)!.page_info
 
   function updateCurrent(token: symbol, update: (prev: ListState<T>) => Partial<ListState<T>>) {
@@ -135,20 +137,29 @@ export function usePaginatedList<T extends PaginatedData>(
   }
 
   /**
-   * Re-reads every loaded page from the first, then swaps them in at once. Pages appended by a
-   * concurrent `loadMore` are kept. A refresh superseded by a reset or a newer refresh is dropped,
-   * and a failure keeps the current pages and surfaces through `fetchError`.
+   * Re-reads every loaded page from the first, including pages a concurrent `loadMore` appends
+   * before the commit, then swaps them in at once. A `loadMore` still in flight at the commit
+   * started from the old boundary, so its result is discarded. A refresh superseded by a reset,
+   * a query change, or a newer refresh is dropped, and a failure keeps the current pages and
+   * surfaces through `fetchError`. A callback retained from an earlier query occurrence is a no-op.
    */
   async function refreshLoadedPages(fetchFirstPage: () => Promise<T>): Promise<void> {
+    const isLive = () => currentQueryToken === requestLifecycle.queryToken
+    if (!isLive()) return
     const generation = ++refreshGeneration.current
-    const loadedCount = pages.length
-    const isCurrent = () => refreshGeneration.current === generation
+    const isCurrent = () => refreshGeneration.current === generation && isLive()
     try {
-      const refreshed = await fetchLoadedCursorPages(loadedCount, fetchFirstPage, fetchAfter)
+      const refreshed = await fetchLoadedCursorPages(
+        () => latestPages.current.length,
+        fetchFirstPage,
+        fetchAfter,
+      )
       if (!isCurrent()) return
-      updateCurrent(currentQueryToken, (prev) => ({
-        pages: deduplicatePages([...refreshed, ...prev.pages.slice(loadedCount)]),
+      requestLifecycle.reset(currentQueryToken)
+      updateCurrent(currentQueryToken, () => ({
+        pages: deduplicatePages(refreshed),
         fetchError: null,
+        loadingMore: false,
       }))
     } catch (err) {
       if (!isCurrent()) return
