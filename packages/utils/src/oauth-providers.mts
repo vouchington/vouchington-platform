@@ -11,5 +11,9 @@ export { facebookProvider, type FacebookProviderConfig } from './oauth-providers
 export { githubProvider, type GithubProviderConfig } from './oauth-providers-github.mts'
 export { googleProvider, type GoogleProviderConfig } from './oauth-providers-google.mts'
 export { linkedinProvider, type LinkedinProviderConfig } from './oauth-providers-linkedin.mts'
-export { microsoftProvider, type MicrosoftProviderConfig } from './oauth-providers-microsoft.mts'
+export {
+  microsoftAuthorizationScopes,
+  microsoftProvider,
+  type MicrosoftProviderConfig,
+} from './oauth-providers-microsoft.mts'
 export { xProvider, type XProviderConfig } from './oauth-providers-x.mts'

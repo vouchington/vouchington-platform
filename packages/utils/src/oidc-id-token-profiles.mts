@@ -32,6 +32,20 @@ export function googleProfileFromClaims(claims: OidcClaims): OAuthProfile {
   }
 }
 
+/** Microsoft verifies an email only when the signed domain-owner claim is boolean true. */
+export function microsoftProfileFromClaims(claims: OidcClaims): OAuthProfile {
+  const data: Record<string, unknown> = {}
+  for (const key of ['name', 'email', 'given_name', 'family_name'] as const) {
+    if (claims[key]) data[key] = claims[key]
+  }
+  const oid = claims.oid
+  return {
+    providerUserId: typeof oid === 'string' && oid.length > 0 ? oid : claims.sub,
+    verifiedEmail: claims.xms_edov === true ? (claims.email ?? null) : null,
+    data,
+  }
+}
+
 /** Apple sends `email_verified` as a boolean or the string `'true'`. */
 export function appleProfileFromClaims(
   claims: OidcClaims,

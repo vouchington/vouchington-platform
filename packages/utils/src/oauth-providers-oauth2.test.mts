@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { linkedinProvider, microsoftProvider } from './oauth-providers.mts'
 import { NOW, failure, form, input, json, routeFetch } from './oauth-providers-test-helpers.mts'
+import { makeKey, signToken } from './oidc-id-token-test-helpers.mts'
 
 describe('linkedinProvider', () => {
   const provider = linkedinProvider({ clientId: 'id', clientSecret: 'secret' })
@@ -86,45 +87,59 @@ describe('linkedinProvider', () => {
 })
 
 describe('microsoftProvider', () => {
+  const TID = '11111111-2222-3333-4444-555555555555'
+  const OTHER = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
   const TOKEN = (tenant: string) => `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`
+  const KEYS = (tenant: string) => `https://login.microsoftonline.com/${tenant}/discovery/v2.0/keys`
   const ME = 'https://graph.microsoft.com/v1.0/me'
-  const routes = (tenant: string, overrides: Record<string, Response> = {}) =>
+  const key = makeKey('microsoft-key')
+  const claims = (overrides: Record<string, unknown> = {}) => ({
+    iss: `https://login.microsoftonline.com/${TID}/v2.0`,
+    aud: 'id',
+    sub: 'subject',
+    oid: 'ms-1',
+    tid: TID,
+    iat: NOW / 1000,
+    exp: NOW / 1000 + 600,
+    email: 'signed@example.com',
+    xms_edov: true,
+    ...overrides,
+  })
+  const routes = (
+    tenant: string,
+    overrides: { token?: Record<string, unknown>; me?: Response; keyIssuer?: string } = {},
+  ) =>
     routeFetch({
       [TOKEN(tenant)]: json({
         access_token: 'ms-token',
         refresh_token: 'ms-refresh',
         expires_in: 3599,
+        id_token: signToken(key, claims()),
+        ...overrides.token,
       }),
-      [ME]: json({
-        id: 'ms-1',
-        displayName: 'Mia',
-        mail: 'mia@example.com',
-        givenName: 'M',
-        surname: 'S',
-      }),
-      ...overrides,
+      [KEYS(tenant)]: json({ keys: [{ ...key.jwk, issuer: overrides.keyIssuer }] }),
+      [ME]:
+        overrides.me ??
+        json({
+          id: 'ms-1',
+          displayName: 'Mia',
+          mail: 'graph@example.com',
+          givenName: 'M',
+          surname: 'S',
+        }),
     })
+  const provider = (tenantId?: string) =>
+    microsoftProvider({ clientId: 'id', clientSecret: 'secret', ...(tenantId ? { tenantId } : {}) })
 
-  it('does not treat Graph mail as verified by default', async () => {
-    const provider = microsoftProvider({ clientId: 'id', clientSecret: 'secret' })
-    const result = await provider.redeem(input, routes('common').ctx())
-    expect(result.profile.verifiedEmail).toBeNull()
-    expect(result.profile.data).toMatchObject({ email: 'mia@example.com' })
-  })
-
-  it('defaults the tenant to common and trusts Graph mail when configured', async () => {
-    const provider = microsoftProvider({
-      clientId: 'id',
-      clientSecret: 'secret',
-      trustMailAsVerified: true,
-    })
+  it('requests OIDC scopes and uses only a signed, domain-verified email', async () => {
     const { ctx, init, urls } = routes('common')
-    const result = await provider.redeem(input, ctx())
-    expect(urls()[0]).toBe(TOKEN('common'))
+    const result = await provider().redeem(input, ctx())
+    expect(urls()).toEqual([TOKEN('common'), KEYS('common'), ME])
     expect(form(init(0))).toMatchObject({
       client_id: 'id',
       client_secret: 'secret',
       code_verifier: 'verifier-1',
+      scope: 'openid email User.Read',
     })
     expect(result).toEqual({
       tokens: {
@@ -134,39 +149,107 @@ describe('microsoftProvider', () => {
       },
       profile: {
         providerUserId: 'ms-1',
-        verifiedEmail: 'mia@example.com',
-        data: { name: 'Mia', email: 'mia@example.com', given_name: 'M', family_name: 'S' },
+        verifiedEmail: 'signed@example.com',
+        data: { name: 'Mia', email: 'graph@example.com', given_name: 'M', family_name: 'S' },
       },
     })
   })
 
-  it('uses a configured tenant and tolerates a profile without mail', async () => {
-    const provider = microsoftProvider({
-      clientId: 'id',
-      clientSecret: 'secret',
-      tenantId: 'contoso',
-      trustMailAsVerified: true,
+  it.each([false, undefined, 'true'])(
+    'leaves email unverified for xms_edov=%s',
+    async (xms_edov) => {
+      const { ctx } = routes('organizations', {
+        token: { id_token: signToken(key, claims({ xms_edov })) },
+      })
+      const result = await provider('organizations').redeem(input, ctx())
+      expect(result.profile.verifiedEmail).toBeNull()
+      expect(result.profile.data.email).toBe('graph@example.com')
+    },
+  )
+
+  it('keeps verified email null if the signed claim has no email', async () => {
+    const { ctx } = routes('common', {
+      token: { id_token: signToken(key, claims({ email: undefined })) },
     })
-    const { ctx, urls } = routes('contoso', {
-      [ME]: json({ id: 'ms-2', userPrincipalName: 'm@example.com' }),
-    })
-    const result = await provider.redeem(input, ctx())
-    expect(urls()[0]).toBe(TOKEN('contoso'))
-    expect(result.profile).toEqual({ providerUserId: 'ms-2', verifiedEmail: null, data: {} })
+    expect((await provider().redeem(input, ctx())).profile.verifiedEmail).toBeNull()
   })
 
-  it('requires a verifier and a user id, and surfaces http failures', async () => {
-    const provider = microsoftProvider({ clientId: 'id', clientSecret: 'secret', tenantId: '' })
+  it('accepts a specific tenant with an exact issuer and no Graph mail', async () => {
+    const { ctx, urls } = routes(TID, { me: json({ id: 'ms-1' }) })
+    const result = await provider(TID).redeem(input, ctx())
+    expect(urls()[0]).toBe(TOKEN(TID))
+    expect(result.profile).toEqual({
+      providerUserId: 'ms-1',
+      verifiedEmail: 'signed@example.com',
+      data: {},
+    })
+  })
+
+  it('uses the clock default and forwards an abort signal to token verification', async () => {
+    const now = Math.floor(Date.now() / 1000)
+    const { fetch, init } = routes('common', {
+      token: { id_token: signToken(key, claims({ iat: now, exp: now + 600 })) },
+    })
+    const signal = new AbortController().signal
+    await expect(provider().redeem(input, { fetch, signal })).resolves.toMatchObject({
+      profile: { verifiedEmail: 'signed@example.com' },
+    })
+    expect(init(0)).toMatchObject({ signal })
+  })
+
+  it('rejects a different tenant, an invalid tid, or a mismatched signing-key issuer', async () => {
+    for (const change of [
+      { iss: `https://login.microsoftonline.com/${OTHER}/v2.0` },
+      { tid: 'not-a-uuid' },
+    ]) {
+      const { ctx } = routes('common', { token: { id_token: signToken(key, claims(change)) } })
+      await expect(provider().redeem(input, ctx())).rejects.toMatchObject({ code: 'issuer' })
+    }
+    const { ctx } = routes('common', {
+      keyIssuer: `https://login.microsoftonline.com/${OTHER}/v2.0`,
+    })
+    await expect(provider().redeem(input, ctx())).rejects.toMatchObject({ code: 'issuer' })
+  })
+
+  it('rejects wrong specific-tenant issuer, audience, and signature', async () => {
+    const cases = [
+      {
+        token: signToken(key, claims({ iss: `https://login.microsoftonline.com/${OTHER}/v2.0` })),
+        code: 'issuer',
+      },
+      { token: signToken(key, claims({ aud: 'other' })), code: 'audience' },
+      { token: signToken(makeKey(key.kid), claims()), code: 'signature' },
+    ]
+    for (const { token, code } of cases) {
+      const { ctx } = routes(TID, { token: { id_token: token } })
+      await expect(provider(TID).redeem(input, ctx())).rejects.toMatchObject({ code })
+    }
+  })
+
+  it('requires PKCE, an ID token, Graph ID, and a matching signed oid', async () => {
     expect(
-      await failure(provider.redeem({ code: 'c', redirectUri: 'r' }, routes('common').ctx())),
-    ).toMatchObject({ kind: 'malformed', provider: 'microsoft' })
+      await failure(provider().redeem({ code: 'c', redirectUri: 'r' }, routes('common').ctx())),
+    ).toMatchObject({ kind: 'malformed' })
     expect(
       await failure(
-        provider.redeem(input, routes('common', { [ME]: json({ mail: 'a@example.com' }) }).ctx()),
+        provider().redeem(input, routes('common', { token: { id_token: undefined } }).ctx()),
       ),
     ).toMatchObject({ kind: 'malformed' })
     expect(
-      await failure(provider.redeem(input, routes('common', { [ME]: json({}, 500) }).ctx())),
+      await failure(
+        provider().redeem(input, routes('common', { me: json({ mail: 'a@example.com' }) }).ctx()),
+      ),
+    ).toMatchObject({ kind: 'malformed' })
+    expect(
+      await failure(
+        provider().redeem(input, routes('common', { me: json({ id: 'other' }) }).ctx()),
+      ),
+    ).toMatchObject({ kind: 'malformed' })
+  })
+
+  it('surfaces Graph HTTP failures after verification', async () => {
+    expect(
+      await failure(provider().redeem(input, routes('common', { me: json({}, 500) }).ctx())),
     ).toMatchObject({ kind: 'http', status: 500 })
   })
 })

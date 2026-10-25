@@ -85,14 +85,20 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
 - `oidc-id-token`: Node-only (`node:crypto`) RS256 ID-token verifier with an injected `fetch`, JWKS
   URI, issuers, and audiences. It caches the JWKS with a TTL, refreshes once on a `kid` miss, checks
   `iat` skew and an optional (hashed) nonce, and throws `OidcVerificationError` with a `code`.
-  `googleProfileFromClaims` and `appleProfileFromClaims` map claims to a profile; account policy
+  `googleProfileFromClaims`, `appleProfileFromClaims`, and `microsoftProfileFromClaims` map claims to a profile; account policy
   and HTTP error mapping stay in the application.
 - `oauth-providers`: authorization-code redemption for GitHub, X, LinkedIn, Microsoft, Google, and Facebook. Each
   provider's `redeem(input, { fetch, signal, now })` returns `{ tokens, profile }`; `verifiedEmail`
-  follows each provider's own rule. Microsoft Graph `mail` is not proof of ownership, so it is
-  only reported as verified with `trustMailAsVerified: true`. Credentials, tenant, and the egress-guarded `fetch` are
-  injected; failures throw `OAuthProviderError` (`provider`, `kind`, `status`). Persistence and
-  HTTP error mapping stay in the application.
+  follows each provider's own rule. Microsoft verifies an ID token with the tenant JWKS and uses only an `email` claim with boolean
+  `xms_edov: true` for `verifiedEmail`; Graph `mail` stays in profile data without verification. The
+  authorization URL must request `microsoftAuthorizationScopes` (`openid email User.Read`) so Graph
+  `/me` is authorized.
+  Facebook keeps Graph email as unverified data and supports native tokens through
+  `redeemAccessToken(token, ctx)`, which upgrades the token before fetching the profile.
+  Credentials, tenant, and the egress-guarded `fetch` are injected; provider and HTTP failures
+  throw `OAuthProviderError` (`provider`, `kind`, `status`), while Microsoft ID-token
+  verification failures throw `OidcVerificationError` (`code`). Persistence and HTTP error
+  mapping stay in the application.
 - `collections`, `async`, and `stable-json`: collection deduplication/merging, bounded async mapping,
   and deterministic JSON serialization.
 - `feature-flags`: base64 JSON feature-flag cookie parsing and serialization with caller-injected
