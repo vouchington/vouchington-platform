@@ -1,4 +1,12 @@
-import type { ClientOptions, DataCollection, ErrorEvent, EventHint, Scope } from '@sentry/core'
+import type {
+  Breadcrumb,
+  BreadcrumbHint,
+  ClientOptions,
+  DataCollection,
+  ErrorEvent,
+  EventHint,
+  Scope,
+} from '@sentry/core'
 
 export interface SentryInitOptions {
   dsn: string | undefined
@@ -11,6 +19,7 @@ export interface SentryInitOptions {
     event: ErrorEvent,
     hint: EventHint,
   ) => ErrorEvent | PromiseLike<ErrorEvent | null> | null
+  beforeBreadcrumb: (breadcrumb: Breadcrumb, hint?: BreadcrumbHint) => Breadcrumb | null
   beforeSendSpan: NonNullable<ClientOptions['beforeSendSpan']>
   tunnel?: string
   initialScope?:

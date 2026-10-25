@@ -11,7 +11,10 @@ peers) and passes it in.
   SDK-ready options: fail-closed enablement from an injected environment allowlist, `release`,
   `tracesSampleRate`, the least-data `dataCollection` policy, and a `beforeSend` pipeline of event
   filter, optional custom hook, `scrubEvent`, then spike protection. `beforeSendSpan` scrubs span
-  attributes. `onMisconfigured` fires when an enabled environment has no DSN.
+  attributes. `beforeBreadcrumb` runs the optional injected hook, then scrubs the breadcrumb. The
+  final scrub is recursive (user, extra, contexts, tags, messages, breadcrumb text) and always runs
+  after the injected hooks, so they cannot reintroduce data. `onMisconfigured` fires when an enabled
+  environment has no DSN.
 - `createDataCollectionPolicy({ credentialHeaders })` builds the Sentry v11 `dataCollection` policy.
   Client-IP headers are always denied; the credential header list is injected.
 - `createEventFilter({ isExpected, minimumStatus, ignoredCodes, ignoredMessages })` drops tagged,

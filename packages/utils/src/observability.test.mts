@@ -78,7 +78,10 @@ describe('observability scrubbing', () => {
       request: { headers: 'not-a-record', cookies: 'not-a-record', url: '/safe', value: true },
       breadcrumbs: [{}],
     }
-    expect(scrubEvent(event, options)).toBe(event)
+    expect(scrubEvent(event, options)).toEqual({
+      ...event,
+      request: { ...event.request, cookies: SENSITIVE_VALUE },
+    })
     const attributes = { url: 1, safe: true }
     expect(scrubSpanAttributes(attributes, options)).toBe(attributes)
     expect(scrubEvent({ request: { url: 1 } }, options)).toEqual({ request: { url: 1 } })
@@ -89,7 +92,9 @@ describe('observability scrubbing', () => {
       breadcrumbs: [{ data: { url: '/a' } }],
     })
     expect(composeBeforeSend(undefined, options)({}, {})).toEqual({})
-    expect(composeBeforeSend((input) => input, options)(event, {})).toBe(event)
+    expect(composeBeforeSend((input) => input, options)(event, {})).toEqual(
+      scrubEvent(event, options),
+    )
   })
 
   it('tracks spike windows independently and evicts expired fingerprints', () => {

@@ -1,4 +1,5 @@
 import { dropRequestBody, dropSpanRequestBody } from './observability-body.mts'
+import { scrubDeep, type DeepScrubOptions } from './observability-deep.mts'
 import {
   scrubCredentialHeaders,
   scrubRequestCredentialFields,
@@ -11,7 +12,7 @@ import {
   type UrlScrubOptions,
 } from './observability-url.mts'
 
-export interface ScrubOptions extends UrlScrubOptions {
+export interface ScrubOptions extends UrlScrubOptions, DeepScrubOptions {
   /** Header names (case-insensitive) whose values are replaced with the filtered marker. */
   credentialHeaders: readonly string[]
   /** Also drop `request.data` and the `http.request.body.data` attribute. Defaults to false. */
@@ -72,16 +73,31 @@ export function scrubBreadcrumbs<T extends { data?: Record<string, unknown> }>(
     : breadcrumbs
 }
 
-/** Scrub an event's request and breadcrumbs; the input event is returned when nothing changed. */
+/** Scrub one breadcrumb: its `data` like span attributes, then every key and string recursively. */
+export function scrubBreadcrumb<T extends { data?: Record<string, unknown> }>(
+  breadcrumb: T,
+  options: ScrubOptions,
+): T {
+  const [scrubbed] = scrubBreadcrumbs([breadcrumb], options) as [T]
+  return scrubDeep(scrubbed, options)
+}
+
+/**
+ * Scrub an event: request and breadcrumb data first, then a recursive pass over the whole event
+ * (`user`, `extra`, `contexts`, `tags`, messages, exception values). Unchanged input is returned.
+ */
 export function scrubEvent<T extends ObservableEvent>(event: T, options: ScrubOptions): T {
   const request = scrubRequest(event.request, options)
   const breadcrumbs = scrubBreadcrumbs(event.breadcrumbs, options)
-  if (request === event.request && breadcrumbs === event.breadcrumbs) return event
-  return {
-    ...event,
-    ...(request === event.request ? {} : { request }),
-    ...(breadcrumbs === event.breadcrumbs ? {} : { breadcrumbs }),
-  }
+  const base =
+    request === event.request && breadcrumbs === event.breadcrumbs
+      ? event
+      : {
+          ...event,
+          ...(request === event.request ? {} : { request }),
+          ...(breadcrumbs === event.breadcrumbs ? {} : { breadcrumbs }),
+        }
+  return scrubDeep(base, options)
 }
 
 type BeforeSendResult<T> = T | null | PromiseLike<T | null>

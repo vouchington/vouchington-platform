@@ -5,7 +5,17 @@ export {
   type SpikeWindowTracker,
 } from './spike-window.mts'
 export {
+  CIRCULAR_VALUE,
+  DEFAULT_MAX_DEPTH,
+  EMAIL_REDACTED,
+  TOKEN_REDACTED,
+  redactText,
+  scrubDeep,
+  type DeepScrubOptions,
+} from './observability-deep.mts'
+export {
   composeBeforeSend,
+  scrubBreadcrumb,
   scrubBreadcrumbs,
   scrubEvent,
   scrubHeaders,
