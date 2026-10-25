@@ -31,10 +31,15 @@ export interface GlideMqRuntimeConfig {
   onError: (error: Error) => void
   /** Default `maxStalledCount` for workers. Default 2. */
   defaultMaxStalledCount?: number
-  wrapProcessor?: (processor: Processor<any, any>, queueName: string) => Processor<any, any>
+  wrapProcessor?: (
+    processor: Processor<any, any>,
+    queueName: string,
+    workerOptions: RuntimeWorkerOptions,
+  ) => Processor<any, any>
   wrapBatchProcessor?: (
     processor: BatchProcessor<any, any>,
     queueName: string,
+    workerOptions: RuntimeWorkerOptions,
   ) => BatchProcessor<any, any>
   /** Drops or rewrites options on queue `add`, `addBulk`, and `upsertJobScheduler`. */
   guardAdd?: GuardAdd
@@ -117,11 +122,15 @@ export function createGlideMqRuntime(config: GlideMqRuntimeConfig): GlideMqRunti
       return queue
     },
     createWorker(name, processor, options = {}) {
-      return buildWorker(name, decorateProcessor(processor, name, config.wrapProcessor), options)
+      return buildWorker(
+        name,
+        decorateProcessor(processor, name, config.wrapProcessor, options),
+        options,
+      )
     },
     createBatchWorker(name, processor, options) {
       if (!options?.batch) throw new TypeError('createBatchWorker requires a batch option')
-      const wrapped = decorateProcessor(processor, name, config.wrapBatchProcessor)
+      const wrapped = decorateProcessor(processor, name, config.wrapBatchProcessor, options)
       return buildWorker(name, wrapped, options)
     },
     createFlowProducer() {
