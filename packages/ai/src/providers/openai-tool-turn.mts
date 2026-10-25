@@ -1,3 +1,4 @@
+import type { ResponseInputItem } from 'openai/resources/responses/responses'
 import { ModelProviderError } from './errors.mts'
 import {
   assertCompletedOpenAIResponse,
@@ -12,11 +13,11 @@ import type {
 } from './tool-turn-types.mts'
 import type { BilledModelResponse } from './types.mts'
 
-export type OpenAIInputItem =
-  | { role: 'user' | 'assistant'; content: string }
-  | { type: 'function_call_output'; call_id: string; output: string }
-  | { type: 'function_call'; call_id: string; name: string; arguments: string }
-  | { type: string }
+/**
+ * One Responses input item, taken from the installed `openai` SDK so replayed provider items and
+ * built params stay assignable to `client.responses.create` without casts.
+ */
+export type OpenAIInputItem = ResponseInputItem
 
 export type OpenAIToolTurnParams = {
   instructions: string

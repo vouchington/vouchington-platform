@@ -59,7 +59,7 @@ export class OpenAIResponseStreamIterationError extends Error {
 }
 
 export type CompletedOpenAIResponse = {
-  id: string | undefined
+  id: string
   status: 'completed'
   output: OpenAIResponseShape['output']
   output_text: string
@@ -83,7 +83,10 @@ export function computeOutputText(output: OpenAIResponseShape['output']): string
   return texts.join('')
 }
 
-/** Returns the completed response or throws `OpenAIResponseNotCompletedError` with its usage. */
+/**
+ * Returns the completed response, whose `id` is guaranteed, or throws
+ * `OpenAIResponseNotCompletedError` with its usage (also when a completed response has no id).
+ */
 export function validateCompletedResponse(response: OpenAIResponseShape): CompletedOpenAIResponse {
   if (response.status === 'failed') {
     throw new OpenAIResponseNotCompletedError(
@@ -102,6 +105,9 @@ export function validateCompletedResponse(response: OpenAIResponseShape): Comple
       `OpenAI response has unsupported status: ${response.status ?? 'missing'}`,
       response,
     )
+  }
+  if (!response.id) {
+    throw new OpenAIResponseNotCompletedError('OpenAI response has no id.', response)
   }
   return {
     id: response.id,

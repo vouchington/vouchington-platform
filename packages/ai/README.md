@@ -11,6 +11,14 @@ client). Tests use fakes and recorded-shape fixtures only; no live provider call
 - Types: `ModelUsage`, `GenerateJsonRequest`, `BilledModelResponse`, `ModelCallResult`.
 - `ModelProviderError` and `classifyAnthropicError(error)`: one transient/permanent classification
   with `retryAfterMs`, `ambiguousBilled`, and the `billedResponse` of a billed-but-unusable answer.
+- `isModelProviderError(value)`: type guard that recognizes a `ModelProviderError` (and subclasses)
+  from any installed copy of the package. Errors carry the `Symbol.for('@vouchington/ai/ModelProviderError')`
+  brand, and `instanceof ModelProviderError` also checks it, so pnpm duplicating the package across
+  optional-peer contexts no longer breaks billing or reservation-release handling.
+- `OpenAIInputItem` is the `openai` SDK's `ResponseInputItem`, so `OpenAIToolTurnParams` (plus a
+  `model`) is assignable to `client.responses.create` without casts, and an SDK create function is
+  assignable to `CreateOpenAIToolTurnResponse`. Types are checked against `openai` 7.43 (the peer
+  range is `^7.39.0`); the type import means `openai` types must be installed to use these types.
 - `anthropicUsageToModelUsage`, `openAIUsageToModelUsage`: normalize usage (whole-prompt
   `inputTokens`, cache reads/writes, reasoning tokens).
 - `calcCostMicrounits(prices, provider, model, tier, usage)`, `getReportedCostMicrounits`,
@@ -33,6 +41,8 @@ Pure OpenAI/OpenRouter Responses error semantics (`openai` is an optional peer).
 
 - `OpenAIResponseNotCompletedError`, `OpenAIResponseStreamIterationError`, `validateCompletedResponse`,
   `computeOutputText`: a non-completed response keeps its usage for the ledger.
+  `validateCompletedResponse` guarantees a string `id` (a completed response without one throws
+  `OpenAIResponseNotCompletedError`), so its result is a valid `OpenAIResponseLike`.
 - Predicates: `isOpenAIRateLimitError`, `isOpenAIServerError`, `isOpenAIFlexResourceUnavailableError`,
   `isOpenAIFlexCapacityFailedResponseError`, `isExplicitClientCancelError`,
   `isOpenAIMissingPreviousResponseError`, `isOpenAINotFoundError`,
