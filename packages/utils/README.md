@@ -149,7 +149,15 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
   returned by identity. Callers provide `credentialHeaders`, an optional `redactUrl` hook (applied
   after query and fragment stripping, for path-borne credentials), and an opt-in `dropRequestBody`.
   URL-only and credential-only passes are exported separately, and `composeBeforeSend` accepts
-  either `ScrubOptions` or a final scrubber function. This package has no product defaults.
+  either `ScrubOptions` or a final scrubber function. `scrubEvent` also makes a recursive pass over
+  the whole event (`user`, `extra`, `contexts`, `tags`, `message`, exception values, breadcrumb
+  messages and data): values under sensitive keys (authorization, cookie, password, secret, token,
+  api/access key, email, dsn, credential) are replaced with `[Filtered]` (a plain object keeps its
+  keys), and every string has bearer/basic credentials, `token=` style assignments, and email
+  addresses redacted. `ScrubOptions` accepts additive `sensitiveKeyPatterns`, `textRedactors`, and
+  `maxDepth` (default 12, minimum `MIN_MAX_DEPTH` = 8; deeper containers become `[Filtered]`, cycles become `[Circular]`). Dates,
+  Errors, and other class instances are left as-is. `scrubDeep(value, options?)`, `redactText`, and
+  `scrubBreadcrumb(breadcrumb, options)` are exported for direct use.
 
 - `error-tree`: `formatErrorTree(error, { maxDepth?, maxNested? })` renders an error with its
   `errors[]` and `cause` chain, marks circular references, and reports how many nested errors the

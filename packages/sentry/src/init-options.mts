@@ -1,7 +1,8 @@
-import type { ErrorEvent, EventHint } from '@sentry/core'
+import type { Breadcrumb, BreadcrumbHint, ErrorEvent, EventHint } from '@sentry/core'
 import {
   composeBeforeSend,
   isAllowedEnvironment,
+  scrubBreadcrumb,
   type ScrubOptions,
 } from '@vouchington/utils/observability'
 import { createDataCollectionPolicy } from './data-collection.mts'
@@ -29,6 +30,8 @@ export interface CreateSentryInitOptionsInput {
   spikeProtection?: SpikeProtectionOptions | false
   /** Extra `beforeSend` run before the event filter result is scrubbed. */
   beforeSend?: (event: ErrorEvent, hint: EventHint) => ErrorEvent | null
+  /** Extra `beforeBreadcrumb` run before the breadcrumb is scrubbed, so it cannot reintroduce data. */
+  beforeBreadcrumb?: (breadcrumb: Breadcrumb, hint?: BreadcrumbHint) => Breadcrumb | null
   /** Called when an enabled environment has no DSN. The caller decides how to warn and dedupe. */
   onMisconfigured?: () => void
   tunnel?: string
@@ -64,6 +67,10 @@ export function createSentryInitOptions(input: CreateSentryInitOptionsInput): Se
       input.spikeProtection === false
         ? scrubbed
         : withSpikeProtection(scrubbed, input.spikeProtection),
+    beforeBreadcrumb: (breadcrumb, hint) => {
+      const next = input.beforeBreadcrumb ? input.beforeBreadcrumb(breadcrumb, hint) : breadcrumb
+      return next && scrubBreadcrumb(next, input.scrub)
+    },
     beforeSendSpan: createSpanScrubber(input.scrub),
     ...(input.tracesSampleRate === undefined ? {} : { tracesSampleRate: input.tracesSampleRate }),
     ...(input.tunnel === undefined ? {} : { tunnel: input.tunnel }),
