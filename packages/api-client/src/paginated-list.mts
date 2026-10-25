@@ -59,7 +59,7 @@ export function usePaginatedList<T extends PaginatedData>(
   const currentKey = pageInfoKey(initialData, endpoint, params)
   const requestLifecycle = useMemo(() => new PaginatedRequestLifecycle(), [])
   const refreshGeneration = useRef(0)
-  const latestPages = useRef<T[]>([])
+  const loadedCount = useRef(1)
   const [listState, setListState] = useState<ListState<T>>(() =>
     freshState(currentKey, initialData, requestLifecycle.queryToken),
   )
@@ -81,7 +81,7 @@ export function usePaginatedList<T extends PaginatedData>(
     }
   }, [listState.queryToken, requestLifecycle])
   const { pages, fetchError, loadingMore, queryToken: currentQueryToken } = currentListState
-  latestPages.current = pages
+  loadedCount.current = pages.length
   const { has_next_page, end_cursor } = pages.at(-1)!.page_info
 
   function updateCurrent(token: symbol, update: (prev: ListState<T>) => Partial<ListState<T>>) {
@@ -102,6 +102,7 @@ export function usePaginatedList<T extends PaginatedData>(
     try {
       const nextPage = await fetchAfter(end_cursor)
       if (requestLifecycle.isCurrent(requestToken)) {
+        loadedCount.current += 1 // synchronous: a refresh may commit before React renders this
         updateCurrent(currentQueryToken, (prev) => ({
           pages: appendPaginatedPage(prev.pages, nextPage),
           fetchError: null,
@@ -150,7 +151,7 @@ export function usePaginatedList<T extends PaginatedData>(
     const isCurrent = () => refreshGeneration.current === generation && isLive()
     try {
       const refreshed = await fetchLoadedCursorPages(
-        () => latestPages.current.length,
+        () => loadedCount.current,
         fetchFirstPage,
         fetchAfter,
         isCurrent,

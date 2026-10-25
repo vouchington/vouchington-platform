@@ -176,6 +176,27 @@ describe('refreshLoadedPages', () => {
     })
   })
 
+  it('counts a continuation that completed before React rendered it', async () => {
+    const server: Record<string, Page> = { c1: page(['b'], 'c2'), c2: page(['c'], null) }
+    const fetchPage = vi.fn(
+      async (_endpoint: string, params: { after?: string }) => server[params.after!]!,
+    )
+    const { result } = setup(fetchPage)
+    await loadPages(result)
+    const firstPage = deferred<Page>()
+    let refresh!: Promise<void>
+    act(() => {
+      refresh = result.current.refreshLoadedPages(() => firstPage.promise)
+    })
+    await act(async () => {
+      await result.current.loadMore()
+      firstPage.resolve(page(['new', 'a1'], 'c1'))
+      await refresh
+    })
+    expect(ids(result.current.pages)).toEqual(['new', 'a1', 'b', 'c'])
+    expect(result.current.hasNextPage).toBe(false)
+  })
+
   it('does not revalidate an invalidated continuation when a newer one starts', async () => {
     const calls: { after: string | undefined; result: ReturnType<typeof deferred<Page>> }[] = []
     const fetchPage = vi.fn((_endpoint: string, params: { after?: string }) => {
