@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/mcp-server/package.json"],
+  "changedManifests": ["packages/worker-runtime/package.json"],
   "releases": [
     {
-      "bump": "minor",
-      "directory": "mcp-server",
-      "fromVersion": "0.0.0",
-      "name": "@vouchington/mcp-server",
-      "toVersion": "0.1.0"
+      "bump": "patch",
+      "directory": "worker-runtime",
+      "fromVersion": "0.2.0",
+      "name": "@vouchington/worker-runtime",
+      "toVersion": "0.2.1"
     }
   ],
-  "selectedPackage": "@vouchington/mcp-server"
+  "selectedPackage": "@vouchington/worker-runtime"
 }
