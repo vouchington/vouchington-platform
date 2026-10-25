@@ -43,6 +43,9 @@ Pure OpenAI/OpenRouter Responses error semantics (`openai` is an optional peer).
   `computeOutputText`: a non-completed response keeps its usage for the ledger.
   `validateCompletedResponse` guarantees a string `id` (a completed response without one throws
   `OpenAIResponseNotCompletedError`), so its result is a valid `OpenAIResponseLike`.
+- `isOpenAIResponseNotCompletedError(value)`, `isOpenAIResponseStreamIterationError(value)`: guards
+  that recognize these errors from any installed copy of the package; both classes carry a
+  `Symbol.for` brand that `instanceof` also checks, as `ModelProviderError` does.
 - Predicates: `isOpenAIRateLimitError`, `isOpenAIServerError`, `isOpenAIFlexResourceUnavailableError`,
   `isOpenAIFlexCapacityFailedResponseError`, `isExplicitClientCancelError`,
   `isOpenAIMissingPreviousResponseError`, `isOpenAINotFoundError`,
@@ -70,7 +73,8 @@ classifier-run workflows are product policy and stay in the application.
 - `readProviderErrorDetail` / `parseProviderErrorDetail` / `describeProviderErrorDetail`: bounded,
   user-content-free error bodies.
 - `classifyByStatus`, `classifyOpenRouterFailure`, `classifyProviderResponse`: retry classes.
-- `StructuredDecisionError`.
+- `StructuredDecisionError` and `isStructuredDecisionError(value)`: branded like
+  `ModelProviderError`, so the guard and `instanceof` work across installed package copies.
 
 ## Example sequence (owned by the application)
 

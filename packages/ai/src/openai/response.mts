@@ -1,3 +1,4 @@
+import { brandedHasInstance, hasBrand } from '../providers/brand.mts'
 import type { OpenAIUsageLike } from '../providers/usage.mts'
 
 /** The fields of a Responses API response this module reads. */
@@ -12,12 +13,45 @@ export type OpenAIResponseShape = {
   output: ReadonlyArray<{ type: string; content?: ReadonlyArray<{ type: string; text?: string }> }>
 }
 
+/** Brands shared by every copy of this package, so errors are recognized across module copies. */
+export const OPENAI_RESPONSE_NOT_COMPLETED_ERROR_BRAND = Symbol.for(
+  '@vouchington/ai/OpenAIResponseNotCompletedError',
+)
+export const OPENAI_RESPONSE_STREAM_ITERATION_ERROR_BRAND = Symbol.for(
+  '@vouchington/ai/OpenAIResponseStreamIterationError',
+)
+
+/** Recognizes an `OpenAIResponseNotCompletedError` from any installed copy of the package. */
+export function isOpenAIResponseNotCompletedError(
+  value: unknown,
+): value is OpenAIResponseNotCompletedError {
+  return hasBrand(value, OPENAI_RESPONSE_NOT_COMPLETED_ERROR_BRAND)
+}
+
+/** Recognizes an `OpenAIResponseStreamIterationError` from any installed copy of the package. */
+export function isOpenAIResponseStreamIterationError(
+  value: unknown,
+): value is OpenAIResponseStreamIterationError {
+  return hasBrand(value, OPENAI_RESPONSE_STREAM_ITERATION_ERROR_BRAND)
+}
+
 /**
  * A terminal-but-not-completed response (failed, incomplete, or another status). The provider
  * still bills tokens for these (e.g. hitting `max_output_tokens`), so the usage, model, and service
- * tier the response carried are attached for the caller's ledger.
+ * tier the response carried are attached for the caller's ledger. `instanceof` works across
+ * package copies because it checks the shared brand.
  */
 export class OpenAIResponseNotCompletedError extends Error {
+  static [Symbol.hasInstance](this: unknown, value: unknown): boolean {
+    return brandedHasInstance(
+      OpenAIResponseNotCompletedError,
+      OPENAI_RESPONSE_NOT_COMPLETED_ERROR_BRAND,
+      this,
+      value,
+    )
+  }
+
+  readonly [OPENAI_RESPONSE_NOT_COMPLETED_ERROR_BRAND] = true as const
   readonly id: string | undefined
   readonly status: string
   readonly usage: OpenAIUsageLike | undefined
@@ -44,8 +78,19 @@ export class OpenAIResponseNotCompletedError extends Error {
 /**
  * A response stream that died part-way. `emittedTextDelta` records whether any text had reached
  * the caller: `false` is the signature of upstream weather rather than a consumption defect.
+ * `instanceof` works across package copies because it checks the shared brand.
  */
 export class OpenAIResponseStreamIterationError extends Error {
+  static [Symbol.hasInstance](this: unknown, value: unknown): boolean {
+    return brandedHasInstance(
+      OpenAIResponseStreamIterationError,
+      OPENAI_RESPONSE_STREAM_ITERATION_ERROR_BRAND,
+      this,
+      value,
+    )
+  }
+
+  readonly [OPENAI_RESPONSE_STREAM_ITERATION_ERROR_BRAND] = true as const
   readonly emittedTextDelta: boolean
 
   constructor(emittedTextDelta: boolean, options: { cause: unknown }) {
