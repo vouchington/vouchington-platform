@@ -12,9 +12,10 @@ export type MergedToolSource<
   TContext = unknown,
   TArgs = never,
   TResult = unknown,
-> = Pick<McpTool<TUser, TContext, TArgs, TResult>, 'function' | 'roles'> & {
+  TMeta extends McpToolMeta = McpToolMeta,
+> = Pick<McpTool<TUser, TContext, TArgs, TResult, readonly [], TMeta>, 'function' | 'roles'> & {
   schema: Pick<McpToolSchema, 'parameters' | 'description'>
-  meta?: McpToolMeta
+  meta?: TMeta
 }
 
 export type MergedToolOption<
@@ -22,27 +23,32 @@ export type MergedToolOption<
   TContext = unknown,
   TArgs = never,
   TResult = unknown,
+  TMeta extends McpToolMeta = McpToolMeta,
 > = {
   option: string
-  source: MergedToolSource<TUser, TContext, TArgs, TResult>
+  source: MergedToolSource<TUser, TContext, TArgs, TResult, TMeta>
 }
 
-export type MergedToolConfig<TUser, TContext> = {
+export type MergedToolConfig<TUser, TContext, TMeta extends McpToolMeta = McpToolMeta> = {
   /**
    * A string that is equal for two sources exactly when they may share one tool. Include every
    * declared field the application authorizes on (scopes, audience, plan, roles, annotations):
    * merging sources that differ would let one option inherit another's gates.
    */
-  compatibilityKey: (source: MergedToolSource<TUser, TContext>) => string
+  compatibilityKey: (source: MergedToolSource<TUser, TContext, never, unknown, TMeta>) => string
 }
 
 /** One MCP name, with each source tool's validator, handler and REST route selection retained. */
-export function createMergedTool<TUser = unknown, TContext = unknown>(
+export function createMergedTool<
+  TUser = unknown,
+  TContext = unknown,
+  TMeta extends McpToolMeta = McpToolMeta,
+>(
   name: string,
   title: string,
-  options: readonly MergedToolOption<TUser, TContext>[],
-  { compatibilityKey }: MergedToolConfig<TUser, TContext>,
-): McpTool<TUser, TContext, unknown, unknown> {
+  options: readonly MergedToolOption<TUser, TContext, never, unknown, TMeta>[],
+  { compatibilityKey }: MergedToolConfig<TUser, TContext, TMeta>,
+): McpTool<TUser, TContext, unknown, unknown, readonly [], TMeta> {
   if (options.length < 1) throw new Error(`${name} needs at least one option`)
   const first = options[0]!.source
   if (!first.meta?.outputSchema) throw new Error(`${name} needs source output schemas`)
@@ -122,7 +128,7 @@ export function createMergedTool<TUser = unknown, TContext = unknown>(
         return source?.meta?.selectOutputSchema?.(optionArguments) ?? source?.meta?.outputSchema
       },
       auditOption: (args) => (selected(args) ? (args['option'] as string) : null),
-    },
+    } as TMeta,
     function: (user) => (args, context) => {
       const violation = findSchemaViolation(parameters, args)
       if (violation) throw new Error(`Invalid merged tool arguments: ${violation}`)

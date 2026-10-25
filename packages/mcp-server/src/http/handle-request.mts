@@ -47,9 +47,12 @@ export type StatelessMcpRequest = {
   isDispatchedToolCall: (message: unknown) => message is { id: string | number }
   /** Defaults to `validateToolsRequest`. Return a response to short-circuit before the transport. */
   validateRequest?: (parsedBody: unknown) => Response | null
-  /** The retry delay of each `tools/call`, by message position, whose rate-limit bucket was spent. */
-  rateLimitedCalls: ReadonlyMap<number, number>
-  buildRateLimitedResult: (retryAfterSeconds: number) => CallToolResult
+  /** The refusal of each `tools/call`, by message position, whose rate-limit bucket was spent. */
+  rateLimitedCalls: ReadonlyMap<number, { retryAfterSeconds: number; message?: string }>
+  buildRateLimitedResult: (rateLimit: {
+    retryAfterSeconds: number
+    message?: string
+  }) => CallToolResult
   /** The audit option of an admitted call, for the hooks. */
   resolveAuditOption?: (call: {
     name: string
@@ -141,10 +144,10 @@ async function runToolCall(
       // Observation only: a failing observer never replaces the tool's result or its error.
     }
   }
-  const retryAfterSeconds = options.rateLimitedCalls.get(messageIndex ?? -1)
-  if (retryAfterSeconds !== undefined) {
+  const rateLimit = options.rateLimitedCalls.get(messageIndex ?? -1)
+  if (rateLimit !== undefined) {
     settle({ durationMs: null, toolError: false, rateLimited: true })
-    return options.buildRateLimitedResult(retryAfterSeconds)
+    return options.buildRateLimitedResult(rateLimit)
   }
   const option = options.resolveAuditOption?.(call)
   let rateLimited = false

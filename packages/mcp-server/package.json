@@ -64,7 +64,7 @@
     "@modelcontextprotocol/sdk": "^1.32.2"
   },
   "peerDependencies": {
-    "@modelcontextprotocol/sdk": "^1.32.2"
+    "@modelcontextprotocol/sdk": "^1.32.0"
   },
   "engines": {
     "node": ">=24.0.0"

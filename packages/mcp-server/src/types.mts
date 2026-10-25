@@ -49,6 +49,7 @@ export type McpTool<
   TArgs = unknown,
   TResult = unknown,
   TCurry extends readonly unknown[] = readonly [],
+  TMeta extends McpToolMeta = McpToolMeta,
 > = {
   schema: McpToolSchema
   function: (
@@ -56,5 +57,5 @@ export type McpTool<
     ...curry: TCurry
   ) => (args: TArgs, context?: TContext) => Promise<TResult> | TResult
   roles?: Partial<Record<string, boolean>>
-  meta?: McpToolMeta
+  meta?: TMeta
 }
