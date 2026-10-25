@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   CIRCULAR_VALUE,
+  EMAIL_REDACTED,
+  MIN_MAX_DEPTH,
   SENSITIVE_VALUE,
+  TOKEN_REDACTED,
   composeBeforeSend,
   redactText,
   scrubBreadcrumb,
@@ -82,15 +85,54 @@ describe('scrubDeep', () => {
   })
 
   it('fails closed beyond the depth bound', () => {
-    const deep = { a: { b: { c: { token: 'x' } } } }
-    expect(scrubDeep(deep, { maxDepth: 3 })).toEqual({ a: { b: { c: SENSITIVE_VALUE } } })
-    expect(scrubDeep(deep, { maxDepth: 4 })).toEqual({
-      a: { b: { c: { token: SENSITIVE_VALUE } } },
+    const deep = { a: { b: { c: { d: { e: { f: { g: { h: { token: 'x' } } } } } } } } }
+    expect(scrubDeep(deep, { maxDepth: 8 })).toEqual({
+      a: { b: { c: { d: { e: { f: { g: { h: SENSITIVE_VALUE } } } } } } },
+    })
+    expect(scrubDeep(deep, { maxDepth: 9 })).toEqual({
+      a: { b: { c: { d: { e: { f: { g: { h: { token: SENSITIVE_VALUE } } } } } } } },
     })
     let nested: Record<string, unknown> = { leaf: 'a@b.test' }
     for (let i = 0; i < 40; i += 1) nested = { next: nested }
     expect(JSON.stringify(scrubDeep(nested))).not.toContain('a@b.test')
     expect(JSON.stringify(scrubDeep(nested))).toContain(SENSITIVE_VALUE)
+  })
+
+  it.each([0, 7, 8.5, Number.NaN])('rejects maxDepth %s below the structural floor', (maxDepth) => {
+    expect(() => scrubDeep({}, { maxDepth })).toThrow(RangeError)
+  })
+
+  it('keeps event structure at the minimum depth', () => {
+    const event = {
+      fingerprint: ['stable-group'],
+      exception: { values: [{ stacktrace: { frames: [{ vars: { note: 'ok' } }] } }] },
+    }
+    expect(scrubDeep(event, { maxDepth: MIN_MAX_DEPTH })).toBe(event)
+  })
+
+  it('is stable across repeated passes', () => {
+    const once = redactText('?token=abc&x=1 Bearer abc a@b.test')
+    expect(redactText(once)).toBe(once)
+    expect(once).toBe(`?token=${TOKEN_REDACTED}&x=1 Bearer ${TOKEN_REDACTED} ${EMAIL_REDACTED}`)
+  })
+
+  it('scrubs shared subtrees once instead of once per path', () => {
+    let node: Record<string, unknown> = { note: 'clean' }
+    for (let level = 0; level < 9; level += 1) {
+      const previous = node
+      node = Object.fromEntries(Array.from({ length: 10 }, (_, index) => [`k${index}`, previous]))
+    }
+    const started = performance.now()
+    expect(scrubDeep(node)).toBe(node)
+    expect(performance.now() - started).toBeLessThan(500)
+  })
+
+  it('rescrubs a shared subtree first reached deeper when later reached shallower', () => {
+    const shared = { a: { b: 'x' } }
+    let deepPath: Record<string, unknown> = { shared }
+    for (let level = 0; level < 9; level += 1) deepPath = { next: deepPath }
+    const result = scrubDeep({ deepPath, shared }) as Record<string, unknown>
+    expect(result.shared).toBe(shared)
   })
 
   it('accepts injected key patterns and text redactors, including global regexes', () => {

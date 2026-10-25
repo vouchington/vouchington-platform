@@ -155,7 +155,7 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
   api/access key, email, dsn, credential) are replaced with `[Filtered]` (a plain object keeps its
   keys), and every string has bearer/basic credentials, `token=` style assignments, and email
   addresses redacted. `ScrubOptions` accepts additive `sensitiveKeyPatterns`, `textRedactors`, and
-  `maxDepth` (default 12; deeper containers become `[Filtered]`, cycles become `[Circular]`). Dates,
+  `maxDepth` (default 12, minimum `MIN_MAX_DEPTH` = 8; deeper containers become `[Filtered]`, cycles become `[Circular]`). Dates,
   Errors, and other class instances are left as-is. `scrubDeep(value, options?)`, `redactText`, and
   `scrubBreadcrumb(breadcrumb, options)` are exported for direct use.
 

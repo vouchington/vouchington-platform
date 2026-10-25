@@ -8,6 +8,7 @@ export {
   CIRCULAR_VALUE,
   DEFAULT_MAX_DEPTH,
   EMAIL_REDACTED,
+  MIN_MAX_DEPTH,
   TOKEN_REDACTED,
   redactText,
   scrubDeep,
