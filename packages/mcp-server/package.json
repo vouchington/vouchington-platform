@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/mcp-server",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Generic MCP server building blocks: structural tool types, JSON Schema utilities, merged tools, bounded results, untrusted-output wrapping, and a stateless HTTP handler.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/mcp-server#readme",
   "license": "MIT",
