@@ -43,3 +43,9 @@ const server = new ServerRequest({
 - `@vouchington/api-client/paginated-list` exports `usePaginatedList(initial, endpoint, params,
   { fetchPage | loadPage })` for cursor-page accumulation with stale-request protection, plus
   `getPaginatedQueryKey`. The application supplies the page fetcher, and `initialData` must keep a stable identity across renders.
+  The hook also returns `replaceFirstPage`, `resetToFirstPage`, and `refreshLoadedPages(fetchFirstPage)`,
+  which re-reads every loaded page from the first (following cursors) and swaps the result in at
+  once. Pages appended by a concurrent `loadMore` are kept without duplicates, a refresh superseded
+  by a reset or a newer refresh is discarded, and a failure keeps the current pages and surfaces
+  through `fetchError`. `PaginatedRequestLifecycle` and `appendPaginatedPage` are exported from the
+  same subpath for driving pagination lifecycles outside the hook.

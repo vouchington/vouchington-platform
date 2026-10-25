@@ -1,12 +1,14 @@
-import { useLayoutEffect, useMemo, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   appendPaginatedPage,
   canPreservePaginationHistory,
   createQueryToken,
   deduplicatePages,
   displacedFirstPage,
+  fetchLoadedCursorPages,
   PaginatedRequestLifecycle,
 } from './paginated-list-utils.mts'
+import { freshState, type ListState } from './paginated-list-state.mts'
 import {
   getPaginatedQueryKey,
   pageInfoKey,
@@ -14,7 +16,7 @@ import {
   type PaginatedListParams,
 } from './paginated-query-key.mts'
 
-export { getPaginatedQueryKey }
+export { appendPaginatedPage, PaginatedRequestLifecycle, getPaginatedQueryKey }
 export type { PaginatedData, PaginatedListParams }
 
 export type PaginatedPageFetcher<T> = (endpoint: string, params: PaginatedListParams) => Promise<T>
@@ -28,6 +30,7 @@ export type UsePaginatedListResult<T> = {
   fetchError: Error | null
   clearError: () => void
   replaceFirstPage: (page: T) => void
+  refreshLoadedPages: (fetchFirstPage: () => Promise<T>) => Promise<void>
   resetToFirstPage: (page: T) => void
   resetKey: symbol
 }
@@ -36,31 +39,6 @@ export type UsePaginatedListResult<T> = {
 export type UsePaginatedListOptions<T> =
   | { fetchPage: PaginatedPageFetcher<T>; loadPage?: (after: string) => Promise<T> }
   | { loadPage: (after: string) => Promise<T>; fetchPage?: PaginatedPageFetcher<T> }
-
-type ListState<T> = {
-  key: string
-  sourceInitialData: T
-  queryToken: symbol
-  pages: T[]
-  fetchError: Error | null
-  loadingMore: boolean
-}
-
-function freshState<T extends PaginatedData>(
-  key: string,
-  initialData: T,
-  queryToken: symbol,
-  page: T = initialData,
-): ListState<T> {
-  return {
-    key,
-    sourceInitialData: initialData,
-    queryToken,
-    pages: deduplicatePages([page]),
-    fetchError: null,
-    loadingMore: false,
-  }
-}
 
 /**
  * Accumulates cursor pages for infinite-scroll lists. The server renders page 1; later pages load
@@ -80,6 +58,7 @@ export function usePaginatedList<T extends PaginatedData>(
 ): UsePaginatedListResult<T> {
   const currentKey = pageInfoKey(initialData, endpoint, params)
   const requestLifecycle = useMemo(() => new PaginatedRequestLifecycle(), [])
+  const refreshGeneration = useRef(0)
   const [listState, setListState] = useState<ListState<T>>(() =>
     freshState(currentKey, initialData, requestLifecycle.queryToken),
   )
@@ -107,16 +86,19 @@ export function usePaginatedList<T extends PaginatedData>(
     setListState((prev) => (prev.queryToken === token ? { ...prev, ...update(prev) } : prev))
   }
 
+  function fetchAfter(cursor: string): Promise<T> {
+    return options.fetchPage
+      ? options.fetchPage(endpoint, { ...params, after: cursor })
+      : options.loadPage!(cursor)
+  }
+
   async function loadMore(): Promise<boolean> {
     if (!has_next_page || !end_cursor || !endpoint) return false
     const requestToken = requestLifecycle.start(currentQueryToken)
     if (!requestToken) return false
     updateCurrent(requestToken, () => ({ loadingMore: true }))
     try {
-      const pending = options.fetchPage
-        ? options.fetchPage(endpoint, { ...params, after: end_cursor })
-        : options.loadPage!(end_cursor)
-      const nextPage = await pending
+      const nextPage = await fetchAfter(end_cursor)
       if (requestLifecycle.isCurrent(requestToken)) {
         updateCurrent(requestToken, (prev) => ({
           pages: appendPaginatedPage(prev.pages, nextPage),
@@ -152,6 +134,30 @@ export function usePaginatedList<T extends PaginatedData>(
     })
   }
 
+  /**
+   * Re-reads every loaded page from the first, then swaps them in at once. Pages appended by a
+   * concurrent `loadMore` are kept. A refresh superseded by a reset or a newer refresh is dropped,
+   * and a failure keeps the current pages and surfaces through `fetchError`.
+   */
+  async function refreshLoadedPages(fetchFirstPage: () => Promise<T>): Promise<void> {
+    const generation = ++refreshGeneration.current
+    const loadedCount = pages.length
+    const isCurrent = () => refreshGeneration.current === generation
+    try {
+      const refreshed = await fetchLoadedCursorPages(loadedCount, fetchFirstPage, fetchAfter)
+      if (!isCurrent()) return
+      updateCurrent(currentQueryToken, (prev) => ({
+        pages: deduplicatePages([...refreshed, ...prev.pages.slice(loadedCount)]),
+        fetchError: null,
+      }))
+    } catch (err) {
+      if (!isCurrent()) return
+      updateCurrent(currentQueryToken, () => ({
+        fetchError: err instanceof Error ? err : new Error('Failed to refresh'),
+      }))
+    }
+  }
+
   function resetToFirstPage(page: T) {
     const replacement = freshState(currentKey, initialData, createQueryToken(), page)
     updateCurrent(currentQueryToken, () => replacement)
@@ -166,6 +172,7 @@ export function usePaginatedList<T extends PaginatedData>(
     fetchError,
     clearError: () => updateCurrent(currentQueryToken, () => ({ fetchError: null })),
     replaceFirstPage,
+    refreshLoadedPages,
     resetToFirstPage,
     resetKey: currentQueryToken,
   }

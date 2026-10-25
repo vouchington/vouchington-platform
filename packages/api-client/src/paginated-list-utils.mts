@@ -123,3 +123,19 @@ export function deduplicatePages<T extends PaginatedData>(pages: T[]): T[] {
 export function appendPaginatedPage<T extends PaginatedData>(pages: T[], page: T): T[] {
   return deduplicatePages([...pages, page])
 }
+
+/** Re-read up to `loadedCount` cursor pages, starting from the first and following cursors. */
+export async function fetchLoadedCursorPages<T extends PaginatedData>(
+  loadedCount: number,
+  first: () => Promise<T>,
+  next: (cursor: string) => Promise<T>,
+): Promise<T[]> {
+  const refreshed = [await first()]
+  while (refreshed.length < loadedCount) {
+    const { has_next_page, end_cursor } = refreshed.at(-1)!.page_info
+    if (!has_next_page || !end_cursor) break
+    // oxlint-disable-next-line no-await-in-loop -- the next cursor depends on this response
+    refreshed.push(await next(end_cursor))
+  }
+  return refreshed
+}
