@@ -31,6 +31,15 @@ describe('ModelProviderError brand', () => {
   it('recognizes subclasses', () => {
     class Sub extends ModelProviderError {}
     expect(isModelProviderError(new Sub('refusal', 'x', options))).toBe(true)
+    expect(new Sub('refusal', 'x', options) instanceof ModelProviderError).toBe(true)
+  })
+
+  it('keeps subclass instanceof checks prototype-based', () => {
+    class Sub extends ModelProviderError {}
+    class Sibling extends ModelProviderError {}
+    expect(new Sub('refusal', 'x', options) instanceof Sub).toBe(true)
+    expect(new ModelProviderError('refusal', 'x', options) instanceof Sub).toBe(false)
+    expect(new Sibling('refusal', 'x', options) instanceof Sub).toBe(false)
   })
 
   it.each([null, undefined, 'x', 1, {}, new Error('plain'), { [Symbol.for('other')]: true }])(

@@ -49,7 +49,11 @@ export function isModelProviderError(value: unknown): value is ModelProviderErro
  * works across package copies because it checks the shared brand.
  */
 export class ModelProviderError extends Error {
-  static [Symbol.hasInstance](value: unknown): boolean {
+  static [Symbol.hasInstance](this: unknown, value: unknown): boolean {
+    // Only the base class uses the shared brand; subclasses keep prototype-based checks.
+    if (this !== ModelProviderError) {
+      return Function.prototype[Symbol.hasInstance].call(this, value)
+    }
     return isModelProviderError(value)
   }
 
