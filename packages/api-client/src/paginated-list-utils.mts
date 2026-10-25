@@ -8,23 +8,12 @@ export function createQueryToken(): symbol {
   return Symbol('paginated query occurrence')
 }
 
-function canStartPaginatedRequest(activeRequestToken: symbol | null): boolean {
-  return activeRequestToken === null
-}
-
-function isCurrentPaginatedRequest(
-  activeRequestToken: symbol | null,
-  queryToken: symbol,
-  requestToken: symbol,
-): boolean {
-  return activeRequestToken === requestToken && queryToken === requestToken
-}
-
 /**
  * Owns continuation request generations for a single paginated list instance.
  *
- * A generation reset releases a pending request so the new query can begin loading immediately;
- * completions from the discarded generation then fail `isCurrent`.
+ * Every started request gets its own token. A generation reset releases the active request so the
+ * new query can begin loading immediately; completions from any released request then fail
+ * `isCurrent`, even if a newer request has since started on the same query.
  */
 export class PaginatedRequestLifecycle {
   #queryToken = createQueryToken()
@@ -41,15 +30,13 @@ export class PaginatedRequestLifecycle {
   }
 
   start(queryToken: symbol): symbol | null {
-    if (queryToken !== this.#queryToken || !canStartPaginatedRequest(this.#activeRequestToken)) {
-      return null
-    }
-    this.#activeRequestToken = queryToken
-    return queryToken
+    if (queryToken !== this.#queryToken || this.#activeRequestToken !== null) return null
+    this.#activeRequestToken = Symbol('paginated continuation request')
+    return this.#activeRequestToken
   }
 
   isCurrent(requestToken: symbol): boolean {
-    return isCurrentPaginatedRequest(this.#activeRequestToken, this.#queryToken, requestToken)
+    return this.#activeRequestToken === requestToken
   }
 
   finish(requestToken: symbol): void {
@@ -122,4 +109,27 @@ export function deduplicatePages<T extends PaginatedData>(pages: T[]): T[] {
 
 export function appendPaginatedPage<T extends PaginatedData>(pages: T[], page: T): T[] {
   return deduplicatePages([...pages, page])
+}
+
+/**
+ * Re-read cursor pages from the first, following cursors until `loadedCount()` pages are read.
+ * The count is re-evaluated after every fetch so pages loaded meanwhile are included. Following
+ * stops once `isCurrent()` is false. A non-terminal page without a cursor is an error.
+ */
+export async function fetchLoadedCursorPages<T extends PaginatedData>(
+  loadedCount: () => number,
+  first: () => Promise<T>,
+  next: (cursor: string) => Promise<T>,
+  isCurrent: () => boolean,
+): Promise<T[]> {
+  const refreshed = [await first()]
+  while (refreshed.length < loadedCount()) {
+    const { has_next_page, end_cursor } = refreshed.at(-1)!.page_info
+    if (!has_next_page) break
+    if (!end_cursor) throw new Error('Paginated page has a next page but no end cursor')
+    if (!isCurrent()) break
+    // oxlint-disable-next-line no-await-in-loop -- the next cursor depends on this response
+    refreshed.push(await next(end_cursor))
+  }
+  return refreshed
 }
