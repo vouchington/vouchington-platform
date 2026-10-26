@@ -92,6 +92,12 @@ export { catalogShardLines, parseCatalogShardText } from './shard-text.mts'
 export { removeCatalogLine, upsertCatalogLine } from './shard-edit.mts'
 export { CatalogMergeConflict, mergeCatalogShards } from './shard-merge.mts'
 export {
+  createUnresolvedMessageReporter,
+  seedFromBootstrap,
+  type MessagesBootstrap,
+  type UnresolvedMessageCapture,
+} from './reporter.mts'
+export {
   createLocalizationBatch,
   etagMatches,
   localizationEtag,
