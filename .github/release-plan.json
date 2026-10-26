@@ -1,13 +1,31 @@
 {
-  "changedManifests": ["packages/utils/package.json"],
+  "changedManifests": [
+    "packages/email/package.json",
+    "packages/localization-compiler/package.json",
+    "packages/localization/package.json"
+  ],
   "releases": [
     {
-      "bump": "patch",
-      "directory": "utils",
-      "fromVersion": "0.10.1",
-      "name": "@vouchington/utils",
-      "toVersion": "0.10.2"
+      "bump": "minor",
+      "directory": "localization",
+      "fromVersion": "0.2.1",
+      "name": "@vouchington/localization",
+      "toVersion": "0.3.0"
+    },
+    {
+      "bump": "minor",
+      "directory": "email",
+      "fromVersion": "0.1.0",
+      "name": "@vouchington/email",
+      "toVersion": "0.2.0"
+    },
+    {
+      "bump": "minor",
+      "directory": "localization-compiler",
+      "fromVersion": "0.2.2",
+      "name": "@vouchington/localization-compiler",
+      "toVersion": "0.3.0"
     }
   ],
-  "selectedPackage": "@vouchington/utils"
+  "selectedPackage": "@vouchington/localization"
 }

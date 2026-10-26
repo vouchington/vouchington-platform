@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/email",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "React Email render helpers, style factories, catalog copy loading, and locale resolution.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/email#readme",
   "license": "MIT",
@@ -33,7 +33,7 @@
     "prepack": "pnpm run build"
   },
   "dependencies": {
-    "@vouchington/localization": "^0.2.0"
+    "@vouchington/localization": "^0.3.0"
   },
   "devDependencies": {
     "@react-email/render": "2.1.1",

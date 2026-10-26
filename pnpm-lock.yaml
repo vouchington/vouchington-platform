@@ -154,7 +154,7 @@ importers:
   packages/email:
     dependencies:
       '@vouchington/localization':
-        specifier: ^0.2.0
+        specifier: ^0.3.0
         version: link:../localization
     devDependencies:
       '@react-email/render':
@@ -258,7 +258,7 @@ importers:
         specifier: ^0.0.1
         version: link:../csv
       '@vouchington/localization':
-        specifier: ^0.2.0
+        specifier: ^0.3.0
         version: link:../localization
 
   packages/mcp-server:
