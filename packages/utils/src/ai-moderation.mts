@@ -3,8 +3,11 @@ export type ModerationInputPart =
   | { type: 'text'; text: string }
   | { type: 'image_url'; image_url: { url: string } }
 
-/** The fields of a moderation result this module reads. */
-export type ModerationResultLike = { flagged: boolean; categories: Record<string, boolean> }
+/** The fields of a moderation result this module reads. A null category counts as not flagged. */
+export type ModerationResultLike = {
+  flagged: boolean
+  categories: Readonly<Record<string, boolean | null>>
+}
 
 export type MessageSafetyViolation =
   | { code: 'PROMPT_INJECTION' }
@@ -24,7 +27,7 @@ export function buildModerationInput(
 /** Names of the categories a result flagged. */
 export function getFlaggedCategories(result: ModerationResultLike): string[] {
   return Object.entries(result.categories).flatMap(([category, flagged]) =>
-    flagged ? [category] : [],
+    flagged === true ? [category] : [],
   )
 }
 
