@@ -13,7 +13,7 @@ export {
   seedFromBootstrap,
   type MessagesBootstrap,
   type UnresolvedMessageCapture,
-} from './reporter.mts'
+} from '../reporter.mts'
 export {
   CatalogHydrator,
   createTranslationsHook,

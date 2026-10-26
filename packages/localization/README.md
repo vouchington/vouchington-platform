@@ -23,6 +23,11 @@ artifact, persists known selector IDs separately from aliases, and resolves the 
 locally. Its CLI owns table updates, formatting, CSV interchange, and three-way merges so catalog
 edits remain deterministic.
 
+The root also exports `createUnresolvedMessageReporter(locale, capture)`, a server-safe
+`onUnresolved` callback that reports each missing key once per locale through the injected
+`capture` and renders an empty string, plus `seedFromBootstrap(bootstrap, deserialize, seed)`.
+Server rendering imports them from the root; the `'use client'` React subpath re-exports them.
+
 ## `@vouchington/localization/react`
 
 Thin React 19 primitives (`react` is an optional peer of this subpath only; the root entry never
@@ -35,7 +40,7 @@ imports it):
 - `createTranslationsHook({ cache, useLocale, normalizeLocale, defaultLocale, createTranslator })`:
   suspends on the active locale's catalog and returns a memoized translator.
 - `CatalogHydrator`: merges a server-fetched catalog into the cache during render.
-- `createUnresolvedMessageReporter(locale, capture)` and `seedFromBootstrap(...)`.
+- Re-exports of the root's `createUnresolvedMessageReporter` and `seedFromBootstrap`.
 
 Applications own the catalog loader, translator, supported locales, error capture, and the
 generated route selectors; none are shipped here.
