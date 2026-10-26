@@ -16,7 +16,10 @@ describe('moderation', () => {
   })
 
   it('reports flagged categories', () => {
-    const flagged = { flagged: true, categories: { hate: true, spam: false, violence: true } }
+    const flagged = {
+      flagged: true,
+      categories: { hate: true, spam: false, illicit: null, violence: true },
+    }
     expect(getFlaggedCategories(flagged)).toEqual(['hate', 'violence'])
     expect(checkModerationResults([flagged])).toEqual({
       code: 'MODERATION_VIOLATION',
