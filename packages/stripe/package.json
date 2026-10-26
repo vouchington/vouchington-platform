@@ -33,10 +33,10 @@
     "prepack": "pnpm run build"
   },
   "devDependencies": {
-    "stripe": "^23.0.0"
+    "stripe": "^23.0.1"
   },
   "peerDependencies": {
-    "stripe": "^23.0.0"
+    "stripe": "^23.0.1"
   },
   "engines": {
     "node": ">=24.0.0"
