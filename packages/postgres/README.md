@@ -177,14 +177,18 @@ Markdown location. The application owns moving previously generated files when c
   in test environments. `runWithQueryCompletionDiagnostics` and `observeQueryCompletion` capture
   query settlement for a scope. `createSharedDbScopeObserver({ key, tables })` is a
   process-global, test-installable observer for scope-bounded service calls; the application owns
-  the operation-to-table vocabulary. `createQueryProfiles({ registryKey?, excludedFromRepeats? })`
+  the operation-to-table vocabulary. `createQueryProfiles({ registryKey?, excludedFromRepeats?, isDetached? })`
   returns `observe` (pass to `createQueryTimingRecorder({ observe })`),
   `createRequestQueryProfile()` and `runIndependentWorker(identity, handler, onOwnedProfile?)`,
   which capture every query per request or job into an async-local scope and summarize total
   queries, serial depth (`summarizeRequestQueries`, `computeSerialDepth`) and repeated
   annotations. The registry key defaults to a package-owned `Symbol.for` and is global so separate
   module graphs share it; the package's own transaction-control annotations are excluded from
-  repeats, and `excludedFromRepeats` adds more. Thresholds and baselines stay in the application.
+  repeats, and `excludedFromRepeats` adds more. `isDetached` is evaluated as each statement is
+  observed (typically reading the application's own `AsyncLocalStorage` flag for background work
+  the request never waits on); a detached statement records `detached: true`, still counts in
+  `totalQueries`, and is excluded from repeats and serial depth. A throwing predicate counts as
+  not detached. Thresholds and baselines stay in the application.
 
 ## Partitions
 
