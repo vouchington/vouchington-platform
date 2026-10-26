@@ -8,6 +8,11 @@ export interface RequestQuery {
    * not a repeated lookup.
    */
   excludedFromRepeats: boolean
+  /**
+   * Detached work (e.g. a background cache refresh) that the request never waits on: counted in
+   * `totalQueries` but excluded from repeats and serial depth.
+   */
+  detached: boolean
 }
 
 export interface RepeatedAnnotation {
@@ -43,7 +48,7 @@ export function computeSerialDepth(queries: readonly RequestQuery[]): number {
 function findRepeatedAnnotations(queries: readonly RequestQuery[]): RepeatedAnnotation[] {
   const counts = new Map<string, number>()
   for (const query of queries) {
-    if (query.excludedFromRepeats) continue
+    if (query.excludedFromRepeats || query.detached) continue
     const annotation = query.annotation ?? 'unannotated'
     counts.set(annotation, (counts.get(annotation) ?? 0) + 1)
   }
@@ -59,7 +64,7 @@ function findRepeatedAnnotations(queries: readonly RequestQuery[]): RepeatedAnno
 export function summarizeRequestQueries(queries: readonly RequestQuery[]): RequestQuerySummary {
   return {
     totalQueries: queries.length,
-    serialDepth: computeSerialDepth(queries),
+    serialDepth: computeSerialDepth(queries.filter((query) => !query.detached)),
     repeats: findRepeatedAnnotations(queries),
   }
 }

@@ -33,6 +33,11 @@ export interface QueryProfilesOptions {
   registryKey?: symbol
   /** Extra annotations excluded from repeat detection, added to transaction-control ones. */
   excludedFromRepeats?: Iterable<string>
+  /**
+   * Evaluated as each statement is observed; `true` marks it detached (work the scope never waits
+   * on), so it is counted but excluded from repeats and serial depth. A throw counts as `false`.
+   */
+  isDetached?: () => boolean
 }
 
 export type QueryProfileObserverInput = Pick<
@@ -110,6 +115,13 @@ export function createQueryProfiles(options: QueryProfilesOptions = {}): QueryPr
     ...TRANSACTION_CONTROL_ANNOTATIONS,
     ...(options.excludedFromRepeats ?? []),
   ])
+  const isDetached = (): boolean => {
+    try {
+      return options.isDetached?.() === true
+    } catch {
+      return false
+    }
+  }
   return {
     observe(input) {
       const queries = scopes.getStore()
@@ -123,6 +135,7 @@ export function createQueryProfiles(options: QueryProfilesOptions = {}): QueryPr
           input.cursorBatches !== undefined ||
           input.pipelined === true ||
           (input.annotation !== null && excluded.has(input.annotation)),
+        detached: isDetached(),
       })
     },
     createRequestQueryProfile() {

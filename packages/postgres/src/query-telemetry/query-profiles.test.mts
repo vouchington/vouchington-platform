@@ -1,10 +1,17 @@
+import { AsyncLocalStorage } from 'node:async_hooks'
 import { describe, expect, it, vi } from 'vitest'
 import { createQueryProfiles } from './query-profiles.mts'
 import { createQueryTimingRecorder } from './timing-recorder.mts'
 import { computeSerialDepth, summarizeRequestQueries, type RequestQuery } from './query-summary.mts'
 
 function query(annotation: string | null, startMs: number, endMs: number, excluded = false) {
-  return { annotation, startMs, endMs, excludedFromRepeats: excluded } satisfies RequestQuery
+  return {
+    annotation,
+    startMs,
+    endMs,
+    excludedFromRepeats: excluded,
+    detached: false,
+  } satisfies RequestQuery
 }
 
 const timing = { pool: 'read', durationMs: 0, rowCount: 0, error: false } as const
@@ -138,5 +145,83 @@ describe('request query profile attribution', () => {
     const other = createQueryProfiles({ registryKey: Symbol.for('test.queryProfiles.b') })
     profile.run(() => other.observe({ annotation: 'elsewhere', durationMs: 0 }))
     expect(profile.summarize().totalQueries).toBe(0)
+  })
+})
+
+describe('detached statements', () => {
+  const flag = new AsyncLocalStorage<boolean>()
+  const detach = <T,>(handler: () => T) => flag.run(true, handler)
+  const detachedProfiles = () => createQueryProfiles({ isDetached: () => flag.getStore() === true })
+
+  it('marks nothing detached when the option is omitted', async () => {
+    const profiles = createQueryProfiles()
+    const profile = profiles.createRequestQueryProfile()
+    profile.run(() => {
+      detach(() => profiles.observe({ annotation: 'a', durationMs: 0 }))
+      profiles.observe({ annotation: 'a', durationMs: 0 })
+    })
+    expect(profile.summarize()).toEqual({
+      totalQueries: 2,
+      serialDepth: 2,
+      repeats: [{ annotation: 'a', count: 2 }],
+    })
+    const worker = profiles.runIndependentWorker(
+      { queue: 'q', jobs: [{ id: '1', name: 'n' }] },
+      () => profiles.observe({ annotation: 'w', durationMs: 0 }),
+    )
+    await worker.completion
+    expect(worker.profile.queries()).toEqual([expect.objectContaining({ detached: false })])
+  })
+
+  it('does not report a detached repeat', () => {
+    const profiles = detachedProfiles()
+    const profile = profiles.createRequestQueryProfile()
+    profile.run(() => {
+      profiles.observe({ annotation: 'refresh', durationMs: 0 })
+      detach(() => profiles.observe({ annotation: 'refresh', durationMs: 0 }))
+    })
+    expect(profile.summarize().repeats).toEqual([])
+  })
+
+  it('leaves detached statements out of serial depth but counts them in the total', () => {
+    const profiles = detachedProfiles()
+    const profile = profiles.createRequestQueryProfile()
+    profile.run(() => {
+      profiles.observe({ annotation: 'awaited', durationMs: 0 })
+      detach(() => {
+        profiles.observe({ annotation: 'bg1', durationMs: 0 })
+        profiles.observe({ annotation: 'bg2', durationMs: 0 })
+      })
+    })
+    expect(profile.summarize()).toEqual({ totalQueries: 3, serialDepth: 1, repeats: [] })
+  })
+
+  it('still reports an awaited repeat that shares a detached annotation', () => {
+    const profiles = detachedProfiles()
+    const profile = profiles.createRequestQueryProfile()
+    profile.run(() => {
+      detach(() => profiles.observe({ annotation: 'load', durationMs: 0 }))
+      profiles.observe({ annotation: 'load', durationMs: 0 })
+      profiles.observe({ annotation: 'load', durationMs: 0 })
+    })
+    expect(profile.summarize().repeats).toEqual([{ annotation: 'load', count: 2 }])
+  })
+
+  it('treats a throwing predicate as not detached and never throws from observe', () => {
+    const profiles = createQueryProfiles({
+      isDetached: () => {
+        throw new Error('boom')
+      },
+    })
+    const profile = profiles.createRequestQueryProfile()
+    profile.run(() => {
+      expect(() => profiles.observe({ annotation: 'x', durationMs: 0 })).not.toThrow()
+      profiles.observe({ annotation: 'x', durationMs: 0 })
+    })
+    expect(profile.summarize()).toEqual({
+      totalQueries: 2,
+      serialDepth: 2,
+      repeats: [{ annotation: 'x', count: 2 }],
+    })
   })
 })
