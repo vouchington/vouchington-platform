@@ -138,8 +138,8 @@ importers:
   packages/dynamic-config:
     devDependencies:
       valkyries:
-        specifier: ^0.10.0
-        version: 0.10.0
+        specifier: ^0.12.1
+        version: 0.12.1
 
   packages/edge:
     dependencies:
@@ -203,8 +203,8 @@ importers:
   packages/http-transport:
     dependencies:
       '@jongleberry/api-server':
-        specifier: ^3.0.1
-        version: 3.0.1
+        specifier: ^3.1.0
+        version: 3.1.0
       ssrf-guard:
         specifier: ^1.0.0
         version: 1.0.0
@@ -363,11 +363,11 @@ importers:
   packages/rate-limit:
     devDependencies:
       '@jongleberry/api-server':
-        specifier: ^3.0.1
-        version: 3.0.1
+        specifier: ^3.1.0
+        version: 3.1.0
       valkyries:
-        specifier: ^0.11.0
-        version: 0.11.0
+        specifier: ^0.12.1
+        version: 0.12.1
 
   packages/request-contract-validation:
     dependencies:
@@ -477,8 +477,8 @@ importers:
   packages/wikimedia:
     dependencies:
       '@jongleberry/api-server':
-        specifier: ^3.0.1
-        version: 3.0.1
+        specifier: ^3.1.0
+        version: 3.1.0
 
   packages/worker-runtime:
     devDependencies:
@@ -1183,8 +1183,8 @@ packages:
     resolution: {integrity: sha512-wgm9Ehl2jpeqP3zw/7mo3kRHFp5MEDhqAdwy1fTGkHAwnkGOVsgpvQhL8B5n1qlb01jV3n/bI0ZfZp5lWA1k4w==}
     engines: {node: '>=18.0.0'}
 
-  '@jongleberry/api-server@3.0.1':
-    resolution: {integrity: sha512-0LRSCERVQ03Uy/LVlc1tuFYNLwc1vIPaMNUcACIxi3fVUQnxDKzu1gpnszXnxNHtQFcsi/xSmjt5edXUsafWsg==}
+  '@jongleberry/api-server@3.1.0':
+    resolution: {integrity: sha512-19sc3Fj1XUDR8WISg7Pn1EfDgIBCUWqJSRm+0eXc4m1EOuZYv70bI0Jbca9i+42LUZD5IBmfUfc2XNQPH+vTxQ==}
     engines: {node: '>=24.0.0'}
 
   '@jongleberry/vurst-html-darwin-arm64@0.4.3':
@@ -3905,12 +3905,8 @@ packages:
     resolution: {integrity: sha512-Sc5u1VVln93y1Xnz4R+CunOZc7R9LUcTmhj7Rc7Eg3HVcf7rVn2FOoa812fe0W8p3jD7xeoGSYbfqCGGH2B6xw==}
     hasBin: true
 
-  valkyries@0.10.0:
-    resolution: {integrity: sha512-pEqZ/wTEPTA++kjZyPsSHscbN+t1eCPMYHgKYi5rqENxJAWzt9iO85LWPWE8X/Jg+CKGKIWgDC5esKDNf7GUtQ==}
-    engines: {node: '>=24.0.0'}
-
-  valkyries@0.11.0:
-    resolution: {integrity: sha512-/1ts58dfqPT2oc9zxtDpPQmh21O3nZuvPouCAJy2JOHX0rTsExee5vDejjstSli7DDWrfw8LbpCrss7HUNJ2DA==}
+  valkyries@0.12.1:
+    resolution: {integrity: sha512-9iRIwWLbhqJ2BpT82EWl1+Nt5QuhnsLKThebjxwz04bGqMyXOpH5+9uejUpEHa9o1NiDj6WPtxRxZ5EdkXWHww==}
     engines: {node: '>=24.0.0'}
 
   vary@1.1.2:
@@ -4822,7 +4818,7 @@ snapshots:
     dependencies:
       minipass: 7.1.3
 
-  '@jongleberry/api-server@3.0.1':
+  '@jongleberry/api-server@3.1.0':
     dependencies:
       bytes: 3.1.2
       compressible: 2.0.18
@@ -7445,11 +7441,7 @@ snapshots:
 
   uuid@14.0.3: {}
 
-  valkyries@0.10.0:
-    dependencies:
-      '@valkey/valkey-glide': 2.5.3
-
-  valkyries@0.11.0:
+  valkyries@0.12.1:
     dependencies:
       '@valkey/valkey-glide': 2.5.3
 
