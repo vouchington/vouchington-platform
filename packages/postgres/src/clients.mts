@@ -22,7 +22,8 @@ export function createQueryApi(runtime: PsqlRuntime) {
     let finalOptions = options
 
     if (isQueryOptions(valuesOrOptions) && !Array.isArray(valuesOrOptions)) {
-      finalOptions = valuesOrOptions
+      // read()/write() pass their pool choice in the third argument; it must win
+      finalOptions = { ...valuesOrOptions, ...options }
     } else {
       values = valuesOrOptions as QueryValues
     }
