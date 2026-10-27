@@ -52,13 +52,13 @@
   "devDependencies": {
     "@sentry/browser": "^11.8.0",
     "@sentry/core": "^11.8.0",
-    "@sentry/node": "^11.8.0",
+    "@sentry/node": "^11.9.0",
     "@types/http-errors": "^2.0.5"
   },
   "peerDependencies": {
     "@sentry/browser": "^11.8.0",
     "@sentry/core": "^11.8.0",
-    "@sentry/node": "^11.8.0"
+    "@sentry/node": "^11.9.0"
   },
   "peerDependenciesMeta": {
     "@sentry/browser": {
