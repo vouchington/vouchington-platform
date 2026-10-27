@@ -51,10 +51,58 @@ updates:
         applies-to: version-updates
         patterns:
           - '@aws-sdk/*'
+          - '@smithy/*'
       aws-sdk-security:
         applies-to: security-updates
         patterns:
           - '@aws-sdk/*'
+          - '@smithy/*'
+      atproto:
+        applies-to: version-updates
+        patterns:
+          - '@atproto/*'
+          - '@atproto-labs/*'
+      react:
+        applies-to: version-updates
+        patterns:
+          - '@types/react'
+          - '@types/react-dom'
+          - react
+          - react-dom
+      react-email:
+        applies-to: version-updates
+        patterns:
+          - '@react-email/*'
+          - react-email
+      testing-library:
+        applies-to: version-updates
+        patterns:
+          - '@testing-library/*'
+      pg:
+        applies-to: version-updates
+        patterns:
+          - '@types/pg'
+          - '@types/pg-cursor'
+          - pg
+          - pg-cursor
+      ajv:
+        applies-to: version-updates
+        patterns:
+          - ajv
+          - ajv-formats
+      csv:
+        applies-to: version-updates
+        patterns:
+          - csv-parse
+          - csv-stringify
+      sentry:
+        applies-to: version-updates
+        patterns:
+          - '@sentry/*'
+      sentry-security:
+        applies-to: security-updates
+        patterns:
+          - '@sentry/*'
   - package-ecosystem: github-actions
     directory: /
     schedule:
