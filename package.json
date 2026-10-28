@@ -19,6 +19,7 @@
     "typecheck": "tsc --noEmit --project tsconfig.json && tsc --noEmit --project packages/script-loader/tsconfig.json",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:bun-bundles": "node scripts/bun-bundle-smoke.mts",
     "lint": "pnpm run oxlint && pnpm run oxfmt:check && pnpm run knip && pnpm run dependency-cruiser",
     "oxlint": "oxlint --type-aware --deny-warnings",
     "oxlint:fix": "oxlint --type-aware --fix --deny-warnings",
