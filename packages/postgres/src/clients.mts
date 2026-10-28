@@ -71,7 +71,14 @@ export function createQueryApi(runtime: PsqlRuntime) {
     input: QueryInput,
     valuesOrOptions?: QueryValues | QueryOptions,
     options: QueryOptions = {},
-  ) => query<Row>(input, valuesOrOptions, { ...options, readOnly: true })
+  ) => {
+    // read() defaults to the read pool; an explicit readOnly: false from the caller wins
+    const explicit = isQueryOptions(valuesOrOptions) ? valuesOrOptions.readOnly : undefined
+    return query<Row>(input, valuesOrOptions, {
+      ...options,
+      readOnly: options.readOnly ?? explicit ?? true,
+    })
+  }
 
   return { query, read, write }
 }

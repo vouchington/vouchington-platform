@@ -16,12 +16,22 @@ function createApi() {
 }
 
 describe('pool selection', () => {
-  it('keeps read() on the read pool when the second argument is an options object', async () => {
+  it('defaults read() to the read pool', async () => {
     const { api, pools } = createApi()
+    await api.read('/* bare */ SELECT 1')
     await api.read('/* options */ SELECT 1', {})
-    await api.read('/* explicit write */ SELECT 1', { readOnly: false })
     await api.read('/* values */ SELECT $1', [1])
-    expect(pools()).toEqual(['read', 'read', 'read'])
+    await api.read('/* values and options */ SELECT $1', [1], {})
+    expect(pools()).toEqual(['read', 'read', 'read', 'read'])
+  })
+
+  it('sends read() to the write pool when the caller passes readOnly: false', async () => {
+    const { api, pools } = createApi()
+    await api.read('/* second */ SELECT 1', { readOnly: false })
+    await api.read('/* third */ SELECT $1', [1], { readOnly: false })
+    await api.read('/* third wins */ SELECT 1', { readOnly: true }, { readOnly: false })
+    await api.read('/* third wins back */ SELECT 1', { readOnly: false }, { readOnly: true })
+    expect(pools()).toEqual(['write', 'write', 'write', 'read'])
   })
 
   it('keeps write() on the write pool when the second argument is an options object', async () => {
