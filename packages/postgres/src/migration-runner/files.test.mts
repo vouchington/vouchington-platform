@@ -31,6 +31,23 @@ describe('migration files', () => {
     await expect(readMigrationFile(folder, 'c.mts')).resolves.toBe('SELECT 3;')
   })
 
+  it('prefers preloaded mts modules over importing them by path', async () => {
+    const folder = await mkdtemp(join(tmpdir(), 'vouchington-migrations-'))
+    dirs.push(folder)
+    await writeFile(join(folder, 'c.mts'), 'export default () => "SELECT 3;"\n')
+    await writeFile(join(folder, 'd.mts'), 'export default () => "SELECT 4;"\n')
+    const modules = { 'c.mts': { default: async () => 'SELECT preloaded;' } }
+    await expect(readMigrationFile(folder, 'c.mts', modules)).resolves.toBe('SELECT preloaded;')
+    await expect(readMigrationFile(folder, 'd.mts', modules)).resolves.toBe('SELECT 4;')
+    // Only own keys count, so a prototype property never stands in for a migration
+    await expect(readMigrationFile(folder, 'd.mts', Object.create({ 'd.mts': {} }))).resolves.toBe(
+      'SELECT 4;',
+    )
+    await expect(readMigrationFile(folder, 'e.mts', { 'e.mts': { default: 1 } })).rejects.toThrow(
+      'Expected a function',
+    )
+  })
+
   it('rejects unknown extensions and non-function mts defaults', async () => {
     const folder = await mkdtemp(join(tmpdir(), 'vouchington-migrations-'))
     dirs.push(folder)

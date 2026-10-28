@@ -101,6 +101,16 @@ custom logging, for example `{ logger: console }`. Concurrent index builds use
 `migrationExtensions` to `createPsql()` to change that. pgvector type parsers are opt-in via
 `vector: true`.
 
+`.mts` migrations are imported by path at run time. Bundled builds that cannot do that, such as
+`bun build --compile`, can pass `migrationModules`, which maps a migration file name to its
+already-imported module. Matching files use that module; others are still imported by path.
+
+```ts
+import * as addUsers from './migrations/0002-add-users.mts'
+
+await psql.runMigrations('./migrations', { migrationModules: { '0002-add-users.mts': addUsers } })
+```
+
 If an online `CREATE INDEX CONCURRENTLY IF NOT EXISTS` previously failed and left an invalid
 index, the runner verifies its complete PostgreSQL definition and catalog safety state before
 dropping and rebuilding only that exact ordinary index. Valid matching indexes are preserved;

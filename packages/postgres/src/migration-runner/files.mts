@@ -20,15 +20,30 @@ export function getFilesFromFolder(
     .toSorted((a: string, b: string) => a.localeCompare(b))
 }
 
-export async function readMigrationFile(folder: string, file: string): Promise<string> {
+/** An already-imported `.mts` migration, keyed by its file name in `MigrationModules`. */
+export interface MigrationModule {
+  readonly default: unknown
+}
+
+export type MigrationModules = Readonly<Record<string, MigrationModule>>
+
+export async function readMigrationFile(
+  folder: string,
+  file: string,
+  modules?: MigrationModules,
+): Promise<string> {
   const ext = path.extname(file)
   if (ext === '.mts') {
-    const migrationModule = await import(path.resolve(folder, file))
+    // Preloaded modules let bundled builds skip importing migrations by path at run time
+    const migrationModule: MigrationModule =
+      modules && Object.hasOwn(modules, file)
+        ? (modules[file] as MigrationModule)
+        : ((await import(path.resolve(folder, file))) as MigrationModule)
     assert(
       typeof migrationModule.default === 'function',
       `Expected a function, got ${typeof migrationModule.default}`,
     )
-    return migrationModule.default()
+    return (migrationModule.default as () => string | Promise<string>)()
   }
   if (ext === '.sql') {
     return fs.readFileSync(path.resolve(folder, file), 'utf8')

@@ -3,6 +3,23 @@
   "rules": {
     "unicorn/prefer-node-protocol": "error",
     "radix": "error",
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "node:module",
+            "importNames": ["createRequire"],
+            "message": "Bundlers cannot follow createRequire; import the dependency statically."
+          },
+          {
+            "name": "module",
+            "importNames": ["createRequire"],
+            "message": "Bundlers cannot follow createRequire; import the dependency statically."
+          }
+        ]
+      }
+    ],
     "max-lines": ["error", 200]
   },
   "overrides": [
