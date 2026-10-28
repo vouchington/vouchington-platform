@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=./node_modules/pr-shepherd/pr-shepherd.schema.json
+version: 1
+
+# Bundled vendor rules hide notice-only bot comments (Codex usage limits, CodeRabbit and
+# Codecov summaries, Dependabot notices) instead of reporting them as actionable.
+classify:
+  standard:
+    all: true
