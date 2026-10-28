@@ -84,6 +84,49 @@ describe('loadWorkers', () => {
     await expect(loadWorkers(runtimeDefinitions, 'email')).rejects.toThrow(failure)
   })
 
+  it('gives the event loop a turn between selected loaders while preserving result order', async () => {
+    const events: string[] = []
+    const runtimeDefinitions: WorkerDefinition[] = [
+      {
+        queueName: 'email',
+        load: () => {
+          events.push('load email')
+          process.nextTick(() => events.push('event loop'))
+          return Promise.resolve(worker('email'))
+        },
+      },
+      {
+        queueName: 'images',
+        load: () => {
+          events.push('load images')
+          return Promise.resolve(worker('images'))
+        },
+      },
+    ]
+
+    await expect(loadWorkers(runtimeDefinitions, 'images,email')).resolves.toEqual([
+      worker('email'),
+      worker('images'),
+    ])
+    expect(events).toEqual(['load email', 'event loop', 'load images'])
+  })
+
+  it('starts later selected loaders even when an earlier loader rejects', async () => {
+    const failure = new Error('worker unavailable')
+    const laterLoad = vi.fn(() => Promise.resolve(worker('images')))
+
+    await expect(
+      loadWorkers(
+        [
+          { queueName: 'email', load: () => Promise.reject(failure) },
+          { queueName: 'images', load: laterLoad },
+        ],
+        'email,images',
+      ),
+    ).rejects.toThrow(failure)
+    expect(laterLoad).toHaveBeenCalledOnce()
+  })
+
   it('tolerates an unknown selection with its default reporter', async () => {
     await expect(loadWorkers(definitions(), 'new-queue')).resolves.toEqual([])
   })
