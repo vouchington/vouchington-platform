@@ -11,7 +11,13 @@ pnpm run typecheck
 pnpm run build
 pnpm test
 pnpm run test:coverage
+pnpm run test:bun-bundles
 ```
+
+`test:bun-bundles` needs Bun and a prior `pnpm run build`. It bundles every export entry with Bun
+and fails when a bundle's exports differ from Node's, including when the bundler could not follow
+a dependency. Entries that cannot run under Bun for other reasons are listed, with a reason, in
+`KNOWN_BUN_INCOMPATIBLE` in `scripts/bun-bundle-smoke.mts`.
 
 `oxlint` is type-aware and denies warnings. Source files are capped at 200 lines; tests at 500.
 
