@@ -84,15 +84,16 @@ describe('loadWorkers', () => {
     await expect(loadWorkers(runtimeDefinitions, 'email')).rejects.toThrow(failure)
   })
 
-  it('gives the event loop a turn between selected loaders while preserving result order', async () => {
+  it('yields to the event loop without waiting for the prior loader', async () => {
+    const firstLoad = Promise.withResolvers<Worker>()
     const events: string[] = []
     const runtimeDefinitions: WorkerDefinition[] = [
       {
         queueName: 'email',
         load: () => {
           events.push('load email')
-          setImmediate(() => events.push('event loop'))
-          return Promise.resolve(worker('email'))
+          setImmediate(() => events.push('check phase'))
+          return firstLoad.promise
         },
       },
       {
@@ -104,11 +105,17 @@ describe('loadWorkers', () => {
       },
     ]
 
-    await expect(loadWorkers(runtimeDefinitions, 'images,email')).resolves.toEqual([
-      worker('email'),
-      worker('images'),
-    ])
-    expect(events).toEqual(['load email', 'event loop', 'load images'])
+    const loading = loadWorkers(runtimeDefinitions, 'images,email')
+    try {
+      // This check-phase callback signals an event-loop turn, not elapsed time. The next loader
+      // must start while the first remains unresolved.
+      await new Promise<void>((resolve) => setImmediate(resolve))
+      expect(events).toEqual(['load email', 'check phase', 'load images'])
+    } finally {
+      firstLoad.resolve(worker('email'))
+    }
+
+    await expect(loading).resolves.toEqual([worker('email'), worker('images')])
   })
 
   it('starts later selected loaders even when an earlier loader rejects', async () => {
