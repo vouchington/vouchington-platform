@@ -84,6 +84,56 @@ describe('loadWorkers', () => {
     await expect(loadWorkers(runtimeDefinitions, 'email')).rejects.toThrow(failure)
   })
 
+  it('yields to the event loop without waiting for the prior loader', async () => {
+    const firstLoad = Promise.withResolvers<Worker>()
+    const events: string[] = []
+    const runtimeDefinitions: WorkerDefinition[] = [
+      {
+        queueName: 'email',
+        load: () => {
+          events.push('load email')
+          setImmediate(() => events.push('check phase'))
+          return firstLoad.promise
+        },
+      },
+      {
+        queueName: 'images',
+        load: () => {
+          events.push('load images')
+          return Promise.resolve(worker('images'))
+        },
+      },
+    ]
+
+    const loading = loadWorkers(runtimeDefinitions, 'images,email')
+    try {
+      // This check-phase callback signals an event-loop turn, not elapsed time. The next loader
+      // must start while the first remains unresolved.
+      await new Promise<void>((resolve) => setImmediate(resolve))
+      expect(events).toEqual(['load email', 'check phase', 'load images'])
+    } finally {
+      firstLoad.resolve(worker('email'))
+    }
+
+    await expect(loading).resolves.toEqual([worker('email'), worker('images')])
+  })
+
+  it('starts later selected loaders even when an earlier loader rejects', async () => {
+    const failure = new Error('worker unavailable')
+    const laterLoad = vi.fn(() => Promise.resolve(worker('images')))
+
+    await expect(
+      loadWorkers(
+        [
+          { queueName: 'email', load: () => Promise.reject(failure) },
+          { queueName: 'images', load: laterLoad },
+        ],
+        'email,images',
+      ),
+    ).rejects.toThrow(failure)
+    expect(laterLoad).toHaveBeenCalledOnce()
+  })
+
   it('tolerates an unknown selection with its default reporter', async () => {
     await expect(loadWorkers(definitions(), 'new-queue')).resolves.toEqual([])
   })
