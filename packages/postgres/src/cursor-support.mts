@@ -1,5 +1,5 @@
-import { createRequire } from 'node:module'
 import { Pool, type PoolClient, type Submittable } from 'pg'
+import PgCursor from 'pg-cursor'
 import type { SQLStatement } from 'sql-template-strings'
 
 import { connectWithRetry } from './connect-with-retry.mts'
@@ -22,8 +22,8 @@ export type CursorGeneratorOptions = QueryOptions & {
   abortSignal?: AbortSignal
 }
 
-const require = createRequire(import.meta.url)
-export const Cursor = require('pg-cursor') as CursorConstructor
+// A static import keeps pg-cursor visible to bundlers; `bun build --compile` cannot follow createRequire
+export const Cursor = PgCursor as unknown as CursorConstructor
 
 export function normalizeCursorValues(values?: CursorQueryValues): unknown[] | undefined {
   return values ? [...values] : undefined

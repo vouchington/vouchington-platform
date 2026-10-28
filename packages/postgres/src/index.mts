@@ -38,7 +38,12 @@ export { prepareMigration } from './migration-runner/migration-mode.mts'
 export { resolveMigrationTimeouts } from './migration-runner/migration-options.mts'
 export type { MigrationTimeouts } from './migration-runner/migration-options.mts'
 export { loadSqlParserModule, splitSqlStatements } from './migration-runner/sql-statements.mts'
-export { getFilesFromFolder, readMigrationFile } from './migration-runner/files.mts'
+export {
+  getFilesFromFolder,
+  readMigrationFile,
+  type MigrationModule,
+  type MigrationModules,
+} from './migration-runner/files.mts'
 export type {
   PoolClient,
   BeginTransactionOptions,

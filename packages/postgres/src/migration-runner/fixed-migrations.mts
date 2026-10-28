@@ -1,7 +1,7 @@
 import type pg from 'pg'
 
 import type { PsqlRuntime } from '../types.mts'
-import { getFilesFromFolder, readMigrationFile } from './files.mts'
+import { getFilesFromFolder, readMigrationFile, type MigrationModules } from './files.mts'
 import { MigrationFileMissingError } from './migration-file-missing.mts'
 import {
   assertMigrationChecksumMatches,
@@ -17,6 +17,8 @@ import { loadSqlParserModule } from './sql-statements.mts'
 export interface RunMigrationsOptions extends Partial<MigrationTimeouts> {
   client?: pg.PoolClient
   logger?: MigrationLogger
+  /** Already-imported `.mts` migrations by file name, used instead of importing them by path. */
+  migrationModules?: MigrationModules
 }
 
 const DEFAULT_EXTENSIONS = ['pgcrypto'] as const
@@ -60,7 +62,7 @@ export function createMigrationRunner(
       for (const migration of migrations) {
         const recorded = ledger.get(migration)
         if (recorded === undefined) continue
-        const sql = await readMigrationFile(migrationsFolder, migration)
+        const sql = await readMigrationFile(migrationsFolder, migration, options.migrationModules)
         assertMigrationChecksumMatches(migration, recorded, computeMigrationChecksum(sql))
       }
 
@@ -73,7 +75,7 @@ export function createMigrationRunner(
           continue
         }
 
-        const sql = await readMigrationFile(migrationsFolder, migration)
+        const sql = await readMigrationFile(migrationsFolder, migration, options.migrationModules)
         const checksum = computeMigrationChecksum(sql)
         try {
           await executePreparedMigration(client, migration, prepareMigration(sql), checksum)
