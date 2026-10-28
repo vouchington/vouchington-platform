@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/worker-runtime/package.json"],
+  "changedManifests": ["packages/postgres/package.json"],
   "releases": [
     {
       "bump": "minor",
-      "directory": "worker-runtime",
-      "fromVersion": "0.2.1",
-      "name": "@vouchington/worker-runtime",
-      "toVersion": "0.3.0"
+      "directory": "postgres",
+      "fromVersion": "0.1.2",
+      "name": "@vouchington/postgres",
+      "toVersion": "0.2.0"
     }
   ],
-  "selectedPackage": "@vouchington/worker-runtime"
+  "selectedPackage": "@vouchington/postgres"
 }
