@@ -91,7 +91,7 @@ describe('loadWorkers', () => {
         queueName: 'email',
         load: () => {
           events.push('load email')
-          process.nextTick(() => events.push('event loop'))
+          setImmediate(() => events.push('event loop'))
           return Promise.resolve(worker('email'))
         },
       },
