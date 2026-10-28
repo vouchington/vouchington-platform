@@ -54,7 +54,8 @@ jobs:
       - run: pnpm run test:coverage
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version: latest
+          # Pinned: KNOWN_BUN_INCOMPATIBLE depends on what this Bun version supports.
+          bun-version: 1.4.4
       # Bundles every export entry with Bun and compares its exports with Node's.
       - run: pnpm run test:bun-bundles
       - name: Stage coverage for trusted upload

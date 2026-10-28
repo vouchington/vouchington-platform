@@ -23,9 +23,6 @@ const SKIPPED_SUBPATHS = new Set(['./testing'])
 export const KNOWN_BUN_INCOMPATIBLE: Readonly<Record<string, string>> = {
   '@vouchington/image-resize':
     'sharp loads its platform binary at run time, so bundled builds must keep sharp external',
-  '@vouchington/localization-compiler': 'uses node:sqlite, which Bun does not provide',
-  '@vouchington/oauth-client/atproto':
-    "its undici dependency calls webidl.util.markAsUncloneable, which Bun's runtime lacks",
 }
 
 export function listExportEntries(root: string): ExportEntry[] {
