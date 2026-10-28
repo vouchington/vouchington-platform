@@ -30,7 +30,8 @@ describe('pool selection', () => {
     await api.read('/* second */ SELECT 1', { readOnly: false })
     await api.read('/* third */ SELECT $1', [1], { readOnly: false })
     await api.read('/* third wins */ SELECT 1', { readOnly: true }, { readOnly: false })
-    expect(pools()).toEqual(['write', 'write', 'write'])
+    await api.read('/* third wins back */ SELECT 1', { readOnly: false }, { readOnly: true })
+    expect(pools()).toEqual(['write', 'write', 'write', 'read'])
   })
 
   it('keeps write() on the write pool when the second argument is an options object', async () => {
