@@ -36,8 +36,8 @@ importers:
         specifier: ^7.0.2005
         version: 7.0.2005
       pr-shepherd:
-        specifier: ^1.1.1
-        version: 1.1.1(supports-color@7.2.0)
+        specifier: ^1.1.2
+        version: 1.1.2(supports-color@7.2.0)
       semver:
         specifier: ^7.8.5
         version: 7.8.5
@@ -3499,8 +3499,8 @@ packages:
     resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
     engines: {node: '>=0.10.0'}
 
-  pr-shepherd@1.1.1:
-    resolution: {integrity: sha512-uMwO7k/4bc2FnpTu9WCaS6OizaarfPR5ZDobQbdYSW1DdQwAiPdb/mF7bHRjxJA58YKaTSVduJaxXXSBcRIgKA==}
+  pr-shepherd@1.1.2:
+    resolution: {integrity: sha512-3UxX0r4kOkjxKteSRfM3QrE8Ty0FDA3qd8ZEjcikxc6lv8Eb/Y9td+HnmCtuSXBJjSb3MyC5s+83jk1MJty1bQ==}
     engines: {node: '>=22.19.0'}
     hasBin: true
 
@@ -4903,7 +4903,7 @@ snapshots:
       eventsource: 3.0.7
       eventsource-parser: 3.1.1
       express: 5.2.1(supports-color@8.1.1)
-      express-rate-limit: 8.7.0(express@5.2.1(supports-color@7.2.0))(supports-color@8.1.1)
+      express-rate-limit: 8.7.0(express@5.2.1(supports-color@8.1.1))(supports-color@8.1.1)
       hono: 4.13.8
       jose: 6.2.13
       json-schema-typed: 8.0.2
@@ -6169,10 +6169,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  express-rate-limit@8.7.0(express@5.2.1(supports-color@7.2.0))(supports-color@8.1.1):
+  express-rate-limit@8.7.0(express@5.2.1(supports-color@8.1.1))(supports-color@8.1.1):
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
-      express: 5.2.1(supports-color@7.2.0)
+      express: 5.2.1(supports-color@8.1.1)
       ip-address: 10.7.2
     transitivePeerDependencies:
       - supports-color
@@ -6917,7 +6917,7 @@ snapshots:
     dependencies:
       xtend: 4.0.2
 
-  pr-shepherd@1.1.1(supports-color@7.2.0):
+  pr-shepherd@1.1.2(supports-color@7.2.0):
     dependencies:
       '@modelcontextprotocol/sdk': 1.32.2(supports-color@7.2.0)(zod@4.6.5)
       picomatch: 4.0.7
