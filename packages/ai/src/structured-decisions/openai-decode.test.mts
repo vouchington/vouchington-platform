@@ -42,7 +42,7 @@ const choice = {
 const score = {
   name: 's',
   type: 'score',
-  score: 1,
+  score: 0.8,
   confidence: 0.8,
   probabilities: [
     { value: 1, label: 'high', probability: 0.8 },
@@ -98,7 +98,7 @@ describe('decodeOpenAIResult', () => {
       {
         id: 's',
         type: 'score',
-        score: 1,
+        score: 0.8,
         confidence: 0.8,
         legend: ['low', 'high'],
         probabilities: { low: 0.2, high: 0.8 },
@@ -222,7 +222,7 @@ describe('decodeOpenAIResult', () => {
         ],
       }),
     ],
-    ['score fractional', withScore({ score: 0.5 })],
+    ['score non-numeric', withScore({ score: 'high' })],
     ['score out of range', withScore({ score: 2 })],
     ['score confidence invalid', withScore({ confidence: -1 })],
     ['score probabilities not array', withScore({ probabilities: {} })],

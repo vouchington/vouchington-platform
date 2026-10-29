@@ -88,8 +88,8 @@ function adaptAnswer(answer: unknown): Record<string, unknown> {
     return {
       ...base,
       type: 'score',
-      // A fractional score is rejected by `decodeAnswer`'s finite check once it is NaN.
-      score: Number.isInteger(answer.score) ? answer.score : Number.NaN,
+      // A probability-weighted average of level indices, so it may fall between levels.
+      score: answer.score,
       confidence: answer.confidence,
       ...scoreProbabilities(answer.probabilities),
     }
