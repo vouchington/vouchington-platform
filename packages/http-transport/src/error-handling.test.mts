@@ -70,6 +70,13 @@ describe('handleHttpErrors', () => {
     }
   })
 
+  it('accepts any response with status, headers, and a cancellable body', () => {
+    const response = { status: 503, headers: new Headers(), body: null }
+    expect(catchError(() => handleHttpErrors({ response, url, onError }))).toBeInstanceOf(
+      HttpServerError,
+    )
+  })
+
   it('throws HttpRateLimitError with the parsed Retry-After seconds', () => {
     const response = new Response('slow down', { status: 429, headers: { 'retry-after': '7' } })
     const thrown = catchError(() => handleHttpErrors({ response, url, onError }))
