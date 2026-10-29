@@ -6,6 +6,8 @@ export {
   isStructuredDecisionError,
   type StructuredDecisionErrorCode,
 } from './errors.mts'
+export * from './openai-decode.mts'
+export * from './openai-transport.mts'
 export * from './provider-error-detail.mts'
 export * from './retry-classification.mts'
 export * from './transport.mts'

@@ -70,9 +70,12 @@ classifier-run workflows are product policy and stay in the application.
 
 - `validateRequest`, `buildDecisionTransportRequest` (URL, model, and routing injected), `decodeResult`
   / `decodeAnswer` (strict; model and provider identity checks injected), `parseBilledUsage`.
+- OpenAI `/v1/decisions` dialect: `buildOpenAIDecisionRequest` (URL and model injected; at most 400
+  questions, 10 score levels) and `decodeOpenAIResult` (strict; a refusal is a permanent
+  `invalid-response`). `parseBilledUsage` reads its usage as well.
 - `readProviderErrorDetail` / `parseProviderErrorDetail` / `describeProviderErrorDetail`: bounded,
   user-content-free error bodies.
-- `classifyByStatus`, `classifyOpenRouterFailure`, `classifyProviderResponse`: retry classes.
+- `classifyByStatus`, `classifyOpenRouterFailure`, `classifyOpenAIFailure`, `classifyProviderResponse`: retry classes.
 - `StructuredDecisionError` and `isStructuredDecisionError(value)`: branded like
   `ModelProviderError`, so the guard and `instanceof` work across installed package copies.
 
