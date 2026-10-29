@@ -3,7 +3,7 @@ import Stripe from 'stripe'
 export type CreateStripeClientOptions = {
   apiKey: string
   /** Injected fetch, e.g. an egress-proxied fetch. Defaults to the global fetch. */
-  fetch?: typeof fetch
+  fetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>
   timeoutMs?: number
   config?: Stripe.StripeConfig
 }
@@ -14,7 +14,8 @@ export const DEFAULT_STRIPE_TIMEOUT_MS = 10_000
 export function createStripeClient(options: CreateStripeClientOptions): Stripe {
   if (!options.apiKey) throw new Error('Stripe apiKey is required')
   return new Stripe(options.apiKey, {
-    httpClient: Stripe.createFetchHttpClient(options.fetch),
+    // Stripe types fetchFn as typeof fetch but never uses runtime extras such as Bun's preconnect
+    httpClient: Stripe.createFetchHttpClient(options.fetch as typeof fetch | undefined),
     timeout: options.timeoutMs ?? DEFAULT_STRIPE_TIMEOUT_MS,
     ...options.config,
   })

@@ -23,7 +23,7 @@ export type GetOptions = {
 
 export type RequestBehavior = {
   /** Custom fetch implementation. Defaults to the global `fetch`. */
-  fetch?: typeof fetch
+  fetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>
   /** Receives non-fatal failures (such as body cancellation errors) for reporting. */
   onError?: (error: unknown) => void
   /**
