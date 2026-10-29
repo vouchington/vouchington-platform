@@ -117,6 +117,45 @@ describe('decodeOpenAIResult', () => {
     expect(result.usage).toBeNull()
   })
 
+  it('keeps __proto__ criteria and labels as probability keys', () => {
+    const proto: StructuredDecisionRequest = {
+      state: 's',
+      questions: [
+        { id: 'c', type: 'choice', question: 'Pick', criteria: ['__proto__', 'b'] },
+        {
+          id: 's',
+          type: 'score',
+          question: 'Rate',
+          criteria: [
+            { description: '__proto__', value: 0 },
+            { description: 'high', value: 1 },
+          ],
+        },
+      ],
+    }
+    const raw = body(
+      {
+        ...choice,
+        choice: '__proto__',
+        probabilities: [
+          { value: '__proto__', probability: 0.9 },
+          { value: 'b', probability: 0.1 },
+        ],
+      },
+      {
+        ...score,
+        probabilities: [
+          { value: 0, label: '__proto__', probability: 0.2 },
+          { value: 1, label: 'high', probability: 0.8 },
+        ],
+      },
+    )
+    expect(decodeOpenAIResult(raw, proto, options).answers.map((answer) => answer.id)).toEqual([
+      'c',
+      's',
+    ])
+  })
+
   it('checks the served model with the injected predicate', () => {
     const raw = body(predicate, choice, score)
     expect(failure(raw, { ...options, isExpectedModel: (model) => model === 'm' })).toBeUndefined()

@@ -19,8 +19,13 @@ function probabilityEntries(raw: unknown): Array<Record<string, unknown>> {
   return raw as Array<Record<string, unknown>>
 }
 
+// Null-prototype records keep criteria such as `__proto__` as own keys.
+function probabilityRecord(): Record<string, unknown> {
+  return Object.create(null) as Record<string, unknown>
+}
+
 function choiceProbabilities(raw: unknown): Record<string, unknown> {
-  const result: Record<string, unknown> = {}
+  const result = probabilityRecord()
   for (const { value, probability } of probabilityEntries(raw)) {
     if (typeof value !== 'string' || Object.hasOwn(result, value)) {
       invalid('Provider choice probabilities contain an invalid or duplicate value.')
@@ -37,7 +42,7 @@ function scoreProbabilities(raw: unknown): {
 } {
   const entries = probabilityEntries(raw)
   const legend: string[] = []
-  const probabilities: Record<string, unknown> = {}
+  const probabilities = probabilityRecord()
   for (const { value, label, probability } of entries) {
     if (
       typeof value !== 'number' ||
