@@ -28,8 +28,15 @@ export function cancelResponseBody(
   if (cancellation) void cancellation.catch(onError)
 }
 
+/** The response members `handleHttpErrors` reads; global and undici responses both fit. */
+export interface HttpErrorResponse {
+  readonly status: number
+  readonly headers: { get(name: string): string | null }
+  readonly body?: { cancel(): Promise<void> } | null
+}
+
 export interface HandleHttpErrorsOptions {
-  response: Response
+  response: HttpErrorResponse
   url: string
   /** Receives body-cancellation failures; the HTTP error outcome is preserved. */
   onError: (error: unknown) => void
