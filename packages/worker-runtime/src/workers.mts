@@ -47,12 +47,20 @@ export async function loadWorkers(
 
   for (const [index, definition] of selected.entries()) {
     const load = definition.load()
-    // Promise.all attaches after the yields. Handle a fast rejection immediately so Node does not
-    // report it as unhandled while later worker imports are being started.
+    // Promise.allSettled attaches after the yields. Handle a fast rejection immediately so Node does
+    // not report it as unhandled while later worker imports are being started.
     void load.catch(() => undefined)
     pending.push(load)
     if (index < selected.length - 1) await scheduler.yield()
   }
 
-  return Promise.all(pending)
+  // Wait for every loader, so a failure can close the workers its siblings already created.
+  const outcomes = await Promise.allSettled(pending)
+  const failure = outcomes.find((outcome) => outcome.status === 'rejected')
+  const workers = outcomes.flatMap((outcome) =>
+    outcome.status === 'fulfilled' ? [outcome.value] : [],
+  )
+  if (!failure) return workers
+  await Promise.allSettled(workers.map(async (worker) => worker.close()))
+  throw failure.reason
 }
