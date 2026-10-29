@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/worker-runtime/package.json"],
+  "changedManifests": ["packages/ai/package.json"],
   "releases": [
     {
-      "bump": "patch",
-      "directory": "worker-runtime",
+      "bump": "minor",
+      "directory": "ai",
       "fromVersion": "0.3.0",
-      "name": "@vouchington/worker-runtime",
-      "toVersion": "0.3.1"
+      "name": "@vouchington/ai",
+      "toVersion": "0.4.0"
     }
   ],
-  "selectedPackage": "@vouchington/worker-runtime"
+  "selectedPackage": "@vouchington/ai"
 }
