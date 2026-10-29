@@ -118,6 +118,23 @@ describe('loadWorkers', () => {
     await expect(loading).resolves.toEqual([worker('email'), worker('images')])
   })
 
+  it('closes workers that loaded when a sibling loader rejects', async () => {
+    const failure = new Error('worker unavailable')
+    const close = vi.fn(() => Promise.reject(new Error('close failed')))
+    const loaded = { queueName: 'images', close } as unknown as Worker
+
+    await expect(
+      loadWorkers(
+        [
+          { queueName: 'images', load: () => Promise.resolve(loaded) },
+          { queueName: 'email', load: () => Promise.reject(failure) },
+        ],
+        'email,images',
+      ),
+    ).rejects.toThrow(failure)
+    expect(close).toHaveBeenCalledOnce()
+  })
+
   it('starts later selected loaders even when an earlier loader rejects', async () => {
     const failure = new Error('worker unavailable')
     const laterLoad = vi.fn(() => Promise.resolve(worker('images')))

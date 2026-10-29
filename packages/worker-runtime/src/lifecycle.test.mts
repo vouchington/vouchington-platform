@@ -172,6 +172,30 @@ describe('initializeWorkerRuntime cleanup', () => {
     expect(deps.onError).toHaveBeenCalledTimes(1)
   })
 
+  it('closes a loaded worker when a sibling worker loader fails', async () => {
+    const closeWorker = vi.fn(async () => undefined)
+    const { config, deps } = setup(
+      {
+        workerDefinitions: [
+          { queueName: 'a', load: async () => ({ close: closeWorker }) as never },
+          {
+            queueName: 'b',
+            load: async () => {
+              throw new Error('sibling failed')
+            },
+          },
+        ],
+        sqsConsumerDefinitions: [],
+      },
+      {},
+      { QUEUES: 'a,b' },
+    )
+
+    await expect(initializeWorkerRuntime(config, deps)).rejects.toThrow('sibling failed')
+
+    expect(closeWorker).toHaveBeenCalledTimes(1)
+  })
+
   it('tolerates loaded items without close and failing closers', async () => {
     const { config, deps } = setup(
       {
