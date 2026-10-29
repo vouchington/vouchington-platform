@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/http-transport/package.json"],
+  "changedManifests": ["packages/worker-runtime/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "http-transport",
-      "fromVersion": "0.1.0",
-      "name": "@vouchington/http-transport",
-      "toVersion": "0.1.1"
+      "directory": "worker-runtime",
+      "fromVersion": "0.3.0",
+      "name": "@vouchington/worker-runtime",
+      "toVersion": "0.3.1"
     }
   ],
-  "selectedPackage": "@vouchington/http-transport"
+  "selectedPackage": "@vouchington/worker-runtime"
 }
