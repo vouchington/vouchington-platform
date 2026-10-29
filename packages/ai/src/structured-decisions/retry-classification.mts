@@ -35,6 +35,13 @@ export const classifyOpenRouterFailure: ClassifyFailure = (status, detail) => {
   return classifyByStatus(status, detail)
 }
 
+/**
+ * OpenAI: 408, 409, 429 and 5xx are transient, as is no response; every other status is
+ * permanent.
+ */
+export const classifyOpenAIFailure: ClassifyFailure = (status, detail) =>
+  status === 409 ? 'transient' : classifyByStatus(status, detail)
+
 /** The classified failure of a non-2xx response, with its `Retry-After` when it is retryable. */
 export function classifyProviderResponse(
   classify: ClassifyFailure,
