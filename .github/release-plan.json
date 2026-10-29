@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/postgres/package.json"],
+  "changedManifests": ["packages/stripe/package.json"],
   "releases": [
     {
-      "bump": "minor",
-      "directory": "postgres",
-      "fromVersion": "0.1.2",
-      "name": "@vouchington/postgres",
-      "toVersion": "0.2.0"
+      "bump": "patch",
+      "directory": "stripe",
+      "fromVersion": "0.1.0",
+      "name": "@vouchington/stripe",
+      "toVersion": "0.1.1"
     }
   ],
-  "selectedPackage": "@vouchington/postgres"
+  "selectedPackage": "@vouchington/stripe"
 }

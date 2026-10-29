@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/stripe",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Stripe client factory, webhook verification, event narrowing, and request/response primitives.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/stripe#readme",
   "license": "MIT",
