@@ -138,8 +138,8 @@ importers:
   packages/dynamic-config:
     devDependencies:
       valkyries:
-        specifier: ^0.13.0
-        version: 0.13.0
+        specifier: ^0.14.0
+        version: 0.14.0
 
   packages/edge:
     dependencies:
@@ -366,8 +366,8 @@ importers:
         specifier: ^3.1.0
         version: 3.1.0
       valkyries:
-        specifier: ^0.13.0
-        version: 0.13.0
+        specifier: ^0.14.0
+        version: 0.14.0
 
   packages/request-contract-validation:
     dependencies:
@@ -3902,8 +3902,8 @@ packages:
     resolution: {integrity: sha512-Sc5u1VVln93y1Xnz4R+CunOZc7R9LUcTmhj7Rc7Eg3HVcf7rVn2FOoa812fe0W8p3jD7xeoGSYbfqCGGH2B6xw==}
     hasBin: true
 
-  valkyries@0.13.0:
-    resolution: {integrity: sha512-cIGM9hPmNthvXkwoW8juEYViw7IY/No3NhhsZ7vfzixig5s498FDyfqKGHn4aVhpjHdtqAJg2OD14fFW6rS2iQ==}
+  valkyries@0.14.0:
+    resolution: {integrity: sha512-NNswTXCl7Eu0bJXWnrTSG6Jbi/ilELk/+2ynrW9F1NByJ37hc59i78qkqGxacDCwyz7FaB2Kri6qQ2VsVydHWQ==}
     engines: {node: '>=24.0.0'}
 
   vary@1.1.2:
@@ -4903,7 +4903,7 @@ snapshots:
       eventsource: 3.0.7
       eventsource-parser: 3.1.1
       express: 5.2.1(supports-color@8.1.1)
-      express-rate-limit: 8.7.0(express@5.2.1(supports-color@8.1.1))(supports-color@8.1.1)
+      express-rate-limit: 8.7.0(express@5.2.1(supports-color@7.2.0))(supports-color@8.1.1)
       hono: 4.13.8
       jose: 6.2.13
       json-schema-typed: 8.0.2
@@ -6169,10 +6169,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  express-rate-limit@8.7.0(express@5.2.1(supports-color@8.1.1))(supports-color@8.1.1):
+  express-rate-limit@8.7.0(express@5.2.1(supports-color@7.2.0))(supports-color@8.1.1):
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
-      express: 5.2.1(supports-color@8.1.1)
+      express: 5.2.1(supports-color@7.2.0)
       ip-address: 10.7.2
     transitivePeerDependencies:
       - supports-color
@@ -7437,7 +7437,7 @@ snapshots:
 
   uuid@14.0.3: {}
 
-  valkyries@0.13.0:
+  valkyries@0.14.0:
     dependencies:
       '@valkey/valkey-glide': 2.5.3
 
