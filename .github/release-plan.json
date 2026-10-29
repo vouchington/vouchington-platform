@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/api-client/package.json"],
+  "changedManifests": ["packages/rate-limit/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "api-client",
-      "fromVersion": "0.2.0",
-      "name": "@vouchington/api-client",
-      "toVersion": "0.2.1"
+      "directory": "rate-limit",
+      "fromVersion": "0.3.0",
+      "name": "@vouchington/rate-limit",
+      "toVersion": "0.3.1"
     }
   ],
-  "selectedPackage": "@vouchington/api-client"
+  "selectedPackage": "@vouchington/rate-limit"
 }
