@@ -17,7 +17,7 @@ export interface RateLimitNamespaceCollision {
 async function listWorkerScripts(
   accountId: string,
   headers: Record<string, string>,
-  fetchImpl: typeof fetch,
+  fetchImpl: (input: string | URL | Request, init?: RequestInit) => Promise<Response>,
 ): Promise<WorkerScript[]> {
   const scripts: WorkerScript[] = []
   let page = 1
@@ -42,7 +42,7 @@ export async function findRateLimitNamespaceCollisions(
   apiToken: string,
   targetScript: string,
   desiredNamespaceIds: ReadonlySet<string>,
-  fetchImpl: typeof fetch = fetch,
+  fetchImpl: (input: string | URL | Request, init?: RequestInit) => Promise<Response> = fetch,
 ): Promise<RateLimitNamespaceCollision[]> {
   const headers = { authorization: `Bearer ${apiToken}` }
   const scripts = await listWorkerScripts(accountId, headers, fetchImpl)
