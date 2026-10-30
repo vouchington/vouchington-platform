@@ -43,3 +43,29 @@ export function ignoreMissingVectorType(error: Error, errorHandler: ErrorHandler
   if (error.message.includes('vector type not found in the database')) return
   errorHandler(error)
 }
+
+type ConnectCallback = Parameters<pg.Pool['connect']>[0]
+
+/**
+ * Defers pgvector registration to the first connection on any pool. Every pool's connects wait
+ * until it settles, so no row is parsed before the parsers exist; then the original `connect`
+ * returns. Connects waiting on a rejected `register` fail with its error.
+ */
+export function deferUntilVectorTypes(pools: readonly pg.Pool[], register: () => Promise<void>) {
+  const originals = pools.map((pool) => pool.connect.bind(pool))
+  let pending: Promise<void> | undefined
+  const ready = () =>
+    (pending ??= register().finally(() => {
+      for (const [index, pool] of pools.entries()) pool.connect = originals[index]!
+    }))
+  for (const [index, pool] of pools.entries()) {
+    const connect = originals[index]!
+    pool.connect = ((callback?: ConnectCallback) => {
+      if (!callback) return ready().then(() => connect())
+      ready().then(
+        () => connect(callback),
+        (error: Error) => (callback as (error: Error) => void)(error),
+      )
+    }) as pg.Pool['connect']
+  }
+}

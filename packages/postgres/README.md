@@ -20,7 +20,7 @@ Requires Node.js 24 or newer.
 import sql from 'sql-template-strings'
 import { createPsql } from '@vouchington/postgres'
 
-const psql = await createPsql({
+const psql = createPsql({
   connectionString: process.env.DATABASE_URL!,
   readConnectionString: process.env.READ_DATABASE_URL,
 })
@@ -100,6 +100,10 @@ custom logging, for example `{ logger: console }`. Concurrent index builds use
 `-- migration-mode: online`. Extensions default to `pgcrypto`; pass
 `migrationExtensions` to `createPsql()` to change that. pgvector type parsers are opt-in via
 `vector: true`.
+
+`createPsql()` is synchronous, so a module can export its result without top-level `await`.
+With `vector: true`, the pgvector type lookup runs on the first connection from any pool, and
+connections wait for it; a failed lookup is reported to `errorHandler`, not thrown.
 
 `.mts` migrations are imported by path at run time. Bundled builds that cannot do that, such as
 `bun build --compile`, can pass `migrationModules`, which maps a migration file name to its

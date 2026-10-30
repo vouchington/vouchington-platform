@@ -137,7 +137,7 @@ describe('createPsql', () => {
     const timings: string[] = []
     const errors: Error[] = []
     resetPgTypeParsersForTest()
-    const psql = await createPsql({
+    const psql = createPsql({
       connectionString: databaseUrl(),
       env: { ...process.env, NODE_ENV: 'test' },
       onQueryTiming: (input) => {
@@ -158,7 +158,7 @@ describe('createPsql', () => {
   })
 
   it('uses process.env when no env overlay is provided', async () => {
-    const psql = await createPsql({ connectionString: databaseUrl() })
+    const psql = createPsql({ connectionString: databaseUrl() })
     try {
       expect(psql.writePool).toBeDefined()
     } finally {
@@ -209,7 +209,7 @@ describe('createPsql', () => {
   it('uses the default error handler when vector registration fails on a replica', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const onClose = vi.fn()
-    const psql = await createPsql({
+    const psql = createPsql({
       connectionString: databaseUrl(),
       readConnectionString: 'postgres://127.0.0.1:1/does-not-exist',
       env: { ...process.env, NODE_ENV: 'test' },
@@ -218,6 +218,9 @@ describe('createPsql', () => {
     })
     try {
       expect(onClose).toHaveBeenCalledWith(psql.close)
+      // Registration is deferred to the first connection, on any pool.
+      expect(spy).not.toHaveBeenCalled()
+      await psql.write('/* firstConnect */ SELECT 1')
       expect(spy).toHaveBeenCalled()
     } finally {
       await psql.close()
