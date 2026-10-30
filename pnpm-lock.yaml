@@ -138,8 +138,8 @@ importers:
   packages/dynamic-config:
     devDependencies:
       valkyries:
-        specifier: ^0.14.0
-        version: 0.14.0
+        specifier: ^0.15.0
+        version: 0.15.0
 
   packages/edge:
     dependencies:
@@ -366,8 +366,8 @@ importers:
         specifier: ^3.1.0
         version: 3.1.0
       valkyries:
-        specifier: ^0.14.0
-        version: 0.14.0
+        specifier: ^0.15.0
+        version: 0.15.0
 
   packages/request-contract-validation:
     dependencies:
@@ -3906,8 +3906,8 @@ packages:
     resolution: {integrity: sha512-Sc5u1VVln93y1Xnz4R+CunOZc7R9LUcTmhj7Rc7Eg3HVcf7rVn2FOoa812fe0W8p3jD7xeoGSYbfqCGGH2B6xw==}
     hasBin: true
 
-  valkyries@0.14.0:
-    resolution: {integrity: sha512-NNswTXCl7Eu0bJXWnrTSG6Jbi/ilELk/+2ynrW9F1NByJ37hc59i78qkqGxacDCwyz7FaB2Kri6qQ2VsVydHWQ==}
+  valkyries@0.15.0:
+    resolution: {integrity: sha512-d+xeZRfKwKNewm3yAiy2RJ8Axtr+57cxCvmMEj//QzlMqmvSzINZK8ytrkpB1CUzVXjQ0IXwPkZvD867OtDnmg==}
     engines: {node: '>=24.0.0'}
 
   vary@1.1.2:
@@ -7452,7 +7452,7 @@ snapshots:
 
   uuid@14.0.3: {}
 
-  valkyries@0.14.0:
+  valkyries@0.15.0:
     dependencies:
       '@valkey/valkey-glide': 2.5.3
 
