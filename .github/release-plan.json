@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/ai/package.json"],
+  "changedManifests": ["packages/postgres/package.json"],
   "releases": [
     {
       "bump": "minor",
-      "directory": "ai",
-      "fromVersion": "0.3.0",
-      "name": "@vouchington/ai",
-      "toVersion": "0.4.0"
+      "directory": "postgres",
+      "fromVersion": "0.2.0",
+      "name": "@vouchington/postgres",
+      "toVersion": "0.3.0"
     }
   ],
-  "selectedPackage": "@vouchington/ai"
+  "selectedPackage": "@vouchington/postgres"
 }
