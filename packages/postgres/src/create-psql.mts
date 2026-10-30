@@ -9,14 +9,14 @@ import { createTransactionApi } from './transactions.mts'
 import { createBoundedTransactionApi } from './bounded-transaction-api.mts'
 import { installPgTypeParsers } from './type-parsers.mts'
 import type { CreatePsqlOptions, Psql } from './create-psql-types.mts'
-import { ignoreMissingVectorType, registerPgVectorTypes } from './vector.mts'
+import { deferUntilVectorTypes, ignoreMissingVectorType, registerPgVectorTypes } from './vector.mts'
 import { createMigrationRunner } from './migration-runner/fixed-migrations.mts'
 import { resolveMigrationTimeouts } from './migration-runner/migration-options.mts'
 import { withMigrationRunnerSession } from './migration-runner/migration-session.mts'
 
 export type { CreatePsqlOptions, Psql } from './create-psql-types.mts'
 
-export async function createPsql(options: CreatePsqlOptions): Promise<Psql> {
+export function createPsql(options: CreatePsqlOptions): Psql {
   installPgTypeParsers()
   const env = options.env ?? process.env
   const errorHandler = options.errorHandler ?? defaultErrorHandler
@@ -54,16 +54,14 @@ export async function createPsql(options: CreatePsqlOptions): Promise<Psql> {
   }
 
   if (options.vector) {
-    await Promise.all([
-      registerPgVectorTypes(connectionString).catch((error) =>
-        ignoreMissingVectorType(error, errorHandler),
-      ),
-      readConnectionString === connectionString
-        ? Promise.resolve()
-        : registerPgVectorTypes(readConnectionString).catch((error) =>
-            ignoreMissingVectorType(error, errorHandler),
-          ),
-    ])
+    const register = (url: string) =>
+      registerPgVectorTypes(url).catch((error) => ignoreMissingVectorType(error, errorHandler))
+    deferUntilVectorTypes([writePool, readPool, advisoryLockPool], async () => {
+      await Promise.all([
+        register(connectionString),
+        readConnectionString === connectionString ? undefined : register(readConnectionString),
+      ])
+    })
   }
 
   let closed = false

@@ -17,7 +17,7 @@ export async function withPsql<Result>(
   run: (psql: Psql) => Promise<Result>,
   options: WithPsqlOptions = {},
 ): Promise<Result> {
-  const psql = await createPsql({
+  const psql = createPsql({
     ...options,
     connectionString: options.connectionString ?? databaseUrl(),
     env: { ...process.env, NODE_ENV: 'test', ...options.env },
