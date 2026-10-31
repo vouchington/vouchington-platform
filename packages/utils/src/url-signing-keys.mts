@@ -84,6 +84,7 @@ export function verifyExpiringPath(
   options: { now?: number } = {},
 ): boolean {
   if (!Number.isSafeInteger(expiresAtMs)) return false
-  if ((options.now ?? Date.now()) > expiresAtMs) return false
+  const now = options.now ?? Date.now()
+  if (!Number.isFinite(now) || now > expiresAtMs) return false
   return verifyPathSignature(expiringPayload(path, expiresAtMs), signature, keys)
 }
