@@ -33,10 +33,10 @@
     "prepack": "pnpm run build"
   },
   "devDependencies": {
-    "valkyries": "^0.14.0"
+    "valkyries": "^0.15.0"
   },
   "peerDependencies": {
-    "valkyries": "^0.14.0"
+    "valkyries": "^0.15.0"
   },
   "engines": {
     "node": ">=24.0.0"
