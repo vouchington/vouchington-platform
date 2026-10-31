@@ -176,7 +176,7 @@ describe('host policy and routes', () => {
   })
 
   it('keeps bare entries that URL cannot parse, lowercased', () => {
-    expect(createProtectedHostPolicy(['*.Example.com']).hosts()).toEqual(['*.example.com'])
+    expect(createProtectedHostPolicy(['Bad Host']).hosts()).toEqual(['bad host'])
   })
 
   it('matches a single route segment', () => {
