@@ -191,7 +191,8 @@ Markdown location. The application owns moving previously generated files when c
   in test environments. `runWithQueryCompletionDiagnostics` and `observeQueryCompletion` capture
   query settlement for a scope. `createSharedDbScopeObserver({ key, tables })` is a
   process-global, test-installable observer for scope-bounded service calls; the application owns
-  the operation-to-table vocabulary. `createQueryProfiles({ registryKey?, excludedFromRepeats?, isDetached? })`
+  the operation-to-table vocabulary and the keyset-read payload (third type parameter, built with
+  `SharedDbKeysetRead<Start, Completed>`). `createQueryProfiles({ registryKey?, excludedFromRepeats?, isDetached? })`
   returns `observe` (pass to `createQueryTimingRecorder({ observe })`),
   `createRequestQueryProfile()` and `runIndependentWorker(identity, handler, onOwnedProfile?)`,
   which capture every query per request or job into an async-local scope and summarize total
@@ -226,7 +227,10 @@ await cleanupMonthlyPartitions({
 
 - `@vouchington/postgres/partitions` — UUIDv7 range bounds, monthly and default partition SQL,
   partition-name parsing, expiry selection, and per-partition transactional retirement. Each
-  partition retires in its own transaction; a failure is reported and the rest continue.
+  partition retires in its own transaction; a failure is reported and the rest continue. `reportError` may be async and is awaited.
+  A child is dropped only when its `pg_get_expr(relpartbound)` range matches the month in its
+  name (`expectedMonthlyPartitionBound`); mismatches are skipped and reported by
+  `cleanupMonthlyPartitions`. `listManagedMonthlyPartitions` rows now include `partition_bound`.
 - `@vouchington/postgres/catalog-guarded-ddl` — idempotent `ADD CONSTRAINT ... NOT VALID` plus
   `VALIDATE CONSTRAINT` blocks guarded by `pg_constraint`, with lock-then-recheck serialization.
 

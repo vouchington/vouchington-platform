@@ -5,33 +5,34 @@ export type SharedDbScope =
   | { kind: 'cursor'; id: string }
   | { kind: 'global' }
 
-export type SharedDbKeysetRead =
-  | {
-      phase: 'start'
-      identity: symbol
-      actorId: string
-      after: { timestamp: unknown; id: unknown } | undefined
-      limit: number
-      sqlLimit: unknown
-    }
-  | {
-      phase: 'completed'
-      identity: symbol
-      rowCount: number
-      first: { id: string; timestamp: string } | undefined
-    }
+/**
+ * A keyset read reported around a scope-bounded query. The application supplies the payload for
+ * each phase; `identity` correlates a start with its completion.
+ */
+export type SharedDbKeysetRead<
+  Start extends object = Record<string, unknown>,
+  Completed extends object = Record<string, unknown>,
+> =
+  | ({ phase: 'start'; identity: symbol } & Start)
+  | ({ phase: 'completed'; identity: symbol } & Completed)
 
-export type SharedDbScopeEvent<Operation extends string, Table extends string> = {
+export type SharedDbScopeEvent<
+  Operation extends string,
+  Table extends string,
+  KeysetRead extends SharedDbKeysetRead = SharedDbKeysetRead,
+> = {
   operation: Operation
   table: Table
   scope: SharedDbScope
-  keysetRead?: SharedDbKeysetRead
+  keysetRead?: KeysetRead
   transaction?: QueryExecutor
 }
 
-export type SharedDbScopeObserver<Operation extends string, Table extends string> = (
-  event: SharedDbScopeEvent<Operation, Table>,
-) => void
+export type SharedDbScopeObserver<
+  Operation extends string,
+  Table extends string,
+  KeysetRead extends SharedDbKeysetRead = SharedDbKeysetRead,
+> = (event: SharedDbScopeEvent<Operation, Table, KeysetRead>) => void
 
 export interface SharedDbScopeObserverOptions<Operation extends string, Table extends string> {
   /** Operation to table map; the application owns the vocabulary. */
@@ -44,22 +45,24 @@ export interface SharedDbScopeObserverOptions<Operation extends string, Table ex
  * A process-global, test-installable observer for service calls that must stay inside an owned
  * scope. `observe` is a no-op until `install` registers a callback.
  */
-export function createSharedDbScopeObserver<Operation extends string, Table extends string>(
-  options: SharedDbScopeObserverOptions<Operation, Table>,
-) {
+export function createSharedDbScopeObserver<
+  Operation extends string,
+  Table extends string,
+  KeysetRead extends SharedDbKeysetRead = SharedDbKeysetRead,
+>(options: SharedDbScopeObserverOptions<Operation, Table>) {
   const symbol = Symbol.for(options.key)
   const host = globalThis as unknown as Record<
     symbol,
-    SharedDbScopeObserver<Operation, Table> | undefined
+    SharedDbScopeObserver<Operation, Table, KeysetRead> | undefined
   >
   return {
-    install(observer: SharedDbScopeObserver<Operation, Table> | undefined): void {
+    install(observer: SharedDbScopeObserver<Operation, Table, KeysetRead> | undefined): void {
       host[symbol] = observer
     },
     observe(
       operation: Operation,
       scope: SharedDbScope,
-      keysetRead?: SharedDbKeysetRead,
+      keysetRead?: KeysetRead,
       transaction?: QueryExecutor,
     ): void {
       host[symbol]?.({

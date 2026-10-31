@@ -4,6 +4,7 @@ import { assertSafeSqlIdentifier } from './identifiers.mts'
 import {
   listManagedMonthlyPartitions,
   selectExpiredMonthlyPartitions,
+  type ExistingMonthlyPartitionRow,
   type ExpiredMonthlyPartition,
 } from './select-expired.mts'
 import {
@@ -26,8 +27,11 @@ export type BeforeDetachPartition = (
 
 export interface RetireMonthlyPartitionsOptions {
   startTransaction: () => Promise<PartitionRetirementTransaction>
-  /** Receives one error per partition that failed to retire; later partitions still run. */
-  reportError: (error: Error) => void
+  /**
+   * Receives one error per partition that failed to retire; later partitions still run. Awaited,
+   * so an async reporter may reject without stopping retirement.
+   */
+  reportError: (error: Error) => void | Promise<void>
   beforeDetach?: BeforeDetachPartition | undefined
 }
 
@@ -59,7 +63,7 @@ export async function retireExpiredMonthlyPartitions(
       await transaction.commit()
     } catch (err) {
       try {
-        options.reportError(
+        await options.reportError(
           new Error(`Failed to retire monthly partition ${partition.partitionName}`, {
             cause: err,
           }),
@@ -85,11 +89,24 @@ export async function cleanupMonthlyPartitions(
   options: CleanupMonthlyPartitionsOptions,
 ): Promise<void> {
   const existing = await listManagedMonthlyPartitions(options.query, options.tables)
+  const mismatched: ExistingMonthlyPartitionRow[] = []
   const expired = selectExpiredMonthlyPartitions(
     existing,
     options.tables,
     options.referenceDate ?? new Date(),
+    (row) => mismatched.push(row),
   )
+  for (const row of mismatched) {
+    try {
+      await options.reportError(
+        new Error(
+          `Skipped monthly partition ${row.partition_table}: bound ${row.partition_bound ?? 'null'} does not match its name`,
+        ),
+      )
+    } catch {
+      // a failing reporter must not stop retirement
+    }
+  }
   await retireExpiredMonthlyPartitions(expired, options)
 }
 

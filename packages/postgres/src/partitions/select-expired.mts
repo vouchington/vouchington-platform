@@ -5,8 +5,14 @@ import {
 } from './config.mts'
 import { assertSafeSqlIdentifier } from './identifiers.mts'
 import { isMonthlyPartitionExpired, parseMonthlyPartitionName } from './utils.mts'
+import { timestampToUuidv7LowerBound } from './uuidv7-bounds.mts'
 
-export type ExistingMonthlyPartitionRow = { parent_table: string; partition_table: string }
+export type ExistingMonthlyPartitionRow = {
+  parent_table: string
+  partition_table: string
+  /** `pg_get_expr(relpartbound, oid)`: `FOR VALUES FROM (...) TO (...)`, or `DEFAULT`. */
+  partition_bound: string | null
+}
 
 export type ExpiredMonthlyPartition = {
   table: string
@@ -25,11 +31,19 @@ export function getMonthlyPartitionCutoffDate(referenceDate: Date, retentionDays
   return new Date(referenceDate.getTime() - retentionDays * DAY_MS)
 }
 
+/** The bound `generateMonthlyPartitionStatements` creates for the month. */
+export function expectedMonthlyPartitionBound(year: number, month: number): string {
+  const lower = timestampToUuidv7LowerBound(Date.UTC(year, month - 1, 1))
+  const upper = timestampToUuidv7LowerBound(Date.UTC(year, month, 1))
+  return `FOR VALUES FROM ('${lower}') TO ('${upper}')`
+}
+
 /** Whole-partition retirement: effective retention is `retentionDays` plus up to one month. */
 export function selectExpiredMonthlyPartitions(
   existingPartitions: readonly ExistingMonthlyPartitionRow[],
   tableConfigs: readonly MonthlyPartitionTableConfig[],
   referenceDate: Date,
+  onBoundMismatch?: (row: ExistingMonthlyPartitionRow) => void,
 ): ExpiredMonthlyPartition[] {
   const configByTable = new Map(tableConfigs.map((config) => [config.table, config]))
   const expired: ExpiredMonthlyPartition[] = []
@@ -39,6 +53,11 @@ export function selectExpiredMonthlyPartitions(
     if (config?.retentionDays === undefined || parsed?.table !== existing.parent_table) continue
     const cutoff = getMonthlyPartitionCutoffDate(referenceDate, config.retentionDays)
     if (!isMonthlyPartitionExpired(parsed, cutoff)) continue
+    // The name alone is not trusted for a destructive drop: the range must be that month.
+    if (existing.partition_bound !== expectedMonthlyPartitionBound(parsed.year, parsed.month)) {
+      onBoundMismatch?.(existing)
+      continue
+    }
     expired.push({
       table: config.table,
       partitionName: existing.partition_table,
@@ -67,7 +86,8 @@ export async function listManagedMonthlyPartitions(
   if (tableNames.length === 0) return []
   const { rows } = await query<ExistingMonthlyPartitionRow>(
     `/* listManagedMonthlyPartitions */
-      SELECT parent.relname AS parent_table, child.relname AS partition_table
+      SELECT parent.relname AS parent_table, child.relname AS partition_table,
+        pg_get_expr(child.relpartbound, child.oid) AS partition_bound
       FROM pg_inherits
       JOIN pg_class AS parent ON pg_inherits.inhparent = parent.oid
       JOIN pg_class AS child ON pg_inherits.inhrelid = child.oid
