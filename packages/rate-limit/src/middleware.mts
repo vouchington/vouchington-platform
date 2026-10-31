@@ -29,6 +29,12 @@ declare module '@jongleberry/api-server' {
   }
 }
 
+/** What `check` receives beyond the route and identities. */
+export interface RouteRateLimitCheckContext<TSubject> {
+  ctx: Context
+  subject: TSubject
+}
+
 export interface RouteRateLimitMiddlewareOptions<TSubject> {
   /** When this returns false the limiter is skipped entirely. Defaults to always enabled. */
   isEnabled?: (() => boolean) | undefined
@@ -38,7 +44,12 @@ export interface RouteRateLimitMiddlewareOptions<TSubject> {
     routeKey: string,
     extras: RouteRateLimitExtras | undefined,
   ): Promise<{ identities: RateLimitIdentities; subject: TSubject }>
-  check(routeKey: string, identities: RateLimitIdentities): Promise<RouteRateLimitResult>
+  /** Receives the request context and resolved subject, e.g. to select a tenant's backend or policy. */
+  check(
+    routeKey: string,
+    identities: RateLimitIdentities,
+    context: RouteRateLimitCheckContext<TSubject>,
+  ): Promise<RouteRateLimitResult>
   /** Runs after headers/429 are applied, e.g. to meter usage for the resolved subject. */
   onSettled?:
     | ((ctx: Context, routeKey: string, subject: TSubject) => Promise<void> | void)
@@ -69,7 +80,7 @@ export function installRouteRateLimit<TSubject>(
     ): Promise<RouteRateLimitCheck<TSubject>> {
       if (options.isEnabled && !options.isEnabled()) return null
       const { identities, subject } = await options.resolveIdentities(this, routeKey, extras)
-      return { result: await options.check(routeKey, identities), subject }
+      return { result: await options.check(routeKey, identities, { ctx: this, subject }), subject }
     },
 
     async settleRouteRateLimit(

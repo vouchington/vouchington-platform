@@ -64,7 +64,9 @@ export function createRouteRateLimiter<TContext = undefined>(
         limited,
         retryAfterSeconds: limited && retryAfterSeconds > 0 ? retryAfterSeconds : ttlSeconds,
         limit: threshold,
-        remaining: Math.max(0, threshold - maxCount),
+        // A request is refused once its post-add count reaches `threshold`, so the next request
+        // only fits while `maxCount + 1 < threshold`.
+        remaining: Math.max(0, threshold - 1 - maxCount),
       }
     } catch (err) {
       options.onError?.(err instanceof Error ? err : new Error(String(err)))

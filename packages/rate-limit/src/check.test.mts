@@ -68,10 +68,21 @@ describe('createRouteRateLimiter', () => {
       limited: false,
       retryAfterSeconds: 60,
       limit: 10,
-      remaining: 3,
+      remaining: 2,
     })
     expect(backend.addAndCheck).toHaveBeenCalledWith(['ip:1:r', 'uid:u:r'], 10, 60)
     expect(resolvePolicy).toHaveBeenCalledWith('r', { ip: '1', uid: 'u' }, 'ctx')
+  })
+
+  it('reports no remaining once the next request would be refused', async () => {
+    const check = createRouteRateLimiter({
+      getBackend: () => fakeBackend(async () => ({ counts: [9], limited: false })),
+      resolvePolicy: () => policy,
+    })
+    expect(await check('r', { ip: '1' }, undefined)).toMatchObject({
+      limited: false,
+      remaining: 0,
+    })
   })
 
   it('reports limited and treats empty counts as zero', async () => {
@@ -87,7 +98,7 @@ describe('createRouteRateLimiter', () => {
       getBackend: () => fakeBackend(async () => ({ counts: [], limited: false })),
       resolvePolicy: () => policy,
     })
-    expect(await empty('r', { ip: '1' }, undefined)).toMatchObject({ remaining: 10 })
+    expect(await empty('r', { ip: '1' }, undefined)).toMatchObject({ remaining: 9 })
   })
 
   it('skips the backend when there are no identities', async () => {
@@ -159,7 +170,7 @@ describe('createRouteRateLimiter', () => {
       limited: false,
       retryAfterSeconds: 60,
       limit: 10,
-      remaining: 3,
+      remaining: 2,
     })
     expect(backend.consume).toHaveBeenCalledWith(['ip:1:r', 'uid:u:r'], {
       threshold: 10,
@@ -177,7 +188,7 @@ describe('createRouteRateLimiter', () => {
       limited: true,
       retryAfterSeconds: 2,
       limit: 10,
-      remaining: 4,
+      remaining: 3,
     })
     expect(Object.fromEntries(counts)).toEqual({ 'ip:1:r': 6 })
   })
