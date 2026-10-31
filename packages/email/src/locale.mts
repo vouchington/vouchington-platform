@@ -14,5 +14,5 @@ export function resolveEmailLocale<TLocale extends string>(
   if (normalized === null) return fallback
   const find = (tag: string) =>
     supported.find((candidate) => normalizeLocale(candidate)?.toLowerCase() === tag.toLowerCase())
-  return find(normalized) ?? find(normalized.split('-', 1)[0]!) ?? fallback
+  return find(normalized) ?? find(normalizeLocale(normalized.split('-', 1)[0]!)!) ?? fallback
 }

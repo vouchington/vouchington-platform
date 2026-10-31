@@ -219,6 +219,7 @@ describe('locale', () => {
     expect(resolveEmailLocale('pt_br', supported, 'en')).toBe('pt-BR')
     expect(resolveEmailLocale('es-MX', supported, 'en')).toBe('es')
     expect(resolveEmailLocale('de', supported, 'en')).toBe('en')
+    expect(resolveEmailLocale('en-GB', ['en', 'de'], 'de')).toBe('en')
     expect(resolveEmailLocale('!!', supported, 'en')).toBe('en')
     expect(resolveEmailLocale(null, supported, 'en')).toBe('en')
     expect(resolveEmailLocale(undefined, supported, 'en')).toBe('en')
