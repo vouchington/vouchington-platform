@@ -46,6 +46,12 @@ describe('clampRateLimitDelayMs', () => {
     expect(clampRateLimitDelayMs(1, options)).toBe(10)
     expect(clampRateLimitDelayMs(99, options)).toBe(30)
   })
+
+  it('clamps the default fallback into the window', () => {
+    expect(clampRateLimitDelayMs(undefined, { minMs: 5_000, defaultMs: 1_000 })).toBe(5_000)
+    expect(clampRateLimitDelayMs(null, { defaultMs: 0 })).toBe(MIN_RATE_LIMIT_DELAY_MS)
+    expect(clampRateLimitDelayMs(undefined, { defaultMs: 99, maxMs: 50, minMs: 1 })).toBe(50)
+  })
 })
 
 describe('createRateLimitError and throwRateLimited', () => {
