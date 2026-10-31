@@ -23,6 +23,8 @@ export interface WebPushPayload {
 export const MAX_WEB_PUSH_PAYLOAD_BYTES = 3993
 const P256DH_BYTES = 65
 const AUTH_BYTES = 16
+const P256_PRIME = 0xffffffff00000001000000000000000000000000ffffffffffffffffffffffffn
+const P256_B = 0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604bn
 
 /** Decodes unpadded or padded base64url; throws TypeError on invalid characters. */
 export function decodeBase64Url(value: string): Uint8Array {
@@ -53,12 +55,33 @@ export function getPushServiceAudience(endpoint: string): string {
   return new URL(endpoint).origin
 }
 
+function toBigInt(bytes: Uint8Array): bigint {
+  return bytes.reduce((acc, byte) => (acc << 8n) | BigInt(byte), 0n)
+}
+
+/** Whether an uncompressed point satisfies the P-256 curve equation y^2 = x^3 - 3x + b. */
+function isOnP256Curve(point: Uint8Array): boolean {
+  const x = toBigInt(point.subarray(1, 33))
+  const y = toBigInt(point.subarray(33))
+  if (x >= P256_PRIME || y >= P256_PRIME) return false
+  return (y * y - (x * x * x - 3n * x + P256_B)) % P256_PRIME === 0n
+}
+
 function keyOfLength(value: unknown, length: number, name: string): string {
   if (typeof value !== 'string') throw new TypeError(`Push subscription ${name} must be a string`)
   if (decodeBase64Url(value).length !== length) {
     throw new TypeError(`Push subscription ${name} has an invalid length`)
   }
   return value
+}
+
+function p256dhKey(value: unknown): string {
+  const key = keyOfLength(value, P256DH_BYTES, 'p256dh')
+  const point = decodeBase64Url(key)
+  if (point[0] !== 0x04 || !isOnP256Curve(point)) {
+    throw new TypeError('Push subscription p256dh must be an uncompressed P-256 point')
+  }
+  return key
 }
 
 /** Validates the JSON shape of `PushSubscription.toJSON()`; throws TypeError when invalid. */
@@ -88,7 +111,7 @@ export function parseWebPushSubscription(
     endpoint,
     expirationTime: expirationTime ?? null,
     keys: {
-      p256dh: keyOfLength(p256dh, P256DH_BYTES, 'p256dh'),
+      p256dh: p256dhKey(p256dh),
       auth: keyOfLength(auth, AUTH_BYTES, 'auth'),
     },
   }

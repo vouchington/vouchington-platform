@@ -92,5 +92,8 @@ describe('createVapidJwt', () => {
   it('builds the authorization header', () => {
     expect(createVapidAuthorization('jwt', keys.publicKey)).toBe(`vapid t=jwt, k=${keys.publicKey}`)
     expect(() => createVapidAuthorization('jwt', 'bad')).toThrow(TypeError)
+    expect(createVapidAuthorization('jwt', `${keys.publicKey}=`)).toBe(
+      `vapid t=jwt, k=${keys.publicKey}`,
+    )
   })
 })
