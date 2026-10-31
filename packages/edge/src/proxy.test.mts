@@ -41,6 +41,11 @@ describe('cookies', () => {
     expect(stripCookies('a=1; b=2', new Set(['a']))).toBe('b=2')
     expect(stripCookies('a=1', ['a'])).toBeNull()
     expect(stripCookies(undefined, [])).toBeNull()
+    expect(stripCookies('a=1; a=2; b=3', ['b'])).toBe('a=1; a=2')
+    expect(stripCookies('a=1; a=2; junk; b=3', ['c'])).toBe('a=1; a=2; b=3')
+    expect(stripCookies('junk; =x', ['a'])).toBeNull()
+    expect(stripCookies(null, ['a'])).toBeNull()
+    expect(stripCookies('a=1; a=2; junk', [])).toBe('a=1; a=2; junk')
   })
 })
 
@@ -102,6 +107,10 @@ describe('buildOriginRequest', () => {
     expect(emptied.headers.has('cookie')).toBe(false)
     const untouched = buildOriginRequest(incoming('/', headers), { origin: ORIGIN })
     expect(untouched.headers.get('cookie')).toBe('a=1; b=2')
+    const duplicates = buildOriginRequest(incoming('/', { cookie: 'sid=path; sid=root' }), {
+      origin: ORIGIN,
+    })
+    expect(duplicates.headers.get('cookie')).toBe('sid=path; sid=root')
   })
 
   it('drops authorization unless the matching scheme is preserved', () => {
@@ -191,6 +200,45 @@ describe('fetchOriginResponse', () => {
     })
     expect('response' in result && (await result.response.text())).toBe('ok')
     expect('duration' in result && result.duration).toBeGreaterThanOrEqual(0)
+  })
+
+  it('measures duration after the response arrives', async () => {
+    vi.useFakeTimers()
+    try {
+      const result = await fetchOriginResponse(incoming('/'), {
+        fetch: async () => {
+          await vi.advanceTimersByTimeAsync(250)
+          return new Response('slow')
+        },
+      })
+      expect('duration' in result && result.duration).toBe(250)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('retries when the socket error is only in the cause chain', async () => {
+    const wrapped = (code: string) =>
+      new TypeError('fetch failed', { cause: Object.assign(new Error('x'), { code }) })
+    const send = vi
+      .fn()
+      .mockRejectedValueOnce(wrapped('UND_ERR_SOCKET'))
+      .mockResolvedValue(new Response('ok'))
+    const result = await fetchOriginResponse(incoming('/'), { fetch: send })
+    expect('response' in result).toBe(true)
+    expect(send).toHaveBeenCalledTimes(2)
+    const nested = new TypeError('fetch failed', { cause: { cause: { code: 'ECONNRESET' } } })
+    const second = vi.fn().mockRejectedValueOnce(nested).mockResolvedValue(new Response('ok'))
+    await fetchOriginResponse(incoming('/'), { fetch: second })
+    expect(second).toHaveBeenCalledTimes(2)
+    const unrelated = vi.fn().mockRejectedValue(wrapped('ENOENT'))
+    await fetchOriginResponse(incoming('/'), { fetch: unrelated })
+    expect(unrelated).toHaveBeenCalledTimes(1)
+    const loop = new Error('fetch failed')
+    loop.cause = loop
+    const cyclic = vi.fn().mockRejectedValue(loop)
+    await fetchOriginResponse(incoming('/'), { fetch: cyclic })
+    expect(cyclic).toHaveBeenCalledTimes(1)
   })
 
   it('uses global fetch by default', async () => {

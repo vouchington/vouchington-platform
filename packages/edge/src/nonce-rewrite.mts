@@ -1,6 +1,15 @@
 const MAX_META_TAG_CHARS = 16 * 1024
 const OUTPUT_BATCH_CHARS = 16 * 1024
 
+const STALE_AFTER_REWRITE = [
+  'content-encoding',
+  'content-length',
+  'etag',
+  'content-md5',
+  'digest',
+  'content-digest',
+]
+
 export type NonceRewriteOptions = {
   /**
    * `<meta name="…">` tags removed from the rewritten HTML, for example trace-context tags that
@@ -26,9 +35,8 @@ export function rewritePlaceholderNonce(
 ): Response {
   if (!response.body || !placeholderNonce || placeholderNonce === realNonce) return response
   const headers = new Headers(response.headers)
-  // A byte transform cannot keep the wire length or encoding, so neither header stays valid.
-  headers.delete('content-encoding')
-  headers.delete('content-length')
+  // A byte transform cannot keep the wire length, encoding, or validators of the cached bytes.
+  for (const name of STALE_AFTER_REWRITE) headers.delete(name)
   return new Response(
     response.body.pipeThrough(createNonceRewriteStream(placeholderNonce, realNonce, options)),
     { status: response.status, statusText: response.statusText, headers },

@@ -26,6 +26,16 @@ const logged = (mock: ReturnType<typeof vi.fn>) =>
   mock.mock.calls.map(([line]) => JSON.parse(line as string) as Record<string, unknown>)
 
 describe('createSentryTunnel', () => {
+  it('forwards binary envelope bytes unchanged', async () => {
+    const { handler, send } = setup()
+    const head = new TextEncoder().encode(
+      `${JSON.stringify({ dsn: DSN })}\n{"type":"attachment","length":3}\n`,
+    )
+    const body = new Uint8Array([...head, 0xff, 0xfe, 0x80, 10])
+    await handler(new Request('https://example.com/tunnel', { method: 'POST', body }))
+    expect(send.mock.calls[0]![1].body).toEqual(body)
+  })
+
   it('forwards envelopes for trusted DSNs and hides the upstream response', async () => {
     const { handler, send, log } = setup()
     const response = await handler(post(ENVELOPE))
@@ -33,7 +43,7 @@ describe('createSentryTunnel', () => {
     expect(await response.text()).toBe('')
     expect(send).toHaveBeenCalledWith('https://o1.ingest.sentry.io/api/123/envelope/', {
       method: 'POST',
-      body: ENVELOPE,
+      body: new TextEncoder().encode(ENVELOPE),
       headers: { 'content-type': 'application/x-sentry-envelope' },
     })
     expect(log.warn).not.toHaveBeenCalled()

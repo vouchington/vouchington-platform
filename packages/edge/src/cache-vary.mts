@@ -2,7 +2,6 @@ export const DEFAULT_SAFE_CACHE_VARY_TOKENS: readonly string[] = [
   'Cookie',
   'Authorization',
   'Accept-Encoding',
-  'Accept-Language',
 ]
 
 /**

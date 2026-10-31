@@ -35,17 +35,6 @@
   "dependencies": {
     "@vouchington/utils": "^0.10.0"
   },
-  "devDependencies": {
-    "@cloudflare/workers-types": "^5.20261028.1"
-  },
-  "peerDependencies": {
-    "@cloudflare/workers-types": "^5.20261028.1"
-  },
-  "peerDependenciesMeta": {
-    "@cloudflare/workers-types": {
-      "optional": true
-    }
-  },
   "engines": {
     "node": ">=24.0.0"
   }

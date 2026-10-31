@@ -70,6 +70,7 @@ describe('cache policy', () => {
     expect(matchesPathPrefix('/API/Private', prefixes)).toBe(true)
     expect(matchesPathPrefix('/api/private/x', prefixes)).toBe(true)
     expect(matchesPathPrefix('/api/privately', prefixes)).toBe(false)
+    expect(matchesPathPrefix('/api/private/x', ['/API/Private'])).toBe(true)
   })
 
   it('caches only GET requests in cache mode', () => {
@@ -103,7 +104,13 @@ describe('cache policy', () => {
     expect(isCacheableResponse(new Response('ok'))).toBe(true)
     expect(isCacheableResponse(new Response('x', { status: 404 }))).toBe(false)
     expect(isCacheableResponse(new Response(null, { status: 301 }))).toBe(false)
-    for (const value of ['private', 'no-store', 'No-Cache, max-age=0']) {
+    for (const value of [
+      'private',
+      'no-store',
+      'No-Cache, max-age=0',
+      'private="X-User"',
+      'no-cache="X-Token", max-age=60',
+    ]) {
       expect(isCacheableResponse(new Response('x', { headers: { 'cache-control': value } }))).toBe(
         false,
       )
@@ -123,6 +130,8 @@ describe('cache vary', () => {
       'Accept-Encoding',
     ])
     expect(parseSafeCacheVary('')).toEqual([])
+    expect(parseSafeCacheVary('Accept-Language')).toBeNull()
+    expect(parseSafeCacheVary('accept-language', ['Accept-Language'])).toEqual(['Accept-Language'])
   })
 
   it('rejects unsafe tokens and honors an injected allow list', () => {
@@ -270,12 +279,12 @@ describe('stripDispatchOnlyHeaders', () => {
 
 describe('purgeCacheTags', () => {
   it('purges through the execution context cache', async () => {
-    const purge = async (options: { tags?: string[] }) => ({
+    const purge = async (options: { tags: string[] }) => ({
       success: true,
       errors: [],
       tags: options.tags,
     })
-    const result = await purgeCacheTags({ cache: { purge, invalidate: purge } }, ['a'])
+    const result = await purgeCacheTags({ cache: { purge } }, ['a'])
     expect(result).toMatchObject({ success: true, tags: ['a'] })
   })
 
