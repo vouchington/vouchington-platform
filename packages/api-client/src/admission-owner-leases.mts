@@ -57,12 +57,17 @@ export function releaseAdmissionOwner<T extends AdmissionOwnerEntry>(
 
 export function normalizeAdmissionOwners<T extends AdmissionOwnerEntry>(entry: T, now: number): T {
   const ownerLeases = activeOwnerLeases(entry, now)
+  // Every owner's lease expired without observing success: the request outcome is unknown.
+  const abandonedOwners =
+    !entry.successObserved &&
+    Object.keys(entry.ownerLeases ?? {}).length > 0 &&
+    Object.keys(ownerLeases).length === 0
   return {
     ...entry,
     ownerIds: undefined,
     ownerLeases: undefined,
     ...(Object.keys(ownerLeases).length > 0 ? { ownerLeases } : {}),
-    ...(entry.retryRequired ? { retryRequired: true } : {}),
+    ...(entry.retryRequired || abandonedOwners ? { retryRequired: true } : {}),
   }
 }
 

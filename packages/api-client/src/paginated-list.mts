@@ -60,6 +60,7 @@ export function usePaginatedList<T extends PaginatedData>(
   const requestLifecycle = useMemo(() => new PaginatedRequestLifecycle(), [])
   const refreshGeneration = useRef(0)
   const loadedCount = useRef(1)
+  const latestPages = useRef<T[]>([])
   const [listState, setListState] = useState<ListState<T>>(() =>
     freshState(currentKey, initialData, requestLifecycle.queryToken),
   )
@@ -82,6 +83,7 @@ export function usePaginatedList<T extends PaginatedData>(
   }, [listState.queryToken, requestLifecycle])
   const { pages, fetchError, loadingMore, queryToken: currentQueryToken } = currentListState
   loadedCount.current = pages.length
+  latestPages.current = pages
   const { has_next_page, end_cursor } = pages.at(-1)!.page_info
 
   function updateCurrent(token: symbol, update: (prev: ListState<T>) => Partial<ListState<T>>) {
@@ -95,14 +97,18 @@ export function usePaginatedList<T extends PaginatedData>(
   }
 
   async function loadMore(): Promise<boolean> {
-    if (!has_next_page || !end_cursor || !endpoint) return false
+    // Read the latest cursor: a retained `loadMore` must not reuse the render that created it.
+    const latestPageInfo = latestPages.current.at(-1)!.page_info
+    const cursor = latestPageInfo.end_cursor
+    if (!latestPageInfo.has_next_page || !cursor || !endpoint) return false
     const requestToken = requestLifecycle.start(currentQueryToken)
     if (!requestToken) return false
     updateCurrent(currentQueryToken, () => ({ loadingMore: true }))
     try {
-      const nextPage = await fetchAfter(end_cursor)
+      const nextPage = await fetchAfter(cursor)
       if (requestLifecycle.isCurrent(requestToken)) {
         loadedCount.current += 1 // synchronous: a refresh may commit before React renders this
+        latestPages.current = appendPaginatedPage(latestPages.current, nextPage)
         updateCurrent(currentQueryToken, (prev) => ({
           pages: appendPaginatedPage(prev.pages, nextPage),
           fetchError: null,

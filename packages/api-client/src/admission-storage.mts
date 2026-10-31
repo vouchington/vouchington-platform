@@ -37,16 +37,15 @@ export class AdmissionEntryStore {
     return storageKey.startsWith(this.#prefix)
   }
 
+  /** Throws when storage cannot be read; returns undefined when absent or corrupt (corrupt is removed). */
   get(storageKey: string, intentFingerprint: string): AdmissionStoredEntry | undefined {
     if (!this.isDurableKey(storageKey)) return undefined
+    // A failed read says nothing about the entry: fail closed rather than removing it.
+    const value = this.#storage?.getItem(storageKey)
+    if (!value) return undefined
     try {
-      const value = this.#storage?.getItem(storageKey)
-      if (!value) return undefined
       const entry = parseStoredAdmissionEntry(value, this.#now(), intentFingerprint)
-      if (!entry) {
-        this.remove(storageKey)
-        return undefined
-      }
+      if (!entry) this.remove(storageKey)
       return entry
     } catch {
       this.remove(storageKey)
@@ -141,17 +140,16 @@ export class AdmissionEntryStore {
     )
     const entries: StoredAdmissionEntry[] = []
     for (const storageKey of keys) {
+      // A read failure propagates: `set` then reports the write as failed, keeping the entry.
+      const value = storage.getItem(storageKey)
+      let entry: AdmissionStoredEntry | undefined
       try {
-        const value = storage.getItem(storageKey)
-        const entry = value ? parseStoredAdmissionEntry(value, now) : undefined
-        if (!entry) {
-          this.remove(storageKey)
-          continue
-        }
-        entries.push({ storageKey, entry })
+        entry = value ? parseStoredAdmissionEntry(value, now) : undefined
       } catch {
-        this.remove(storageKey)
+        entry = undefined
       }
+      if (entry) entries.push({ storageKey, entry })
+      else this.remove(storageKey)
     }
     return entries
   }

@@ -180,7 +180,7 @@ describe('AdmissionIdempotency persistence', () => {
     )
     expect(request).not.toHaveBeenCalled()
     expect(unavailableStorage.getItem).toHaveBeenCalled()
-    expect(unavailableStorage.removeItem).toHaveBeenCalled()
+    expect(unavailableStorage.removeItem).not.toHaveBeenCalled()
   })
 
   it('isolates persisted keys by authenticated actor without discarding uncertain retries', async () => {
