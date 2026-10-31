@@ -27,4 +27,4 @@ of the exported guards, or use a scoped decoder to validate a UUID key and preve
 caller-defined scopes. `buildPageInfo` returns camelCase fields; applications choose their own wire
 format.
 
-`narrowLimitBounds(bounds, runtime)` narrows static limit bounds with runtime-supplied `max` and `default` without ever widening them. `requiredQueryString` and `requiredQueryEnum` mark a query contract as `required: true`.
+`narrowLimitBounds(bounds, runtime)` narrows static limit bounds with runtime-supplied `max` and `default` without ever widening them. `requiredQueryString` and `requiredQueryEnum` mark a query contract as `required: true`, which the contract types declare. `narrowLimitBounds` types the narrowed `max` and `default` as `number`.
