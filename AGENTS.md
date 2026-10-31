@@ -104,6 +104,11 @@ authorization, and transaction implementation; the package owns only generic sem
 
 Use `pr-shepherd` (not `gh pr checks`) to iterate pull requests.
 
+The `codex-review` commit status (`.github/workflows/codex-review.yml`) is pending on each non-Dependabot
+PR head SHA until `chatgpt-codex-connector[bot]` reviews that exact SHA, posts a no-findings summary for
+it, or reports a usage limit (then it passes as "Codex unavailable"). Dependabot PRs pass immediately.
+It is event-driven; never poll for it.
+
 ## Publishing
 
 Normal releases are workflow-only: `Release` publishes with npm trusted publishing (OIDC).
