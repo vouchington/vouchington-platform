@@ -43,7 +43,7 @@ function validateOne(value: unknown, serialize: boolean): string {
     throw invalidRedirectUri('redirect_uris contains an invalid URI')
   }
   if (value.includes('*')) throw invalidRedirectUri('redirect URIs cannot contain wildcards')
-  if (uri.username || uri.password || uri.hash) {
+  if (uri.username || uri.password || uri.hash || value.includes('#')) {
     throw invalidRedirectUri('redirect URIs cannot contain userinfo or fragments')
   }
   const loopbackHttp = uri.protocol === 'http:' && LOOPBACK_HOSTNAMES.has(uri.hostname)

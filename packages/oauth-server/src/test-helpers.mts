@@ -102,7 +102,7 @@ export function createMemoryStore(clients: OAuthClient[] = []): MemoryStore {
         familyId: tokens.familyId,
         generation: tokens.generation,
         resource: tokens.resource,
-        scopes: tokens.scopes,
+        scopes: tokens.refreshScopes,
         familyExpiresAt: tokens.refreshExpiresAt,
         expiresAt: tokens.refreshExpiresAt,
         revoked: false,

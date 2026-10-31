@@ -14,6 +14,12 @@ export interface OAuthErrorResponse {
   body: { error: string; error_description: string }
 }
 
+/** RFC 9110 quoted-string: escapes `\` and `"`, rejects control characters. */
+function quoteRealm(realm: string): string {
+  if (/\p{Cc}/u.test(realm)) throw new TypeError('realm cannot contain control characters')
+  return realm.replace(/[\\"]/gu, '\\$&')
+}
+
 /** RFC 6749 section 5.2 error response. A 401 invalid_client names the Basic challenge. */
 export function buildOAuthErrorResponse(
   error: OAuthProtocolError,
@@ -23,7 +29,9 @@ export function buildOAuthErrorResponse(
     status: error.status,
     headers: {
       ...OAUTH_RESPONSE_HEADERS,
-      ...(error.code === 'invalid_client' ? { 'WWW-Authenticate': `Basic realm="${realm}"` } : {}),
+      ...(error.code === 'invalid_client'
+        ? { 'WWW-Authenticate': `Basic realm="${quoteRealm(realm)}"` }
+        : {}),
     },
     body: { error: error.code, error_description: error.message },
   }

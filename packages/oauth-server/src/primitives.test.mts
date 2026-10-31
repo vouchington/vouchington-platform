@@ -95,6 +95,7 @@ describe('redirect URIs', () => {
     ['wildcard', ['https://*.a.test/cb']],
     ['userinfo', ['https://user:pw@a.test/cb']],
     ['fragment', ['https://a.test/cb#x']],
+    ['empty fragment', ['https://a.test/cb#']],
     ['custom scheme', ['myapp://cb']],
     ['plain http', ['http://a.test/cb']],
     ['duplicates', ['https://a.test', 'https://a.test/']],

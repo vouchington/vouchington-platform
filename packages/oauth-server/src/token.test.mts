@@ -230,6 +230,33 @@ describe('refresh_token grant', () => {
     )
   })
 
+  it('keeps the full grant scopes on the rotated refresh token after a narrowed refresh', async () => {
+    const { store, deps } = setup()
+    seedRefresh(store)
+    const narrowed = await exchangeTokenGrant(refreshForm('&scope=mcp.user:read'), pub, deps)
+    const issued = store.tokens.at(-1)!
+    const full = await exchangeTokenGrant(
+      new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: narrowed.refresh_token,
+        scope: 'mcp.user:write mcp.user:read',
+      }),
+      pub,
+      deps,
+    )
+    expect(full.scope.split(' ').toSorted()).toEqual(['mcp.user:read', 'mcp.user:write'])
+    expect(issued.scopes).toEqual(['mcp.user:read'])
+    expect(issued.refreshScopes).toEqual(['mcp.user:write', 'mcp.user:read'])
+    expect(store.refresh.get(issued.refreshTokenHash)!.scopes).toEqual(issued.refreshScopes)
+  })
+
+  it('keeps the grant scopes on the refresh token when exchanging a code', async () => {
+    const { store, deps } = setup()
+    seedCode(store)
+    await exchangeTokenGrant(codeForm(), pub, deps)
+    expect(store.tokens.at(-1)!.refreshScopes).toEqual(['mcp.user:write', 'mcp.user:read'])
+  })
+
   it.each([
     ['unknown token', undefined, {}],
     ['replayed token', {}, { replayed: true }],

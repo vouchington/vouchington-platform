@@ -88,7 +88,13 @@ export interface IssuedTokens {
   familyId: string
   generation: number
   resource: string
+  /** Scopes of the access token; a narrowed refresh request narrows only these. */
   scopes: readonly string[]
+  /**
+   * Scopes of the underlying grant. Persist these (not `scopes`) on the rotated refresh token so a
+   * narrowed refresh does not permanently narrow the grant (RFC 6749 section 6).
+   */
+  refreshScopes: readonly string[]
   accessTokenHash: string
   accessExpiresAt: Date
   refreshTokenHash: string

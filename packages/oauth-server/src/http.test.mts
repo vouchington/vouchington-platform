@@ -119,6 +119,14 @@ describe('responses and metadata', () => {
     expect(buildOAuthErrorResponse(error, 'r').headers['WWW-Authenticate']).toBe('Basic realm="r"')
   })
 
+  it('escapes the Basic realm as a quoted-string and rejects control characters', () => {
+    const error = new OAuthProtocolError('invalid_client', 'bad', 401)
+    expect(buildOAuthErrorResponse(error, 'a"b\\c').headers['WWW-Authenticate']).toBe(
+      'Basic realm="a\\"b\\\\c"',
+    )
+    expect(() => buildOAuthErrorResponse(error, 'a\nb')).toThrow(TypeError)
+  })
+
   it('always appends iss to authorization responses', () => {
     const url = new URL(
       buildAuthorizationResponseUrl(
@@ -148,6 +156,15 @@ describe('responses and metadata', () => {
       code_challenge_methods_supported: ['S256'],
       scopes_supported: ['a', 'b'],
       authorization_response_iss_parameter_supported: true,
+    })
+    const slashed = buildAuthorizationServerMetadata({
+      issuer: 'https://as.test//',
+      scopesSupported: [],
+    })
+    expect(slashed).toMatchObject({
+      issuer: 'https://as.test//',
+      authorization_endpoint: 'https://as.test/authorize',
+      revocation_endpoint: 'https://as.test/revoke',
     })
     const custom = buildAuthorizationServerMetadata({
       issuer: 'https://as.test',
