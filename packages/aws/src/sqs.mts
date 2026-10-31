@@ -8,7 +8,7 @@ import {
   type SendMessageBatchRequestEntry,
 } from '@aws-sdk/client-sqs'
 import { byteLength, chunkBySize } from './chunk.mts'
-import { AWS_DUALSTACK_CLIENT_CONFIG } from './request-handler.mts'
+import { AWS_DUALSTACK_CLIENT_CONFIG } from './dualstack.mts'
 
 const SQS_MAX_BATCH_ENTRIES = 10
 const SQS_MAX_BATCH_BYTES = 1_048_576

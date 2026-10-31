@@ -4,7 +4,7 @@ import {
   type Body,
   type SendEmailCommandInput,
 } from '@aws-sdk/client-ses'
-import { AWS_DUALSTACK_CLIENT_CONFIG } from './request-handler.mts'
+import { AWS_DUALSTACK_CLIENT_CONFIG } from './dualstack.mts'
 import { buildRawEmailMessage, type RawEmailOptions } from './ses-mime.mts'
 
 export { buildRawEmailMessage }
