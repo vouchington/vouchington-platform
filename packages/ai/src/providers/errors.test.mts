@@ -33,6 +33,7 @@ describe('classifyAnthropicError', () => {
     [401, 'authentication', 'permanent', false],
     [403, 'permission', 'permanent', false],
     [408, 'invalid-request', 'transient', true],
+    [409, 'invalid-request', 'transient', true],
     [422, 'invalid-request', 'permanent', false],
   ])('maps HTTP %i', (status, code, retryClass, ambiguousBilled) => {
     expect(classifyAnthropicError(apiError(status))).toMatchObject({
