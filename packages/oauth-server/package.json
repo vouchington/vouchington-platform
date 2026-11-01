@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/oauth-server",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Generic OAuth 2.0 authorization-server building blocks with injected stores (RFC 6749, 7591, 7636, 8414).",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/oauth-server#readme",
   "license": "MIT",

@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/rate-limit/package.json"],
+  "changedManifests": ["packages/oauth-server/package.json"],
   "releases": [
     {
       "bump": "minor",
-      "directory": "rate-limit",
-      "fromVersion": "0.3.1",
-      "name": "@vouchington/rate-limit",
-      "toVersion": "0.4.0"
+      "directory": "oauth-server",
+      "fromVersion": "0.6.0",
+      "name": "@vouchington/oauth-server",
+      "toVersion": "0.7.0"
     }
   ],
-  "selectedPackage": "@vouchington/rate-limit"
+  "selectedPackage": "@vouchington/oauth-server"
 }
