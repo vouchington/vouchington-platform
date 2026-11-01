@@ -1,13 +1,47 @@
 {
-  "changedManifests": ["packages/postgres/package.json"],
+  "changedManifests": [
+    "packages/edge/package.json",
+    "packages/oauth-server/package.json",
+    "packages/sentry/package.json",
+    "packages/typed-entities/package.json",
+    "packages/utils/package.json"
+  ],
   "releases": [
     {
       "bump": "minor",
-      "directory": "postgres",
-      "fromVersion": "0.2.0",
-      "name": "@vouchington/postgres",
-      "toVersion": "0.3.0"
+      "directory": "utils",
+      "fromVersion": "0.10.2",
+      "name": "@vouchington/utils",
+      "toVersion": "0.11.0"
+    },
+    {
+      "bump": "minor",
+      "directory": "edge",
+      "fromVersion": "0.5.0",
+      "name": "@vouchington/edge",
+      "toVersion": "0.6.0"
+    },
+    {
+      "bump": "minor",
+      "directory": "oauth-server",
+      "fromVersion": "0.5.0",
+      "name": "@vouchington/oauth-server",
+      "toVersion": "0.6.0"
+    },
+    {
+      "bump": "minor",
+      "directory": "sentry",
+      "fromVersion": "0.4.0",
+      "name": "@vouchington/sentry",
+      "toVersion": "0.5.0"
+    },
+    {
+      "bump": "minor",
+      "directory": "typed-entities",
+      "fromVersion": "0.6.0",
+      "name": "@vouchington/typed-entities",
+      "toVersion": "0.7.0"
     }
   ],
-  "selectedPackage": "@vouchington/postgres"
+  "selectedPackage": "@vouchington/utils"
 }

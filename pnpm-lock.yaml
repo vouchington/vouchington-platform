@@ -144,7 +144,7 @@ importers:
   packages/edge:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.10.0
+        specifier: ^0.11.0
         version: link:../utils
 
   packages/email:
@@ -306,7 +306,7 @@ importers:
   packages/oauth-server:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.10.0
+        specifier: ^0.11.0
         version: link:../utils
 
   packages/pagination:
@@ -422,7 +422,7 @@ importers:
   packages/sentry:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.10.0
+        specifier: ^0.11.0
         version: link:../utils
       http-errors:
         specifier: ^2.0.1
@@ -459,7 +459,7 @@ importers:
   packages/typed-entities:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.10.0
+        specifier: ^0.11.0
         version: link:../utils
 
   packages/utils: {}
@@ -4901,7 +4901,7 @@ snapshots:
       eventsource: 3.0.7
       eventsource-parser: 3.1.1
       express: 5.2.1(supports-color@8.1.1)
-      express-rate-limit: 8.7.0(express@5.2.1(supports-color@7.2.0))(supports-color@8.1.1)
+      express-rate-limit: 8.7.0(express@5.2.1(supports-color@8.1.1))(supports-color@8.1.1)
       hono: 4.13.8
       jose: 6.2.13
       json-schema-typed: 8.0.2
@@ -6162,10 +6162,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  express-rate-limit@8.7.0(express@5.2.1(supports-color@7.2.0))(supports-color@8.1.1):
+  express-rate-limit@8.7.0(express@5.2.1(supports-color@8.1.1))(supports-color@8.1.1):
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
-      express: 5.2.1(supports-color@7.2.0)
+      express: 5.2.1(supports-color@8.1.1)
       ip-address: 10.7.2
     transitivePeerDependencies:
       - supports-color
