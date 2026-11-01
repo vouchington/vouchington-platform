@@ -1,12 +1,22 @@
-const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
+const UNSAFE_KEYS = new Set(['__proto__'])
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+function cloneValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(cloneValue)
+  if (isPlainObject(value)) {
+    const copy: Record<string, unknown> = {}
+    mergeCatalogInPlace(copy, value)
+    return copy
+  }
+  return value
+}
+
 /**
- * Deep-merges `incoming` into `target`; arrays and scalars are replaced, objects are merged.
- * Prototype-polluting keys are skipped and only own properties of `target` are descended into.
+ * Deep-merges `incoming` into `target`; arrays and scalars are replaced (arrays are cloned), objects are merged.
+ * The `__proto__` key is skipped and only own properties of `target` are descended into.
  */
 export function mergeCatalogInPlace(
   target: Record<string, unknown>,
@@ -21,7 +31,7 @@ export function mergeCatalogInPlace(
       mergeCatalogInPlace(nested, value)
       continue
     }
-    target[key] = value
+    target[key] = cloneValue(value)
   }
 }
 

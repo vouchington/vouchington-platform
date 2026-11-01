@@ -22,12 +22,22 @@ describe('catalog merge', () => {
     expect(source.a.b).toBe(1)
   })
 
-  it('never writes prototype keys or descends into inherited properties', () => {
+  it('clones arrays so caller mutation does not reach the copy', () => {
+    const source: { list: Array<{ a: number } | string> } = { list: [{ a: 1 }, 'x'] }
+    const copy = cloneCatalog(source)
+    ;(source.list[0] as { a: number }).a = 2
+    source.list.push('y')
+    expect(copy).toEqual({ list: [{ a: 1 }, 'x'] })
+  })
+
+  it('never writes __proto__ or descends into inherited properties', () => {
     const target: Catalog = {}
     mergeCatalogInPlace(target, JSON.parse('{"__proto__":{"polluted":true},"constructor":{"x":1}}'))
     mergeCatalogInPlace(target, JSON.parse('{"toString":{"y":1},"prototype":{"z":1}}'))
     expect(({} as Catalog).polluted).toBeUndefined()
-    expect(Object.keys(target)).toEqual(['toString'])
+    expect(Object.keys(target)).toEqual(['constructor', 'toString', 'prototype'])
+    expect(Object.getOwnPropertyDescriptor(target, 'constructor')?.value).toEqual({ x: 1 })
+    expect(Object.getOwnPropertyDescriptor(target, 'prototype')?.value).toEqual({ z: 1 })
     expect(Object.getOwnPropertyDescriptor(target, 'toString')?.value).toEqual({ y: 1 })
     expect(Object.hasOwn(Object.prototype, 'y')).toBe(false)
   })
@@ -94,6 +104,24 @@ describe('createMessagesCache', () => {
       shared: 'incoming',
       route: 'r',
       later: 'l',
+    })
+  })
+
+  it('seeds over a pending load so hydration is synchronous, then folds the load underneath', async () => {
+    let resolve!: (value: Catalog) => void
+    const cache = createMessagesCache<Catalog>(() => new Promise<Catalog>((r) => (resolve = r)))
+    void cache.getMessagesPromise('en')
+    cache.seedMessages('en', { boot: 'b', shared: 'seeded' })
+    const seeded = cache.getMessagesPromise('en') as unknown as { status: string }
+    expect(seeded.status).toBe('fulfilled')
+    expect(valueOf(cache.getMessagesPromise('en'))).toEqual({ boot: 'b', shared: 'seeded' })
+    cache.seedMessages('en', { ignored: true })
+    resolve({ full: 'f', shared: 'loaded' })
+    await flush()
+    expect(valueOf(cache.getMessagesPromise('en'))).toEqual({
+      full: 'f',
+      shared: 'seeded',
+      boot: 'b',
     })
   })
 

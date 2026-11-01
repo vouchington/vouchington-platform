@@ -45,8 +45,9 @@ export function createMessagesCache<C extends object>(
 
   function seed(locale: string, messages: C): void {
     const current = cache.get(locale)
-    if (current && !failed.has(current)) return
-    setFulfilled(locale, cloneCatalog(messages))
+    if (current && fulfilledValue(current) !== undefined) return
+    // Absent, pending, or failed: render from the bootstrap now; a pending load folds underneath.
+    merge(locale, messages)
   }
 
   function mergedCopy(base: C, incoming: C): C {
