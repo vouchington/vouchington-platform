@@ -59,7 +59,8 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
 - `url-signing`: Node-only HMAC SHA-256 path signing (`signPathWithKey`, `signPath`,
   `verifyPathSignature` with rotation, `signExpiringPath`/`verifyExpiringPath` with an injectable
   clock), `parseSigningKeys`, `buildSignedProxyUrl` (caller-owned origin, route prefix, query, and
-  skip predicate), `createProtectedHostPolicy`, `matchRouteSegment`, and `authorizeDependencyStates`.
+  skip predicate), and `createProtectedHostPolicy` (Unicode bare hosts are
+  canonicalized to punycode), and `matchRouteSegment`.
   Prefixes, hosts, and keys are injected; verification fails closed with no keys unless
   `allowUnsignedWhenNoKeys` is set.
 - `request-client-info`: `createClientInfoParser(config)` validates caller-selected headers,

@@ -25,6 +25,9 @@ describe('api-errors', () => {
     expect(getErrorStatus({ status: 404 })).toBe(404)
     expect(getErrorStatus({ status: 99, statusCode: 422 })).toBe(422)
     expect(getErrorStatus({ status: 1.5, statusCode: 600 })).toBe(500)
+    expect(getErrorStatus({ status: 200, statusCode: 503 })).toBe(503)
+    expect(getErrorStatus({ status: 302 })).toBe(500)
+    expect(getErrorStatus({ status: 399 })).toBe(500)
     expect(getStatusMessage(404)).toBe('Not Found')
     expect(getStatusMessage(599)).toBe('Internal Server Error')
   })
@@ -35,6 +38,37 @@ describe('api-errors', () => {
     const client = Object.assign(new Error('a'), { status: 400 })
     expect(normalizeErrorForLogging(client)).toHaveProperty('status', 400)
     expect(normalizeErrorForLogging(new Error('a'))).toHaveProperty('status', 500)
+  })
+
+  it('survives hostile thrown values', () => {
+    const hostile = new Proxy(
+      {},
+      {
+        get() {
+          throw new Error('trap')
+        },
+      },
+    )
+    const getter = {
+      get status(): number {
+        throw new Error('status')
+      },
+      get code(): string {
+        throw new Error('code')
+      },
+      get stack(): string {
+        throw new Error('stack')
+      },
+    }
+    for (const value of [hostile, getter]) {
+      expect(getErrorStatus(value)).toBe(500)
+      expect(getErrorResponseCode(value, 500)).toBe('INTERNAL_ERROR')
+      expect(getErrorResponseStack(value)).toBeUndefined()
+      expect(buildApiErrorEnvelope(value, { exposeDetails: true }).body).toEqual({
+        message: 'Internal Server Error',
+        code: 'INTERNAL_ERROR',
+      })
+    }
   })
 
   it('derives messages', () => {

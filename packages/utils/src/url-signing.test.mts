@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  authorizeDependencyStates,
   buildSignedProxyUrl,
   createProtectedHostPolicy,
   hostnameOf,
@@ -72,6 +71,9 @@ describe('expiring signatures', () => {
 
   it('binds the expiry and path to the signature', () => {
     const signature = signExpiringPath('/a', expiresAt, [key])
+    for (const now of [Number.NaN, Infinity, -Infinity]) {
+      expect(verifyExpiringPath('/a', expiresAt, signature, [key], { now })).toBe(false)
+    }
     expect(verifyExpiringPath('/a', 9_000, signature, [key], { now: 1 })).toBe(false)
     expect(verifyExpiringPath('/b', expiresAt, signature, [key], { now: 1 })).toBe(false)
     expect(verifyExpiringPath('/a', expiresAt, signPath('/a', [key]), [key], { now: 1 })).toBe(
@@ -166,17 +168,21 @@ describe('host policy and routes', () => {
     })
   })
 
+  it('canonicalizes Unicode bare hosts to match URL hostnames', () => {
+    const policy = createProtectedHostPolicy(['münich.com'])
+    expect(policy.hosts()).toEqual(['xn--mnich-kva.com'])
+    expect(policy.isProtected(new URL('https://xn--mnich-kva.com/a'))).toBe(true)
+    expect(policy.isProtected(new URL('https://www.münich.com/a'))).toBe(true)
+  })
+
+  it('keeps bare entries that URL cannot parse, lowercased', () => {
+    expect(createProtectedHostPolicy(['Bad Host']).hosts()).toEqual(['bad host'])
+  })
+
   it('matches a single route segment', () => {
     expect(matchRouteSegment('/p/v1/abc', '/p/v1/')).toBe('abc')
     expect(matchRouteSegment('/p/v1/', '/p/v1/')).toBeUndefined()
     expect(matchRouteSegment('/p/v1/a/b', '/p/v1/')).toBeUndefined()
     expect(matchRouteSegment('/other/abc', '/p/v1/')).toBeUndefined()
-  })
-
-  it('denies delivery unless every dependency is allowed', () => {
-    expect(authorizeDependencyStates([])).toBe('allow')
-    expect(authorizeDependencyStates(['allow', 'allow'])).toBe('allow')
-    expect(authorizeDependencyStates(['allow', 'withheld'])).toBe('deny')
-    expect(authorizeDependencyStates(['unknown'])).toBe('deny')
   })
 })

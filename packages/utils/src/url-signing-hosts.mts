@@ -1,12 +1,3 @@
-export type DependencyAuthorization = 'allow' | 'withheld' | 'unknown'
-
-/** Empty manifests have no dependency bytes. Any withheld or unknown dependency denies delivery. */
-export function authorizeDependencyStates(
-  states: readonly DependencyAuthorization[],
-): 'allow' | 'deny' {
-  return states.every((state) => state === 'allow') ? 'allow' : 'deny'
-}
-
 export function normalizeHostname(hostname: string): string {
   return hostname.replace(/\.$/, '').toLowerCase()
 }
@@ -21,7 +12,13 @@ export function hostnameOf(value: string): string | undefined {
     }
   }
   const host = value.trim()
-  return host ? normalizeHostname(host) : undefined
+  if (!host) return undefined
+  try {
+    // Canonicalize like URL.hostname so Unicode hosts match their punycode form.
+    return normalizeHostname(new URL(`https://${host}`).hostname)
+  } catch {
+    return normalizeHostname(host)
+  }
 }
 
 /** Route matcher: `<prefix><one non-empty segment>`. Returns the segment, or undefined. */
