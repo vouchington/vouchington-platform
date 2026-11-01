@@ -1,0 +1,107 @@
+name: codex-review
+
+# Sets the `codex-review` commit status on each PR head SHA. It is pending until
+# chatgpt-codex-connector[bot] reports on that exact SHA, so the status can be a required check.
+# pull_request_target is base-owned orchestration: nothing is checked out, and Dependabot runs
+# get a token that can write statuses. Event payloads and comment text are only read by
+# actions/github-script, never interpolated into a shell.
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+  pull_request_review:
+    types: [submitted]
+  issue_comment:
+    types: [created, edited]
+
+permissions:
+  contents: read
+  pull-requests: read
+  statuses: write
+
+concurrency:
+  group: codex-review-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  status:
+    # Only PR lifecycle events and the Codex bot's own reviews and comments are relevant.
+    if: >-
+      github.event_name == 'pull_request_target'
+      || (github.event_name == 'pull_request_review'
+        && github.event.review.user.login == 'chatgpt-codex-connector[bot]')
+      || (github.event_name == 'issue_comment'
+        && github.event.issue.pull_request
+        && github.event.comment.user.login == 'chatgpt-codex-connector[bot]')
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const CONTEXT = 'codex-review';
+            const { owner, repo } = context.repo;
+            const event = context.eventName;
+
+            const setStatus = (sha, state, description) =>
+              github.rest.repos.createCommitStatus({
+                owner, repo, sha, state, context: CONTEXT, description,
+              });
+
+            // Narrow, anchored matches on the bot's own wording (untrusted text).
+            const USAGE_LIMIT =
+              /^(Codex usage limits have been reached for code reviews|You have reached your Codex usage limits for code reviews)\b/;
+            const NO_FINDINGS = /^(?:Codex Review: )?Didn['’]t find any major issues\b/;
+            const STATE = /<!-- codex-review-state:v1 (\{.*?\}) -->/s;
+
+            if (event === 'pull_request_target') {
+              const pr = context.payload.pull_request;
+              const sha = pr.head.sha;
+              if (pr.user.login === 'dependabot[bot]') {
+                await setStatus(sha, 'success', 'Codex review not required for Dependabot');
+                return;
+              }
+              // reopened and ready_for_review keep the same head; do not undo a finished review.
+              const { data } = await github.rest.repos.getCombinedStatusForRef({
+                owner, repo, ref: sha, per_page: 100,
+              });
+              if (data.statuses.some((s) => s.context === CONTEXT && s.state === 'success')) return;
+              await setStatus(sha, 'pending', 'Waiting for Codex review of this commit');
+              return;
+            }
+
+            if (event === 'pull_request_review') {
+              const pr = context.payload.pull_request;
+              if (context.payload.review.commit_id !== pr.head.sha) return; // stale review
+              await setStatus(pr.head.sha, 'success', 'Codex reviewed this commit');
+              return;
+            }
+
+            // issue_comment on a pull request
+            const { data: pr } = await github.rest.pulls.get({
+              owner, repo, pull_number: context.payload.issue.number,
+            });
+            if (pr.state !== 'open' || pr.user.login === 'dependabot[bot]') return;
+            const body = String(context.payload.comment.body || '').trimStart();
+            const head = pr.head.sha;
+
+            if (USAGE_LIMIT.test(body)) {
+              await setStatus(head, 'success', 'Codex unavailable (usage limit reached); review skipped');
+              return;
+            }
+            const match = STATE.exec(body);
+            if (match) {
+              let review;
+              try {
+                review = JSON.parse(match[1]).code_review;
+              } catch {
+                return;
+              }
+              if (review?.commit_sha === head && review.status === 'completed'
+                  && review.has_any_findings === false) {
+                await setStatus(head, 'success', 'Codex found no issues in this commit');
+              }
+              return;
+            }
+            if (NO_FINDINGS.test(body)) {
+              await setStatus(head, 'success', 'Codex found no major issues');
+            }
