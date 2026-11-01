@@ -31,3 +31,10 @@ const tokens = await exchangeTokenGrant(form, credentials, { clients, grants, sc
 Errors are `OAuthProtocolError`; `buildOAuthErrorResponse(error)` renders the RFC 6749 section 5.2
 body, status, and `WWW-Authenticate` challenge. Redirect URIs match by exact string, except RFC 8252
 loopback registrations that omit the port. Secret and PKCE comparisons are timing-safe.
+
+`IssuedTokens.scopes` are the access-token scopes (narrowed when a refresh request narrows them);
+persist `IssuedTokens.refreshScopes` on the rotated refresh token so the grant is never narrowed.
+Authorization `state` is capped at 1024 characters; pass `maxStateLength` to
+`validateAuthorizationRequest` and `authorizationErrorRedirect` to change it. Default metadata
+endpoints ignore trailing slashes on the issuer. `buildOAuthErrorResponse` quotes the realm and
+throws a `TypeError` when it contains control characters.

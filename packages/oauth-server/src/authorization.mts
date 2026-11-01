@@ -20,7 +20,7 @@ import type {
   TokenLifetimes,
 } from './types.mts'
 
-const MAX_STATE_LENGTH = 1024
+const DEFAULT_MAX_STATE_LENGTH = 1024
 
 /** Raw authorization endpoint parameters; everything but `clientId` and `redirectUri` is unchecked. */
 export interface AuthorizationParameters {
@@ -47,6 +47,8 @@ export interface AuthorizationDependencies {
   clients: ClientStore
   scopes: ScopePolicy
   resolveResource: ResolveResource
+  /** Longest accepted `state`. Defaults to 1024. */
+  maxStateLength?: number
 }
 
 /**
@@ -61,7 +63,11 @@ export async function validateAuthorizationRequest(
     throw new OAuthProtocolError('unsupported_response_type', 'response_type must be code')
   }
   const state = input.state
-  if (typeof state !== 'string' || state.length === 0 || state.length > MAX_STATE_LENGTH) {
+  if (
+    typeof state !== 'string' ||
+    state.length === 0 ||
+    state.length > (deps.maxStateLength ?? DEFAULT_MAX_STATE_LENGTH)
+  ) {
     throw invalidRequest('state is required')
   }
   const { scopes, audiences } = parseScopeParameter(input.scope, deps.scopes)
@@ -90,7 +96,7 @@ export async function validateAuthorizationRequest(
  */
 export async function authorizationErrorRedirect(
   input: { clientId: string; redirectUri: string; state: unknown; error: OAuthProtocolError },
-  deps: { clients: ClientStore; issuer: string },
+  deps: { clients: ClientStore; issuer: string; maxStateLength?: number },
 ): Promise<string | null> {
   const client = await deps.clients.findClient(input.clientId)
   if (!client || !matchesRegisteredRedirectUri(input.redirectUri, client.redirectUris)) return null
@@ -99,7 +105,8 @@ export async function authorizationErrorRedirect(
     {
       error: input.error.code,
       error_description: input.error.message,
-      ...(typeof input.state === 'string' && input.state.length <= MAX_STATE_LENGTH
+      ...(typeof input.state === 'string' &&
+      input.state.length <= (deps.maxStateLength ?? DEFAULT_MAX_STATE_LENGTH)
         ? { state: input.state }
         : {}),
     },

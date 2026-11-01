@@ -80,6 +80,16 @@ describe('validateAuthorizationRequest', () => {
     expect((await failure(overrides)).code).toBe(code)
   })
 
+  it('honors a configured maxStateLength', async () => {
+    const long = 's'.repeat(2000)
+    await expect(
+      validateAuthorizationRequest(params({ state: long }), { ...deps, maxStateLength: 2000 }),
+    ).resolves.toMatchObject({ state: long })
+    await expect(
+      validateAuthorizationRequest(params({ state: long }), { ...deps, maxStateLength: 1999 }),
+    ).rejects.toMatchObject({ code: 'invalid_request' })
+  })
+
   it('does not widen a read-only client to write', async () => {
     const readOnly = createMemoryStore([makeClient({ scopes: ['mcp.user:read'] })])
     await expect(
@@ -117,6 +127,17 @@ describe('authorizationErrorRedirect', () => {
       )
       expect(new URL(location!).searchParams.has('state')).toBe(false)
     }
+  })
+
+  it('honors a configured maxStateLength', async () => {
+    const state = 's'.repeat(2000)
+    const redirect = (maxStateLength: number) =>
+      authorizationErrorRedirect(
+        { clientId: 'client-1', redirectUri, state, error },
+        { clients, issuer, maxStateLength },
+      )
+    expect(new URL((await redirect(2000))!).searchParams.get('state')).toBe(state)
+    expect(new URL((await redirect(1999))!).searchParams.has('state')).toBe(false)
   })
 
   it('never redirects to unknown clients or unregistered URIs', async () => {

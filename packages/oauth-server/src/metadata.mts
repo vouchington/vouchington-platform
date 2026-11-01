@@ -15,13 +15,14 @@ export interface AuthorizationServerMetadataOptions {
 /** RFC 8414 metadata for the supported subset: code + refresh grants, S256 PKCE, RFC 9207 iss. */
 export function buildAuthorizationServerMetadata(options: AuthorizationServerMetadataOptions) {
   const { issuer, endpoints = {} } = options
+  const base = issuer.replace(/\/+$/u, '')
   const methods = ['client_secret_basic', 'none']
   return {
     issuer,
-    authorization_endpoint: endpoints.authorization ?? `${issuer}/authorize`,
-    token_endpoint: endpoints.token ?? `${issuer}/token`,
-    registration_endpoint: endpoints.registration ?? `${issuer}/register`,
-    revocation_endpoint: endpoints.revocation ?? `${issuer}/revoke`,
+    authorization_endpoint: endpoints.authorization ?? `${base}/authorize`,
+    token_endpoint: endpoints.token ?? `${base}/token`,
+    registration_endpoint: endpoints.registration ?? `${base}/register`,
+    revocation_endpoint: endpoints.revocation ?? `${base}/revoke`,
     response_types_supported: ['code'],
     grant_types_supported: ['authorization_code', 'refresh_token'],
     code_challenge_methods_supported: ['S256'],

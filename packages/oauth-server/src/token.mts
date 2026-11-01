@@ -33,6 +33,7 @@ export interface TokenDependencies {
 
 type Subject = Pick<RefreshTokenRecord, 'grantId' | 'subject' | 'resource'> & {
   scopes: readonly string[]
+  refreshScopes: readonly string[]
 }
 
 /**
@@ -74,7 +75,7 @@ async function exchangeAuthorizationCode(
       const lifetimes = { ...DEFAULT_TOKEN_LIFETIMES, ...deps.lifetimes }
       const issued = buildTokens({
         client,
-        subject: record,
+        subject: { ...record, refreshScopes: record.scopes },
         familyId: (deps.newFamilyId ?? crypto.randomUUID.bind(crypto))(),
         generation: 0,
         refreshExpiresAt: new Date(now + lifetimes.refreshTokenMs),
@@ -139,7 +140,7 @@ async function exchangeRefreshToken(
     }
     const issued = buildTokens({
       client,
-      subject: { ...record, scopes },
+      subject: { ...record, scopes, refreshScopes: record.scopes },
       familyId: record.familyId,
       generation: record.generation + 1,
       refreshExpiresAt: record.familyExpiresAt,
@@ -178,6 +179,7 @@ function buildTokens(input: {
     generation: input.generation,
     resource: subject.resource,
     scopes: subject.scopes,
+    refreshScopes: subject.refreshScopes,
     accessTokenHash: deps.hashSecret('access-token', accessToken),
     accessExpiresAt,
     refreshTokenHash: deps.hashSecret('refresh-token', refreshToken),
