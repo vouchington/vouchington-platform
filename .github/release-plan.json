@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/stripe/package.json"],
+  "changedManifests": ["packages/aws/package.json"],
   "releases": [
     {
-      "bump": "minor",
-      "directory": "stripe",
-      "fromVersion": "0.1.1",
-      "name": "@vouchington/stripe",
-      "toVersion": "0.2.0"
+      "bump": "patch",
+      "directory": "aws",
+      "fromVersion": "0.1.0",
+      "name": "@vouchington/aws",
+      "toVersion": "0.1.1"
     }
   ],
-  "selectedPackage": "@vouchington/stripe"
+  "selectedPackage": "@vouchington/aws"
 }
