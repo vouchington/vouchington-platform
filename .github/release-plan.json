@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/oauth-server/package.json"],
+  "changedManifests": ["packages/api-client/package.json"],
   "releases": [
     {
       "bump": "minor",
-      "directory": "oauth-server",
-      "fromVersion": "0.6.0",
-      "name": "@vouchington/oauth-server",
-      "toVersion": "0.7.0"
+      "directory": "api-client",
+      "fromVersion": "0.2.1",
+      "name": "@vouchington/api-client",
+      "toVersion": "0.3.0"
     }
   ],
-  "selectedPackage": "@vouchington/oauth-server"
+  "selectedPackage": "@vouchington/api-client"
 }
