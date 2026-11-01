@@ -106,19 +106,6 @@ export function parseOpenAIToolTurn(
   assertCompletedOpenAIResponse(response, billed)
   const toolCalls: ToolCall[] = []
   const items = response.output ?? []
-  const refused = items.some(
-    (item) =>
-      item.type === 'message' &&
-      (item as { content?: readonly { type: string }[] }).content?.some(
-        (part) => part.type === 'refusal',
-      ),
-  )
-  if (refused) {
-    throw new ModelProviderError('refusal', 'OpenAI declined the request.', {
-      retryClass: 'permanent',
-      billedResponse: billed,
-    })
-  }
   for (const item of items) {
     if (item.type === 'function_call') {
       const call = item as { call_id: string; name: string; arguments: string }

@@ -78,6 +78,8 @@ describe('parseBilledUsage', () => {
     [{}],
     [{ usage: { input_tokens: -1, output_tokens: 1 } }],
     [{ usage: { input_tokens: 1, output_tokens: NaN } }],
+    [{ usage: { input_tokens: 0.5, output_tokens: 1 } }],
+    [{ usage: { input_tokens: 1, output_tokens: 1e300 } }],
     [{ usage: { input_tokens: 'x', output_tokens: 1 } }],
   ])('returns null for unusable usage (%#)', (raw) => {
     expect(parseBilledUsage(raw)).toBeNull()

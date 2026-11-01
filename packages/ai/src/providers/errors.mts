@@ -86,7 +86,7 @@ function statusCode(status: number, message: string): ModelProviderErrorCode {
 }
 
 /**
- * Maps an Anthropic SDK failure onto the shared classification. 408, 429, 529 and 5xx are
+ * Maps an Anthropic SDK failure onto the shared classification. 408, 409, 429, 529 and 5xx are
  * transient and carry `retry-after`; a dropped connection is transient; every other 4xx is
  * permanent. An abort is the caller's own, so it and any unrecognized error return unchanged.
  */
@@ -102,7 +102,8 @@ export function classifyAnthropicError(error: unknown): unknown {
   if (!(error instanceof Anthropic.APIError) || error.status === undefined) return error
   const { status } = error
   const code = statusCode(status, error.message)
-  const retryClass = status === 408 || status === 429 || status >= 500 ? 'transient' : 'permanent'
+  const retryClass =
+    status === 408 || status === 409 || status === 429 || status >= 500 ? 'transient' : 'permanent'
   const retryAfterMs = parseRetryAfter(readHeader(error.headers, 'retry-after'))
   return new ModelProviderError(code, `Anthropic returned HTTP ${status} (${code}).`, {
     retryClass,

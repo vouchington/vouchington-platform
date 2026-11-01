@@ -39,6 +39,15 @@ export function openAIBilledResponse(
   }
 }
 
+function hasRefusalPart(response: OpenAIResponseLike): boolean {
+  return (response.output ?? []).some(
+    (item) =>
+      item.type === 'message' &&
+      'content' in item &&
+      item.content?.some((part) => part.type === 'refusal'),
+  )
+}
+
 /**
  * Throws a `ModelProviderError` carrying the billed response when the response did not complete.
  * Truncation and content-filter endings get their own codes.
@@ -47,7 +56,15 @@ export function assertCompletedOpenAIResponse(
   response: OpenAIResponseLike,
   billed: BilledModelResponse,
 ): void {
-  if (response.status == null || response.status === 'completed') return
+  if (response.status == null || response.status === 'completed') {
+    if (hasRefusalPart(response)) {
+      throw new ModelProviderError('refusal', 'OpenAI refused to answer.', {
+        retryClass: 'permanent',
+        billedResponse: billed,
+      })
+    }
+    return
+  }
   const reason = response.incomplete_details?.reason
   const code =
     reason === 'max_output_tokens'

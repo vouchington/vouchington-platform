@@ -54,8 +54,8 @@ export function buildDecisionTransportRequest(
   }
 }
 
-function isFiniteNonNegative(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+function isTokenCount(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
 }
 
 /**
@@ -65,6 +65,6 @@ function isFiniteNonNegative(value: unknown): value is number {
 export function parseBilledUsage(raw: unknown): StructuredDecisionUsage | null {
   if (!isRecord(raw) || !isRecord(raw.usage)) return null
   const { input_tokens, output_tokens, cost } = raw.usage
-  if (!isFiniteNonNegative(input_tokens) || !isFiniteNonNegative(output_tokens)) return null
+  if (!isTokenCount(input_tokens) || !isTokenCount(output_tokens)) return null
   return { input_tokens, output_tokens, ...(typeof cost === 'number' ? { cost } : {}) }
 }

@@ -168,6 +168,27 @@ describe('openai JSON', () => {
     expect(result.usage.inputTokens).toBe(0)
   })
 
+  it('surfaces a completed refusal as a refusal error with the billed response', () => {
+    const refused = {
+      ...response,
+      status: 'completed',
+      output_text: '',
+      output: [{ type: 'message', content: [{ type: 'refusal' }] }],
+    }
+    try {
+      parseOpenAIJsonResponse(refused, request, 'm', 't')
+      expect.unreachable()
+    } catch (error) {
+      expect(error).toMatchObject({ code: 'refusal', retryClass: 'permanent' })
+      expect((error as ModelProviderError).billedResponse?.responseId).toBe('resp_1')
+    }
+    const ok = {
+      ...response,
+      output: [{ type: 'message' }, { type: 'message', content: [{ type: 'output_text' }] }],
+    }
+    expect(parseOpenAIJsonResponse(ok, request, 'm', 't').output).toEqual({ ok: true })
+  })
+
   it('wraps invalid output with the billed response', () => {
     try {
       parseOpenAIJsonResponse({ ...response, output_text: 'x' }, request, 'm', 't')
