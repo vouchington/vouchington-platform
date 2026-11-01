@@ -183,6 +183,46 @@ describe('parsers', () => {
     ).toMatchObject({ fullName: null })
   })
 
+  it('interprets verified id_number sessions', () => {
+    const report = { status: 'verified', id_number: '123', id_number_type: 'us_ssn' }
+    expect(
+      parseVerificationSession({
+        status: 'verified',
+        verified_outputs: { first_name: 'A', last_name: 'B' },
+        last_verification_report: { id_number: { ...report, first_name: 'X' } },
+      }),
+    ).toEqual({
+      outcome: 'verified_id_number',
+      firstName: 'A',
+      lastName: 'B',
+      fullName: 'A B',
+      idNumber: '123',
+      idNumberType: 'us_ssn',
+    })
+    expect(
+      parseVerificationSession({
+        status: 'verified',
+        last_verification_report: { id_number: { ...report, first_name: 'X' } },
+      }),
+    ).toMatchObject({ firstName: 'X', lastName: null })
+    expect(
+      parseVerificationSession({
+        status: 'verified',
+        verified_outputs: { id_number: '9', id_number_type: 'br_cpf' },
+        last_verification_report: { id_number: { status: 'verified' } },
+      }),
+    ).toMatchObject({ outcome: 'verified_id_number', idNumber: '9', idNumberType: 'br_cpf' })
+    for (const id_number of [
+      { ...report, status: 'unverified' },
+      { ...report, id_number: null },
+      { ...report, id_number_type: null },
+    ]) {
+      expect(
+        parseVerificationSession({ status: 'verified', last_verification_report: { id_number } }),
+      ).toEqual({ outcome: 'requires_input' })
+    }
+  })
+
   it('detects resource-exists errors', () => {
     const err = {
       type: 'StripeInvalidRequestError',

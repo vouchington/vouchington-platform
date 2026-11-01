@@ -34,17 +34,37 @@ export type VerificationResult =
       issuingCountry: string
       documentType: string
     }
+  | {
+      outcome: 'verified_id_number'
+      firstName: string | null
+      lastName: string | null
+      fullName: string | null
+      idNumber: string
+      idNumberType: string
+    }
   | { outcome: 'requires_input' | 'processing' | 'canceled' | 'failed' }
 
 /** The subset of a VerificationSession retrieved with IDENTITY_RESULT_EXPAND that is read. */
 export type StripeVerificationSessionResult = {
   status: string
-  verified_outputs?: { first_name?: string | null; last_name?: string | null } | null
+  verified_outputs?: {
+    first_name?: string | null
+    last_name?: string | null
+    id_number?: string | null
+    id_number_type?: string | null
+  } | null
   last_verification_report?: {
     document?: {
       type?: string | null
       issuing_country?: string | null
       number?: string | null
+      first_name?: string | null
+      last_name?: string | null
+    } | null
+    id_number?: {
+      status?: string | null
+      id_number?: string | null
+      id_number_type?: string | null
       first_name?: string | null
       last_name?: string | null
     } | null
@@ -61,25 +81,34 @@ export function parseVerificationSession(
   if (session.status !== 'verified') return { outcome: 'failed' }
 
   const doc = session.last_verification_report?.document
+  const idReport = session.last_verification_report?.id_number
   const outputs = session.verified_outputs
-  const firstName = outputs?.first_name ?? doc?.first_name ?? null
-  const lastName = outputs?.last_name ?? doc?.last_name ?? null
+  const idVerified = idReport?.status === 'verified'
+  const firstName = outputs?.first_name ?? doc?.first_name ?? idReport?.first_name ?? null
+  const lastName = outputs?.last_name ?? doc?.last_name ?? idReport?.last_name ?? null
   const fullName =
     firstName && lastName ? `${firstName} ${lastName}` : (firstName ?? lastName ?? null)
-  // Document fields come only from the report; national id numbers are a separate check.
   const documentNumber = doc?.number ?? null
   const issuingCountry = doc?.issuing_country ?? null
   const documentType = doc?.type ?? null
-  if (!documentNumber || !issuingCountry || !documentType) return { outcome: 'requires_input' }
-  return {
-    outcome: 'verified',
-    firstName,
-    lastName,
-    fullName,
-    documentNumber,
-    issuingCountry,
-    documentType,
+  if (documentNumber && issuingCountry && documentType) {
+    return {
+      outcome: 'verified',
+      firstName,
+      lastName,
+      fullName,
+      documentNumber,
+      issuingCountry,
+      documentType,
+    }
   }
+  // id_number sessions have no document; the verified report carries the number instead.
+  const idNumber = idVerified ? (idReport.id_number ?? outputs?.id_number ?? null) : null
+  const idNumberType = idReport?.id_number_type ?? outputs?.id_number_type ?? null
+  if (idNumber && idNumberType) {
+    return { outcome: 'verified_id_number', firstName, lastName, fullName, idNumber, idNumberType }
+  }
+  return { outcome: 'requires_input' }
 }
 
 /** True when a Stripe error is a duplicate-lookup-key create race. */
