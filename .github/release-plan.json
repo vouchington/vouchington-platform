@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/localization/package.json"],
+  "changedManifests": ["packages/email/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "localization",
-      "fromVersion": "0.3.0",
-      "name": "@vouchington/localization",
-      "toVersion": "0.3.1"
+      "directory": "email",
+      "fromVersion": "0.2.0",
+      "name": "@vouchington/email",
+      "toVersion": "0.2.1"
     }
   ],
-  "selectedPackage": "@vouchington/localization"
+  "selectedPackage": "@vouchington/email"
 }
