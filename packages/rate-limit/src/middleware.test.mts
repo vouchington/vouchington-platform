@@ -43,7 +43,7 @@ describe('installRouteRateLimit', () => {
     const check = await ctx.prepareRouteRateLimit('GET:/x', { email: 'a@b.c' })
     expect(check).toEqual({ result: allowed, subject: 'user-1' })
     expect(resolveIdentities).toHaveBeenCalledWith(ctx, 'GET:/x', { email: 'a@b.c' })
-    expect(checkFn).toHaveBeenCalledWith('GET:/x', { ip: '1.1.1.1' })
+    expect(checkFn).toHaveBeenCalledWith('GET:/x', { ip: '1.1.1.1' }, { ctx, subject: 'user-1' })
     expect(set).not.toHaveBeenCalled()
     await ctx.settleRouteRateLimit('GET:/x', check)
     expect(set).toHaveBeenCalledWith('X-RateLimit-Limit', '5')

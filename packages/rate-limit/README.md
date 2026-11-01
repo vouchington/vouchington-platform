@@ -15,13 +15,16 @@ Routes, limits, identity sources, backends, and namespaces are all injected by t
   `onError`; the request fails open unless the policy sets `failClosed`. Pass
   `check(routeKey, identities, context, { cost })` to charge `cost` units all or nothing with one
   `consume`: every identity is charged or none is, and `retryAfterSeconds` is the time until the
-  window frees enough room. A cost at or above the route's `limit` can never succeed; callers that
+  window frees enough room. `remaining` counts further single-unit requests that would be admitted,
+  since a request is refused once its count reaches `limit`. A cost at or above the route's `limit` can never succeed; callers that
   need to tell that apart from a busy window compare `cost >= result.limit`. Weighted checks need a
   valkyries `RateLimiter` with `consume` (0.11 or later).
 - `buildRateLimitKeys`, `sanitizeRouteKeySegment` — the key builder, with optional hashed dimensions.
 - `installRouteRateLimit(app, options)` — adds `applyRouteRateLimit`, `prepareRouteRateLimit`, and
   `settleRouteRateLimit` to the api-server `Context`. The application supplies `resolveIdentities`,
-  `check`, an optional `isEnabled`, and an optional `onSettled` hook (e.g. usage metering).
+  `check(routeKey, identities, { ctx, subject })` (the request context and resolved subject, for
+  choosing a tenant's backend or policy), an optional `isEnabled`, and an optional `onSettled` hook
+  (e.g. usage metering).
 - `withOverlappedRateLimit(ctx, routeKey, load)` — charges the limiter while `load` runs and defers
   headers and 429 to `settleRateLimit()`, so status precedence stays with the caller.
 - `applyRateLimitResult(ctx, result)` — `X-RateLimit-*`, `Retry-After`, and 429.

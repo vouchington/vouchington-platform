@@ -13,6 +13,7 @@ export type { BuildRateLimitKeysOptions } from './keys.mts'
 export { installRouteRateLimit } from './middleware.mts'
 export type {
   RouteRateLimitCheck,
+  RouteRateLimitCheckContext,
   RouteRateLimitExtras,
   RouteRateLimitMiddlewareOptions,
 } from './middleware.mts'
