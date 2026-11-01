@@ -130,15 +130,17 @@ describe('AdmissionEntryStore without usable storage', () => {
     expect([...storage.values.keys()].toSorted()).toEqual([`${PREFIX}new`, 'ns:other'])
   })
 
-  it('treats a throwing getItem as a missing entry', () => {
+  it('fails closed on a throwing getItem without removing the entry', () => {
     const storage = new MemoryStorage()
-    storage.setItem(`${PREFIX}a`, 'x')
+    storage.setItem(`${PREFIX}a`, JSON.stringify({ version: 1, ...entry, retryRequired: true }))
     vi.spyOn(storage, 'getItem').mockImplementation(() => {
       throw new Error('denied')
     })
     const store = new AdmissionEntryStore(storage, () => 1000, PREFIX)
-    expect(store.set(`${PREFIX}b`, entry)).toBe(true)
-    expect(store.get(`${PREFIX}a`, 'f')).toBeUndefined()
+    expect(store.set(`${PREFIX}b`, entry)).toBe(false)
+    expect(() => store.get(`${PREFIX}a`, 'f')).toThrow('denied')
+    expect(storage.values.has(`${PREFIX}a`)).toBe(true)
+    expect(storage.values.has(`${PREFIX}b`)).toBe(false)
   })
 
   it('reports false when removal throws', () => {

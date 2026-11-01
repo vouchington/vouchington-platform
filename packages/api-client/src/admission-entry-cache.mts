@@ -41,7 +41,13 @@ export class AdmissionEntryCache {
     if (memoryEntry?.inFlight || (memoryEntry && memoryEntry.expiresAt > this.#now()))
       return memoryEntry
     this.entries.delete(storageKey)
-    const persisted = this.#store.get(storageKey, intentFingerprint)
+    let persisted: Entry | undefined
+    try {
+      persisted = this.#store.get(storageKey, intentFingerprint)
+    } catch (cause) {
+      // An unreadable entry may hold an uncertain key: refuse rather than allocate a new one.
+      throw new Error('Durable admission requires writable browser storage', { cause })
+    }
     if (!persisted) return undefined
     this.entries.set(storageKey, persisted)
     return persisted

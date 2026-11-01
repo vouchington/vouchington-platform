@@ -74,8 +74,9 @@ export async function executeRequest<T>(
     return text.trim() ? (JSON.parse(text) as T) : (undefined as T)
   } catch (err) {
     if (err instanceof ApiError) throw err
-    // A caller cancellation is not an API failure.
-    if (err instanceof DOMException && err.name === 'AbortError') throw err
+    // A caller cancellation is not an API failure, including one with a custom abort reason.
+    if (init.signal?.aborted || (err instanceof DOMException && err.name === 'AbortError'))
+      throw err
     throw new ApiError(
       `${err instanceof Error ? err.message : 'Unknown error'} (${method} ${url})`,
       500,
@@ -100,11 +101,18 @@ async function createApiError(response: Response, behavior: RequestBehavior): Pr
   const message = `API request failed: ${response.statusText}`
   if (!carriesRetryAfter) return new ApiError(message, response.status, errorData)
 
-  const parsed = parseInt(response.headers.get('Retry-After') ?? '', 10)
-  const retry_after = parsed > 0 ? parsed : undefined
+  const retry_after = parseRetryAfter(response.headers.get('Retry-After'))
   const data =
     typeof errorData === 'object' && errorData !== null && !Array.isArray(errorData)
       ? { ...errorData, retry_after }
       : { retry_after }
   return new ApiError(message, response.status, data)
+}
+
+/** Parses delay-seconds or an HTTP-date (RFC 9110) into whole seconds; undefined when not positive. */
+function parseRetryAfter(value: string | null): number | undefined {
+  const header = value ?? ''
+  let seconds = parseInt(header, 10)
+  if (Number.isNaN(seconds)) seconds = Math.ceil((Date.parse(header) - Date.now()) / 1000)
+  return seconds > 0 ? seconds : undefined
 }

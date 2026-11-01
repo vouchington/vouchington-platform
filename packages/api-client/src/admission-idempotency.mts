@@ -115,16 +115,18 @@ export class AdmissionIdempotency {
     entry.inFlight = inFlight
     try {
       const response = await inFlight
-      if (this.#entries.get(storageKey) === entry && entry.inFlight === inFlight) {
-        const retryRequired = this.#retainSuccessfulSettlements
-        if (durable) {
-          await this.#lock(storageKey, () => {
-            const persisted = this.#store.get(storageKey, intentFingerprint)
-            if (persisted?.key === entry.key)
-              this.#store.release(storageKey, persisted, this.#ownerId, retryRequired)
-          })
-          this.#entries.delete(storageKey)
-        } else if (retryRequired) entry.inFlight = undefined
+      // The settlement below uses the captured `storageKey` and `entry`, so it still releases
+      // the durable entry after `setActor` cleared the in-memory map.
+      const retryRequired = this.#retainSuccessfulSettlements
+      if (durable) {
+        await this.#lock(storageKey, () => {
+          const persisted = this.#readPersisted(storageKey, intentFingerprint)
+          if (persisted?.key === entry.key)
+            this.#store.release(storageKey, persisted, this.#ownerId, retryRequired)
+        })
+        if (this.#entries.get(storageKey) === entry) this.#entries.delete(storageKey)
+      } else if (this.#entries.get(storageKey) === entry) {
+        if (retryRequired) entry.inFlight = undefined
         else {
           this.#entries.delete(storageKey)
           this.#store.remove(storageKey)
@@ -132,25 +134,35 @@ export class AdmissionIdempotency {
       }
       return response
     } catch (err) {
-      if (this.#entries.get(storageKey) === entry && entry.inFlight === inFlight) {
-        if (durable) {
-          let persistenceConfirmed = false,
-            superseded = false
-          await this.#lock(storageKey, () => {
-            const persisted = this.#store.get(storageKey, intentFingerprint)
-            if (persisted && persisted.key !== entry.key) superseded = true
-            if (persisted?.key === entry.key) {
-              const result = this.#store.release(storageKey, persisted, this.#ownerId, true)
-              persistenceConfirmed = result.persisted
-              if (!result.persisted)
-                this.#entries.set(storageKey, { ...entry, ...result.entry, inFlight: undefined })
-            }
-          })
+      if (durable) {
+        let persistenceConfirmed = false,
+          superseded = false
+        await this.#lock(storageKey, () => {
+          const persisted = this.#readPersisted(storageKey, intentFingerprint)
+          if (persisted && persisted.key !== entry.key) superseded = true
+          if (persisted?.key === entry.key) {
+            const result = this.#store.release(storageKey, persisted, this.#ownerId, true)
+            persistenceConfirmed = result.persisted
+            if (!result.persisted && this.#entries.get(storageKey) === entry)
+              this.#entries.set(storageKey, { ...entry, ...result.entry, inFlight: undefined })
+          }
+        })
+        if (this.#entries.get(storageKey) === entry) {
           if (persistenceConfirmed || superseded) this.#entries.delete(storageKey)
-          else if (this.#entries.get(storageKey) === entry) entry.inFlight = undefined
-        } else entry.inFlight = undefined
-      }
+          else entry.inFlight = undefined
+        }
+      } else if (this.#entries.get(storageKey) === entry) entry.inFlight = undefined
       throw err
+    }
+  }
+
+  /** A storage read failure leaves the durable entry as is (its lease expiry marks it for retry). */
+  #readPersisted(storageKey: string, intentFingerprint: string) {
+    try {
+      return this.#store.get(storageKey, intentFingerprint)
+    } catch (error) {
+      this.#onError(error)
+      return undefined
     }
   }
 

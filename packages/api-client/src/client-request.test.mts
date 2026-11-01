@@ -98,6 +98,37 @@ describe('ClientRequest', () => {
     expect(error.data).toEqual({ code: 'SLOW', retry_after: 7 })
   })
 
+  it('parses an HTTP-date Retry-After into whole seconds', async () => {
+    vi.useFakeTimers({ now: new Date('2026-01-01T00:00:00Z') })
+    try {
+      const errorFor = async (value: string) =>
+        (await new ClientRequest({
+          fetch: mockFetch(new Response('{}', { status: 429, headers: { 'Retry-After': value } })),
+        })
+          .get('/x')
+          .catch((e: unknown) => e)) as ApiError
+      expect((await errorFor('Thu, 01 Jan 2026 00:00:07 GMT')).data).toEqual({ retry_after: 7 })
+      expect((await errorFor('Wed, 31 Dec 2025 23:59:00 GMT')).data).toEqual({
+        retry_after: undefined,
+      })
+      expect((await errorFor('soon')).data).toEqual({ retry_after: undefined })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('rethrows a custom abort reason instead of wrapping it', async () => {
+    const reason = new Error('user navigated away')
+    const controller = new AbortController()
+    const fetchFn = vi.fn<typeof fetch>(async () => {
+      controller.abort(reason)
+      throw reason
+    })
+    await expect(
+      new ClientRequest({ fetch: fetchFn }).get('/x', { signal: controller.signal }),
+    ).rejects.toBe(reason)
+  })
+
   it('omits retry_after for invalid headers and non-object bodies', async () => {
     const response = new Response('plain', { status: 429, headers: { 'Retry-After': '-3' } })
     const error = (await new ClientRequest({ fetch: mockFetch(response) })

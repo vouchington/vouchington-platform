@@ -53,4 +53,22 @@ describe('usePaginatedList loadMore start signal', () => {
     expect(getPaginatedPage).not.toHaveBeenCalled()
     expect(result.current.pages).toEqual([initial])
   })
+
+  it('reads the latest cursor from a retained loadMore', async () => {
+    const initial = makePage(['p1'], 'c1')
+    getPaginatedPage
+      .mockResolvedValueOnce(makePage(['p2'], 'c2'))
+      .mockResolvedValueOnce(makePage(['p3'], null))
+    const { result } = renderHook(() => usePaginatedList(initial, '/api/v1/items', {}))
+    const retained = result.current.loadMore
+
+    let results: boolean[] = []
+    await act(async () => {
+      results = [await retained(), await retained(), await retained()]
+    })
+
+    expect(results).toEqual([true, true, false])
+    expect(getPaginatedPage.mock.calls.map(([, params]) => params.after)).toEqual(['c1', 'c2'])
+    expect(result.current.pages.flatMap((page) => page.items)).toEqual(['p1', 'p2', 'p3'])
+  })
 })

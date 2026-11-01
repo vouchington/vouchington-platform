@@ -29,8 +29,8 @@ const server = new ServerRequest({
 ```
 
 - `ClientRequest` and `ServerRequest` expose `request`, `get`, `post`, `put`, `patch`, and `delete`.
-  Failures become `ApiError` (`status`, `code`, `requestId`, `data`, `digest`); aborts propagate
-  unchanged; 429 (and the injected 409 codes) add `retry_after` from the `Retry-After` header.
+  Failures become `ApiError` (`status`, `code`, `requestId`, `data`, `digest`); aborts (including custom abort reasons) propagate
+  unchanged; 429 (and the injected 409 codes) add `retry_after` from the `Retry-After` header (delay-seconds or HTTP-date).
   `ServerRequest` adds an `Origin` header to non-GET requests that carry a `Cookie` header.
 - Error helpers: `getApiErrorMessage`, `hasErrorCode`, `createErrorCodeChecker(catalog)`,
   `parseErrorDigest(digest, copyByStatus, fallback)`, `isExpectedApiError`, and the bounded
