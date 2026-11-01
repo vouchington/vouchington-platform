@@ -17,6 +17,7 @@ export {
 } from './utils.mts'
 export type { GenerateMonthlyPartitionsOptions, MonthlyPartitionName } from './utils.mts'
 export {
+  expectedMonthlyPartitionBound,
   getMonthlyPartitionCutoffDate,
   listManagedMonthlyPartitions,
   selectExpiredMonthlyPartitions,

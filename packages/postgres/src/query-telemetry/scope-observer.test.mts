@@ -5,6 +5,7 @@ import {
   createSharedDbScopeObserver,
   sharedDbCursorScope,
   sharedDbIdsScope,
+  type SharedDbKeysetRead,
 } from './scope-observer.mts'
 
 const observer = createSharedDbScopeObserver({
@@ -42,6 +43,24 @@ describe('shared DB scope observer', () => {
           transaction,
         },
       ],
+    ])
+  })
+
+  it('accepts an application-supplied keyset payload type', () => {
+    type Read = SharedDbKeysetRead<{ tenant: string }, { rows: number }>
+    const typed = createSharedDbScopeObserver<'list', 'items', Read>({
+      key: 'test.shared-db-scope-observer.typed',
+      tables: { list: 'items' },
+    })
+    const seen = vi.fn()
+    typed.install(seen)
+    const identity = Symbol('typed')
+    typed.observe('list', { kind: 'global' }, { phase: 'start', identity, tenant: 't' })
+    typed.observe('list', { kind: 'global' }, { phase: 'completed', identity, rows: 2 })
+    typed.install(undefined)
+    expect(seen.mock.calls.map(([event]) => event.keysetRead)).toEqual([
+      { phase: 'start', identity, tenant: 't' },
+      { phase: 'completed', identity, rows: 2 },
     ])
   })
 

@@ -9,12 +9,21 @@ import {
   retireMonthlyPartition,
 } from './retire.mts'
 import {
+  expectedMonthlyPartitionBound,
   getMonthlyPartitionCutoffDate,
   listManagedMonthlyPartitions,
   selectExpiredMonthlyPartitions,
 } from './select-expired.mts'
 
 const withPsql = useIsolatedDatabase()
+const row = (parent: string, name: string, year?: number, month?: number) => ({
+  parent_table: parent,
+  partition_table: name,
+  partition_bound:
+    year === undefined || month === undefined
+      ? 'DEFAULT'
+      : expectedMonthlyPartitionBound(year, month),
+})
 const referenceDate = new Date(Date.UTC(2026, 5, 15))
 
 const tables = [
@@ -33,14 +42,14 @@ async function partitionNames(query: QueryExecutor): Promise<string[]> {
 
 describe('selectExpiredMonthlyPartitions', () => {
   const rows = [
-    { parent_table: 'events', partition_table: 'events__p_2026_05' },
-    { parent_table: 'events', partition_table: 'events__p_2026_01' },
-    { parent_table: 'events', partition_table: 'events__p_2025_12' },
-    { parent_table: 'child_events', partition_table: 'child_events__p_2026_01' },
-    { parent_table: 'events', partition_table: 'events__default' },
-    { parent_table: 'events', partition_table: 'other__p_2020_01' },
-    { parent_table: 'forever', partition_table: 'forever__p_2020_01' },
-    { parent_table: 'unknown', partition_table: 'unknown__p_2020_01' },
+    row('events', 'events__p_2026_05', 2026, 5),
+    row('events', 'events__p_2026_01', 2026, 1),
+    row('events', 'events__p_2025_12', 2025, 12),
+    row('child_events', 'child_events__p_2026_01', 2026, 1),
+    row('events', 'events__default'),
+    row('events', 'other__p_2020_01', 2020, 1),
+    row('forever', 'forever__p_2020_01', 2020, 1),
+    row('unknown', 'unknown__p_2020_01', 2020, 1),
   ]
 
   it('orders by priority, then age, and skips unmanaged or unexpired children', () => {
@@ -49,12 +58,36 @@ describe('selectExpiredMonthlyPartitions', () => {
     ).toEqual(['child_events__p_2026_01', 'events__p_2025_12', 'events__p_2026_01'])
   })
 
+  it('skips and reports a child whose bound does not match its name', () => {
+    const mismatches: string[] = []
+    const result = selectExpiredMonthlyPartitions(
+      [
+        { ...row('events', 'events__p_2020_01'), partition_bound: 'DEFAULT' },
+        { ...row('events', 'events__p_2020_02'), partition_bound: null },
+        row('events', 'events__p_2020_03', 2020, 4),
+        row('events', 'events__p_2020_04', 2020, 4),
+      ],
+      [{ table: 'events', retentionDays: 1 }],
+      referenceDate,
+      (mismatch) => mismatches.push(mismatch.partition_table),
+    )
+    expect(result.map((p) => p.partitionName)).toEqual(['events__p_2020_04'])
+    expect(mismatches).toEqual(['events__p_2020_01', 'events__p_2020_02', 'events__p_2020_03'])
+    expect(
+      selectExpiredMonthlyPartitions(
+        [row('events', 'events__p_2020_03', 2020, 4)],
+        [{ table: 'events', retentionDays: 1 }],
+        referenceDate,
+      ),
+    ).toEqual([])
+  })
+
   it('sorts unprioritized tables last and ties by name', () => {
     const result = selectExpiredMonthlyPartitions(
       [
-        { parent_table: 'b', partition_table: 'b__p_2020_01' },
-        { parent_table: 'a', partition_table: 'a__p_2020_01' },
-        { parent_table: 'a', partition_table: 'a__p_2020_02' },
+        row('b', 'b__p_2020_01', 2020, 1),
+        row('a', 'a__p_2020_01', 2020, 1),
+        row('a', 'a__p_2020_02', 2020, 2),
       ],
       [
         { table: 'a', retentionDays: 1 },
@@ -69,10 +102,7 @@ describe('selectExpiredMonthlyPartitions', () => {
     ])
     expect(result[1]?.dropPriority).toBe(Number.MAX_SAFE_INTEGER)
     const tie = selectExpiredMonthlyPartitions(
-      [
-        { parent_table: 'a', partition_table: 'a__p_2020_01' },
-        { parent_table: 'a', partition_table: 'a__p_2020_01' },
-      ],
+      [row('a', 'a__p_2020_01', 2020, 1), row('a', 'a__p_2020_01', 2020, 1)],
       [{ table: 'a', retentionDays: 1 }],
       referenceDate,
     )
@@ -87,7 +117,7 @@ describe('selectExpiredMonthlyPartitions', () => {
       )
       expect(() =>
         selectExpiredMonthlyPartitions(
-          [{ parent_table: 'a', partition_table: 'a__p_2026_06' }],
+          [row('a', 'a__p_2026_06', 2026, 6)],
           [{ table: 'a', retentionDays }],
           referenceDate,
         ),
@@ -208,6 +238,40 @@ describe('retireExpiredMonthlyPartitions', () => {
       },
     )
     expect(attempted).toHaveLength(2)
+  })
+
+  it('awaits an async reporter and survives its rejection', async () => {
+    const order: string[] = []
+    const startTransaction = vi.fn(async () => {
+      const query = vi.fn(async () => {
+        throw new Error('boom')
+      })
+      return Object.assign(query, {
+        commit: async () => {},
+        [Symbol.asyncDispose]: async () => {},
+      }) as never
+    })
+    await retireExpiredMonthlyPartitions(
+      ['a__p_2020_01', 'a__p_2020_02'].map((partitionName, index) => ({
+        table: 'a',
+        partitionName,
+        dropPriority: 0,
+        year: 2020,
+        month: index + 1,
+      })),
+      {
+        startTransaction,
+        reportError: async (error) => {
+          await Promise.resolve()
+          order.push(error.message)
+          throw new Error('flush failed')
+        },
+      },
+    )
+    expect(order).toEqual([
+      'Failed to retire monthly partition a__p_2020_01',
+      'Failed to retire monthly partition a__p_2020_02',
+    ])
   })
 
   it('reports a failed retirement with its cause and continues', async () => {
