@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/edge",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Cloudflare Worker builders: security headers, CSP, basic auth, origin proxying, cache policy, and a Sentry tunnel.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/edge#readme",
   "license": "MIT",

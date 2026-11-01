@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/api-client/package.json"],
+  "changedManifests": ["packages/edge/package.json"],
   "releases": [
     {
       "bump": "minor",
-      "directory": "api-client",
-      "fromVersion": "0.2.1",
-      "name": "@vouchington/api-client",
-      "toVersion": "0.3.0"
+      "directory": "edge",
+      "fromVersion": "0.6.0",
+      "name": "@vouchington/edge",
+      "toVersion": "0.7.0"
     }
   ],
-  "selectedPackage": "@vouchington/api-client"
+  "selectedPackage": "@vouchington/edge"
 }
