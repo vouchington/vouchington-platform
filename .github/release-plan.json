@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/email/package.json"],
+  "changedManifests": ["packages/queue-errors/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "email",
+      "directory": "queue-errors",
       "fromVersion": "0.2.0",
-      "name": "@vouchington/email",
+      "name": "@vouchington/queue-errors",
       "toVersion": "0.2.1"
     }
   ],
-  "selectedPackage": "@vouchington/email"
+  "selectedPackage": "@vouchington/queue-errors"
 }
