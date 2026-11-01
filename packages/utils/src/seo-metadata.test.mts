@@ -38,6 +38,16 @@ describe('helpers', () => {
     expect(createExcerpt('😀😀😀', 2)).toBe('😀…')
   })
 
+  it('handles quoted attributes, intraword markers, and non-positive limits', () => {
+    expect(createExcerpt('<a title="1 > 0" href=\'x>y\'>link</a> after')).toBe('link after')
+    expect(createExcerpt('snake_case and 5*3 and 2 ~ 3')).toBe('snake_case and 5*3 and 2 ~ 3')
+    expect(createExcerpt('**bold _it_** ~~gone~~ `code` ***all***')).toBe('bold it gone code all')
+    expect(createExcerpt('lone * star and ` tick')).toBe('lone * star and ` tick')
+    expect(createExcerpt('abc', 0)).toBe('')
+    expect(createExcerpt('abc', -3)).toBe('')
+    expect(createExcerpt('abc', Number.NaN)).toBe('')
+  })
+
   it('finds markdown alternates for listed prefixes', () => {
     const prefixes = new Set(['review'])
     expect(getMarkdownAlternatePath('/review/1', prefixes)).toBe('/review/1.md')
@@ -138,6 +148,8 @@ describe('other metadata', () => {
     expect(meta.openGraph).toMatchObject({ locale: 'en_US', url: 'https://example.com/' })
     const bare = createRootMetadata(site, { imageUrl: 'u', imageSize: { width: 1, height: 1 } })
     expect(bare).not.toHaveProperty('icons')
+    const disabled = createRootMetadata(site, { imageUrl: 'u', icons: null })
+    expect(disabled.icons).toBeNull()
     expect(bare.openGraph).not.toHaveProperty('locale')
   })
 })

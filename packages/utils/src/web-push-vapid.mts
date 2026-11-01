@@ -103,8 +103,8 @@ export function createVapidJwt(input: VapidJwtInput): string {
   return `${signingInput}.${encodeBase64Url(signature)}`
 }
 
-/** Builds the `Authorization` header value for the `vapid` scheme. */
+/** Builds the `Authorization` header value for the `vapid` scheme; `k=` is unpadded base64url. */
 export function createVapidAuthorization(jwt: string, publicKey: string): string {
   decodeVapidPublicKey(publicKey)
-  return `vapid t=${jwt}, k=${publicKey}`
+  return `vapid t=${jwt}, k=${encodeBase64Url(decodeVapidPublicKey(publicKey))}`
 }

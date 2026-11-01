@@ -50,6 +50,7 @@ describe('isWebPushWorkerResponse', () => {
     expect(isWebPushWorkerResponse({ ...ok, type: 'x' }, TYPE)).toBe(false)
     expect(isWebPushWorkerResponse({ ...ok, version: 2 as 1 }, TYPE)).toBe(false)
     expect(isWebPushWorkerResponse({ ...ok, ok: false }, TYPE)).toBe(false)
+    expect(isWebPushWorkerResponse({ ...ok, ok: 'false' as unknown as boolean }, TYPE)).toBe(false)
     expect(isWebPushWorkerResponse({ ...ok, state: { status: 'x' } }, TYPE)).toBe(false)
   })
 })
@@ -83,6 +84,36 @@ describe('requestWorkerState', () => {
       requestWorkerState({ active }, { action: 'clear' }, { messageType: TYPE }),
     ).resolves.toEqual(disabled)
     expect(seen).toEqual([{ type: TYPE, version: 1, action: 'clear' }])
+  })
+
+  it('lets the envelope win over reserved request keys', async () => {
+    const seen: unknown[] = []
+    const active = workerReplying((message) => {
+      seen.push(message)
+      return okReply
+    })
+    await requestWorkerState(
+      { active },
+      { action: 'clear', type: 'evil', version: 9 },
+      { messageType: TYPE },
+    )
+    expect(seen).toEqual([{ type: TYPE, version: 1, action: 'clear' }])
+  })
+
+  it('rejects when the accept check throws', async () => {
+    const active = workerReplying(() => okReply)
+    await expect(
+      requestWorkerState(
+        { active },
+        { action: 'clear' },
+        {
+          messageType: TYPE,
+          accept: () => {
+            throw new Error('boom')
+          },
+        },
+      ),
+    ).rejects.toThrow('boom')
   })
 
   it('applies the caller-owned accept check', async () => {

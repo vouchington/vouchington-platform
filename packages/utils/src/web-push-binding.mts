@@ -60,14 +60,14 @@ export function isWebPushWorkerResponse(
     !!response &&
     response.type === messageType &&
     response.version === 1 &&
-    response.ok &&
+    response.ok === true &&
     isWebPushWorkerState(response.state)
   )
 }
 
 /**
  * One request/acknowledge round trip over a MessageChannel to the active service worker.
- * `request` is sent as `{ type, version: 1, ...request }`. Which requests to send, in what
+ * `request` is sent as `{ ...request, type, version: 1 }`; the envelope keys always win. Which requests to send, in what
  * order, and which acknowledged states are acceptable belong to the caller.
  */
 export function requestWorkerState(
@@ -87,18 +87,22 @@ export function requestWorkerState(
       clearTimeout(timeout)
       channel.port1.close()
       const response = event.data as WebPushWorkerResponse | undefined
-      if (
-        !isWebPushWorkerResponse(response, options.messageType) ||
-        (options.accept && !options.accept(response.state))
-      ) {
-        reject(
-          new Error(response?.error ?? 'The service worker rejected the push binding request.'),
-        )
-        return
+      try {
+        if (
+          !isWebPushWorkerResponse(response, options.messageType) ||
+          (options.accept && !options.accept(response.state))
+        ) {
+          reject(
+            new Error(response?.error ?? 'The service worker rejected the push binding request.'),
+          )
+          return
+        }
+        resolve(response.state)
+      } catch (error) {
+        reject(error)
       }
-      resolve(response.state)
     }
-    worker.postMessage({ type: options.messageType, version: 1, ...request }, [channel.port2])
+    worker.postMessage({ ...request, type: options.messageType, version: 1 }, [channel.port2])
   })
 }
 

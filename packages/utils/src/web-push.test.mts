@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { generateVapidKeys } from './web-push-vapid.mts'
 import {
   buildWebPushPayload,
   decodeBase64Url,
@@ -11,7 +12,9 @@ import {
   parseWebPushSubscription,
 } from './web-push.mts'
 
-const p256dh = encodeBase64Url(new Uint8Array([0x04, ...new Uint8Array(64).fill(7)]))
+const p256dh = generateVapidKeys().publicKey
+const offCurve = encodeBase64Url(new Uint8Array([0x04, ...new Uint8Array(64).fill(7)]))
+const outOfRange = encodeBase64Url(new Uint8Array([0x04, ...new Uint8Array(64).fill(255)]))
 const auth = encodeBase64Url(new Uint8Array(16).fill(1))
 const subscription = {
   endpoint: 'https://push.example.com/send/abc',
@@ -70,6 +73,15 @@ describe('parseWebPushSubscription', () => {
     ['missing keys', { ...subscription, keys: undefined }],
     ['null keys', { ...subscription, keys: null }],
     ['non-string key', { ...subscription, keys: { p256dh: 1, auth } }],
+    [
+      'compressed p256dh',
+      {
+        ...subscription,
+        keys: { p256dh: encodeBase64Url(new Uint8Array([0x02, ...new Uint8Array(64)])), auth },
+      },
+    ],
+    ['off-curve p256dh', { ...subscription, keys: { p256dh: offCurve, auth } }],
+    ['out-of-range p256dh', { ...subscription, keys: { p256dh: outOfRange, auth } }],
     ['short auth', { ...subscription, keys: { p256dh, auth: p256dh } }],
   ])('rejects %s', (_name, value) => {
     expect(() => parseWebPushSubscription(value)).toThrow(TypeError)

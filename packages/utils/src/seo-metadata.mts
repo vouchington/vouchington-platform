@@ -154,23 +154,23 @@ export function createPageMetadata(site: SeoSite, options: PageMetadataOptions):
   }
 }
 
-/** Root layout metadata; icons are passed through untouched. */
+/** Root layout metadata; icons are passed through untouched; an explicit `null` disables default icons. */
 export function createRootMetadata<Icons = never>(
   site: SeoSite,
   options: {
     imageUrl: string
     openGraphLocale?: string | null
-    icons?: Icons
+    icons?: Icons | null
     imageSize?: ImageSize
   },
-): SeoMetadata & { icons?: Icons } {
+): SeoMetadata & { icons?: Icons | null } {
   const size = options.imageSize ?? DEFAULT_IMAGE_SIZE
   return {
     metadataBase: new URL(site.origin),
     title: { default: site.siteName, template: `%s | ${site.siteName}` },
     description: site.description,
     alternates: { canonical: '/' },
-    ...(options.icons ? { icons: options.icons } : {}),
+    ...(options.icons !== undefined ? { icons: options.icons } : {}),
     openGraph: {
       type: 'website',
       siteName: site.siteName,
