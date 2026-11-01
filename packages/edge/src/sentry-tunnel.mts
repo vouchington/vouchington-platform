@@ -21,31 +21,48 @@ export type SentryTunnelOptions = {
   log?: SentryTunnelLog
 }
 
-type ReadResult = { kind: 'ok'; envelope: string } | { kind: 'too-large' } | { kind: 'read-error' }
+type ReadResult =
+  | { kind: 'ok'; envelope: Uint8Array }
+  | { kind: 'too-large' }
+  | { kind: 'read-error' }
 
+function concatChunks(chunks: readonly Uint8Array[], length: number): Uint8Array {
+  const joined = new Uint8Array(length)
+  let offset = 0
+  for (const chunk of chunks) {
+    joined.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return joined
+}
+
+/** Buffers the raw bytes: attachment and replay items are binary and must reach Sentry intact. */
 async function readEnvelopeWithLimit(request: Request, maxBytes: number): Promise<ReadResult> {
-  if (!request.body) return { kind: 'ok', envelope: '' }
+  if (!request.body) return { kind: 'ok', envelope: new Uint8Array() }
   try {
     const reader = request.body.getReader()
-    const decoder = new TextDecoder()
-    const chunks: string[] = []
+    const chunks: Uint8Array[] = []
     let bytesRead = 0
     while (true) {
       const { done, value } = await reader.read()
-      if (done) {
-        chunks.push(decoder.decode())
-        return { kind: 'ok', envelope: chunks.join('') }
-      }
+      if (done) return { kind: 'ok', envelope: concatChunks(chunks, bytesRead) }
       bytesRead += value.byteLength
       if (bytesRead > maxBytes) {
         reader.cancel().catch(() => {})
         return { kind: 'too-large' }
       }
-      chunks.push(decoder.decode(value, { stream: true }))
+      chunks.push(value)
     }
   } catch {
     return { kind: 'read-error' }
   }
+}
+
+/** Parses only the header line; the rest of the envelope may not be valid UTF-8. */
+function parseEnvelopeHeader(envelope: Uint8Array): unknown {
+  const newline = envelope.indexOf(10)
+  const line = envelope.subarray(0, newline === -1 ? envelope.length : newline)
+  return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(line))
 }
 
 /**
@@ -63,8 +80,9 @@ export function createSentryTunnel(
   const trusted = options.trustedDsns
     .map(parseSentryDsn)
     .filter((dsn): dsn is SentryDsnConfig => dsn !== undefined)
-  const diagnostics = (envelope: string) =>
-    getSentryEnvelopeDiagnostics(envelope, { maxBytes, maxItemTypes })
+  // Diagnostics inspect item headers only, so a lossy decode here never touches the forwarded bytes.
+  const diagnostics = (envelope: Uint8Array) =>
+    getSentryEnvelopeDiagnostics(new TextDecoder().decode(envelope), { maxBytes, maxItemTypes })
 
   return async function handleSentryTunnel(request) {
     const reject = (
@@ -99,7 +117,7 @@ export function createSentryTunnel(
 
     let header: unknown
     try {
-      header = JSON.parse(envelope.split('\n')[0] as string)
+      header = parseEnvelopeHeader(envelope)
     } catch {
       return reject(400, 'Invalid envelope header', 'INVALID_INPUT', 'invalid_envelope_header')
     }

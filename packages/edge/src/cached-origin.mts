@@ -1,4 +1,3 @@
-import type { CacheContext } from '@cloudflare/workers-types'
 import {
   buildCacheControlHeader,
   isCacheableResponse,
@@ -6,6 +5,11 @@ import {
 } from './cache-policy.mts'
 import { DEFAULT_SAFE_CACHE_VARY_TOKENS, parseSafeCacheVary } from './cache-vary.mts'
 import { copyHeaders, withHeaders } from './headers.mts'
+
+/** Structural subset of the Workers `ctx.cache` API, so declarations need no Workers types. */
+export type PurgeCache<Result = unknown> = {
+  purge(options: { tags: string[] }): Promise<Result>
+}
 
 const PRIVATE_NO_STORE = { 'cache-control': 'private, no-store' } as const
 
@@ -101,7 +105,10 @@ export function stripDispatchOnlyHeaders(
  * Purges tags from the cache namespace of the current entrypoint. Throws when the execution
  * context has no cache API, because a silent no-op would leave stale content serving.
  */
-export async function purgeCacheTags(context: { cache?: CacheContext }, tags: string[]) {
+export async function purgeCacheTags<Result>(
+  context: { cache?: PurgeCache<Result> },
+  tags: string[],
+) {
   if (!context.cache) {
     throw new Error('Workers Cache purge API unavailable on this execution context')
   }

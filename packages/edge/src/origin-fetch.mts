@@ -15,8 +15,19 @@ export type OriginFetchOptions = {
 
 export type OriginFetchResult = { duration: number; response: Response } | { error: Response }
 
+const MAX_CAUSE_DEPTH = 5
+
+/** Undici rejects with `TypeError: fetch failed` and the socket error in `cause`. */
 function isDroppedSocket(error: unknown): boolean {
-  return error instanceof Error && DROPPED_SOCKET_PATTERN.test(error.message)
+  let current = error
+  for (let depth = 0; depth < MAX_CAUSE_DEPTH; depth += 1) {
+    if (typeof current !== 'object' || current === null) return false
+    const { message, code, cause } = current as Record<string, unknown>
+    if (current instanceof Error && DROPPED_SOCKET_PATTERN.test(message as string)) return true
+    if (typeof code === 'string' && DROPPED_SOCKET_PATTERN.test(code)) return true
+    current = cause
+  }
+  return false
 }
 
 /**
@@ -39,12 +50,14 @@ export async function fetchOriginResponse(
   // Clone first so a retry still has an unread request.
   const firstRequest = canRetry ? originRequest.clone() : originRequest
   try {
-    return { duration: Date.now() - start, response: await send(firstRequest) }
+    const response = await send(firstRequest)
+    return { duration: Date.now() - start, response }
   } catch (error) {
     if (!canRetry || !isRetryable(error)) return failure(error)
   }
   try {
-    return { duration: Date.now() - start, response: await send(originRequest) }
+    const response = await send(originRequest)
+    return { duration: Date.now() - start, response }
   } catch (error) {
     return failure(error)
   }

@@ -43,10 +43,17 @@ describe('rewritePlaceholderNonce', () => {
       'content-encoding': 'gzip',
       'content-length': '1',
       'content-type': 'text/html',
+      etag: '"abc"',
+      'content-md5': 'x',
+      digest: 'sha-256=x',
+      'content-digest': 'sha-256=:x:',
     })
     const result = rewritePlaceholderNonce(response, PLACEHOLDER, REAL)
     expect(result.headers.get('content-encoding')).toBeNull()
     expect(result.headers.get('content-length')).toBeNull()
+    for (const name of ['etag', 'content-md5', 'digest', 'content-digest']) {
+      expect(result.headers.has(name)).toBe(false)
+    }
     expect(result.headers.get('content-type')).toBe('text/html')
     expect(result.status).toBe(200)
     expect(result.statusText).toBe('OK')

@@ -24,12 +24,21 @@ export function replaceCookies(
   return serialize(cookies)
 }
 
-/** Removes named cookies; returns null when no cookie remains. */
+/**
+ * Removes named cookies; returns null when no cookie remains. The header is returned untouched
+ * when no names are stripped, and duplicate names are preserved in order.
+ */
 export function stripCookies(
   cookieHeader: string | null | undefined,
   cookieNamesToStrip: Iterable<string>,
 ): string | null {
-  const cookies = parseCookies(cookieHeader)
-  for (const name of cookieNamesToStrip) cookies.delete(name)
-  return cookies.size === 0 ? null : serialize(cookies)
+  const names = new Set(cookieNamesToStrip)
+  if (names.size === 0) return cookieHeader || null
+  // Filter pairs instead of round-tripping a Map so duplicate names keep their order.
+  const kept = (cookieHeader ?? '').split(/;\s*/).filter((part) => {
+    const separatorIndex = part.indexOf('=')
+    if (separatorIndex <= 0) return false
+    return !names.has(part.slice(0, separatorIndex).trim())
+  })
+  return kept.length === 0 ? null : kept.join('; ')
 }

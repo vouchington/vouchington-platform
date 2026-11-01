@@ -42,4 +42,6 @@ import {
 - Sentry tunnel: `createSentryTunnel` forwards envelopes only to injected trusted DSNs, caps the body,
   and logs bounded diagnostics via `@vouchington/utils/sentry-envelope`.
 
-`@cloudflare/workers-types` is an optional peer dependency used for the `cache.purge` context type.
+`purgeCacheTags` accepts any context with a structural `cache.purge({ tags })`, such as a Workers
+execution context; no Workers type package is required. `Accept-Language` is not a default safe `Vary`
+token because cache keys do not partition by language; opt in through `safeVaryTokens`.

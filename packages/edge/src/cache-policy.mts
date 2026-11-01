@@ -68,7 +68,10 @@ export function parsePathSet(
 /** Case-insensitive match of an exact path or any path below a prefix. */
 export function matchesPathPrefix(pathname: string, prefixes: readonly string[]): boolean {
   const normalized = pathname.toLowerCase()
-  return prefixes.some((prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`))
+  return prefixes.some((raw) => {
+    const prefix = raw.toLowerCase()
+    return normalized === prefix || normalized.startsWith(`${prefix}/`)
+  })
 }
 
 export function canUseCache(request: Request, mode: CacheMode): boolean {
@@ -104,14 +107,14 @@ export function buildCacheControlHeader(
 function hasDisqualifyingCacheControl(headers: Headers): boolean {
   return (headers.get('cache-control') ?? '')
     .split(',')
-    .map((part) => part.trim().toLowerCase())
-    .some(
-      (directive) =>
-        directive === 'private' || directive === 'no-store' || directive === 'no-cache',
-    )
+    .map((part) => part.split('=')[0]!.trim().toLowerCase())
+    .some((name) => name === 'private' || name === 'no-store' || name === 'no-cache')
 }
 
-/** A 2xx response without `set-cookie` or a private/no-store/no-cache directive. */
+/**
+ * A 2xx response without `set-cookie` or a private/no-store/no-cache directive. Qualified forms
+ * such as `private="x-user"` also disqualify.
+ */
 export function isCacheableResponse(response: Response): boolean {
   if (response.status < 200 || response.status >= 300) return false
   if (hasDisqualifyingCacheControl(response.headers)) return false
