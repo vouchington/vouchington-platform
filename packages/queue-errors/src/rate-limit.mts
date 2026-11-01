@@ -29,17 +29,15 @@ export interface DeferralBoundOptions {
 
 type DeferrableJob = Pick<Job, 'moveToDelayed'>
 
-/** Clamps a provider's `Retry-After` into the supported window; `null`/missing uses the default. */
+/** Clamps a provider's `Retry-After` into the supported window; `null`/missing uses the default, which is clamped too. */
 export function clampRateLimitDelayMs(
   retryAfterMs?: number | null,
   options: RateLimitDelayOptions = {},
 ): number {
   const { minMs = MIN_RATE_LIMIT_DELAY_MS, defaultMs = DEFAULT_RATE_LIMIT_DELAY_MS } = options
   const { maxMs = MAX_RATE_LIMIT_DELAY_MS } = options
-  if (retryAfterMs === undefined || retryAfterMs === null || !Number.isFinite(retryAfterMs)) {
-    return defaultMs
-  }
-  return Math.min(maxMs, Math.max(minMs, Math.ceil(retryAfterMs)))
+  const waitMs = retryAfterMs != null && Number.isFinite(retryAfterMs) ? retryAfterMs : defaultMs
+  return Math.min(maxMs, Math.max(minMs, Math.ceil(waitMs)))
 }
 
 /**

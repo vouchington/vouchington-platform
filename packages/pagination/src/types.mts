@@ -75,7 +75,7 @@ export type QueryCsvArrayContract<
   readonly style: 'form'
   readonly explode: false
 } & Description<TDescription>
-export type QueryParameterContract =
+export type QueryParameterContract = (
   | QueryStringContract<'uuid' | 'uri' | undefined, string | undefined>
   | QueryBooleanContract<string | undefined>
   | QueryNullableBooleanContract<string | undefined>
@@ -84,6 +84,7 @@ export type QueryParameterContract =
   | QueryIntegerContract<number, number, number | undefined, string | undefined>
   | QueryEnumContract<readonly string[], string | undefined, string | undefined>
   | QueryCsvArrayContract<QueryArrayItemContract, string | undefined>
+) & { readonly required?: boolean }
 export type QueryContract = Readonly<Record<string, QueryParameterContract>>
 export type QueryContractCarrier<TContract extends QueryContract = QueryContract> = {
   readonly queryContract: TContract

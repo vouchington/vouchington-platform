@@ -9,7 +9,7 @@ export type LimitBounds = { readonly min: number; readonly max: number; readonly
 export function narrowLimitBounds<TBounds extends LimitBounds>(
   bounds: TBounds,
   runtime?: { readonly max: number; readonly default: number },
-): TBounds {
+): Omit<TBounds, 'max' | 'default'> & { readonly max: number; readonly default: number } {
   if (!runtime) return bounds
   const max = Math.max(bounds.min, Math.min(bounds.max, runtime.max))
   return { ...bounds, max, default: Math.max(bounds.min, Math.min(max, runtime.default)) }

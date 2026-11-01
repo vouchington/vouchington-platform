@@ -1,5 +1,10 @@
-import { describe, expect, it } from 'vitest'
-import { narrowLimitBounds, requiredQueryEnum, requiredQueryString } from './index.mts'
+import { describe, expect, expectTypeOf, it } from 'vitest'
+import {
+  narrowLimitBounds,
+  type QueryContract,
+  requiredQueryEnum,
+  requiredQueryString,
+} from './index.mts'
 
 describe('narrowLimitBounds', () => {
   const bounds = { min: 5, max: 100, default: 50 }
@@ -29,6 +34,16 @@ describe('narrowLimitBounds', () => {
     })
   })
 
+  it('types the narrowed max and default as numbers, not the static literals', () => {
+    const narrowed = narrowLimitBounds({ min: 1, max: 100, default: 50 } as const, {
+      max: 30,
+      default: 10,
+    })
+    expectTypeOf(narrowed.max).toEqualTypeOf<number>()
+    expectTypeOf(narrowed.default).toEqualTypeOf<number>()
+    expectTypeOf(narrowed.min).toEqualTypeOf<1>()
+  })
+
   it('keeps extra properties on the bounds', () => {
     expect(narrowLimitBounds({ ...bounds, paramName: 'limit' }, { max: 20, default: 20 })).toEqual({
       paramName: 'limit',
@@ -47,6 +62,8 @@ describe('required query contracts', () => {
       description: 'Search text',
       required: true,
     })
+    const contract: QueryContract = { q: requiredQueryString(), e: requiredQueryEnum(['a']) }
+    expect(contract.q?.required).toBe(true)
     expect(requiredQueryEnum(['a', 'b'] as const)).toEqual({
       kind: 'enum',
       values: ['a', 'b'],
