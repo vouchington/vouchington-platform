@@ -68,7 +68,8 @@ function escapeRegularExpression(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-const absoluteUrlPrefix = /(?:https?:\/\/|www\.)/gi
+// A URL cannot start inside a token, so `#awww.` and `#feed.www.items` stay hashtags.
+const absoluteUrlPrefix = /(?<![\p{L}\p{N}_.#-])(?:https?:\/\/|www\.)/giu
 const urlBoundary = /[\s<>]/
 
 /**

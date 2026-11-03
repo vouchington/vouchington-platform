@@ -91,6 +91,35 @@ describe('maskHashtagBearingUrls', () => {
     )
   })
 
+  it.each([
+    '#awww. cute',
+    'posts about #rss.feed_items_abcwww.',
+    '#feed.www.items',
+    '#feed-www.items',
+    '#feed_www.items',
+    '#www.example',
+    '#caféwww.',
+    'xwww.example.test',
+    'xhttp:',
+  ])('leaves %j unmasked because the prefix is inside a token', (input) => {
+    expect(maskHashtagBearingUrls(input)).toBe(input)
+  })
+
+  it('still masks a fragment path when the scheme is glued to a token', () => {
+    expect(maskHashtagBearingUrls('xhttp://example.test/#frag')).toBe(
+      `xhttp:${' '.repeat('//example.test/#frag'.length)}`,
+    )
+  })
+
+  it('masks URLs that follow start of input or punctuation', () => {
+    expect(maskHashtagBearingUrls('www.example.com/#frag')).toBe(
+      ' '.repeat('www.example.com/#frag'.length),
+    )
+    expect(maskHashtagBearingUrls('(https://example.test/#a) see:www.example.test/#b')).toBe(
+      `(${' '.repeat('https://example.test/#a'.length)}) see:${' '.repeat('www.example.test/#b'.length)}`,
+    )
+  })
+
   it('masks relative paths only when they contain a fragment', () => {
     expect(maskHashtagBearingUrls('Read /docs/plain then /docs/#x')).toBe(
       'Read /docs/plain then         ',
