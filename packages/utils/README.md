@@ -117,6 +117,9 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
   helpers return `null` for invalid input; `normalizeAsciiHostname` names its ASCII-only contract
   directly, while `normalizeHostname` also supports WHATWG IDN conversion.
   `matchesHostnamePattern` supports exact and inclusive `*.` hostname patterns.
+  `canonicalizeUrl` returns `null` for anything but http(s), otherwise a fetchable `url` without
+  tracking params and a scheme-less `identity` dedupe key that also ignores `www.` and `m.` and
+  reduces YouTube links to their video. `isBareDomainUrl` flags URLs with no meaningful path or query.
 - `hashtags`: caller-configured authored/key length and separator policy for canonical ASCII hashtag
   keys, plus `maskHashtagBearingUrls` to blank absolute URLs and fragment-bearing relative paths.
   The package does not choose application limits or accepted input separators.

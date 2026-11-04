@@ -1,3 +1,5 @@
+export { canonicalizeUrl, isBareDomainUrl } from './urls-canonical.mts'
+
 const SCHEME = /^([a-z][a-z0-9+.-]*):/i
 const LINK_SCHEMES = new Set(['http', 'https', 'mailto', 'tel'])
 const IMAGE_SCHEMES = new Set(['http', 'https'])
