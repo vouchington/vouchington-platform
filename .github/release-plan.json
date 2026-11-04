@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/html-utils/package.json"],
+  "changedManifests": ["packages/session-jwt/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "html-utils",
-      "fromVersion": "0.1.1",
-      "name": "@vouchington/html-utils",
-      "toVersion": "0.1.2"
+      "directory": "session-jwt",
+      "fromVersion": "0.0.2",
+      "name": "@vouchington/session-jwt",
+      "toVersion": "0.0.3"
     }
   ],
-  "selectedPackage": "@vouchington/html-utils"
+  "selectedPackage": "@vouchington/session-jwt"
 }
