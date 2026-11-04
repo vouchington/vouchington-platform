@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/ai/package.json"],
+  "changedManifests": ["packages/utils/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "ai",
-      "fromVersion": "0.4.0",
-      "name": "@vouchington/ai",
-      "toVersion": "0.4.1"
+      "directory": "utils",
+      "fromVersion": "0.11.0",
+      "name": "@vouchington/utils",
+      "toVersion": "0.11.1"
     }
   ],
-  "selectedPackage": "@vouchington/ai"
+  "selectedPackage": "@vouchington/utils"
 }
