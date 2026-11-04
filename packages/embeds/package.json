@@ -43,7 +43,7 @@
   "dependencies": {
     "@vouchington/crawler-html": "^0.0.1",
     "@vouchington/http-transport": "^0.1.0",
-    "parse5": "^8.0.0"
+    "parse5": "^8.1.0"
   },
   "engines": {
     "node": ">=24.0.0"
