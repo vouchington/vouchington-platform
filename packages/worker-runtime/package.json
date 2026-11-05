@@ -58,12 +58,12 @@
   "devDependencies": {
     "@aws-sdk/client-sqs": "^3.1161.0",
     "glide-mq": "^0.20.0",
-    "vitest": "^5.0.5"
+    "vitest": "^5.1.0"
   },
   "peerDependencies": {
     "@aws-sdk/client-sqs": ">=3.1154.0 <4",
     "glide-mq": "^0.20.0",
-    "vitest": "^5.0.5"
+    "vitest": "^5.1.0"
   },
   "peerDependenciesMeta": {
     "@aws-sdk/client-sqs": {
