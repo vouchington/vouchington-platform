@@ -287,11 +287,11 @@ importers:
   packages/oauth-client:
     dependencies:
       '@atproto-labs/fetch-node':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@atproto-labs/handle-resolver-node':
-        specifier: ^0.2.15
-        version: 0.2.15
+        specifier: ^0.2.16
+        version: 0.2.16
       '@atproto/jwk':
         specifier: ^0.7.4
         version: 0.7.4
@@ -511,16 +511,20 @@ packages:
     resolution: {integrity: sha512-CeAC6VY3xaXQ8CaOXLz4EOopSvfcQBcuJvX3J5ew2nbf+BM0nes45ZvxUieP5ZlLPXbJborwJh5zDeJcYpwCFQ==}
     engines: {node: '>=22'}
 
-  '@atproto-labs/fetch-node@0.4.3':
-    resolution: {integrity: sha512-qENUCoXKKNegxin34IpFxNd8yRijTfHq9FEoAVk7ZSciedstUJrVbt4CbdGLkn1t5gcZUH+Csct+MTAEQzvNbA==}
+  '@atproto-labs/fetch-node@0.4.4':
+    resolution: {integrity: sha512-+INmw3CMOF6tJ4dcKD+vzRiSc06Nv1Iuj1qC1Dv7TVMWGp/RSECJBB7Paaf+noLGZFpLDEfqGQlflfMo8WWzGQ==}
     engines: {node: '>=22'}
 
   '@atproto-labs/fetch@0.4.0':
     resolution: {integrity: sha512-9HEcZuCU4nWAzV3XZ7nwbDPdV8tbhICzyYeyE5SPHTPuuKS6C3i5WOdwGP1diCCUaYF3Vadw5ArVlQPtXnn73w==}
     engines: {node: '>=22'}
 
-  '@atproto-labs/handle-resolver-node@0.2.15':
-    resolution: {integrity: sha512-ksH6h268dkDAXft45guvYPI/8CnJFlibyBKqpzX75kezQ+Hj8RLbVaScpsnywkE6Jqt31y8E/dW8dyMXKDqidg==}
+  '@atproto-labs/fetch@0.4.1':
+    resolution: {integrity: sha512-JHcjaj4s2in4MAonc9FI6x/srrsu2jtj4yEBtYttaMVWM1SrMOcZxs8Gql9k0HZBZPBtohxT5l3XXyLkRdo+nw==}
+    engines: {node: '>=22'}
+
+  '@atproto-labs/handle-resolver-node@0.2.16':
+    resolution: {integrity: sha512-ViURhnQ/xiTOUgxQ9ykqy8y9m3dRawd4JhFqRBDUbF+FYrDAOFCaJQJ0EjX+cmaRBWcU/wTADlGkr+Bd+pqsjA==}
     engines: {node: '>=22'}
 
   '@atproto-labs/handle-resolver@0.4.10':
@@ -533,6 +537,10 @@ packages:
 
   '@atproto-labs/pipe@0.2.4':
     resolution: {integrity: sha512-n67jCcrC+ouAeO10cWkpPzzLMlDi/lDCU30Us+LGqhOPhT6c4t5ASdBLQi9W3jUQtRzQBt3G9zipF+xKWNvVbw==}
+    engines: {node: '>=22'}
+
+  '@atproto-labs/pipe@0.2.5':
+    resolution: {integrity: sha512-1R1nYs/nHmBcYa4yzTjk5H/46MF5nZm342Ha9kKQTOMp/fr2Yn67qD1pTXUS7L2Mx8AEf3m7Z/TTxRfnERLc8w==}
     engines: {node: '>=22'}
 
   '@atproto-labs/simple-store-memory@0.2.6':
@@ -4114,10 +4122,10 @@ snapshots:
       '@atproto/did': 0.5.6
       zod: 3.25.76
 
-  '@atproto-labs/fetch-node@0.4.3':
+  '@atproto-labs/fetch-node@0.4.4':
     dependencies:
-      '@atproto-labs/fetch': 0.4.0
-      '@atproto-labs/pipe': 0.2.4
+      '@atproto-labs/fetch': 0.4.1
+      '@atproto-labs/pipe': 0.2.5
       ipaddr.js: 2.5.0
       undici_v6: undici@6.29.1
       undici_v7: undici@7.30.1
@@ -4127,9 +4135,13 @@ snapshots:
     dependencies:
       '@atproto-labs/pipe': 0.2.4
 
-  '@atproto-labs/handle-resolver-node@0.2.15':
+  '@atproto-labs/fetch@0.4.1':
     dependencies:
-      '@atproto-labs/fetch-node': 0.4.3
+      '@atproto-labs/pipe': 0.2.5
+
+  '@atproto-labs/handle-resolver-node@0.2.16':
+    dependencies:
+      '@atproto-labs/fetch-node': 0.4.4
       '@atproto-labs/handle-resolver': 0.4.10
       '@atproto/did': 0.5.6
 
@@ -4146,6 +4158,8 @@ snapshots:
       '@atproto-labs/handle-resolver': 0.4.10
 
   '@atproto-labs/pipe@0.2.4': {}
+
+  '@atproto-labs/pipe@0.2.5': {}
 
   '@atproto-labs/simple-store-memory@0.2.6':
     dependencies:
@@ -4202,7 +4216,7 @@ snapshots:
   '@atproto/oauth-client-node@0.5.13':
     dependencies:
       '@atproto-labs/did-resolver': 0.3.11
-      '@atproto-labs/handle-resolver-node': 0.2.15
+      '@atproto-labs/handle-resolver-node': 0.2.16
       '@atproto-labs/simple-store': 0.5.1
       '@atproto/did': 0.5.6
       '@atproto/jwk': 0.7.4
