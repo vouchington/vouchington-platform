@@ -8,6 +8,8 @@ interface CanonicalUrl {
 const TRACKING_PARAMS = new Set([
   '_ga',
   '_gl',
+  '_hsenc',
+  '_hsmi',
   'dclid',
   'fbclid',
   'gbraid',
@@ -19,10 +21,14 @@ const TRACKING_PARAMS = new Set([
   'mc_eid',
   'mkt_tok',
   'msclkid',
+  'oly_enc_id',
   'ref_src',
   'ref_url',
+  'si',
+  'trk',
   'ttclid',
   'twclid',
+  'vero_id',
   'wbraid',
   'yclid',
 ])

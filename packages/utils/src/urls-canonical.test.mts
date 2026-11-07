@@ -66,6 +66,21 @@ describe('canonicalizeUrl', () => {
     expect(canonicalizeUrl('https://example.com/a?utm_source=x')?.url).toBe('https://example.com/a')
   })
 
+  it.each(['si', '_hsenc', '_hsmi', 'trk', 'vero_id', 'oly_enc_id'])(
+    'drops the %s tracking param case-insensitively',
+    (name) => {
+      expect(
+        canonicalizeUrl(`https://example.com/a?b=1&${name}=x&${name.toUpperCase()}=y`),
+      ).toEqual({ url: 'https://example.com/a?b=1', identity: 'example.com/a?b=1' })
+    },
+  )
+
+  it('keeps ref, which some sites use to change page content', () => {
+    expect(canonicalizeUrl('https://example.com/a?ref=home&si=x')?.url).toBe(
+      'https://example.com/a?ref=home',
+    )
+  })
+
   it('keeps non-tracking params that only resemble tracking ones', () => {
     expect(identity('https://example.com/?ref=home&utmost=1')).toBe(
       'example.com/?ref=home&utmost=1',
