@@ -12,12 +12,30 @@ describe('canonicalizeUrl', () => {
     },
   )
 
-  it('removes host, port, credential, fragment, and trailing slash noise', () => {
+  it('removes host, port, credential, and fragment noise', () => {
     expect(canonicalizeUrl('https://user:pw@EXAMPLE.com.:443/A/b/?x=1#frag')).toEqual({
-      url: 'https://example.com/A/b?x=1',
-      identity: 'example.com/A/b?x=1',
+      url: 'https://example.com/A/b/?x=1',
+      identity: 'example.com/A/b/?x=1',
     })
-    expect(canonicalizeUrl('http://example.com:80/a//')?.url).toBe('http://example.com/a')
+  })
+
+  it('keeps trailing slashes, so /feed/ and /feed stay distinct', () => {
+    expect(canonicalizeUrl('https://example.com/feed/')).toEqual({
+      url: 'https://example.com/feed/',
+      identity: 'example.com/feed/',
+    })
+    expect(canonicalizeUrl('https://example.com/feed')).toEqual({
+      url: 'https://example.com/feed',
+      identity: 'example.com/feed',
+    })
+    expect(canonicalizeUrl('http://example.com:80/a//')?.url).toBe('http://example.com/a//')
+  })
+
+  it('collapses an all-slash path to the root', () => {
+    expect(canonicalizeUrl('https://example.com//?utm_source=x')).toEqual({
+      url: 'https://example.com/',
+      identity: 'example.com',
+    })
   })
 
   it('keeps non-default ports in both results', () => {
@@ -29,7 +47,7 @@ describe('canonicalizeUrl', () => {
 
   it('accepts a URL without mutating it', () => {
     const input = new URL('https://example.com/a/#frag')
-    expect(canonicalizeUrl(input)?.url).toBe('https://example.com/a')
+    expect(canonicalizeUrl(input)?.url).toBe('https://example.com/a/')
     expect(input.href).toBe('https://example.com/a/#frag')
   })
 

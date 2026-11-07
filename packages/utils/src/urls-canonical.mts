@@ -54,7 +54,8 @@ function cleanUrl(input: string | URL): URL | null {
   url.username = ''
   url.password = ''
   url.hash = ''
-  url.pathname = url.pathname.replace(/\/+$/, '') || '/'
+  // Only an all-slash path collapses; `/feed/` and `/feed` can be different pages.
+  if (/^\/+$/.test(url.pathname)) url.pathname = '/'
   const params = new URLSearchParams(
     [...url.searchParams].filter(([name]) => !isTrackingParam(name)),
   )
@@ -80,7 +81,8 @@ function youtubeVideoId(host: string, url: URL): string | null {
 
 /**
  * Canonicalizes an http(s) URL, or returns null for anything else. Both results drop credentials,
- * the fragment, default ports, trailing dots and slashes, and tracking params, and sort the rest.
+ * the fragment, default ports, trailing host dots, and tracking params, collapse an all-slash path
+ * to `/`, and sort the remaining params. Other trailing slashes are kept.
  * `identity` also ignores the scheme, `www.`, and `m.`, and reduces YouTube links to their video,
  * so `t` and `list` do not split it.
  */
