@@ -39,7 +39,7 @@
     "@react-email/render": "2.2.0",
     "@types/react": "^19.3.0",
     "react": "19.3.1",
-    "react-email": "6.11.6"
+    "react-email": "6.11.8"
   },
   "peerDependencies": {
     "@react-email/render": "^2.1.1",
