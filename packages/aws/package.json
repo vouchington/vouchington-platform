@@ -59,18 +59,18 @@
     "prepack": "pnpm run build"
   },
   "devDependencies": {
-    "@aws-sdk/client-cloudwatch": "^3.1161.0",
-    "@aws-sdk/client-firehose": "^3.1161.0",
-    "@aws-sdk/client-ses": "^3.1161.0",
-    "@aws-sdk/client-sqs": "^3.1161.0",
-    "@smithy/node-http-handler": "^4.14.1"
+    "@aws-sdk/client-cloudwatch": "^3.1164.0",
+    "@aws-sdk/client-firehose": "^3.1164.0",
+    "@aws-sdk/client-ses": "^3.1164.0",
+    "@aws-sdk/client-sqs": "^3.1164.0",
+    "@smithy/node-http-handler": "^4.14.2"
   },
   "peerDependencies": {
-    "@aws-sdk/client-cloudwatch": "^3.1161.0",
-    "@aws-sdk/client-firehose": "^3.1161.0",
-    "@aws-sdk/client-ses": "^3.1161.0",
-    "@aws-sdk/client-sqs": "^3.1161.0",
-    "@smithy/node-http-handler": "^4.14.1"
+    "@aws-sdk/client-cloudwatch": "^3.1164.0",
+    "@aws-sdk/client-firehose": "^3.1164.0",
+    "@aws-sdk/client-ses": "^3.1164.0",
+    "@aws-sdk/client-sqs": "^3.1164.0",
+    "@smithy/node-http-handler": "^4.14.2"
   },
   "peerDependenciesMeta": {
     "@aws-sdk/client-cloudwatch": {
