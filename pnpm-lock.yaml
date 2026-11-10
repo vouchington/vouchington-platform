@@ -337,8 +337,8 @@ importers:
         specifier: ^2.22.1
         version: 2.22.1(pg@8.23.1)
       pgvector:
-        specifier: ^0.3.0
-        version: 0.3.0
+        specifier: ^0.3.1
+        version: 0.3.1
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -3449,8 +3449,8 @@ packages:
   pgpass@1.0.5:
     resolution: {integrity: sha512-FdW9r/jQZhSeohs1Z3sI1yxFQNFvMcnmfuj4WBMUTxOrAyLMaTcE1aAMBiTlbMNaXvBCQuVi0R7hd8udDSP7ug==}
 
-  pgvector@0.3.0:
-    resolution: {integrity: sha512-+t7qcQD2us8fO8YIq/3lA0gUrD+bVO70MG1MhcDcxJz/OlRGGIIHzFq/4x57Vn/LpzX5wFdfOTLQp9QMPd4ljQ==}
+  pgvector@0.3.1:
+    resolution: {integrity: sha512-POqnLYO9ZwdvUS/jsqDbOpaWAt1VfpKsoiZM7LHPB3RjSrVPEJYICL5pNju5GRhWZHKzNbQyjF1PyC21zi3gnA==}
     engines: {node: '>=22'}
 
   phone@3.1.72:
@@ -4912,7 +4912,7 @@ snapshots:
       eventsource: 3.0.7
       eventsource-parser: 3.1.1
       express: 5.2.1(supports-color@8.1.1)
-      express-rate-limit: 8.7.0(express@5.2.1(supports-color@8.1.1))(supports-color@8.1.1)
+      express-rate-limit: 8.7.0(express@5.2.1(supports-color@7.2.0))(supports-color@8.1.1)
       hono: 4.13.8
       jose: 6.2.15
       json-schema-typed: 8.0.2
@@ -6181,10 +6181,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  express-rate-limit@8.7.0(express@5.2.1(supports-color@8.1.1))(supports-color@8.1.1):
+  express-rate-limit@8.7.0(express@5.2.1(supports-color@7.2.0))(supports-color@8.1.1):
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
-      express: 5.2.1(supports-color@8.1.1)
+      express: 5.2.1(supports-color@7.2.0)
       ip-address: 10.7.2
     transitivePeerDependencies:
       - supports-color
@@ -6898,7 +6898,7 @@ snapshots:
     dependencies:
       split2: 4.2.0
 
-  pgvector@0.3.0: {}
+  pgvector@0.3.1: {}
 
   phone@3.1.72: {}
 

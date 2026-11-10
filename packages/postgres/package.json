@@ -64,7 +64,7 @@
     "@libpg-query/parser": "^18.0.0",
     "pg": "^8.23.1",
     "pg-cursor": "^2.22.1",
-    "pgvector": "^0.3.0",
+    "pgvector": "^0.3.1",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
