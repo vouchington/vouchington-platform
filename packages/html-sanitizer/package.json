@@ -33,7 +33,7 @@
     "prepack": "pnpm run build"
   },
   "dependencies": {
-    "parse5": "^8.1.0"
+    "parse5": "^8.1.1"
   },
   "engines": {
     "node": ">=24.0.0"
