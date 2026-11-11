@@ -36,8 +36,11 @@ await psql.close()
 ```
 
 `beginTransaction()` and `beginBoundedTransaction()` return an explicitly owned transaction. Call
-`commit()` to persist it; leaving the scope without committing rolls it back. By default,
-`beginTransaction()` acquires and releases a write-pool client. To select a pool, pass it as
+`commit()` to persist it; leaving the scope without committing rolls it back. Bounded transactions
+use PostgreSQL's `read committed` isolation by default; pass `isolationLevel: 'serializable'` or
+`'repeatable read'` with the connection and statement timeout budgets when a stricter level is
+needed. A serialization failure retains PostgreSQL's `40001` code for caller handling.
+By default, `beginTransaction()` acquires and releases a write-pool client. To select a pool, pass it as
 `{ client: pool }`; the resource acquires and releases that pool's client. To use an inactive
 caller-managed `pg.PoolClient`, pass `{ client }`; the resource settles the transaction but never
 releases the caller's client. Active caller-managed clients are rejected rather than nested. Pass a
