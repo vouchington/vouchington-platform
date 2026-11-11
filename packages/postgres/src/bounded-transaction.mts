@@ -22,7 +22,12 @@ export async function runBoundedTransactionWithClient<Result>(
   handler: (query: TransactionQuery) => Promise<Result>,
   runtime?: Pick<PsqlRuntime, 'env' | 'onQueryTiming' | 'errorHandler'>,
 ): Promise<Result> {
-  assertTransactionIsolationLevel(options.isolationLevel)
+  try {
+    assertTransactionIsolationLevel(options.isolationLevel)
+  } catch (error) {
+    client.release(true)
+    throw error
+  }
   const transaction = await beginOwnedTransaction(
     {
       env: runtime?.env ?? process.env,
