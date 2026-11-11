@@ -322,8 +322,8 @@ importers:
   packages/phone-validation:
     dependencies:
       phone:
-        specifier: ^3.1.71
-        version: 3.1.72
+        specifier: ^3.1.73
+        version: 3.1.73
 
   packages/postgres:
     dependencies:
@@ -3420,8 +3420,8 @@ packages:
     resolution: {integrity: sha512-POqnLYO9ZwdvUS/jsqDbOpaWAt1VfpKsoiZM7LHPB3RjSrVPEJYICL5pNju5GRhWZHKzNbQyjF1PyC21zi3gnA==}
     engines: {node: '>=22'}
 
-  phone@3.1.72:
-    resolution: {integrity: sha512-QU5ulC2318AgUnw/kF69BOgbWNjhVqqYMs6ochGTK3dBPwMAzfMrBS49YOC84eS5Xb3qYKTpmr1dlByFFy+BJQ==}
+  phone@3.1.73:
+    resolution: {integrity: sha512-K3NYsML7jJlx4u2u40RI2w67qnuyWsBPAHldsL5L+gMIWRBsqRq17qLqKFvBJ6n6nJv/op+6y+B0RCbKMLJNMA==}
     engines: {node: '>=12'}
 
   picocolors@1.1.1:
@@ -4836,7 +4836,7 @@ snapshots:
       eventsource: 3.0.7
       eventsource-parser: 3.1.1
       express: 5.2.1(supports-color@8.1.1)
-      express-rate-limit: 8.7.0(express@5.2.1(supports-color@8.1.1))(supports-color@8.1.1)
+      express-rate-limit: 8.7.0(express@5.2.1(supports-color@7.2.0))(supports-color@8.1.1)
       hono: 4.13.8
       jose: 6.2.16
       json-schema-typed: 8.0.2
@@ -6109,10 +6109,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  express-rate-limit@8.7.0(express@5.2.1(supports-color@8.1.1))(supports-color@8.1.1):
+  express-rate-limit@8.7.0(express@5.2.1(supports-color@7.2.0))(supports-color@8.1.1):
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
-      express: 5.2.1(supports-color@8.1.1)
+      express: 5.2.1(supports-color@7.2.0)
       ip-address: 10.7.2
     transitivePeerDependencies:
       - supports-color
@@ -6839,7 +6839,7 @@ snapshots:
 
   pgvector@0.3.1: {}
 
-  phone@3.1.72: {}
+  phone@3.1.73: {}
 
   picocolors@1.1.1: {}
 
