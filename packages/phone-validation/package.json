@@ -33,7 +33,7 @@
     "prepack": "pnpm run build"
   },
   "dependencies": {
-    "phone": "^3.1.71"
+    "phone": "^3.1.73"
   },
   "engines": {
     "node": ">=24.0.0"
