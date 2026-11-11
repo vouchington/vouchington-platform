@@ -2,8 +2,10 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { createBoundedTransactionApi } from './bounded-transaction-api.mts'
 import { withNoticeEvents } from './pool-client-test-helpers.mts'
-import { withPsql } from './test-helpers.mts'
+import { useIsolatedDatabase, withPsql } from './test-helpers.mts'
 import type { PsqlRuntime } from './types.mts'
+
+const withIsolatedPsql = useIsolatedDatabase()
 
 function rejectIdlePoolProbe(input: { text?: string } | string): void {
   if ((typeof input === 'string' ? input : (input.text ?? '')).includes('SAVEPOINT'))
@@ -11,6 +13,43 @@ function rejectIdlePoolProbe(input: { text?: string } | string): void {
 }
 
 describe('withBoundedTransaction', () => {
+  it('uses serializable isolation with the statement bound and preserves a real serialization failure', async () => {
+    await withIsolatedPsql(async (psql) => {
+      await psql.write(
+        '/* boundedIsolation:table */ CREATE TABLE bounded_isolation (id int PRIMARY KEY, value int NOT NULL)',
+      )
+      await psql.write('/* boundedIsolation:seed */ INSERT INTO bounded_isolation VALUES (1, 0)')
+      const options = {
+        connectionTimeoutMs: 2_000,
+        statementTimeoutMs: 2_000,
+        isolationLevel: 'serializable' as const,
+      }
+      await using first = await psql.beginBoundedTransaction(options)
+      await using second = await psql.beginBoundedTransaction(options)
+      const settings = await first<{ level: string; statement_timeout: string }>(
+        "/* boundedIsolation:settings */ SELECT current_setting('transaction_isolation') AS level, current_setting('statement_timeout') AS statement_timeout",
+      )
+      expect(settings.rows[0]).toEqual({ level: 'serializable', statement_timeout: '2s' })
+      await first(
+        '/* boundedIsolation:firstRead */ SELECT value FROM bounded_isolation WHERE id = 1',
+      )
+      await second(
+        '/* boundedIsolation:secondRead */ SELECT value FROM bounded_isolation WHERE id = 1',
+      )
+      await first(
+        '/* boundedIsolation:firstWrite */ UPDATE bounded_isolation SET value = 1 WHERE id = 1',
+      )
+      await first.commit()
+      await expect(
+        second(
+          '/* boundedIsolation:secondWrite */ UPDATE bounded_isolation SET value = 2 WHERE id = 1',
+        ),
+      ).rejects.toMatchObject({ code: '40001' })
+      await second.rollback()
+      expect(psql.writePool.totalCount).toBe(psql.writePool.idleCount)
+    })
+  })
+
   it('commits a bounded transaction', async () => {
     await withPsql(async (psql) => {
       await expect(
@@ -22,6 +61,25 @@ describe('withBoundedTransaction', () => {
           },
         ),
       ).resolves.toEqual({ n: 4 })
+    })
+  })
+
+  it('passes isolation through the bounded callback API', async () => {
+    await withPsql(async (psql) => {
+      const level = await psql.withBoundedTransaction(
+        {
+          connectionTimeoutMs: 2_000,
+          statementTimeoutMs: 2_000,
+          isolationLevel: 'repeatable read',
+        },
+        async (query) => {
+          const { rows } = await query<{ level: string }>(
+            "/* boundedCallbackIsolation */ SELECT current_setting('transaction_isolation') AS level",
+          )
+          return rows[0]?.level
+        },
+      )
+      expect(level).toBe('repeatable read')
     })
   })
 

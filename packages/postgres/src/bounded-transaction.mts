@@ -1,12 +1,19 @@
 import type pg from 'pg'
 
+import { assertTransactionIsolationLevel } from './transaction-begin.mts'
 import { beginOwnedTransaction } from './transaction-resource.mts'
 import { runTransactionHandler } from './transactions.mts'
-import type { ErrorHandler, PsqlRuntime, TransactionQuery } from './types.mts'
+import type {
+  ErrorHandler,
+  PsqlRuntime,
+  TransactionIsolationLevel,
+  TransactionQuery,
+} from './types.mts'
 
 export type BoundedTransactionOptions = {
   connectionTimeoutMs: number
   statementTimeoutMs: number
+  isolationLevel?: TransactionIsolationLevel
 }
 
 export async function runBoundedTransactionWithClient<Result>(
@@ -15,6 +22,12 @@ export async function runBoundedTransactionWithClient<Result>(
   handler: (query: TransactionQuery) => Promise<Result>,
   runtime?: Pick<PsqlRuntime, 'env' | 'onQueryTiming' | 'errorHandler'>,
 ): Promise<Result> {
+  try {
+    assertTransactionIsolationLevel(options.isolationLevel)
+  } catch (error) {
+    client.release(true)
+    throw error
+  }
   const transaction = await beginOwnedTransaction(
     {
       env: runtime?.env ?? process.env,
@@ -22,7 +35,10 @@ export async function runBoundedTransactionWithClient<Result>(
     } as PsqlRuntime,
     client,
     '/* withBoundedTransaction */',
-    { statementTimeoutMs: options.statementTimeoutMs },
+    {
+      statementTimeoutMs: options.statementTimeoutMs,
+      isolationLevel: options.isolationLevel,
+    },
   )
   return runTransactionHandler(transaction, handler, (primary, rollback) =>
     reportBoundedRollbackFailure(primary, rollback, runtime?.errorHandler),

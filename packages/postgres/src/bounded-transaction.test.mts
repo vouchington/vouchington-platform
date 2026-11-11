@@ -50,6 +50,31 @@ describe('bounded transaction cleanup', () => {
     expect(fixture.queries.some((query) => query.includes('COMMIT'))).toBe(true)
   })
 
+  it('forwards isolation to the bounded client transaction', async () => {
+    const fixture = createClientFixture()
+    await runBoundedTransactionWithClient(
+      { ...options, isolationLevel: 'serializable' },
+      fixture.client,
+      async () => undefined,
+    )
+    expect(fixture.queries[0]).toBe(
+      '/* withBoundedTransaction */ BEGIN ISOLATION LEVEL SERIALIZABLE',
+    )
+  })
+
+  it('destroys the owned client when isolation validation fails before BEGIN', async () => {
+    const fixture = createClientFixture()
+    await expect(
+      runBoundedTransactionWithClient(
+        { ...options, isolationLevel: 'read committed' as never },
+        fixture.client,
+        async () => undefined,
+      ),
+    ).rejects.toThrow('Unsupported transaction isolation level: "read committed"')
+    expect(fixture.release).toHaveBeenCalledExactlyOnceWith(true)
+    expect(fixture.queries).toEqual([])
+  })
+
   it('throws a wrapped non-Error transaction failure', async () => {
     const fixture = createClientFixture()
     await expect(
