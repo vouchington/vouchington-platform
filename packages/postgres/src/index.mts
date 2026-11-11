@@ -51,6 +51,7 @@ export type {
   QueryOptions,
   QueryValues,
   QueryExecutor,
+  TransactionIsolationLevel,
   TransactionQuery,
   QueryTimingInput,
   PsqlPools,

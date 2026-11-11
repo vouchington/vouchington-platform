@@ -22,7 +22,7 @@ export async function runBoundedTransactionWithClient<Result>(
     } as PsqlRuntime,
     client,
     '/* withBoundedTransaction */',
-    options.statementTimeoutMs,
+    { statementTimeoutMs: options.statementTimeoutMs },
   )
   return runTransactionHandler(transaction, handler, (primary, rollback) =>
     reportBoundedRollbackFailure(primary, rollback, runtime?.errorHandler),
