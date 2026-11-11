@@ -36,8 +36,8 @@ importers:
         specifier: ^7.0.2006
         version: 7.0.2006
       pr-shepherd:
-        specifier: ^1.4.0
-        version: 1.4.0(supports-color@7.2.0)
+        specifier: ^1.6.0
+        version: 1.6.0(supports-color@7.2.0)
       semver:
         specifier: ^7.8.6
         version: 7.8.6
@@ -3464,8 +3464,8 @@ packages:
     resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
     engines: {node: '>=0.10.0'}
 
-  pr-shepherd@1.4.0:
-    resolution: {integrity: sha512-3eYsELFSn/tR1fPUFjYVm1zc5w7GfhxcDUvhALvhtdipT2T1ynyCr9lwAc2eX8G/32FMltpsC0YQTuV/gDulQw==}
+  pr-shepherd@1.6.0:
+    resolution: {integrity: sha512-a9ezqE7mFrXXrYwgvWPBRhaaetQxEGXkgFqgLzL44QWZPzuPvzrmwwGaHYv5jZscdpuv8jIrXmVgSJh/Q4VbrA==}
     engines: {node: '>=22.19.0'}
     hasBin: true
 
@@ -6867,7 +6867,7 @@ snapshots:
     dependencies:
       xtend: 4.0.2
 
-  pr-shepherd@1.4.0(supports-color@7.2.0):
+  pr-shepherd@1.6.0(supports-color@7.2.0):
     dependencies:
       '@modelcontextprotocol/sdk': 1.32.2(supports-color@7.2.0)(zod@4.6.5)
       picomatch: 4.0.7
