@@ -205,8 +205,31 @@ describe('runViews', () => {
       await psql.write('/* setup */ CREATE VIEW blocker AS SELECT id FROM outside_dependency')
       const dropAll = buildDropViewsStatement([{ type: 'view', name: 'outside_dependency' }])!
       await expect(psql.write(dropAll)).rejects.toThrow(
-        'Forced view teardown made no progress; blocked views: outside_dependency',
+        'Forced view teardown made no progress; blocked views: outside_dependency; unmanaged dependents: blocker (depends on outside_dependency)',
       )
+    })
+  })
+
+  it('names unmanaged dependents of blocked views without cascading to them', async () => {
+    await withPsql(async (psql) => {
+      await psql.write('/* setup */ CREATE VIEW base AS SELECT 1 AS id')
+      await psql.write('/* setup */ CREATE VIEW managed_child AS SELECT id FROM base')
+      await psql.write('/* setup */ CREATE VIEW orphan AS SELECT id FROM base')
+      const dropAll = buildDropViewsStatement([
+        { type: 'view', name: 'base' },
+        { type: 'view', name: 'managed_child' },
+        { type: 'view', name: 'missing_view' },
+      ])!
+      const error = await psql.write(dropAll).catch((err: unknown) => err)
+      expect(error).toMatchObject({
+        code: '2BP01',
+        message:
+          'Forced view teardown made no progress; blocked views: base; unmanaged dependents: orphan (depends on base)',
+      })
+      const remaining = await psql.write<{ relname: string }>(
+        "/* check */ SELECT relname FROM pg_class WHERE relname IN ('base', 'managed_child', 'orphan') ORDER BY relname",
+      )
+      expect(remaining.rows.map((row) => row.relname)).toEqual(['base', 'managed_child', 'orphan'])
     })
   })
 })

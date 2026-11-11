@@ -14,7 +14,8 @@ function buildCounterpartDropStatement(declaration: ManagedViewDeclaration): str
 
 /**
  * One annotated `DO` block that drops every declared view, retrying objects blocked by dependent
- * views until a pass makes no progress, which raises SQLSTATE 2BP01 naming the blocked views.
+ * views until a pass makes no progress, which raises SQLSTATE 2BP01 naming the blocked views and
+ * any unmanaged views that depend on them. Drops always RESTRICT; nothing is ever cascaded.
  * A declaration whose object now has the other relation kind is dropped as that kind. Returns null
  * when there is nothing to drop.
  */
@@ -30,6 +31,8 @@ DECLARE
   pending_statements text[] := ARRAY[${statements}];
   pending_alternates text[] := ARRAY[${alternates}];
   pending_names text[] := ARRAY[${names}];
+  managed oid[] := array_remove(ARRAY(SELECT to_regclass(name)::oid FROM unnest(ARRAY[${names}]) AS name), NULL);
+  unmanaged_dependents text;
   remaining_alternates text[];
   remaining_statements text[];
   remaining_names text[];
@@ -63,9 +66,21 @@ BEGIN
       END;
     END LOOP;
     IF NOT progress THEN
+      -- A view's rule depends on the view itself, so dependents are other relations' rules.
+      SELECT string_agg(DISTINCT dependent, ', ' ORDER BY dependent) INTO unmanaged_dependents FROM (
+        SELECT format('%s (depends on %s)', rule.ev_class::regclass, blocked.oid::regclass) AS dependent
+        FROM unnest(remaining_names) AS name
+        JOIN pg_class AS blocked ON blocked.oid = to_regclass(name)
+        JOIN pg_depend AS dependency
+          ON dependency.refclassid = 'pg_class'::regclass AND dependency.refobjid = blocked.oid
+          AND dependency.classid = 'pg_rewrite'::regclass
+        JOIN pg_rewrite AS rule ON rule.oid = dependency.objid
+        WHERE rule.ev_class <> blocked.oid AND rule.ev_class <> ALL (managed)
+      ) AS dependents;
       RAISE EXCEPTION USING
         ERRCODE = '2BP01',
-        MESSAGE = 'Forced view teardown made no progress; blocked views: ' || array_to_string(remaining_names, ', '),
+        MESSAGE = 'Forced view teardown made no progress; blocked views: ' || array_to_string(remaining_names, ', ')
+          || coalesce('; unmanaged dependents: ' || unmanaged_dependents, ''),
         DETAIL = concat_ws(E'\\n', last_message, last_detail),
         HINT = last_hint;
     END IF;
