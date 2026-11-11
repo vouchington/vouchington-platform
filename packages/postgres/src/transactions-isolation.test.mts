@@ -10,7 +10,7 @@ describe('beginTransaction isolationLevel', () => {
     'opens an owned pool transaction at %s',
     async (isolationLevel) => {
       await withPsql(async (psql) => {
-        const transaction = await psql.beginTransaction({ isolationLevel })
+        await using transaction = await psql.beginTransaction({ isolationLevel })
         await expect(transaction<{ level: string }>(ISOLATION)).resolves.toMatchObject({
           rows: [{ level: isolationLevel }],
         })
@@ -21,14 +21,14 @@ describe('beginTransaction isolationLevel', () => {
 
   it('applies the level when nothing runs before commit', async () => {
     await withPsql(async (psql) => {
-      const transaction = await psql.beginTransaction({ isolationLevel: 'serializable' })
+      await using transaction = await psql.beginTransaction({ isolationLevel: 'serializable' })
       await expect(transaction.commit()).resolves.toBeUndefined()
     })
   })
 
   it('applies the level on an explicit pool and on a borrowed client', async () => {
     await withPsql(async (psql) => {
-      const pooled = await psql.beginTransaction({
+      await using pooled = await psql.beginTransaction({
         client: psql.readPool,
         isolationLevel: 'serializable',
       })
@@ -39,7 +39,10 @@ describe('beginTransaction isolationLevel', () => {
 
       const client = await psql.writePool.connect()
       try {
-        const borrowed = await psql.beginTransaction({ client, isolationLevel: 'serializable' })
+        await using borrowed = await psql.beginTransaction({
+          client,
+          isolationLevel: 'serializable',
+        })
         await expect(borrowed<{ level: string }>(ISOLATION)).resolves.toMatchObject({
           rows: [{ level: 'serializable' }],
         })
@@ -52,7 +55,7 @@ describe('beginTransaction isolationLevel', () => {
 
   it('keeps the default level when no isolation level is given', async () => {
     await withPsql(async (psql) => {
-      const transaction = await psql.beginTransaction()
+      await using transaction = await psql.beginTransaction()
       await expect(transaction<{ level: string }>(ISOLATION)).resolves.toMatchObject({
         rows: [{ level: 'read committed' }],
       })
