@@ -23,8 +23,13 @@ export interface QueryOptions {
   readOnly?: boolean
 }
 
+/** A stricter isolation level than PostgreSQL's `read committed` default. */
+export type TransactionIsolationLevel = 'serializable' | 'repeatable read'
+
 export interface BeginTransactionOptions {
   client?: pg.PoolClient | pg.Pool
+  /** Opens the transaction with `BEGIN ISOLATION LEVEL ...`, so no separate `SET TRANSACTION` can fail after it. */
+  isolationLevel?: TransactionIsolationLevel
 }
 
 export type QueryPoolLabel = 'read' | 'write' | 'client'

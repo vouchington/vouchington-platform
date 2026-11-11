@@ -5,6 +5,7 @@ import {
   beginTransactionBatch,
   transactionStartControls,
   type ControlExtras as Extras,
+  type TransactionStartOptions,
 } from './transaction-begin.mts'
 import {
   recoverFailedCallerTransaction,
@@ -20,9 +21,8 @@ import type {
   TransactionQuery,
 } from './types.mts'
 
-export type TransactionSessionOptions = {
+export type TransactionSessionOptions = TransactionStartOptions & {
   annotation: string
-  statementTimeoutMs?: number
   releaseClient?: boolean
   queryPool?: QueryPoolLabel
 }
@@ -44,7 +44,7 @@ export async function beginTransactionSession(
       ...extras,
     })
   const beginControls = (extras: Extras = {}, settings = true) =>
-    transactionStartControls(control, options.statementTimeoutMs, extras, settings)
+    transactionStartControls(control, options, extras, settings)
 
   let failed: unknown
   let hasFailed = false

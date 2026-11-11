@@ -40,9 +40,10 @@ function idleClient(): { client: Client; queries: string[] } {
 }
 
 describe('beginTransaction resource options', () => {
-  it('exposes only optional pool or pool-client resource selection', () => {
+  it('exposes only optional resource selection and isolation level', () => {
     expectTypeOf<BeginTransactionOptions>().toEqualTypeOf<{
       client?: pg.Pool | pg.PoolClient
+      isolationLevel?: 'serializable' | 'repeatable read'
     }>()
     expectTypeOf<Psql['beginTransaction']>()
       .parameter(0)

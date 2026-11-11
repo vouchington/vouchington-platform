@@ -1,13 +1,34 @@
 import type pg from 'pg'
 
 import type { ClientQueryTimingExtras } from './execute-client-query.mts'
-import type { QueryValues } from './types.mts'
+import type { QueryValues, TransactionIsolationLevel } from './types.mts'
 
 const ACTIVE_SQL_TRANSACTION = '25001'
 const NESTED_BEGIN_MESSAGE =
   'Cannot begin a transaction on a pool client that already has a transaction open'
 
 type PipelineFlag = { pipeline?: boolean | undefined }
+
+// A lookup, not interpolation, so an untyped caller cannot inject SQL into BEGIN.
+const BEGIN_STATEMENTS: Record<TransactionIsolationLevel, string> = {
+  'repeatable read': 'BEGIN ISOLATION LEVEL REPEATABLE READ',
+  serializable: 'BEGIN ISOLATION LEVEL SERIALIZABLE',
+}
+
+export type TransactionStartOptions = {
+  statementTimeoutMs?: number | undefined
+  isolationLevel?: TransactionIsolationLevel | undefined
+}
+
+/** Rejects an unknown isolation level before a connection is acquired, so nothing can leak. */
+export function assertTransactionIsolationLevel(isolationLevel: unknown): void {
+  if (isolationLevel === undefined) return
+  if (typeof isolationLevel !== 'string' || !Object.hasOwn(BEGIN_STATEMENTS, isolationLevel)) {
+    throw new TypeError(
+      `Unsupported transaction isolation level: ${JSON.stringify(isolationLevel)}`,
+    )
+  }
+}
 
 export type ControlExtras = Omit<ClientQueryTimingExtras, 'onQueryTiming' | 'queryTimeoutMs'>
 type Control = (text: string, values?: QueryValues, extras?: ControlExtras) => Promise<unknown>
@@ -16,15 +37,17 @@ type Control = (text: string, values?: QueryValues, extras?: ControlExtras) => P
  * Builds the statements that open a transaction. `BEGIN` is unnamed so it uses
  * the simple protocol and cannot fail on its own: pg sends a Sync after each
  * pipelined query, so a failed `BEGIN` would leave the first statement to run
- * in autocommit.
+ * in autocommit. An isolation level is part of that same `BEGIN`, so no
+ * separate `SET TRANSACTION` can fail after the transaction opens.
  */
 export function transactionStartControls(
   control: Control,
-  statementTimeoutMs: number | undefined,
+  { statementTimeoutMs, isolationLevel }: TransactionStartOptions,
   extras: ControlExtras,
   settings: boolean,
 ): Array<() => Promise<unknown>> {
-  const begin = () => control('BEGIN', undefined, { ...extras, prepare: false })
+  const text = isolationLevel === undefined ? 'BEGIN' : BEGIN_STATEMENTS[isolationLevel]
+  const begin = () => control(text, undefined, { ...extras, prepare: false })
   if (statementTimeoutMs === undefined || !settings) return [begin]
   const timeout = [`${statementTimeoutMs}ms`]
   return [begin, () => control("SELECT set_config('statement_timeout', $1, true)", timeout, extras)]

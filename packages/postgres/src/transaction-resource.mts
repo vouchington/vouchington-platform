@@ -2,27 +2,39 @@ import type pg from 'pg'
 
 import { acquireClientWithin, connectWithRetry } from './connect-with-retry.mts'
 import type { Transaction } from './create-psql-types.mts'
+import { assertTransactionIsolationLevel } from './transaction-begin.mts'
 import { isInTransaction } from './transaction-probe.mts'
 import { beginTransactionSession } from './transaction-session.mts'
-import type { BeginTransactionOptions, PsqlRuntime, QueryPoolLabel } from './types.mts'
+import type {
+  BeginTransactionOptions,
+  PsqlRuntime,
+  QueryPoolLabel,
+  TransactionIsolationLevel,
+} from './types.mts'
 
 export type OwnedPoolTransactionOptions = {
   connectionTimeoutMs?: number
   queryPool?: QueryPoolLabel
   statementTimeoutMs?: number
+  isolationLevel?: TransactionIsolationLevel | undefined
 }
+
+type OwnedTransactionOptions = Omit<OwnedPoolTransactionOptions, 'connectionTimeoutMs'>
 
 export async function beginTransactionResource(
   runtime: PsqlRuntime,
   options: BeginTransactionOptions,
   annotation: string,
 ): Promise<Transaction> {
-  const client = options.client
+  const { client, isolationLevel } = options
+  assertTransactionIsolationLevel(isolationLevel)
   if (client === undefined)
-    return beginOwnedPoolTransaction(runtime, runtime.pools.write, annotation)
-  if (isPoolClient(client)) return beginBorrowedTransaction(runtime, client, annotation)
+    return beginOwnedPoolTransaction(runtime, runtime.pools.write, annotation, { isolationLevel })
+  if (isPoolClient(client))
+    return beginBorrowedTransaction(runtime, client, annotation, isolationLevel)
   return beginOwnedPoolTransaction(runtime, client, annotation, {
     queryPool: getPoolLabel(runtime, client),
+    isolationLevel,
   })
 }
 
@@ -30,12 +42,12 @@ export async function beginOwnedTransaction(
   runtime: PsqlRuntime,
   client: pg.PoolClient,
   annotation: string,
-  statementTimeoutMs?: number,
-  queryPool?: QueryPoolLabel,
+  { statementTimeoutMs, queryPool, isolationLevel }: OwnedTransactionOptions = {},
 ): Promise<Transaction> {
   return beginTransactionSession(runtime, client, {
     annotation,
-    ...(statementTimeoutMs === undefined ? {} : { statementTimeoutMs }),
+    statementTimeoutMs,
+    isolationLevel,
     ...(queryPool === undefined ? {} : { queryPool }),
   })
 }
@@ -59,19 +71,14 @@ export async function beginOwnedPoolTransaction(
     options.connectionTimeoutMs === undefined
       ? await connectWithRetry(pool)
       : await acquireClientWithin(pool, options.connectionTimeoutMs)
-  return beginOwnedTransaction(
-    runtime,
-    client,
-    annotation,
-    options.statementTimeoutMs,
-    options.queryPool,
-  )
+  return beginOwnedTransaction(runtime, client, annotation, options)
 }
 
 async function beginBorrowedTransaction(
   runtime: PsqlRuntime,
   client: pg.PoolClient,
   annotation: string,
+  isolationLevel: TransactionIsolationLevel | undefined,
 ): Promise<Transaction> {
   if (await isInTransaction(client)) {
     throw new Error('Cannot create an owned transaction from an active caller-managed pool client')
@@ -80,6 +87,7 @@ async function beginBorrowedTransaction(
     annotation,
     queryPool: 'client',
     releaseClient: false,
+    isolationLevel,
   })
 }
 
