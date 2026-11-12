@@ -12,6 +12,7 @@ updates:
         - pr-shepherd
         - valkyries
     open-pull-requests-limit: 5
+    versioning-strategy: increase-if-necessary
     groups:
       first-party:
         applies-to: version-updates
