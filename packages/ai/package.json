@@ -53,7 +53,7 @@
     "openai": "^7.53.0"
   },
   "peerDependencies": {
-    "@anthropic-ai/sdk": "^1.7.0",
+    "@anthropic-ai/sdk": "^1.6.0",
     "openai": "^7.39.0"
   },
   "peerDependenciesMeta": {
