@@ -59,7 +59,7 @@ importers:
         version: 1.7.0(zod@4.6.5)
       openai:
         specifier: ^7.53.0
-        version: 7.53.0(@aws-sdk/credential-provider-node@3.972.95)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.21.3)(zod@4.6.5)
+        version: 7.55.0(@aws-sdk/credential-provider-node@3.972.95)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.21.3)(zod@4.6.5)
 
   packages/api-client:
     devDependencies:
@@ -3255,8 +3255,8 @@ packages:
   once@1.4.0:
     resolution: {integrity: sha512-lNaJgI+2Q5URQBkccEKHTQOPaXdUxnZZElQTZY0MFUAuaEqe1E+Nyvgdz/aIyNi6Z9MzO5dv1H8n58/GELp3+w==}
 
-  openai@7.53.0:
-    resolution: {integrity: sha512-PXiIZraFYMb2QYgTtWqDA16Oszj4fWRZNn7qLIAddmiJxM5uQPWBFaxp9O8MhLfTUOQ+iQsnFSRJhLPecsGovQ==}
+  openai@7.55.0:
+    resolution: {integrity: sha512-0r4snVSRN46m4wL2vXCW5Xw6CKGPbdNI8t79KZOpe8GKKPmhL8peDXN8YOY/2ipsOVWSfsP/vgkLjTmWB+kMug==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
       '@aws-sdk/credential-provider-node': '>=3.972.0 <4'
@@ -4828,7 +4828,7 @@ snapshots:
       eventsource: 3.0.7
       eventsource-parser: 3.1.1
       express: 5.2.1(supports-color@8.1.1)
-      express-rate-limit: 8.7.0(express@5.2.1(supports-color@8.1.1))(supports-color@8.1.1)
+      express-rate-limit: 8.7.0(express@5.2.1(supports-color@7.2.0))(supports-color@8.1.1)
       hono: 4.13.8
       jose: 6.2.17
       json-schema-typed: 8.0.2
@@ -6092,10 +6092,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  express-rate-limit@8.7.0(express@5.2.1(supports-color@8.1.1))(supports-color@8.1.1):
+  express-rate-limit@8.7.0(express@5.2.1(supports-color@7.2.0))(supports-color@8.1.1):
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
-      express: 5.2.1(supports-color@8.1.1)
+      express: 5.2.1(supports-color@7.2.0)
       ip-address: 10.7.2
     transitivePeerDependencies:
       - supports-color
@@ -6611,7 +6611,7 @@ snapshots:
     dependencies:
       wrappy: 1.0.2
 
-  openai@7.53.0(@aws-sdk/credential-provider-node@3.972.95)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.21.3)(zod@4.6.5):
+  openai@7.55.0(@aws-sdk/credential-provider-node@3.972.95)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.21.3)(zod@4.6.5):
     optionalDependencies:
       '@aws-sdk/credential-provider-node': 3.972.95
       '@smithy/signature-v4': 5.7.5
