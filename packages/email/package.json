@@ -36,10 +36,10 @@
     "@vouchington/localization": "^0.3.0"
   },
   "devDependencies": {
-    "@react-email/render": "2.3.0",
+    "@react-email/render": "2.3.1",
     "@types/react": "^19.3.0",
     "react": "19.3.1",
-    "react-email": "6.11.10"
+    "react-email": "6.11.11"
   },
   "peerDependencies": {
     "@react-email/render": "^2.1.1",
