@@ -56,7 +56,7 @@ importers:
     devDependencies:
       '@anthropic-ai/sdk':
         specifier: ^1.7.0
-        version: 1.7.0(zod@4.6.5)
+        version: 1.8.0(zod@4.6.5)
       openai:
         specifier: ^7.53.0
         version: 7.55.0(@aws-sdk/credential-provider-node@3.972.95)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.21.3)(zod@4.6.5)
@@ -490,8 +490,8 @@ importers:
 
 packages:
 
-  '@anthropic-ai/sdk@1.7.0':
-    resolution: {integrity: sha512-Z+0c1iHQozlt4ymMHapPXEXfFnSbPEWGnSKbkavt+qeyaMQ3Sd6QNxfQj7vyhHYqiqYadC9shrXub8ISKf7xjQ==}
+  '@anthropic-ai/sdk@1.8.0':
+    resolution: {integrity: sha512-yDOArk2+Qpd/djEKmZjrv7JZ+pn5iBHARJ9PAdvfhGf4H5wNqTgY/2K0/yDKdQdm8G8hrNQchMlBAHpPK7yBfg==}
     hasBin: true
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
@@ -4048,7 +4048,7 @@ packages:
 
 snapshots:
 
-  '@anthropic-ai/sdk@1.7.0(zod@4.6.5)':
+  '@anthropic-ai/sdk@1.8.0(zod@4.6.5)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       json-schema-to-ts: 3.1.1
