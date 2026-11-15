@@ -49,7 +49,7 @@ describe('migration failure logging', () => {
     const { errors, logger } = captureLogger()
     await expect(
       withPsql(async (psql) => psql.runMigrations(folder, { logger }), {
-        env: { NODE_ENV: 'development', ...env },
+        env: { NODE_ENV: 'development', DEBUG_MIGRATIONS: 'false', ...env },
       }),
     ).rejects.toMatchObject({ code })
     return errors
