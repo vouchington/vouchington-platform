@@ -9,7 +9,6 @@ updates:
       exclude:
         - '@jongleberry/*'
         - '@vouchington/*'
-        - pr-shepherd
         - valkyries
     open-pull-requests-limit: 5
     versioning-strategy: increase-if-necessary
@@ -19,7 +18,6 @@ updates:
         patterns:
           - '@jongleberry/*'
           - '@vouchington/*'
-          - pr-shepherd
           - valkyries
       typescript-toolchain:
         applies-to: version-updates
