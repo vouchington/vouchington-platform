@@ -8,6 +8,7 @@ import {
   computeMigrationChecksum,
   MigrationChecksumMissingError,
 } from './migration-checksum.mts'
+import { logMigrationFailure } from './migration-failure.mts'
 import { silentMigrationLogger, type MigrationLogger } from './migration-logger.mts'
 import { prepareMigration } from './migration-mode.mts'
 import { resolveMigrationTimeouts, type MigrationTimeouts } from './migration-options.mts'
@@ -82,8 +83,7 @@ export function createMigrationRunner(
           ledger.set(migration, checksum)
           if (!isTest) logger.log('Migration %s complete!', migration)
         } catch (err) {
-          logger.error('ERROR: running migration %s failed!', migration)
-          logger.error(sql)
+          logMigrationFailure(logger, migration, sql, err, debugMigrations)
           throw err
         }
       }
