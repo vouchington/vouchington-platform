@@ -7,6 +7,7 @@ import {
   type MigrationConnectRetry,
   type MigrationTimeouts,
 } from './migration-options.mts'
+import { rememberFailedStatement } from './failed-statement.mts'
 import type { PreparedMigration } from './migration-mode.mts'
 import { recoverOnlineIndex } from './online-index-recovery.mts'
 import { stripLeadingSqlComments } from './strip-leading-sql-comments.mts'
@@ -89,13 +90,18 @@ async function runOnlineStatements(
 ): Promise<void> {
   const statement = statements[index]
   if (!statement) return
-  if (
-    /^CREATE\s+(?:UNIQUE\s+)?INDEX\s+CONCURRENTLY\s+IF\s+NOT\s+EXISTS\b/i.test(
-      stripLeadingSqlComments(statement),
+  try {
+    if (
+      /^CREATE\s+(?:UNIQUE\s+)?INDEX\s+CONCURRENTLY\s+IF\s+NOT\s+EXISTS\b/i.test(
+        stripLeadingSqlComments(statement),
+      )
     )
-  )
-    await recoverOnlineIndex(client, migration, statement)
-  else await client.query(statement)
+      await recoverOnlineIndex(client, migration, statement)
+    else await client.query(statement)
+  } catch (error) {
+    rememberFailedStatement(error, statement)
+    throw error
+  }
   await runOnlineStatements(client, migration, statements, index + 1)
 }
 
