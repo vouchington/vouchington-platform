@@ -2,11 +2,11 @@ name: codex-review
 
 # Sets the `codex-review` commit status on each PR head SHA. It is pending until
 # chatgpt-codex-connector[bot] reports on that exact SHA, so the status can be a required check.
-# pull_request_target is base-owned orchestration: nothing is checked out, and Dependabot runs
-# get a token that can write statuses. Event payloads and comment text are only read by
-# actions/github-script, never interpolated into a shell.
+# Nothing is checked out, and no secrets are used: only GITHUB_TOKEN, whose scopes come from the
+# permissions block below (Dependabot pull_request runs honor it too). Event payloads and comment
+# text are only read by actions/github-script, never interpolated into a shell.
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
   pull_request_review:
     types: [submitted]
@@ -26,7 +26,7 @@ jobs:
   status:
     # Only PR lifecycle events and the Codex bot's own reviews and comments are relevant.
     if: >-
-      github.event_name == 'pull_request_target'
+      github.event_name == 'pull_request'
       || (github.event_name == 'pull_request_review'
         && github.event.review.user.login == 'chatgpt-codex-connector[bot]')
       || (github.event_name == 'issue_comment'
@@ -53,7 +53,7 @@ jobs:
             const NO_FINDINGS = /^(?:Codex Review: )?Didn['’]t find any major issues\b/;
             const STATE = /<!-- codex-review-state:v1 (\{.*?\}) -->/s;
 
-            if (event === 'pull_request_target') {
+            if (event === 'pull_request') {
               const pr = context.payload.pull_request;
               const sha = pr.head.sha;
               if (pr.user.login === 'dependabot[bot]') {
