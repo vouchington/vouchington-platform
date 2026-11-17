@@ -5,10 +5,11 @@ updates:
     schedule:
       interval: daily
     cooldown:
-      default-days: 2
+      default-days: 7
       exclude:
         - '@jongleberry/*'
         - '@vouchington/*'
+        - ssrf-guard
         - valkyries
     open-pull-requests-limit: 5
     versioning-strategy: increase-if-necessary
@@ -107,5 +108,5 @@ updates:
     schedule:
       interval: daily
     cooldown:
-      default-days: 2
+      default-days: 7
     open-pull-requests-limit: 5
