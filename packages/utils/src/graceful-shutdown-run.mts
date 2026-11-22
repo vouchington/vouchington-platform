@@ -71,10 +71,22 @@ export function createGracefulShutdown(options: GracefulShutdownOptions): Gracef
     options.log?.('Graceful Shutdown: all callbacks completed.')
     await runAll(drainCallbacks)
     options.log?.('Graceful Shutdown: drain phase completed.')
-    await options.closeResources?.()
-    await options.flush?.()
+    // A failing close is reported and must not skip the final flush.
+    const closed = await attempt(options.closeResources)
+    const flushed = await attempt(options.flush)
+    if (!closed || !flushed) return
     options.log?.('Graceful Shutdown: all connections closed.')
     succeeded = true
+  }
+
+  async function attempt(step: (() => Promise<unknown>) | undefined): Promise<boolean> {
+    try {
+      await step?.()
+      return true
+    } catch (error) {
+      options.onError(error instanceof Error ? error : new Error(String(error)))
+      return false
+    }
   }
 
   return {
@@ -82,6 +94,7 @@ export function createGracefulShutdown(options: GracefulShutdownOptions): Gracef
     addDrainCallback: (callback) => drainCallbacks.push(callback),
     shutdown,
     installSignalHandlers(signals = ['SIGTERM', 'SIGINT']) {
+      // `shutdown` reports its own step failures through `onError`, so it does not reject.
       for (const signal of signals) proc.on(signal, () => void shutdown(signal))
     },
   }

@@ -130,6 +130,27 @@ describe('createGracefulShutdown', () => {
     expect(drained).toHaveBeenCalledOnce()
   })
 
+  it('reports a failing closeResources or flush, still flushes, and exits with code 1', async () => {
+    const { proc, exit } = fakeProcess()
+    const onError = vi.fn<(error: Error) => void>()
+    const flush = vi.fn<() => Promise<void>>().mockRejectedValue('flush failed')
+    const failure = new Error('close failed')
+    const shutdown = createGracefulShutdown({
+      gracePeriodMs: 100,
+      onError,
+      closeResources: () => Promise.reject(failure),
+      flush,
+      process: proc,
+    })
+
+    await expect(shutdown.shutdown('SIGTERM')).resolves.toBeUndefined()
+
+    expect(flush).toHaveBeenCalledOnce()
+    expect(onError.mock.calls).toEqual([[failure], [new Error('flush failed')]])
+    await vi.advanceTimersByTimeAsync(100)
+    expect(exit).toHaveBeenCalledExactlyOnceWith(1)
+  })
+
   it('force-exits with code 1 and logs when shutdown outlives the grace period', async () => {
     const { proc, exit } = fakeProcess()
     const logError = vi.fn<(...args: unknown[]) => void>()
