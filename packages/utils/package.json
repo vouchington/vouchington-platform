@@ -300,6 +300,11 @@
       "import": "./dist/child-process.mjs",
       "default": "./dist/child-process.mjs"
     },
+    "./graceful-shutdown": {
+      "types": "./dist/graceful-shutdown.d.mts",
+      "import": "./dist/graceful-shutdown.mjs",
+      "default": "./dist/graceful-shutdown.mjs"
+    },
     "./http-signatures": {
       "types": "./dist/http-signatures.d.mts",
       "import": "./dist/http-signatures.mjs",
