@@ -15,7 +15,11 @@ Each client package is an optional peer; install only the services you use. S3 s
   `chunkSendEntries`, `chunkDeleteEntries`, `buildSendMessageBatchCommand`,
   `buildDeleteMessageBatchCommand`, `buildReceiveMessageCommand`, `classifyBatchFailures`.
 - `/firehose`: `encodeJsonRecord`, `chunkFirehoseRecords`, `buildPutRecordBatchCommand`,
-  `getFailedFirehoseRecords`.
+  `getFailedFirehoseRecords`, and `createFirehoseBatcher({ putRecordBatch, onError })`, which
+  buffers records per delivery stream (`write`, `writeJson`), flushes on 500 records, 4 MiB, or a
+  timer (`flushIntervalMs`, default 1000), and retries records Firehose rejects once
+  (`retryDelayMs`, default 100) before reporting them to `onError`. Stream names and the send
+  function are inputs; `flush()` drains everything and never rejects for send failures.
 - `/cloudwatch`: `chunkMetricData`, `buildPutMetricDataCommand`.
 - `/request-handler`: `createAwsRequestHandler` (default connection and socket deadlines,
   timeout constants, `AWS_DUALSTACK_CLIENT_CONFIG`.
