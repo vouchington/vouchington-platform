@@ -25,6 +25,7 @@ Use `encodeCursor` and `decodeCursor` for an opaque, canonical, unpadded base64u
 Decoding rejects padding and the standard base64 `+` and `/` alphabet. Decode the result with one
 of the exported guards, or use a scoped decoder to validate a UUID key and prevent reuse across
 caller-defined scopes. `buildPageInfo` returns camelCase fields; applications choose their own wire
-format.
+format. `sliceRawKeysetPage(rows, limit)` splits a limit-plus-one query result into the consumed
+`window` and `hasMore`; the cursor comes from the last row of the window.
 
 `narrowLimitBounds(bounds, runtime)` narrows static limit bounds with runtime-supplied `max` and `default` without ever widening them. `requiredQueryString` and `requiredQueryEnum` mark a query contract as `required: true`, which the contract types declare. `narrowLimitBounds` types the narrowed `max` and `default` as `number`.
