@@ -97,7 +97,17 @@ describe('errors', () => {
     expect(isAwsThrottlingError({ name: 'AccessDenied', $metadata: { httpStatusCode: 403 } })).toBe(
       false,
     )
-    expect(isAwsThrottlingError({ name: 5 })).toBe(false)
+    expect(
+      isAwsThrottlingError(
+        Object.assign(new Error('Maximum sending rate exceeded.'), {
+          $metadata: { httpStatusCode: 400 },
+        }),
+      ),
+    ).toBe(true)
+    expect(
+      isAwsThrottlingError({ name: 'MessageRejected', message: 'Email address is not verified.' }),
+    ).toBe(false)
+    expect(isAwsThrottlingError({ name: 5, message: 5 })).toBe(false)
     expect(isAwsThrottlingError(null)).toBe(false)
     expect(isAwsThrottlingError('Throttling')).toBe(false)
   })

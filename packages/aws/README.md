@@ -19,7 +19,9 @@ Each client package is an optional peer; install only the services you use. S3 s
 - `/cloudwatch`: `chunkMetricData`, `buildPutMetricDataCommand`.
 - `/request-handler`: `createAwsRequestHandler` (default connection and socket deadlines,
   timeout constants, `AWS_DUALSTACK_CLIENT_CONFIG`.
-- `/errors`: `isAwsThrottlingError` and `getAwsErrorStatus`. Pass `getAwsErrorStatus` as
+- `/errors`: `isAwsThrottlingError` (a type guard to `AwsErrorShape`) and `getAwsErrorStatus`.
+  `isAwsThrottlingError` also matches SES's HTTP 400 "Maximum sending rate exceeded" message, so
+  callers that treat other 4xx errors as permanent still retry it. Pass `getAwsErrorStatus` as
   `getStatus` to `@vouchington/queue-errors` helpers; this package does not duplicate them.
 
 ## Example
