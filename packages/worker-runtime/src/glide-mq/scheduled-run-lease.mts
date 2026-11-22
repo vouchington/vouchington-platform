@@ -40,11 +40,16 @@ export type ScheduledRunLeaseOptions = Pick<
   'lockDuration' | 'maxStalledCount' | 'prefix'
 >
 
-/** A null result means this scheduler run was skipped because another run is live. */
+/**
+ * A null result means this scheduler run was skipped because another run is live. `batch` is the
+ * whole batch the job runs in: GlideMQ bounds a batch by its longest job timeout, so the lease
+ * must outlive that window rather than the job's own timeout.
+ */
 export type ScheduledRunLease = (
   queue: string,
   job: Job,
   options: ScheduledRunLeaseOptions,
+  batch?: readonly Job[],
 ) => Promise<(() => Promise<void>) | null>
 
 /**
@@ -68,12 +73,13 @@ export function createScheduledRunLease(config: ScheduledRunLeaseConfig): Schedu
     }
   }
 
-  return async (queue, job, options) => {
+  return async (queue, job, options, batch) => {
     if (!job.schedulerName) return async () => {}
     const baseKey = `${options.prefix ?? config.prefix ?? 'glide'}:{${queue}}`
     const scheduler = job.schedulerName
     const key = `${baseKey}:run:${scheduler}`
-    const previousKey = `${key}:previous`
+    // A separate namespace: `:run:<name>:previous` would collide with a scheduler named `<name>:previous`.
+    const previousKey = `${baseKey}:run-previous:${scheduler}`
     const release = async () => {
       await client.runScript(RELEASE_SCHEDULED_RUN_LUA, [key, previousKey], [job.id])
     }
@@ -86,12 +92,15 @@ export function createScheduledRunLease(config: ScheduledRunLeaseConfig): Schedu
       report(err, 'scheduled_interval_reporting_failed')
     }
     const interval = scheduleInterval(entry)
-    const lockDuration =
-      job.opts.lockDuration ?? options.lockDuration ?? config.defaultLockDurationMs ?? 30_000
     const maxStalled =
       options.maxStalledCount ?? config.defaultMaxStalledCount ?? DEFAULT_MAX_STALLED_COUNT
-    // A timeout of 0 means no timeout in GlideMQ, so it falls back to the lock-based bound.
-    const runtime = job.opts.timeout || lockDuration * (maxStalled + 1)
+    const runtimeOf = (member: Job) => {
+      const lockDuration =
+        member.opts.lockDuration ?? options.lockDuration ?? config.defaultLockDurationMs ?? 30_000
+      // A timeout of 0 means no timeout in GlideMQ, so it falls back to the lock-based bound.
+      return member.opts.timeout || lockDuration * (maxStalled + 1)
+    }
+    const runtime = Math.max(runtimeOf(job), ...(batch ?? []).map(runtimeOf))
     const ttl = Math.max(1, Math.min(runtime, interval ?? runtime))
 
     const completeAdmission = async () => {

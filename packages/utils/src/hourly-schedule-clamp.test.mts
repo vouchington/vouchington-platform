@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { alignedScheduleText, clampScheduledJobRepeatToHourlyFloor } from './hourly-clamp.mts'
+import {
+  alignedScheduleText,
+  clampScheduledJobRepeatToHourlyFloor,
+} from './hourly-schedule-clamp.mts'
 
 const HOUR = 60 * 60_000
 const HOURLY_PATTERN = '0 * * * *'

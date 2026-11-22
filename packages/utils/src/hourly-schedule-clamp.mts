@@ -1,4 +1,5 @@
-import type { ScheduledJobRepeat } from './types.mts'
+/** A cron pattern or a fixed millisecond interval. */
+export type ScheduledJobRepeat = { pattern: string } | { every: number }
 
 /**
  * A database or service that auto-pauses needs a contiguous idle window, and every wake costs a

@@ -109,7 +109,7 @@ export function createGuardedProcessors(config: GuardedProcessorsConfig): Guarde
           for (const job of jobs) {
             try {
               // oxlint-disable-next-line no-await-in-loop -- preserve batch order when two jobs share a scheduler lease
-              const release = await config.lease(queue, job, options)
+              const release = await config.lease(queue, job, options, jobs)
               if (release) {
                 releases.push(release)
                 runnable.push(job)

@@ -110,7 +110,7 @@ stored `stalledCount` exceeds the budget (default `DEFAULT_MAX_STALLED_COUNT`, 2
 handler runs, so a worker with a high native stall limit does not give ordinary handlers extra
 runs. `exempt(job)` names the jobs that keep the native limit.
 
-`acquireTerminalJobRemoval(client, namespace, jobId)` WATCHes one job hash on a dedicated
+`acquireTerminalJobRemoval(client, namespace, jobId)` from `@vouchington/utils/terminal-job-removal` WATCHes one job hash on a dedicated
 connection and reports `missing`, `live`, or `terminal`; a terminal job exposes `readData()` and
 `remove()`, which runs the native `glidemq_removeJob` transaction through the injected
 `client.removeJob(keys, args)` and resolves false when a concurrent retry changed the hash.
@@ -157,7 +157,7 @@ and `data` or `dataFactory`), an optional `registration: 'sequential'`, a nonemp
   `transformRepeat` replaces a cadence clamp; both are application policy.
 - `removeScheduledJobScheduler(queue, id)` reports the scheduler names before and after.
 - `toSchedulerTemplateOptions(opts)` drops `delay`, `deduplication`, `parent`, and `jobId`.
-- `clampScheduledJobRepeatToHourlyFloor(repeat)` is a ready-made `transformRepeat` for low-traffic
+- `clampScheduledJobRepeatToHourlyFloor(repeat)` from `@vouchington/utils/hourly-schedule-clamp` is a ready-made `transformRepeat` for low-traffic
   environments that must wake at most once an hour: `every` rounds up to a top-of-hour cron
   (`0 * * * *`, an hour-step cron that divides 24, then weekly, then monthly), and a cron keeps
   every field except its minute, which becomes `0`. It returns `{ repeat, clamped }` and rejects a

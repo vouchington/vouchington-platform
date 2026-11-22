@@ -62,7 +62,7 @@ describe.skipIf(!url)('scheduled run Lua on a real Valkey', () => {
     })
     const first = await lease(name, tick('a'), { lockDuration: 20_000 })
     expect(await client.get(`${base}:run:repeat`)).toBe('a')
-    expect(await client.get(`${base}:run:repeat:previous`)).toBe('a')
+    expect(await client.get(`${base}:run-previous:repeat`)).toBe('a')
 
     expect(await lease(name, tick('b'), { lockDuration: 20_000 })).toBeNull()
     expect(await lease(name, tick('b'), { lockDuration: 20_000 })).toBeNull()
@@ -74,7 +74,7 @@ describe.skipIf(!url)('scheduled run Lua on a real Valkey', () => {
 
     await first?.()
     expect(await client.get(`${base}:run:repeat`)).toBeNull()
-    expect(await client.get(`${base}:run:repeat:previous`)).toBeNull()
+    expect(await client.get(`${base}:run-previous:repeat`)).toBeNull()
     // A tick already recorded as skipped never runs once the holder is gone.
     expect(await lease(name, tick('b'), { lockDuration: 20_000 })).toBeNull()
   })

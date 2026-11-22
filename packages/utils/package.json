@@ -65,10 +65,20 @@
       "import": "./dist/web-push-binding.mjs",
       "default": "./dist/web-push-binding.mjs"
     },
+    "./hourly-schedule-clamp": {
+      "types": "./dist/hourly-schedule-clamp.d.mts",
+      "import": "./dist/hourly-schedule-clamp.mjs",
+      "default": "./dist/hourly-schedule-clamp.mjs"
+    },
     "./script-registry": {
       "types": "./dist/script-registry.d.mts",
       "import": "./dist/script-registry.mjs",
       "default": "./dist/script-registry.mjs"
+    },
+    "./terminal-job-removal": {
+      "types": "./dist/terminal-job-removal.d.mts",
+      "import": "./dist/terminal-job-removal.mjs",
+      "default": "./dist/terminal-job-removal.mjs"
     },
     "./worker-concurrency": {
       "types": "./dist/worker-concurrency.d.mts",

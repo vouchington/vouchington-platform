@@ -13,7 +13,7 @@ function setup(decision: unknown, overrides: Partial<ScheduledRunLeaseClient> = 
   const base = {
     hget: vi.fn(async () => null),
     get: vi.fn(async () => null),
-    set: vi.fn(async () => 'OK'),
+    set: vi.fn(async (_key: string, _value: string, _expiryMs: number) => 'OK'),
     hincrBy: vi.fn(async () => 1),
     runScript: vi.fn(async (lua: string, _keys: string[], _args: string[]) =>
       lua === ADMIT_SCHEDULED_RUN_LUA ? decision : 1,
@@ -44,6 +44,23 @@ describe('createScheduledRunLease', () => {
     expect(client.runScript).not.toHaveBeenCalled()
   })
 
+  it('sizes the lease from the longest timeout in the batch', async () => {
+    const { client, lease } = setup(1)
+    const short = job({ opts: { timeout: 1000 } })
+    const long = job({ id: 'j2', opts: { timeout: 9000 } })
+    await lease('q', short, {}, [short, long])
+    expect(client.runScript.mock.calls[0]![2][4]).toBe('9000')
+  })
+
+  it('keeps the previous-holder marker disjoint from another scheduler lease key', async () => {
+    const { client, lease } = setup(1)
+    await lease('q', job({ schedulerName: 'foo' }), {})
+    const marker = client.set.mock.calls[0]![0]
+    await lease('q', job({ schedulerName: 'foo:previous' }), {})
+    const leaseKey = client.runScript.mock.calls.at(-1)![1][0]
+    expect(marker).not.toBe(leaseKey)
+  })
+
   it('acquires the lease, records the holder, and releases through Lua', async () => {
     const { client, lease } = setup(1)
     const release = await lease('q', job(), { lockDuration: 1000, maxStalledCount: 1 })
@@ -55,11 +72,11 @@ describe('createScheduledRunLease', () => {
       '2000',
       'skipped_overlap',
     ])
-    expect(client.set).toHaveBeenCalledWith('glide:{q}:run:nightly:previous', 'j1', 4000)
+    expect(client.set).toHaveBeenCalledWith('glide:{q}:run-previous:nightly', 'j1', 4000)
     await release?.()
     expect(client.runScript).toHaveBeenLastCalledWith(
       RELEASE_SCHEDULED_RUN_LUA,
-      ['glide:{q}:run:nightly', 'glide:{q}:run:nightly:previous'],
+      ['glide:{q}:run:nightly', 'glide:{q}:run-previous:nightly'],
       ['j1'],
     )
   })
