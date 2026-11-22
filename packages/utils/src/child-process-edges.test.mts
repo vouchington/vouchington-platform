@@ -1,3 +1,4 @@
+import { createReadStream } from 'node:fs'
 import { EventEmitter, PassThrough } from 'node:stream'
 import type { ChildProcess } from 'node:child_process'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -84,5 +85,47 @@ describe('runCommand edges', () => {
     vi.stubEnv('TMPDIR', undefined)
     const result = await runCommand({ command: process.execPath, timeoutMs: 2_000, stdin: '' })
     expect(result.stderr).toHaveLength(0)
+  })
+
+  it('forwards PATH and TMPDIR when the parent has them', async () => {
+    vi.stubEnv('PATH', process.env.PATH ?? '/usr/bin')
+    vi.stubEnv('TMPDIR', '/tmp')
+    const stdout = new PassThrough()
+    const chunks: Buffer[] = []
+    stdout.on('data', (chunk: Buffer) => chunks.push(chunk))
+    await runCommand({
+      command: process.execPath,
+      args: ['-e', 'process.stdout.write(String(process.env.TMPDIR))'],
+      stdout,
+      timeoutMs: 2_000,
+    })
+    expect(Buffer.concat(chunks).toString('utf8')).toBe('/tmp')
+  })
+
+  it('destroys the stdout destination and swallows stdin errors when spawning fails', async () => {
+    const stdout = new PassThrough()
+    await expect(
+      runCommand({
+        command: '/nonexistent/vouchington-binary',
+        stdin: createReadStream('/nonexistent/vouchington-input'),
+        stdout,
+        timeoutMs: 1_000,
+      }),
+    ).rejects.toThrow('ENOENT')
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(stdout.destroyed).toBe(true)
+  })
+
+  it('times out even when a grandchild keeps the inherited pipes open', async () => {
+    const grandchild = 'setTimeout(() => {}, 3000)'
+    const script = `require('node:child_process').spawn(process.execPath, ['-e', ${JSON.stringify(grandchild)}], { stdio: 'inherit' })`
+    const started = Date.now()
+    const err = await runCommand({
+      command: process.execPath,
+      args: ['-e', script],
+      timeoutMs: 300,
+    }).catch((error: unknown) => error)
+    expect(err).toMatchObject({ reason: 'timeout' })
+    expect(Date.now() - started).toBeLessThan(2_500)
   })
 })

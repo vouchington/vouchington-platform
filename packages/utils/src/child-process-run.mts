@@ -5,6 +5,7 @@ import { CommandFailedError } from './child-process-error.mts'
 import {
   classifyFailure,
   collectCappedStderr,
+  destroyChildPipes,
   isSharedOutput,
   killChild,
   pipeStdin,
@@ -69,26 +70,34 @@ export async function runCommand(options: RunCommandOptions): Promise<{ stderr: 
     killChild(child)
   })
 
-  const onAbort = () => {
-    aborted = true
-    killChild(child)
-    outputCancellation.abort()
+  const destroyStdout = () => {
     if (options.stdout && !isSharedOutput(options.stdout) && !options.stdout.writableFinished)
       options.stdout.destroy()
+  }
+  // Destroying the child's pipes lets `close` fire even when a grandchild holds them open.
+  const cancel = () => {
+    killChild(child)
+    destroyChildPipes(child)
+    outputCancellation.abort()
+    destroyStdout()
+  }
+  const onAbort = () => {
+    aborted = true
+    cancel()
   }
   options.signal?.addEventListener('abort', onAbort, { once: true })
   const timer = setTimeout(() => {
     timedOut = true
-    killChild(child)
-    outputCancellation.abort()
-    if (options.stdout && !isSharedOutput(options.stdout) && !options.stdout.writableFinished)
-      options.stdout.destroy()
+    cancel()
   }, options.timeoutMs)
   timer.unref()
 
   try {
     const outcome = await waitForChild(child)
-    if (outcome.kind === 'error') throw outcome.error
+    if (outcome.kind === 'error') {
+      destroyStdout()
+      throw outcome.error
+    }
     // The child can close before an async stdout destination finishes its writes.
     await settleStdout(options.stdout, outputCancellation.signal, (err) => {
       if (!stdoutError) stdoutError = err

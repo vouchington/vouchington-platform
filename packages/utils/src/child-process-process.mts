@@ -2,6 +2,14 @@ import type { ChildProcess } from 'node:child_process'
 import type { Readable, Writable } from 'node:stream'
 import { CommandFailedError, type CommandFailureReason } from './child-process-error.mts'
 
+const ignoreLateError = () => {}
+
+export function destroyChildPipes(child: ChildProcess): void {
+  child.stdin?.destroy()
+  child.stdout?.destroy()
+  child.stderr?.destroy()
+}
+
 export function killChild(child: ChildProcess): void {
   if (child.exitCode !== null || child.signalCode !== null) return
   child.kill('SIGKILL')
@@ -43,6 +51,8 @@ export function pipeStdin(
     if (released) return
     released = true
     stdin.removeListener('error', onSourceError)
+    // Destroying can still fail asynchronously; an unhandled 'error' would crash the process.
+    stdin.on('error', ignoreLateError)
     if (!stdin.readableEnded) stdin.destroy()
   }
   child.once('close', releaseStdin)

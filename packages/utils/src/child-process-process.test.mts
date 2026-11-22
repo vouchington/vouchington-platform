@@ -53,18 +53,18 @@ describe('runCommand process edges', () => {
     child.emit('error', new Error('spawn failed'))
     child.emit('close', null, null)
     expect(source.destroyed).toBe(true)
-    expect(source.listenerCount('error')).toBe(0)
+    expect(source.listenerCount('error')).toBe(1)
     expect(report).not.toHaveBeenCalled()
   })
 
-  it('destroys an unfinished stdin and drops its error listener when the child closes', () => {
+  it('destroys an unfinished stdin and swallows late errors when the child closes', () => {
     const child = fakeChild()
     const report = vi.fn<(err: Error) => void>()
     const source = new PassThrough()
     pipeStdin(child, source, report)
     child.emit('close', 0, null)
     expect(source.destroyed).toBe(true)
-    expect(source.listenerCount('error')).toBe(0)
+    expect(source.listenerCount('error')).toBe(1)
     expect(report).not.toHaveBeenCalled()
   })
 })
