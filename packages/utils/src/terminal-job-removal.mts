@@ -20,6 +20,7 @@ export async function acquireTerminalJobRemoval(
   const jobKey = `${namespace}:job:${jobId}`
   await client.watch([jobKey])
   let watched = true
+  let used = false
   const release = async () => {
     if (!watched) return
     await client.unwatch()
@@ -44,20 +45,28 @@ export async function acquireTerminalJobRemoval(
     readData: () => client.hget(jobKey, 'data'),
     /** One shot: the WATCH check covers a single call, so a second call throws. */
     async remove(): Promise<boolean> {
-      if (!watched) throw new Error('Terminal job removal handle was already used')
+      if (used) throw new Error('Terminal job removal handle was already used')
+      used = true
+      let result: readonly unknown[] | null
+      try {
+        result = await client.removeJob(
+          [
+            jobKey,
+            `${namespace}:stream`,
+            `${namespace}:scheduled`,
+            `${namespace}:completed`,
+            `${namespace}:failed`,
+            `${namespace}:events`,
+            `${namespace}:log:${jobId}`,
+          ],
+          [jobId],
+        )
+      } catch (error) {
+        // The transaction may never have run, so the WATCH can still be held on this connection.
+        await release().catch(() => {})
+        throw error
+      }
       watched = false
-      const result = await client.removeJob(
-        [
-          jobKey,
-          `${namespace}:stream`,
-          `${namespace}:scheduled`,
-          `${namespace}:completed`,
-          `${namespace}:failed`,
-          `${namespace}:events`,
-          `${namespace}:log:${jobId}`,
-        ],
-        [jobId],
-      )
       // A concurrent retry changes the watched hash, so null means no removal on this pass.
       // Native removal leaves cross-queue parent notifications in xq-pending for its scheduler.
       return result !== null && result[0] !== 0

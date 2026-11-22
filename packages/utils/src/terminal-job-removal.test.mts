@@ -68,6 +68,21 @@ describe('acquireTerminalJobRemoval', () => {
     expect(client.removeJob).toHaveBeenCalledOnce()
   })
 
+  it('drops the WATCH when native removal throws before EXEC', async () => {
+    const failure = new Error('removeJob failed')
+    const client = fake('failed')
+    client.removeJob.mockRejectedValueOnce(failure)
+    const removal = await acquireTerminalJobRemoval(client, 'ns:{q}', 'j1')
+    if (removal.state !== 'terminal') throw new Error('Expected a terminal job')
+    await expect(removal.remove()).rejects.toBe(failure)
+    expect(client.unwatch).toHaveBeenCalledOnce()
+    client.removeJob.mockRejectedValueOnce(failure)
+    client.unwatch.mockRejectedValueOnce(new Error('unwatch failed'))
+    const again = await acquireTerminalJobRemoval(client, 'ns:{q}', 'j1')
+    if (again.state !== 'terminal') throw new Error('Expected a terminal job')
+    await expect(again.remove()).rejects.toBe(failure)
+  })
+
   it('drops the WATCH and rethrows when reading the state fails', async () => {
     const failure = new Error('read failed')
     const client = fake('failed')
