@@ -90,7 +90,8 @@ export function createScheduledRunLease(config: ScheduledRunLeaseConfig): Schedu
       job.opts.lockDuration ?? options.lockDuration ?? config.defaultLockDurationMs ?? 30_000
     const maxStalled =
       options.maxStalledCount ?? config.defaultMaxStalledCount ?? DEFAULT_MAX_STALLED_COUNT
-    const runtime = job.opts.timeout ?? lockDuration * (maxStalled + 1)
+    // A timeout of 0 means no timeout in GlideMQ, so it falls back to the lock-based bound.
+    const runtime = job.opts.timeout || lockDuration * (maxStalled + 1)
     const ttl = Math.max(1, Math.min(runtime, interval ?? runtime))
 
     const completeAdmission = async () => {

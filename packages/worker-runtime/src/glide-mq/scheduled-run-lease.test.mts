@@ -107,8 +107,15 @@ describe('createScheduledRunLease', () => {
     const { client, lease } = setup(1)
     await lease('q', job({ opts: { lockDuration: 100 } }), { lockDuration: 1, maxStalledCount: 0 })
     expect(client.runScript.mock.calls[0]![2]![4]).toBe('100')
-    await lease('q', job({ opts: { timeout: 0 } }), {})
-    expect(client.runScript.mock.calls[1]![2]![4]).toBe('1')
+    const tiny = setup(1, { hget: vi.fn(async () => JSON.stringify({ every: 0.5 })) })
+    await tiny.lease('q', job(), {})
+    expect(tiny.client.runScript.mock.calls[0]![2]![4]).toBe('1')
+  })
+
+  it('treats a zero job timeout as no timeout', async () => {
+    const { client, lease } = setup(1)
+    await lease('q', job({ opts: { timeout: 0 } }), { lockDuration: 1000, maxStalledCount: 1 })
+    expect(client.runScript.mock.calls[0]![2]![4]).toBe('2000')
   })
 
   it('warns when a different job held the previous lease and accepts the same job', async () => {

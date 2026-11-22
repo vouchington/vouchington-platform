@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { getWorkerConcurrency, parseEnvPositiveInt } from './concurrency.mts'
+import { getWorkerConcurrency, parseEnvPositiveInt } from './worker-concurrency.mts'
 
 describe('getWorkerConcurrency', () => {
   it('returns the baseline when no env vars are set', () => {

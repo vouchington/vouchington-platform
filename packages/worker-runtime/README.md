@@ -98,7 +98,10 @@ when `VALKEY_URL=host:port` is set and skips otherwise, because CI starts no Val
 
 `createGuardedProcessors({ lease, onError, throwOnSelfAdd })` returns `wrapSingleProcessor` and
 `wrapBatchProcessor` (argument order matches the runtime's `wrapProcessor` hooks; they release the
-lease after success or failure and resolve `undefined` for a skipped tick), plus
+lease after success or failure and resolve `undefined` for a skipped tick). In a batch, a deferred
+retained job and a partial `BatchError` keep original positions: the deferred job fails with its
+`DelayedError` (GlideMQ's batch path ignores `moveToDelayed`, so the worker retries it through its
+normal attempts and backoff) and the rest of the batch still runs, plus
 `isActiveProcessorJob(queue, jobId)` and `rejectSelfAdd(queue, jobName, opts)`, which detect a
 processor enqueueing the job it is running. Call `rejectSelfAdd` from `guardAdd`.
 
@@ -162,12 +165,9 @@ and `data` or `dataFactory`), an optional `registration: 'sequential'`, a nonemp
 
 ## Worker concurrency
 
-`getWorkerConcurrency(name, { baseline, max, ignoreScale, env, envPrefix, scaleEnv, maxEnv })`
-resolves a worker's concurrency: a `<prefix><NAME>` override, else `baseline` times the scale
-variable, clamped to `[1, max]` (a max variable overrides `max`; default 25). The prefix defaults
-to `WORKER_CONCURRENCY_` (scale `_SCALE`, max `_MAX`) and every variable name can be replaced;
-names normalize to `SCREAMING_SNAKE_CASE`. `parseEnvPositiveInt(name, default, env)` reads one
-positive integer and throws on a malformed value.
+Resolving a worker's concurrency from environment variables is dependency-free and lives in
+`@vouchington/utils/worker-concurrency` (`getWorkerConcurrency`, `parseEnvPositiveInt`); pass its
+result as the worker's `concurrency` option.
 
 ## Lifecycle, serve, and queue classes
 

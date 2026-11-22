@@ -1,5 +1,13 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
-import type { BatchProcessor, Job, JobOptions, Processor, WorkerOptions } from 'glide-mq'
+import {
+  BatchError,
+  DelayedError,
+  type BatchProcessor,
+  type Job,
+  type JobOptions,
+  type Processor,
+  type WorkerOptions,
+} from 'glide-mq'
 import type { ScheduledRunLease } from './scheduled-run-lease.mts'
 
 type ActiveJob = { queue: string; jobId: string; dedupId?: string | undefined }
@@ -93,31 +101,54 @@ export function createGuardedProcessors(config: GuardedProcessorsConfig): Guarde
       return async (jobs) => {
         const releases: Release[] = []
         const runnable: Job<any, any>[] = []
+        const deferred = new Map<Job<any, any>, DelayedError>()
+        let result: unknown[]
+        let partial = false
         try {
           for (const job of jobs) {
-            // oxlint-disable-next-line no-await-in-loop -- preserve batch order when two jobs share a scheduler lease
-            const release = await config.lease(queue, job, options)
-            if (release) {
-              releases.push(release)
-              runnable.push(job)
+            try {
+              // oxlint-disable-next-line no-await-in-loop -- preserve batch order when two jobs share a scheduler lease
+              const release = await config.lease(queue, job, options)
+              if (release) {
+                releases.push(release)
+                runnable.push(job)
+              }
+            } catch (err) {
+              // GlideMQ's batch path ignores moveToDelayed, so a deferral must not abort the batch.
+              if (!(err instanceof DelayedError)) throw err
+              deferred.set(job, err)
             }
           }
-          const values = runnable.length
-            ? await activeJobs.run(
+          let values: unknown[] = []
+          if (runnable.length) {
+            try {
+              values = await activeJobs.run(
                 runnable.map((job) => activeJob(queue, job)),
                 () => processor(runnable),
               )
-            : []
-          const result = jobs.map((job) => {
+            } catch (err) {
+              if (!(err instanceof BatchError)) throw err
+              partial = true
+              values = err.results
+            }
+          }
+          // Results are positional against the original batch, not the runnable subset.
+          result = jobs.map((job) => {
+            const deferral = deferred.get(job)
+            if (deferral) return deferral
             const index = runnable.indexOf(job)
-            return index < 0 ? undefined : values[index]
+            if (index < 0) return undefined
+            return partial && index >= values.length
+              ? new Error('No result in BatchError')
+              : values[index]
           })
+        } finally {
           await releaseAll(releases)
-          return result as never
-        } catch (err) {
-          await releaseAll(releases)
-          throw err
         }
+        // A deferred job reports its DelayedError as a per-job failure, so the worker retries it
+        // through its normal attempts and backoff instead of resolving it as a success.
+        if (partial || deferred.size > 0) throw new BatchError(result)
+        return result as never
       }
     },
     isActiveProcessorJob(queue, jobId) {

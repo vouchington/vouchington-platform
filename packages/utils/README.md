@@ -36,6 +36,11 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
   request/acknowledge round trip with an injected message type and acceptance check, and a named
   Web Lock wrapper. Request actions, expected state transitions, and the bind/clear/reconcile
   sequence stay in the application.
+- `worker-concurrency`: `getWorkerConcurrency(name, { baseline, max, ignoreScale, env, envPrefix,
+  scaleEnv, maxEnv })` resolves a worker's concurrency from a `<prefix><NAME>` override, else
+  `baseline` times a scale variable, clamped to `[1, max]` (default max 25). Variable names default
+  to `WORKER_CONCURRENCY_<NAME>`, `_SCALE`, and `_MAX` and are all replaceable. `parseEnvPositiveInt(name,
+  default, env)` reads one positive integer and throws on a malformed value.
 - `service-worker-activation`: `waitForActiveServiceWorker(registration, options)` resolves when
   the registration has an active worker. An installing or waiting worker is preferred over
   `serviceWorker.ready`. `timeoutMs` bounds the wait; omit it to wait without a deadline. The

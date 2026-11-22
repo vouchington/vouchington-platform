@@ -65,6 +65,11 @@
       "import": "./dist/web-push-binding.mjs",
       "default": "./dist/web-push-binding.mjs"
     },
+    "./worker-concurrency": {
+      "types": "./dist/worker-concurrency.d.mts",
+      "import": "./dist/worker-concurrency.mjs",
+      "default": "./dist/worker-concurrency.mjs"
+    },
     "./service-worker-activation": {
       "types": "./dist/service-worker-activation.d.mts",
       "import": "./dist/service-worker-activation.mjs",

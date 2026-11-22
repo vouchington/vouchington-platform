@@ -25,7 +25,14 @@ export async function acquireTerminalJobRemoval(
     await client.unwatch()
     watched = false
   }
-  const state = await client.hget(jobKey, 'state')
+  let state: unknown
+  try {
+    state = await client.hget(jobKey, 'state')
+  } catch (error) {
+    // The WATCH is held on this connection; drop it before the failure escapes.
+    await release().catch(() => {})
+    throw error
+  }
   if (state === null) return { state: 'missing' as const, release }
   if (state !== 'completed' && state !== 'failed') return { state: 'live' as const, release }
 

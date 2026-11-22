@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { Job } from 'glide-mq'
+import { BatchError, DelayedError, type Job } from 'glide-mq'
 import { createGuardedProcessors, type GuardedProcessorsConfig } from './guarded-processors.mts'
 
 function job(id: string, deduplicationId?: string): never {
@@ -91,6 +91,48 @@ describe('wrapBatchProcessor', () => {
     expect(processor.mock.calls[0]![0].map((j) => j.id)).toEqual(['a', 'c'])
     expect(lease).toHaveBeenCalledTimes(3)
     expect(release).toHaveBeenCalledTimes(2)
+  })
+
+  it('remaps a partial BatchError to original positions, leaving skipped ticks undefined', async () => {
+    const { guarded, release } = setup()
+    const failure = new Error('second failed')
+    const run = guarded.wrapBatchProcessor(
+      async () => Promise.reject(new BatchError(['ok-a', failure])),
+      'q',
+      {},
+    )
+    const error = await run([job('a'), job('skip-b'), job('c')]).catch((e: unknown) => e)
+    expect(error).toBeInstanceOf(BatchError)
+    expect((error as BatchError).results).toEqual(['ok-a', undefined, failure])
+    expect(release).toHaveBeenCalledTimes(2)
+  })
+
+  it('reports a missing partial result as a failure', async () => {
+    const { guarded } = setup()
+    const run = guarded.wrapBatchProcessor(async () => Promise.reject(new BatchError([])), 'q', {})
+    const error = (await run([job('a')]).catch((e: unknown) => e)) as BatchError
+    expect(error.results).toEqual([new Error('No result in BatchError')])
+  })
+
+  it('fails a deferred job with its DelayedError without aborting the rest of the batch', async () => {
+    const { guarded, lease, release } = setup()
+    const delayed = new DelayedError(123)
+    lease.mockImplementation(async (_queue: string, candidate: Job) => {
+      if (candidate.id === 'late') throw delayed
+      return release
+    })
+    const processor = vi.fn(async (jobs: Job[]) => jobs.map((j) => `done:${j.id}`))
+    const error = (await guarded
+      .wrapBatchProcessor(
+        processor,
+        'q',
+        {},
+      )([job('a'), job('late')])
+      .catch((e: unknown) => e)) as BatchError
+    expect(error).toBeInstanceOf(BatchError)
+    expect(error.results).toEqual(['done:a', delayed])
+    expect(processor.mock.calls[0]![0].map((j) => j.id)).toEqual(['a'])
+    expect(release).toHaveBeenCalledOnce()
   })
 
   it('does not call the processor when every job is skipped', async () => {
