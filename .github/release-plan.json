@@ -1,13 +1,47 @@
 {
-  "changedManifests": ["packages/explain-plan/package.json"],
+  "changedManifests": [
+    "packages/edge/package.json",
+    "packages/oauth-server/package.json",
+    "packages/sentry/package.json",
+    "packages/typed-entities/package.json",
+    "packages/utils/package.json"
+  ],
   "releases": [
     {
-      "bump": "patch",
-      "directory": "explain-plan",
-      "fromVersion": "0.0.0",
-      "name": "@vouchington/explain-plan",
-      "toVersion": "0.0.1"
+      "bump": "minor",
+      "directory": "utils",
+      "fromVersion": "0.12.1",
+      "name": "@vouchington/utils",
+      "toVersion": "0.13.0"
+    },
+    {
+      "bump": "minor",
+      "directory": "edge",
+      "fromVersion": "0.8.1",
+      "name": "@vouchington/edge",
+      "toVersion": "0.9.0"
+    },
+    {
+      "bump": "minor",
+      "directory": "oauth-server",
+      "fromVersion": "0.8.0",
+      "name": "@vouchington/oauth-server",
+      "toVersion": "0.9.0"
+    },
+    {
+      "bump": "minor",
+      "directory": "sentry",
+      "fromVersion": "0.6.0",
+      "name": "@vouchington/sentry",
+      "toVersion": "0.7.0"
+    },
+    {
+      "bump": "minor",
+      "directory": "typed-entities",
+      "fromVersion": "0.8.0",
+      "name": "@vouchington/typed-entities",
+      "toVersion": "0.9.0"
     }
   ],
-  "selectedPackage": "@vouchington/explain-plan"
+  "selectedPackage": "@vouchington/utils"
 }

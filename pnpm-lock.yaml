@@ -147,7 +147,7 @@ importers:
   packages/edge:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.12.0
+        specifier: ^0.13.0
         version: link:../utils
 
   packages/email:
@@ -318,7 +318,7 @@ importers:
   packages/oauth-server:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.12.0
+        specifier: ^0.13.0
         version: link:../utils
 
   packages/pagination:
@@ -434,7 +434,7 @@ importers:
   packages/sentry:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.12.0
+        specifier: ^0.13.0
         version: link:../utils
       http-errors:
         specifier: ^2.0.1
@@ -473,7 +473,7 @@ importers:
   packages/typed-entities:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.12.0
+        specifier: ^0.13.0
         version: link:../utils
 
   packages/utils: {}
