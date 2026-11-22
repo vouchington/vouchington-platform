@@ -77,6 +77,46 @@ fences or recovery. `onEnqueueAdmission(listener)` observes each admission with 
 promise; a throwing listener is recorded in `observerErrors` and reported, and a throwing reporter
 in `reportingErrors`, neither affecting the enqueue.
 
+### Scheduler-overlap lease, guarded processors, and stall budget
+
+`createScheduledRunLease({ client, prefix, onError, logger, ... })` returns
+`async (queue, job, workerOptions, batch?) => release | null`. Inside a batch wrapper call
+`await lease(queue, job, workerOptions, jobs)`: GlideMQ bounds a batch by its longest timeout, so
+the lease uses the longest runtime in `jobs`. A job with a `schedulerName` takes a per-scheduler
+lease sized from `job.opts.timeout` (or `lockDuration * (maxStalledCount + 1)`) and capped by the
+scheduler's interval. A tick that finds a live holder is skipped and counted, and an already
+admitted retained job is delayed instead. The decision is one atomic Lua call, so a lost reply
+never double-counts or runs a tick known to overlap. Field and metric names
+(`admittedField`, `skippedField`, `skippedMetric`, `deferredMetric`) and the log sink are inputs.
+The `client` is a small port (`hget`, `get`, `set(key, value, expiryMs)`, `hincrBy`, and
+`runScript(lua, keys, args)`), so the package carries no native dependency.
+
+The Lua ships as the strings `ADMIT_SCHEDULED_RUN_LUA` and `RELEASE_SCHEDULED_RUN_LUA`. The
+application turns each into a native script once, for example with
+`createScriptRegistry((code) => new Script(code))` from `@vouchington/utils/script-registry` (scripts are released on process `exit`), and
+`runScript` invokes that script with the given keys and args. The unit tests drive the lease
+through a fake client; `scheduled-run-scripts.valkey.test.mts` runs the real Lua against Valkey
+when `VALKEY_URL=host:port` is set and skips otherwise, because CI starts no Valkey service.
+
+`createGuardedProcessors({ lease, onError, throwOnSelfAdd })` returns `wrapSingleProcessor` and
+`wrapBatchProcessor` (argument order matches the runtime's `wrapProcessor` hooks; they release the
+lease after success or failure and resolve `undefined` for a skipped tick). In a batch, a deferred
+retained job and a partial `BatchError` keep original positions: the deferred job fails with its
+`DelayedError` (GlideMQ's batch path ignores `moveToDelayed`, so the worker retries it through its
+normal attempts and backoff) and the rest of the batch still runs, plus
+`isActiveProcessorJob(queue, jobId)` and `rejectSelfAdd(queue, jobName, opts)`, which detect a
+processor enqueueing the job it is running. Call `rejectSelfAdd` from `guardAdd`.
+
+`withStallBudget(queue, processor, { hget, prefix, maxStalledCount, exempt })` fails a job whose
+stored `stalledCount` exceeds the budget (default `DEFAULT_MAX_STALLED_COUNT`, 2) before its
+handler runs, so a worker with a high native stall limit does not give ordinary handlers extra
+runs. `exempt(job)` names the jobs that keep the native limit.
+
+`acquireTerminalJobRemoval(client, namespace, jobId)` from `@vouchington/utils/terminal-job-removal` WATCHes one job hash on a dedicated
+connection and reports `missing`, `live`, or `terminal`; a terminal job exposes `readData()` and
+`remove()`, which runs the native `glidemq_removeJob` transaction through the injected
+`client.removeJob(keys, args)` and resolves false when a concurrent retry changed the hash.
+
 `getQueueStats(queue, name)`, `getAllQueueStats(queues)` (sorted by name), and
 `aggregateQueueStats(stats)` read job counts and paused state from plain GlideMQ queues.
 
@@ -119,6 +159,17 @@ and `data` or `dataFactory`), an optional `registration: 'sequential'`, a nonemp
   `transformRepeat` replaces a cadence clamp; both are application policy.
 - `removeScheduledJobScheduler(queue, id)` reports the scheduler names before and after.
 - `toSchedulerTemplateOptions(opts)` drops `delay`, `deduplication`, `parent`, and `jobId`.
+- `clampScheduledJobRepeatToHourlyFloor(repeat)` from `@vouchington/utils/hourly-schedule-clamp` is the core of a `transformRepeat` for low-traffic
+  environments (adapt its result: `(repeat) => clampScheduledJobRepeatToHourlyFloor(repeat).repeat`) that must wake at most once an hour: `every` rounds up to a top-of-hour cron
+  (`0 * * * *`, an hour-step cron that divides 24, then weekly, then monthly), and a cron keeps
+  every field except its minute, which becomes `0`. It returns `{ repeat, clamped }` and rejects a
+  malformed minute field. `alignedScheduleText(pattern)` renders an aligned pattern as `every Nh`.
+
+## Worker concurrency
+
+Resolving a worker's concurrency from environment variables is dependency-free and lives in
+`@vouchington/utils/worker-concurrency` (`getWorkerConcurrency`, `parseEnvPositiveInt`); pass its
+result as the worker's `concurrency` option.
 
 ## Lifecycle, serve, and queue classes
 

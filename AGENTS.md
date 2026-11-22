@@ -36,6 +36,10 @@ the migration advisory lock is per database, and `VITEST_MAX_WORKERS` overrides 
 - `@vouchington/postgres` — PostgreSQL runtime factory
 - `@vouchington/utils` — dependency-free explicit-subpath utilities
 - `@vouchington/utils/sentry-envelope` and `/scopes` — injected envelope limits and scope catalogs
+- `@vouchington/utils/hourly-schedule-clamp` — hourly cron clamp for scheduler repeats
+- `@vouchington/utils/terminal-job-removal` — injected-client WATCH and atomic removal of terminal jobs
+- `@vouchington/utils/script-registry` — exit-time release of injected native script handles
+- `@vouchington/utils/worker-concurrency` — env-driven worker concurrency resolution with injected variable names
 - `@vouchington/utils/service-worker-activation` — optional-timeout wait until a service worker registration is active
 - `@vouchington/utils/jsonl-partition-writer` — buffered per-partition JSON Lines file appender with injected paths and error sink
 - `@vouchington/session-jwt` — portable RS512 JWT primitives

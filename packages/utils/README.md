@@ -36,6 +36,17 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
   request/acknowledge round trip with an injected message type and acceptance check, and a named
   Web Lock wrapper. Request actions, expected state transitions, and the bind/clear/reconcile
   sequence stay in the application.
+- `hourly-schedule-clamp`: `clampScheduledJobRepeatToHourlyFloor(repeat)` rewrites an `every` or cron
+  repeat so it fires at most hourly at minute 0, and `alignedScheduleText(pattern)` renders it.
+- `terminal-job-removal`: `acquireTerminalJobRemoval(client, namespace, jobId)` WATCHes a job hash
+  through an injected client and removes a completed or failed job atomically.
+- `script-registry`: `createScriptRegistry(createScript, processLike?)` tracks native script handles
+  built by an injected factory and releases them once at process `exit`.
+- `worker-concurrency`: `getWorkerConcurrency(name, { baseline, max, ignoreScale, env, envPrefix,
+  scaleEnv, maxEnv })` resolves a worker's concurrency from a `<prefix><NAME>` override, else
+  `baseline` times a scale variable, clamped to `[1, max]` (default max 25). Variable names default
+  to `WORKER_CONCURRENCY_<NAME>`, `_SCALE`, and `_MAX` and are all replaceable. `parseEnvPositiveInt(name,
+  default, env)` reads one positive integer and throws on a malformed value.
 - `service-worker-activation`: `waitForActiveServiceWorker(registration, options)` resolves when
   the registration has an active worker. An installing or waiting worker is preferred over
   `serviceWorker.ready`. `timeoutMs` bounds the wait; omit it to wait without a deadline. The
