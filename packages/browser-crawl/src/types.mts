@@ -1,4 +1,4 @@
-import type { Browser } from 'playwright-core'
+import type { Browser, Page } from 'playwright-core'
 
 export interface BrowserCrawlResult {
   statusCode: number
@@ -17,6 +17,13 @@ export interface BrowserCrawlRequest {
   hydrationWaitMs?: number
   minContentLength?: number
   maxHtmlBytes?: number
+  /**
+   * Runs once on the new page before `requestPolicy` is installed, for example to enable an ad
+   * blocker's own request routes. Playwright runs the most recently registered route first, so
+   * `requestPolicy` still sees every request, and the routes added here see only the requests it
+   * allows. A rejection fails the crawl with `BrowserCrawlConnectError`.
+   */
+  preparePage?: (page: Page) => void | Promise<void>
   /** Runs for every routable page request, regardless of URL scheme, and every WebSocket dial. */
   requestPolicy?: (url: string, kind: 'request' | 'websocket') => void | Promise<void>
   onCleanupError?: (error: unknown) => void

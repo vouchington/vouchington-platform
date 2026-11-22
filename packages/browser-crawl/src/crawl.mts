@@ -24,6 +24,7 @@ export async function crawlWithBrowser(request: BrowserCrawlRequest): Promise<Br
       context = await browser.newContext({ serviceWorkers: 'block' })
       page = await context.newPage()
       page.setDefaultTimeout(options.navigationTimeoutMs)
+      await options.preparePage?.(page)
       await installRequestPolicy(page, options.requestPolicy, (error) => {
         navigationPolicyError = error
       })

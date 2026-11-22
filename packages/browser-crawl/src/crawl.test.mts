@@ -1,3 +1,4 @@
+import type { Page } from 'playwright-core'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
@@ -46,6 +47,43 @@ describe('crawlWithBrowser', () => {
     expect(route.fallback).toHaveBeenCalledOnce()
     expect(policy).toHaveBeenCalledWith('wss://socket.example.test', 'websocket')
     expect(websocket.connectToServer).toHaveBeenCalledOnce()
+  })
+
+  it('prepares the page before installing the request policy', async () => {
+    const fixture = browserFixture()
+    const blockerRoute = vi.fn()
+    const preparePage = vi.fn(async (page: Page) => {
+      await page.route('**/*', blockerRoute)
+    })
+    await crawlWithBrowser({
+      url: 'https://example.test',
+      endpoint: 'ws://browser.example.test',
+      connect: fixture.connect,
+      preparePage,
+      requestPolicy: () => undefined,
+    })
+    expect(preparePage).toHaveBeenCalledOnce()
+    expect(fixture.route.mock.calls.map(([, handler]) => handler === blockerRoute)).toEqual([
+      true,
+      false,
+    ])
+  })
+
+  it('reports a failing page preparation as a connect error', async () => {
+    const fixture = browserFixture()
+    const cause = new Error('filter list unavailable')
+    const error = await crawlWithBrowser({
+      url: 'https://example.test',
+      endpoint: 'ws://browser.example.test',
+      connect: fixture.connect,
+      preparePage: () => {
+        throw cause
+      },
+    }).catch((caught: unknown) => caught)
+    expect(error).toBeInstanceOf(BrowserCrawlConnectError)
+    expect((error as Error).cause).toBe(cause)
+    expect(fixture.goto).not.toHaveBeenCalled()
+    expect(fixture.close).toHaveBeenCalledTimes(3)
   })
 
   it('blocks policy-denied requests and propagates navigation-policy errors', async () => {
@@ -214,6 +252,7 @@ function browserFixture() {
     evaluate: page.evaluate,
     goto,
     newContext,
+    route,
     setDefaultTimeout: page.setDefaultTimeout,
     setHtml: (value: string | undefined) => {
       html = value
