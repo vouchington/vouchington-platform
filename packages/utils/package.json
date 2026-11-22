@@ -225,6 +225,11 @@
       "import": "./dist/async.mjs",
       "default": "./dist/async.mjs"
     },
+    "./jsonl-partition-writer": {
+      "types": "./dist/jsonl-partition-writer.d.mts",
+      "import": "./dist/jsonl-partition-writer.mjs",
+      "default": "./dist/jsonl-partition-writer.mjs"
+    },
     "./stable-json": {
       "types": "./dist/stable-json.d.mts",
       "import": "./dist/stable-json.mjs",

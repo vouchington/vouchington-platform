@@ -102,6 +102,10 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
   mapping stay in the application.
 - `collections`, `async`, and `stable-json`: collection deduplication/merging, bounded async mapping,
   and deterministic JSON serialization.
+- `jsonl-partition-writer`: `createJsonlPartitionWriter({ directory, partition, onError })` buffers
+  records and appends them to per-partition JSON Lines files on count, size, or time (defaults 500
+  records, 4 MiB, 1 s). `partition(record)` returns the relative file path, which must stay inside
+  `directory`; background failures go to `onError`, explicit `flush()` rejects with the first one.
 - `feature-flags`: base64 JSON feature-flag cookie parsing and serialization with caller-injected
   codecs, cookie names, and size policy.
 - `dates`, `format`, `strings`, and `text-metrics`: UTC-day, duration, weighted-average and display
