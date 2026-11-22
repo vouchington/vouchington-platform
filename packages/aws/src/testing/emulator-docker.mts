@@ -1,4 +1,5 @@
 import { execFile, spawn, type ChildProcess } from 'node:child_process'
+import { resolve } from 'node:path'
 import { promisify } from 'node:util'
 
 const execFileAsync = promisify(execFile)
@@ -49,7 +50,7 @@ export async function startAwsEmulatorInDocker(
       '--publish',
       `127.0.0.1::${EMULATOR_PORT_IN_CONTAINER}`,
       '--volume',
-      `${binary}:/usr/local/bin/aws-emulator:ro`,
+      `${resolve(binary)}:/usr/local/bin/aws-emulator:ro`,
       '--volume',
       `${home}:${home}`,
       '--env',

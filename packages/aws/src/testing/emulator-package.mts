@@ -27,7 +27,7 @@ export interface EnsureAwsEmulatorBinaryOptions {
   /** Defaults to the host architecture. */
   target?: DebArch
   /** Defaults to the global fetch; inject one that honors a proxy where the network requires it. */
-  fetch?: typeof fetch
+  fetch?: (url: string, init: { signal: AbortSignal }) => Promise<Response>
   /** Package index. Defaults to the AWS download host. */
   baseUrl?: string
 }

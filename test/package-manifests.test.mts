@@ -189,6 +189,7 @@ describe('runtime package manifests', () => {
       './cloudwatch',
       './request-handler',
       './errors',
+      './testing',
     ])
     for (const entry of Object.values(manifest.exports)) {
       expect(existsSync(`packages/aws/${entry.import.replace('./', '')}`)).toBe(true)

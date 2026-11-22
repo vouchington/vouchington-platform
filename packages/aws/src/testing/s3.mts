@@ -160,7 +160,7 @@ export async function deleteS3Object(client: S3Client, Bucket: string, Key: stri
 export async function sendToPresignedS3Url(
   url: string,
   init: { method: 'GET' | 'PUT'; contentType?: string; body?: Uint8Array },
-  doFetch: typeof fetch = fetch,
+  doFetch: (url: string, init: RequestInit) => Promise<Response> = fetch,
 ): Promise<{ status: number; body: string }> {
   const response = await doFetch(url, {
     method: init.method,

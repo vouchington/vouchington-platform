@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events'
+import { resolve } from 'node:path'
 import { PassThrough } from 'node:stream'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -105,6 +106,19 @@ describe('startAwsEmulatorInDocker', () => {
     expect(run.at(-1)).toBe(String(AWS_EMULATOR_IDLE_TIMEOUT_SECONDS))
     await started.stop()
     expect(state.execCalls.at(-1)?.slice(0, 3)).toEqual(['docker', 'rm', '--force'])
+  })
+
+  it('mounts an absolute host path when the binary path is relative', async () => {
+    setup()
+    const started = await startAwsEmulatorInDocker({
+      home: '/h',
+      binary: 'cache/aws-emulator',
+      image: 'img',
+    })
+    await started.port
+    expect(state.execCalls[0]).toContain(
+      `${resolve('cache/aws-emulator')}:/usr/local/bin/aws-emulator:ro`,
+    )
   })
 
   it('uses the default container name prefix, tolerates a failing rm, and rejects an unreadable port', async () => {
