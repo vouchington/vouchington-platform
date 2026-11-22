@@ -1,3 +1,4 @@
+import type { Page } from 'playwright-core'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
@@ -6,6 +7,7 @@ import {
   BrowserCrawlTimeoutError,
   crawlWithBrowser,
 } from './index.mts'
+import { measureAndSerializePage } from './page-content.mts'
 
 describe('crawlWithBrowser', () => {
   it('collects rendered content and releases all browser resources', async () => {
@@ -20,9 +22,15 @@ describe('crawlWithBrowser', () => {
       statusCode: 201,
       hasContent: true,
       title: 'Example',
-      contentLength: 100,
+      contentLength: 50,
       finalUrl: 'https://example.test/final',
       html: '<main>Example</main>',
+    })
+    expect(fixture.evaluate).toHaveBeenCalledWith(measureAndSerializePage, {
+      maxContentLength: 50,
+      maxHtmlBytes: 4 * 1024 * 1024,
+      maxTitleBytes: 16 * 1024,
+      maxTraversalWork: 4 * 1024 * 1024,
     })
     expect(fixture.newContext).toHaveBeenCalledWith({ serviceWorkers: 'block' })
     expect(fixture.setDefaultTimeout).toHaveBeenCalledWith(30_000)
@@ -46,6 +54,43 @@ describe('crawlWithBrowser', () => {
     expect(route.fallback).toHaveBeenCalledOnce()
     expect(policy).toHaveBeenCalledWith('wss://socket.example.test', 'websocket')
     expect(websocket.connectToServer).toHaveBeenCalledOnce()
+  })
+
+  it('prepares the page before installing the request policy', async () => {
+    const fixture = browserFixture()
+    const blockerRoute = vi.fn()
+    const preparePage = vi.fn(async (page: Page) => {
+      await page.route('**/*', blockerRoute)
+    })
+    await crawlWithBrowser({
+      url: 'https://example.test',
+      endpoint: 'ws://browser.example.test',
+      connect: fixture.connect,
+      preparePage,
+      requestPolicy: () => undefined,
+    })
+    expect(preparePage).toHaveBeenCalledOnce()
+    expect(fixture.route.mock.calls.map(([, handler]) => handler === blockerRoute)).toEqual([
+      true,
+      false,
+    ])
+  })
+
+  it('reports a failing page preparation as a connect error', async () => {
+    const fixture = browserFixture()
+    const cause = new Error('filter list unavailable')
+    const error = await crawlWithBrowser({
+      url: 'https://example.test',
+      endpoint: 'ws://browser.example.test',
+      connect: fixture.connect,
+      preparePage: () => {
+        throw cause
+      },
+    }).catch((caught: unknown) => caught)
+    expect(error).toBeInstanceOf(BrowserCrawlConnectError)
+    expect((error as Error).cause).toBe(cause)
+    expect(fixture.goto).not.toHaveBeenCalled()
+    expect(fixture.close).toHaveBeenCalledTimes(3)
   })
 
   it('blocks policy-denied requests and propagates navigation-policy errors', async () => {
@@ -115,21 +160,32 @@ describe('crawlWithBrowser', () => {
     ).rejects.toBeInstanceOf(BrowserCrawlNavigationError)
   })
 
-  it('handles absent or oversized html and cleanup errors without changing a result', async () => {
-    const noHtml = browserFixture()
-    noHtml.evaluate.mockResolvedValueOnce(100).mockRejectedValueOnce(new Error('unsupported'))
-    const result = await crawlWithBrowser(request(noHtml))
-    expect(result.html).toBeUndefined()
-    const oversized = browserFixture()
-    oversized.setHtml('x'.repeat(3))
-    expect(
-      (await crawlWithBrowser({ ...request(oversized), maxHtmlBytes: 2 })).html,
-    ).toBeUndefined()
-    const multibyte = browserFixture()
-    multibyte.setHtml('é')
-    expect(
-      (await crawlWithBrowser({ ...request(multibyte), maxHtmlBytes: 1 })).html,
-    ).toBeUndefined()
+  it('passes measurement limits and omits absent html', async () => {
+    const fixture = browserFixture()
+    fixture.evaluate.mockResolvedValueOnce({ contentLength: 3, title: '' })
+    const result = await crawlWithBrowser({
+      ...request(fixture),
+      minContentLength: 3,
+      maxHtmlBytes: 2,
+      maxTitleBytes: 4,
+      maxTraversalWork: 5,
+    })
+    expect(result).toEqual({
+      statusCode: 201,
+      hasContent: true,
+      title: '',
+      contentLength: 3,
+      finalUrl: 'https://example.test/final',
+    })
+    expect(fixture.evaluate).toHaveBeenCalledWith(measureAndSerializePage, {
+      maxContentLength: 3,
+      maxHtmlBytes: 2,
+      maxTitleBytes: 4,
+      maxTraversalWork: 5,
+    })
+  })
+
+  it('reports cleanup errors without changing a result', async () => {
     const cleanup = browserFixture()
     cleanup.browser.close.mockRejectedValue(new Error('close'))
     const onCleanupError = vi.fn()
@@ -150,14 +206,15 @@ describe('crawlWithBrowser', () => {
   it('validates caller options and allows an empty rendered page', async () => {
     const fixture = browserFixture()
     fixture.goto.mockResolvedValue(undefined)
-    fixture.title.mockResolvedValue('')
-    fixture.evaluate.mockImplementation((callback) => callback())
+    fixture.evaluate.mockResolvedValue({ contentLength: 0, title: ' ' })
     const empty = await crawlWithBrowser(request(fixture))
     expect(empty).toMatchObject({ hasContent: false, statusCode: 200, contentLength: 0 })
     for (const requestOverride of [
       { url: '' },
       { endpoint: '' },
       { maxHtmlBytes: 0 },
+      { maxTitleBytes: 0 },
+      { maxTraversalWork: 1.5 },
       { hydrationWaitMs: -1 },
     ]) {
       await expect(
@@ -176,32 +233,23 @@ function request(fixture: ReturnType<typeof browserFixture>) {
 }
 
 function browserFixture() {
-  let html: string | undefined = '<main>Example</main>'
   const close = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
   const route = vi.fn()
   const routeWebSocket = vi.fn()
   const goto = vi.fn().mockResolvedValue({ status: () => 201 })
   const page = {
     close,
-    evaluate: vi.fn().mockImplementation((callback, argument) => {
-      Object.defineProperty(globalThis, 'document', {
-        configurable: true,
-        value: {
-          body: { innerText: 'x'.repeat(100) },
-          documentElement: html === undefined ? undefined : { outerHTML: html },
-        },
-      })
-      try {
-        return callback(argument)
-      } finally {
-        delete (globalThis as { document?: unknown }).document
-      }
-    }),
+    evaluate: vi
+      .fn()
+      .mockImplementation(async (_measure, limits: { maxContentLength: number }) => ({
+        contentLength: Math.min(100, limits.maxContentLength),
+        html: '<main>Example</main>',
+        title: 'Example',
+      })),
     goto,
     route,
     routeWebSocket,
     setDefaultTimeout: vi.fn(),
-    title: vi.fn().mockResolvedValue('Example'),
     url: vi.fn().mockReturnValue('https://example.test/final'),
   }
   const context = { close, newPage: vi.fn().mockResolvedValue(page) }
@@ -214,11 +262,8 @@ function browserFixture() {
     evaluate: page.evaluate,
     goto,
     newContext,
+    route,
     setDefaultTimeout: page.setDefaultTimeout,
-    setHtml: (value: string | undefined) => {
-      html = value
-    },
-    title: page.title,
     routeHandler: undefined as
       | ((route: ReturnType<typeof routeFixture>) => Promise<void>)
       | undefined,

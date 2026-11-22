@@ -7,10 +7,13 @@ import {
   type BrowserCrawlRequest,
   type BrowserCrawlResult,
 } from './types.mts'
+import { measureAndSerializePage } from './page-content.mts'
 
 const DEFAULT_NAVIGATION_TIMEOUT_MS = 30_000
 const DEFAULT_MIN_CONTENT_LENGTH = 50
 const DEFAULT_MAX_HTML_BYTES = 4 * 1024 * 1024
+const DEFAULT_MAX_TITLE_BYTES = 16 * 1024
+const DEFAULT_MAX_TRAVERSAL_WORK = 4 * 1024 * 1024
 
 export async function crawlWithBrowser(request: BrowserCrawlRequest): Promise<BrowserCrawlResult> {
   const options = normalizeRequest(request)
@@ -24,6 +27,7 @@ export async function crawlWithBrowser(request: BrowserCrawlRequest): Promise<Br
       context = await browser.newContext({ serviceWorkers: 'block' })
       page = await context.newPage()
       page.setDefaultTimeout(options.navigationTimeoutMs)
+      await options.preparePage?.(page)
       await installRequestPolicy(page, options.requestPolicy, (error) => {
         navigationPolicyError = error
       })
@@ -45,19 +49,20 @@ export async function crawlWithBrowser(request: BrowserCrawlRequest): Promise<Br
       throw new BrowserCrawlNavigationError({ url: options.url, cause })
     }
     if (options.hydrationWaitMs > 0) await delay(options.hydrationWaitMs)
-    const title = await page.title()
-    const contentLength = await page.evaluate(() => {
-      const document = (globalThis as { document?: { body?: { innerText?: string } } }).document
-      return document?.body?.innerText?.length ?? 0
+    const content = await page.evaluate(measureAndSerializePage, {
+      maxContentLength: options.minContentLength,
+      maxHtmlBytes: options.maxHtmlBytes,
+      maxTitleBytes: options.maxTitleBytes,
+      maxTraversalWork: options.maxTraversalWork,
     })
-    const html = await getHtml(page, options.maxHtmlBytes)
     return {
       statusCode,
-      title,
-      contentLength,
-      hasContent: title.trim().length > 0 || contentLength >= options.minContentLength,
+      title: content.title,
+      contentLength: content.contentLength,
+      hasContent:
+        content.title.trim().length > 0 || content.contentLength >= options.minContentLength,
       finalUrl: page.url(),
-      ...(html === undefined ? {} : { html }),
+      ...(content.html === undefined ? {} : { html: content.html }),
     }
   } finally {
     await closeQuietly(page, options.onCleanupError)
@@ -78,6 +83,8 @@ function normalizeRequest(request: BrowserCrawlRequest) {
     hydrationWaitMs: nonNegativeInteger(request.hydrationWaitMs, 0),
     minContentLength: nonNegativeInteger(request.minContentLength, DEFAULT_MIN_CONTENT_LENGTH),
     maxHtmlBytes: positiveInteger(request.maxHtmlBytes, DEFAULT_MAX_HTML_BYTES),
+    maxTitleBytes: positiveInteger(request.maxTitleBytes, DEFAULT_MAX_TITLE_BYTES),
+    maxTraversalWork: positiveInteger(request.maxTraversalWork, DEFAULT_MAX_TRAVERSAL_WORK),
   }
 }
 
@@ -104,23 +111,6 @@ async function installRequestPolicy(
       await route.close({ code: 1008, reason: 'blocked by client' })
     }
   })
-}
-
-async function getHtml(page: Page, maxBytes: number) {
-  try {
-    return await page.evaluate((limit) => {
-      const document = (
-        globalThis as {
-          document?: { documentElement?: { outerHTML?: string } }
-        }
-      ).document
-      const html = document?.documentElement?.outerHTML
-      if (html === undefined || html.length > limit) return undefined
-      return new TextEncoder().encode(html).byteLength <= limit ? html : undefined
-    }, maxBytes)
-  } catch {
-    return undefined
-  }
 }
 
 async function closeQuietly(
