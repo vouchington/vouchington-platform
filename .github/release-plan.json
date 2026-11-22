@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/aws/package.json"],
+  "changedManifests": ["packages/edge/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "aws",
-      "fromVersion": "0.1.1",
-      "name": "@vouchington/aws",
-      "toVersion": "0.1.2"
+      "directory": "edge",
+      "fromVersion": "0.8.0",
+      "name": "@vouchington/edge",
+      "toVersion": "0.8.1"
     }
   ],
-  "selectedPackage": "@vouchington/aws"
+  "selectedPackage": "@vouchington/edge"
 }
