@@ -51,6 +51,7 @@ on:
           - '@vouchington/ai'
           - '@vouchington/aws'
           - '@vouchington/oauth-client'
+          - '@vouchington/explain-plan'
       bump:
         description: Semver bump type
         type: choice
