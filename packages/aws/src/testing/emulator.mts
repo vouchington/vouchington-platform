@@ -144,6 +144,12 @@ function parseCredentials(file: string): { accessKeyId: string; secretAccessKey:
  * client in this process (the SDK's handler, `fetch`) reads unless it passes its own `ca`.
  */
 export function trustAwsEmulatorCertificate(caPem: string): void {
+  // Added in Node 24.5; older runtimes can pass the certificate as `ca` or set NODE_EXTRA_CA_CERTS.
+  if (typeof tls.setDefaultCACertificates !== 'function') {
+    throw new Error(
+      'trustAwsEmulatorCertificate needs Node 24.5 or newer; pass caPem as `ca` instead',
+    )
+  }
   const current = tls.getCACertificates('default')
   if (current.includes(caPem)) return
   tls.setDefaultCACertificates([...current, caPem])

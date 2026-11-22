@@ -26,7 +26,8 @@ export async function createTestS3Bucket(
   label: string,
   options: { versioned?: boolean } = {},
 ): Promise<string> {
-  const Bucket = `test-${label}-${randomUUID()}`.toLowerCase().slice(0, 63)
+  // Truncate the label, never the random suffix, so concurrent tests keep distinct buckets.
+  const Bucket = `test-${label.slice(0, 21)}-${randomUUID()}`.toLowerCase()
   await client.send(new CreateBucketCommand({ Bucket }))
   if (options.versioned) {
     await client.send(

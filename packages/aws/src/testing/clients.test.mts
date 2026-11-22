@@ -32,7 +32,9 @@ describe('sqs helpers', () => {
     const send = vi.spyOn(client, 'send') as unknown as ReturnType<typeof vi.fn>
     send.mockResolvedValue({ QueueUrl: 'u' })
     await createTestSqsQueue(client, 'x'.repeat(200))
-    expect(send.mock.calls[0]?.[0].input.QueueName).toHaveLength(80)
+    const name = send.mock.calls[0]?.[0].input.QueueName
+    expect(name).toHaveLength(80)
+    expect(name).toMatch(/-[0-9a-f-]{36}$/)
   })
 
   it('sends messages and sums visible and in-flight counts', async () => {

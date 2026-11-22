@@ -196,4 +196,14 @@ describe('trustAwsEmulatorCertificate', () => {
     trustAwsEmulatorCertificate('existing')
     expect(set).not.toHaveBeenCalled()
   })
+
+  it('explains the Node version requirement where the API is missing', () => {
+    const original = tls.setDefaultCACertificates
+    Object.assign(tls, { setDefaultCACertificates: undefined })
+    try {
+      expect(() => trustAwsEmulatorCertificate('x')).toThrow('Node 24.5 or newer')
+    } finally {
+      Object.assign(tls, { setDefaultCACertificates: original })
+    }
+  })
 })

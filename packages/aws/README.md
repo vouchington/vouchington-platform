@@ -81,7 +81,7 @@ await emulator.stop()
 ```
 
 - `startAwsEmulator`, `trustAwsEmulatorCertificate`, `ensureAwsEmulatorBinary`, `debArch`,
-  `startAwsEmulatorInDocker`, `readAnnouncedPort`: lifecycle. The download `fetch` is injectable
+  `startAwsEmulatorInDocker`, `readAnnouncedPort`: lifecycle (`trustAwsEmulatorCertificate` needs Node 24.5 or newer). The download `fetch` is injectable
   for proxies; the caller records the version and SHA-256 pins after verifying AWS's signature.
 - `createTestS3Bucket`, `uniqueS3Prefix`, `putS3Object`, `readS3ObjectText`, `readS3ObjectBytes`,
   `s3ObjectExists`, `listS3Keys`, `listS3Versions`, `deleteS3Object`, `sendToPresignedS3Url`:

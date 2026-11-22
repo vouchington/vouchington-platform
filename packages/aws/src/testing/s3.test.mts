@@ -35,6 +35,7 @@ describe('buckets and prefixes', () => {
     expect(mock).toHaveBeenCalledTimes(1)
     const versioned = await createTestS3Bucket(client, 'v'.repeat(80), { versioned: true })
     expect(versioned).toHaveLength(63)
+    expect(versioned).toMatch(/-[0-9a-f-]{36}$/)
     expect(mock).toHaveBeenCalledTimes(3)
     expect(mock.mock.calls[2]?.[0].input.VersioningConfiguration).toEqual({ Status: 'Enabled' })
   })

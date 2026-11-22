@@ -13,7 +13,7 @@ import {
 /** A queue owned by one test file, for workers that read their queue URL from the environment. */
 export async function createTestSqsQueue(client: SQSClient, label: string): Promise<string> {
   const { QueueUrl } = await client.send(
-    new CreateQueueCommand({ QueueName: `test-${label}-${randomUUID()}`.slice(0, 80) }),
+    new CreateQueueCommand({ QueueName: `test-${label.slice(0, 38)}-${randomUUID()}` }),
   )
   if (!QueueUrl) throw new Error('The AWS Emulator returned no queue URL')
   return QueueUrl
