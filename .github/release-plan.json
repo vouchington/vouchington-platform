@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/edge/package.json"],
+  "changedManifests": ["packages/pagination/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "edge",
-      "fromVersion": "0.8.0",
-      "name": "@vouchington/edge",
-      "toVersion": "0.8.1"
+      "directory": "pagination",
+      "fromVersion": "0.0.4",
+      "name": "@vouchington/pagination",
+      "toVersion": "0.0.5"
     }
   ],
-  "selectedPackage": "@vouchington/edge"
+  "selectedPackage": "@vouchington/pagination"
 }
