@@ -305,6 +305,23 @@ describe('measureAndSerializePage', () => {
     expect(measureAndSerializePage({ maxHtmlBytes: 45, maxTitleBytes: 1 }).html).toBeUndefined()
   })
 
+  it('applies void and raw-text rules only to HTML-namespace elements', () => {
+    const svg = (tagName: string, children: ReturnType<typeof text>[]) =>
+      Object.assign(element(tagName, children), { namespaceURI: 'http://www.w3.org/2000/svg' })
+    const build = () => {
+      const root = element('HTML', [svg('source', [text('<')]), svg('script', [text('<')])])
+      root.outerHTML = '<html></html>'
+      return root
+    }
+    // <HTML> 6, <source>&lt;</source> 21, <script>&lt;</script> 21, </HTML> 7: 55 bytes.
+    vi.stubGlobal('document', { documentElement: build() })
+    expect(measureAndSerializePage({ maxHtmlBytes: 55, maxTitleBytes: 1 }).html).toBe(
+      '<html></html>',
+    )
+    vi.stubGlobal('document', { documentElement: build() })
+    expect(measureAndSerializePage({ maxHtmlBytes: 54, maxTitleBytes: 1 }).html).toBeUndefined()
+  })
+
   it('reads DOM metadata through native getters that named controls cannot shadow', () => {
     const native = Symbol('native')
     type Fake = Record<PropertyKey, unknown>

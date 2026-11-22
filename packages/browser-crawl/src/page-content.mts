@@ -97,7 +97,8 @@ export function measureAndSerializePage(limits: {
     children?: ArrayLike<PageNode>
     index?: number
     node: PageNode
-    rawText?: boolean
+    rawText?: boolean | undefined
+    rawTextParent?: boolean
     tagName?: string
   }> = [{ node: root }]
   while (nodes.length > 0) {
@@ -113,8 +114,7 @@ export function measureAndSerializePage(limits: {
       const index = current.index!
       if (index < current.children.length) {
         current.index = index + 1
-        const rawText = RAW_TEXT_PARENTS.includes(current.tagName!.toUpperCase())
-        nodes.push({ node: current.children[index]!, rawText })
+        nodes.push({ node: current.children[index]!, rawText: current.rawTextParent })
         continue
       }
       add(`</${current.tagName}>`)
@@ -147,7 +147,11 @@ export function measureAndSerializePage(limits: {
       if (traversalWork >= maxTraversalWork) break
     }
     add('>')
-    const tagName = elementTagName.toUpperCase()
+    // Void, raw-text, body and template rules apply only to HTML-namespace elements; foreign
+    // content such as <svg><source> serializes its children and end tag.
+    const namespace = read<string | null | undefined>(element, 'Element', 'namespaceURI')
+    const isHtml = namespace === undefined || namespace === 'http://www.w3.org/1999/xhtml'
+    const tagName = isHtml ? elementTagName.toUpperCase() : ''
     if (tagName === 'BODY') body = element
     if (VOID_ELEMENTS.includes(tagName)) {
       nodes.pop()
@@ -160,6 +164,7 @@ export function measureAndSerializePage(limits: {
     current.children = content?.childNodes ?? read<ArrayLike<PageNode>>(node, 'Node', 'childNodes')
     current.index = 0
     current.tagName = elementTagName
+    current.rawTextParent = RAW_TEXT_PARENTS.includes(tagName)
   }
   if (traversalWork < maxTraversalWork) {
     const innerText = body ? read<string | undefined>(body, 'HTMLElement', 'innerText') : undefined
