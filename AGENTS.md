@@ -11,6 +11,9 @@ pnpm run typecheck
 pnpm run build
 pnpm test
 pnpm run test:coverage
+pnpm run test:unit
+pnpm run test:postgres
+pnpm run test:valkey
 pnpm run test:bun-bundles
 ```
 
@@ -21,10 +24,21 @@ a dependency. Entries that cannot run under Bun for other reasons are listed, wi
 
 `oxlint` is type-aware and denies warnings. Source files are capped at 200 lines; tests at 500.
 
-Postgres 18 is required for package tests. CI starts `postgres:18`. Locally:
+Tests are split by the service they need, selected by filename (vitest `projects` in `vitest.config.mts`):
+
+- `*.postgres.test.mts` needs Postgres 18 (`DATABASE_URL`). Name any test that connects to a database this way.
+- `*.valkey.test.mts` needs Valkey (`VALKEY_URL=host:port`) and skips when it is unset.
+- every other `*.test.mts` needs no service (`test:unit`).
+
+`pnpm test` and `pnpm run test:coverage` run all three, so they need Postgres locally. CI runs `unit`,
+`postgres` and `valkey` jobs, each with only its own service. The `test` job merges their vitest blobs
+(`test:partial`, `test:merge-coverage`) and enforces 100% coverage over the union; it is the required check.
+The `valkey` job passes while no `*.valkey.test.mts` file exists. Locally:
 
 ```bash
 docker run --rm -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:18
+docker run --rm -p 6379:6379 valkey/valkey:9.2.0
+VALKEY_URL=localhost:6379 pnpm run test:valkey
 ```
 
 Test files that run migrations must use `useIsolatedDatabase()` from `packages/postgres/src/test-helpers.mts`:
