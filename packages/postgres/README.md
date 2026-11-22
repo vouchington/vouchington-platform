@@ -141,6 +141,29 @@ await psql.withMigrationSession(async (client) => {
 })
 ```
 
+## Post-commit actions
+
+`createPostCommitActions({ reportError })` returns `{ own, register, withTransactionOptions }` for
+side effects that must run only after a transaction commits. `own(await psql.beginTransaction())`
+(optionally `own(transaction, wrappedQuery)` when the application decorates the query) makes
+`register(query, action)` valid on it; actions run after `commit()`, are reported through
+`reportError` when they fail without skipping siblings, and are dropped on rollback or disposal.
+Route nested `psql.withTransactionOptions` calls through the returned `withTransactionOptions(run,
+options, handler, wrapQuery?)`: actions registered in a nested scope move to the owner only if the
+scope resolves.
+
+`isUniqueViolation(error)` narrows a `pg` error or `{ code }` object to SQLSTATE `23505`.
+
+## Config-driven migrations
+
+`runConfigDriven(folder, { target, logger?, lockTimeoutMs?, maxAttempts?, waitForRetry?, readFile?,
+reportError? })` runs the `.sql`/`.mts` files of a folder in filename order, each as grouped
+transactions with `SET LOCAL lock_timeout`; `VALIDATE CONSTRAINT` statements get their own
+transaction. A file that hits a deadlock or lock timeout is replayed whole (default 3 attempts), so
+the SQL must be idempotent. `target` is `{ writer }` (a caller-held session, for example inside
+`withMigrationSession`) or `{ beginTransaction }`. Call `loadSqlParserModule()` first.
+`runConfigDrivenStatementsInTransaction(sql, target, options?)` is the per-file step.
+
 ## Schema snapshots
 
 The explicit `@vouchington/postgres/pg-schema-snapshot` subpath reads PostgreSQL catalogs, builds a
@@ -207,6 +230,10 @@ Markdown location. The application owns moving previously generated files when c
   the request never waits on); a detached statement records `detached: true`, still counts in
   `totalQueries`, and is excluded from repeats and serial depth. A throwing predicate counts as
   not detached. Thresholds and baselines stay in the application.
+- `createPoolStatsSampler({ pools, emit, intervalMs?, reportError?, schedule? })` samples
+  `pg.Pool` counters per named pool (`{ pool, max }`) on an unref'd interval and calls
+  `emit(stats, sampledAt)`; `start()`, `stop()`, `sample()` and async disposal. Metric names,
+  enablement and the interval are the caller's.
 
 ## Partitions
 
@@ -234,6 +261,9 @@ await cleanupMonthlyPartitions({
   A child is dropped only when its `pg_get_expr(relpartbound)` range matches the month in its
   name (`expectedMonthlyPartitionBound`); mismatches are skipped and reported by
   `cleanupMonthlyPartitions`. `listManagedMonthlyPartitions` rows now include `partition_bound`.
+- `getPartitionStatus({ query, resolveRefusals? })` lists every partition child with its size,
+  grouped by parent table; the injected `resolveRefusals(rows)` maps partition names to a drop
+  refusal reason (retention policy and holds stay in the application).
 - `@vouchington/postgres/catalog-guarded-ddl` — idempotent `ADD CONSTRAINT ... NOT VALID` plus
   `VALIDATE CONSTRAINT` blocks guarded by `pg_constraint`, with lock-then-recheck serialization.
 
