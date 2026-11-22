@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 import { fileURLToPath } from 'node:url'
 
 export default defineConfig({
@@ -29,7 +29,26 @@ export default defineConfig({
   },
   test: {
     fileParallelism: false,
-    include: ['packages/*/src/**/*.test.mts', 'test/**/*.test.mts'],
+    // Service-backed tests are selected by filename: `*.postgres.test.mts` needs
+    // DATABASE_URL, `*.valkey.test.mts` needs VALKEY_URL. `unit` needs neither.
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          include: ['packages/*/src/**/*.test.mts', 'test/**/*.test.mts'],
+          exclude: [...configDefaults.exclude, '**/*.postgres.test.mts', '**/*.valkey.test.mts'],
+        },
+      },
+      {
+        extends: true,
+        test: { name: 'postgres', include: ['packages/*/src/**/*.postgres.test.mts'] },
+      },
+      {
+        extends: true,
+        test: { name: 'valkey', include: ['packages/*/src/**/*.valkey.test.mts'] },
+      },
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

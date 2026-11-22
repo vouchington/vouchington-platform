@@ -14,8 +14,46 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  # Tests are split by the service they need, selected by filename:
+  # *.postgres.test.mts -> postgres, *.valkey.test.mts -> valkey, rest -> unit.
+  # Each job writes a vitest blob; `test` merges them and enforces 100% coverage.
+  unit:
     # knip's oxc-parser allocates a large ArrayBuffer; ubuntu-slim OOMs.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # setup-node must precede pnpm/action-setup: the action bootstraps pnpm
+      # with the Node on PATH. pnpm is not pinned: latest-12 self-updates to the
+      # newest pnpm 12 that clears pnpm's default one-day minimumReleaseAge.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          version: latest-12
+          cache: true
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run lint
+      - run: pnpm run typecheck
+      - run: pnpm run build
+      - run: pnpm run test:partial --project unit --outputFile=.vitest-reports/unit.json
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          # Pinned: KNOWN_BUN_INCOMPATIBLE depends on what this Bun version supports.
+          bun-version: 1.4.4
+      # Bundles every export entry with Bun and compares its exports with Node's.
+      - run: pnpm run test:bun-bundles
+      - name: Stage coverage blob
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.0
+        with:
+          name: blob-unit-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .vitest-reports/unit.json
+          if-no-files-found: error
+          retention-days: 1
+
+  postgres:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
@@ -36,9 +74,6 @@ jobs:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # setup-node must precede pnpm/action-setup: the action bootstraps pnpm
-      # with the Node on PATH. pnpm is not pinned: latest-12 self-updates to the
-      # newest pnpm 12 that clears pnpm's default one-day minimumReleaseAge.
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
@@ -48,16 +83,88 @@ jobs:
           version: latest-12
           cache: true
       - run: pnpm install --frozen-lockfile
-      - run: pnpm run lint
-      - run: pnpm run typecheck
       - run: pnpm run build
-      - run: pnpm run test:coverage
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: pnpm run test:partial --project postgres --outputFile=.vitest-reports/postgres.json
+      - name: Stage coverage blob
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.0
         with:
-          # Pinned: KNOWN_BUN_INCOMPATIBLE depends on what this Bun version supports.
-          bun-version: 1.4.4
-      # Bundles every export entry with Bun and compares its exports with Node's.
-      - run: pnpm run test:bun-bundles
+          name: blob-postgres-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .vitest-reports/postgres.json
+          if-no-files-found: error
+          retention-days: 1
+
+  valkey:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      valkey:
+        image: valkey/valkey:9.2.0@sha256:1c2b25b09f354c66fe994733acdf12fcfd4bdf6f3bd92b88a93a70378d884056
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      VALKEY_URL: localhost:6379
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          version: latest-12
+          cache: true
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+      # Succeeds while no *.valkey.test.mts file exists (--passWithNoTests).
+      - run: pnpm run test:partial --project valkey --outputFile=.vitest-reports/valkey.json
+      - name: Stage coverage blob
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.0
+        with:
+          name: blob-valkey-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .vitest-reports/valkey.json
+          if-no-files-found: error
+          retention-days: 1
+
+  # Required status check. Fails when any split job fails, then merges their
+  # blobs and enforces the 100% coverage thresholds over the union.
+  test:
+    needs: [unit, postgres, valkey]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Require every test job to succeed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          for result in $RESULTS; do
+            if [ "$result" != success ]; then
+              echo "A test job finished as: $result" >&2
+              exit 1
+            fi
+          done
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          version: latest-12
+          cache: true
+      - run: pnpm install --frozen-lockfile
+      - name: Download coverage blobs
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.0
+        with:
+          pattern: blob-*-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .vitest-reports
+          merge-multiple: true
+      - run: pnpm run test:merge-coverage
       - name: Stage coverage for trusted upload
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.0
         with:
