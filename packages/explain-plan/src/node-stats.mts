@@ -98,3 +98,12 @@ export function hasLaunchedParallelWorkers(plan: unknown): boolean {
       (node.nodeType === 'Gather' || node.nodeType === 'Gather Merge') && node.workersLaunched > 0,
   )
 }
+
+// The root node's WAL Bytes is cumulative over the whole query, so reading it needs no
+// subtraction.
+export function totalWalBytes(plan: unknown): number {
+  if (plan == null || typeof plan !== 'object' || Array.isArray(plan)) return 0
+  const wrapper = plan as Record<string, unknown>
+  const rootNode = (wrapper['Plan'] ?? wrapper) as Record<string, unknown>
+  return Number(rootNode['WAL Bytes'] ?? 0)
+}

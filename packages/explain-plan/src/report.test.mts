@@ -87,6 +87,24 @@ describe('formatMarkdownReport', () => {
     )
   })
 
+  it('reports aggregate WAL that no single node crosses', () => {
+    const plan = {
+      Plan: {
+        'Node Type': 'Result',
+        'WAL Bytes': 12 * 1024 * 1024,
+        Plans: [
+          { 'Node Type': 'ModifyTable', 'WAL Bytes': 6 * 1024 * 1024 },
+          { 'Node Type': 'ModifyTable', 'WAL Bytes': 6 * 1024 * 1024 },
+        ],
+      },
+    }
+    const text = formatMarkdownReport([result(plan)], { largeTables: new Set() })
+    expect(text).toContain('Resource pressure: query-wide WAL')
+    expect(text).toContain(
+      '- Resource pressure: query-wide WAL of 12582912 bytes across several nodes',
+    )
+  })
+
   it('renders a clean report without optional sections', () => {
     const text = formatMarkdownReport([result({ 'Node Type': 'Result' })], {
       largeTables: new Set(),

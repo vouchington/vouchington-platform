@@ -1,4 +1,4 @@
-import { collectNodes } from './node-stats.mts'
+import { collectNodes, totalWalBytes } from './node-stats.mts'
 import type { ExplainResult } from './types.mts'
 import { resolveThresholds, type PlanThresholds } from './warnings.mts'
 
@@ -12,15 +12,6 @@ export function getExplainResultIdentity(result: ExplainResult): string {
     result.name,
     result.plan_cache_mode ?? 'auto',
   ].join('|')
-}
-
-// The root node's WAL Bytes is cumulative over the whole query, so reading it needs no
-// subtraction.
-function getTotalWalBytes(plan: unknown): number {
-  if (plan == null || typeof plan !== 'object' || Array.isArray(plan)) return 0
-  const wrapper = plan as Record<string, unknown>
-  const rootNode = (wrapper['Plan'] ?? wrapper) as Record<string, unknown>
-  return Number(rootNode['WAL Bytes'] ?? 0)
 }
 
 /**
@@ -47,7 +38,7 @@ export function getResourcePressureFingerprints(
   // Sibling modifying nodes can sum past the threshold at their ancestor while no node's
   // exclusive share does. Add the aggregate only then, so one spike reports once.
   const anyNodeCrossed = nodes.some((n) => n.walBytes >= highWalBytes)
-  if (!anyNodeCrossed && getTotalWalBytes(result.plan) >= highWalBytes) {
+  if (!anyNodeCrossed && totalWalBytes(result.plan) >= highWalBytes) {
     fingerprints.push('query:wal-aggregate')
   }
   return fingerprints.toSorted()

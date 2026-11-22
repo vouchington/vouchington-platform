@@ -1,4 +1,9 @@
-import { collectNodes, hasLaunchedParallelWorkers, type NodeStats } from './node-stats.mts'
+import {
+  collectNodes,
+  hasLaunchedParallelWorkers,
+  totalWalBytes,
+  type NodeStats,
+} from './node-stats.mts'
 import type { ExplainResult, FunctionCall } from './types.mts'
 
 export interface PlanThresholds {
@@ -53,6 +58,8 @@ export interface QueryWarnings {
   highPlanningRatio: boolean
   highSharedBuffers: NodeStats[]
   resourcePressure: NodeStats[]
+  /** Total WAL crossed the threshold although no single node did. */
+  aggregateWalBytes: number | undefined
 }
 
 export function resolveThresholds(overrides?: Partial<PlanThresholds>): PlanThresholds {
@@ -136,6 +143,12 @@ export function analyzeResult(result: ExplainResult, options: AnalyzeOptions): Q
 
   const resourcePressure = nodes.filter((n) => hasResourcePressure(n, limits.highWalBytes))
 
+  const totalWal = totalWalBytes(result.plan)
+  const aggregateWalBytes =
+    totalWal >= limits.highWalBytes && !nodes.some((n) => n.walBytes >= limits.highWalBytes)
+      ? totalWal
+      : undefined
+
   return {
     seqScans,
     estimateMismatches,
@@ -144,6 +157,7 @@ export function analyzeResult(result: ExplainResult, options: AnalyzeOptions): Q
     highPlanningRatio,
     highSharedBuffers,
     resourcePressure,
+    aggregateWalBytes,
   }
 }
 

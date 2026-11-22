@@ -41,8 +41,9 @@ export function formatMarkdownReport(
       )
     if (w.highPlanningRatio)
       parts.push(`High plan ratio: ${ms(r.planning_time_ms)}ms/${ms(r.execution_time_ms)}ms`)
-    if (w.resourcePressure.length > 0)
-      parts.push(`Resource pressure: ${w.resourcePressure.map(pressureLabel).join(', ')}`)
+    const pressure = w.resourcePressure.map(pressureLabel)
+    if (w.aggregateWalBytes !== undefined) pressure.push('query-wide WAL')
+    if (pressure.length > 0) parts.push(`Resource pressure: ${pressure.join(', ')}`)
     const buffers = w.highSharedBuffers[0]
     if (buffers)
       parts.push(
@@ -70,7 +71,8 @@ export function formatMarkdownReport(
       w.seqScans.length + w.estimateMismatches.length + w.appendOverhead.length > 0 ||
       w.highPlanningRatio ||
       w.highSharedBuffers.length > 0 ||
-      w.resourcePressure.length > 0,
+      w.resourcePressure.length > 0 ||
+      w.aggregateWalBytes !== undefined,
   )
   if (flagged.length > 0) {
     lines.push('', '### Warnings', '')
@@ -96,6 +98,10 @@ export function formatMarkdownReport(
       for (const n of w.resourcePressure)
         lines.push(
           `- Resource pressure: ${pressureLabel(n)} (${n.tempReadBlocks} temp blocks read, ${n.tempWrittenBlocks} written, ${n.walBytes} WAL bytes${n.diskSpill ? ', disk sort' : ''}${n.hashBatches > 1 ? `, ${n.hashBatches} hash batches` : ''})`,
+        )
+      if (w.aggregateWalBytes !== undefined)
+        lines.push(
+          `- Resource pressure: query-wide WAL of ${w.aggregateWalBytes} bytes across several nodes`,
         )
       for (const b of w.highSharedBuffers)
         lines.push(
