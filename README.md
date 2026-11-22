@@ -48,6 +48,7 @@ SKU names.
 | [`@vouchington/rss-parser`](packages/rss-parser)                                   | RSS, Atom, and JSON feed parsing                                                     |
 | [`@vouchington/rss-crawler`](packages/rss-crawler)                                 | Transport-injected feed crawling                                                     |
 | [`@vouchington/robots`](packages/robots)                                           | Transport- and cache-injected robots.txt evaluation                                  |
+| [`@vouchington/explain-plan`](packages/explain-plan)                               | Dev-time EXPLAIN ANALYZE capture, plan statistics, warnings, and pressure gates      |
 | [`@vouchington/typed-entities`](packages/typed-entities)                           | Transaction-scoped typed entity aliases, hierarchy, and hostnames                    |
 | [`@vouchington/request-contract-validation`](packages/request-contract-validation) | Caller-injected Ajv request carrier validation                                       |
 | [`@vouchington/rate-limit`](packages/rate-limit)                                   | Valkyries house layer: api-server middleware and edge bindings                       |
@@ -86,6 +87,7 @@ SKU names.
 | [`@vouchington/rss-parser`](packages/rss-parser)                                   | RSS, Atom, and JSON feed parsing                                                     |
 | [`@vouchington/rss-crawler`](packages/rss-crawler)                                 | Transport-injected feed crawling                                                     |
 | [`@vouchington/robots`](packages/robots)                                           | Transport- and cache-injected robots.txt evaluation                                  |
+| [`@vouchington/explain-plan`](packages/explain-plan)                               | Dev-time EXPLAIN ANALYZE capture, plan statistics, warnings, and pressure gates      |
 | [`@vouchington/typed-entities`](packages/typed-entities)                           | Transaction-scoped typed entity aliases, hierarchy, and hostnames                    |
 | [`@vouchington/request-contract-validation`](packages/request-contract-validation) | Caller-injected Ajv request carrier validation                                       |
 | [`@vouchington/rate-limit`](packages/rate-limit)                                   | Valkyries house layer: api-server middleware and edge bindings                       |

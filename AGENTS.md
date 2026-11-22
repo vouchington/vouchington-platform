@@ -78,6 +78,7 @@ the migration advisory lock is per database, and `VITEST_MAX_WORKERS` overrides 
 - `@vouchington/aws` — SES, SQS, Firehose, and CloudWatch command builders, batching, codecs, and throttling classifiers
 - `@vouchington/oauth-client` — subpath-only `/atproto`: injected-store AT Protocol OAuth client builder and EC keyset parser
 - `@vouchington/script-loader` — shared script loader and a Cloudflare Turnstile widget hook
+- `@vouchington/explain-plan` — dev-time, injected-client EXPLAIN ANALYZE capture, plan statistics, warnings, and pressure gates
 - `@vouchington/mcp-server` — subpath-only MCP building blocks: `/types`, `/schema`, `/tools` (merged and manage-entity tools), `/results`, `/untrusted`, and a stateless `/http` handler
 
 Do not extract shadcn/ui components: applications generate and own them with the shadcn CLI. Custom, product-agnostic React components, hooks, and helpers that are not shadcn output may be extracted under the normal rules.
@@ -92,6 +93,8 @@ can override product-facing choices. Code with no third-party runtime dependenci
 `@vouchington/utils/<subpath>` export. Code requiring any third-party runtime dependency must be its
 own `@vouchington/<name>` package and declare that dependency there. Node built-ins do not count as
 third-party dependencies.
+Exception: reusable, standalone development tooling that consumers install as a devDependency, such
+as `@vouchington/explain-plan`, may be its own package even with no third-party runtime dependencies.
 
 Record the source SHA and path list in the commit body when copying from the product monorepo.
 
