@@ -132,6 +132,20 @@ describe('runCommand edges', () => {
     expect(Date.now() - started).toBeLessThan(1_200)
   })
 
+  it('honors an abort raised while the stdout destination is being piped', async () => {
+    const controller = new AbortController()
+    const stdout = new PassThrough()
+    stdout.on('pipe', () => controller.abort())
+    const err = await runCommand({
+      command: process.execPath,
+      args: ['-e', 'setInterval(() => {}, 1000)'],
+      stdout,
+      signal: controller.signal,
+      timeoutMs: 5_000,
+    }).catch((error: unknown) => error)
+    expect(err).toMatchObject({ reason: 'abort' })
+  })
+
   it('times out even when a grandchild keeps the inherited pipes open', async () => {
     const grandchild = 'setTimeout(() => {}, 3000)'
     const script = `require('node:child_process').spawn(process.execPath, ['-e', ${JSON.stringify(grandchild)}], { stdio: 'inherit' })`

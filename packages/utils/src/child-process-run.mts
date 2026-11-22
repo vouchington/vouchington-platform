@@ -86,6 +86,8 @@ export async function runCommand(options: RunCommandOptions): Promise<{ stderr: 
     cancel()
   }
   options.signal?.addEventListener('abort', onAbort, { once: true })
+  // Stream setup hooks may have aborted before the listener existed; abort events are not replayed.
+  if (options.signal?.aborted) onAbort()
   const timer = setTimeout(() => {
     timedOut = true
     cancel()
