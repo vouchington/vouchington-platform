@@ -52,3 +52,14 @@ await crawlWithBrowser({
 The crawler blocks Service Workers, waits for `load`, reports the landed URL after redirects, and
 best-effort captures HTML up to `maxHtmlBytes`. It always attempts to close the page, context, and
 browser. Use `onCleanupError` if cleanup failures need application logging.
+
+Page measurement runs in one `page.evaluate` call with bounded work, so a hostile page cannot make
+the crawler serialize or return an unbounded payload:
+
+- `html` is omitted once the escaped serialization would exceed `maxHtmlBytes` (default 4 MiB). The
+  DOM is measured before `outerHTML` is read.
+- `title` is truncated to `maxTitleBytes` UTF-8 bytes (default 16 KiB).
+- `contentLength` is the rendered body text length, capped at `minContentLength` (default 50),
+  because it only decides `hasContent`.
+- The DOM walk stops after `maxTraversalWork` nodes and characters (default 4 Mi). The page is then
+  treated as having content, and `html` is omitted.

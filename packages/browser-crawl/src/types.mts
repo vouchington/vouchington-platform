@@ -16,7 +16,15 @@ export interface BrowserCrawlRequest {
   navigationTimeoutMs?: number
   hydrationWaitMs?: number
   minContentLength?: number
+  /** Omit `html` when the serialized document exceeds this many UTF-8 bytes. Default 4 MiB. */
   maxHtmlBytes?: number
+  /** Truncate the title to this many UTF-8 bytes. Default 16 KiB. */
+  maxTitleBytes?: number
+  /**
+   * Stop walking the DOM after this many nodes and characters. The crawl then omits `html` and
+   * reports `contentLength` as `minContentLength`. Default 4 Mi.
+   */
+  maxTraversalWork?: number
   /**
    * Runs once on the new page before `requestPolicy` is installed, for example to enable an ad
    * blocker's own request routes. Playwright runs the most recently registered route first, so
