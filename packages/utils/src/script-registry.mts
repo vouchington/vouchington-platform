@@ -6,7 +6,10 @@ export interface ReleasableScript {
 export interface ScriptRegistry<S extends ReleasableScript> {
   /** Creates one script through the injected factory and tracks it for release. */
   register(code: string): S
-  /** Releases every tracked script. Safe to call more than once. */
+  /**
+   * Releases every tracked script, attempting all of them even when one throws; the failures are
+   * then thrown together. Safe to call more than once.
+   */
   releaseAll(): void
 }
 
@@ -22,7 +25,16 @@ export function createScriptRegistry<S extends ReleasableScript>(
   const scripts: S[] = []
   let hooked = false
   const releaseAll = () => {
-    for (const script of scripts.splice(0)) script.release()
+    const errors: unknown[] = []
+    for (const script of scripts.splice(0)) {
+      try {
+        script.release()
+      } catch (error) {
+        errors.push(error)
+      }
+    }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length > 1) throw new AggregateError(errors, 'Failed to release scripts')
   }
   return {
     register(code) {

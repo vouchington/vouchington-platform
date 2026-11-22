@@ -137,8 +137,13 @@ describe('getWorkerConcurrency', () => {
 describe('getWorkerConcurrency env names', () => {
   it('reads process.env by default', () => {
     vi.stubEnv('WORKER_CONCURRENCY_FOO', '8')
-    expect(getWorkerConcurrency('foo', { baseline: 2 })).toBe(8)
-    vi.unstubAllEnvs()
+    vi.stubEnv('WORKER_CONCURRENCY_MAX', '')
+    vi.stubEnv('WORKER_CONCURRENCY_SCALE', '')
+    try {
+      expect(getWorkerConcurrency('foo', { baseline: 2 })).toBe(8)
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 
   it('reads overrides, scale, and max from a custom prefix', () => {

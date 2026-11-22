@@ -22,6 +22,24 @@ describe('createScriptRegistry', () => {
     for (const script of scripts) expect(script.release).toHaveBeenCalledOnce()
   })
 
+  it('attempts every release before reporting failures', () => {
+    const registry = createScriptRegistry(
+      (code) => ({
+        release: vi.fn(() => {
+          if (code !== 'ok') throw new Error(code)
+        }),
+      }),
+      { once: vi.fn() } as never,
+    )
+    const scripts = ['bad1', 'ok', 'bad2'].map((code) => registry.register(code))
+    expect(() => registry.releaseAll()).toThrow(AggregateError)
+    for (const script of scripts) expect(script.release).toHaveBeenCalledOnce()
+    const single = registry.register('only')
+    expect(() => registry.releaseAll()).toThrow('only')
+    expect(single.release).toHaveBeenCalledOnce()
+    expect(() => registry.releaseAll()).not.toThrow()
+  })
+
   it('hooks the real process by default', () => {
     const once = vi.spyOn(process, 'once').mockImplementation(() => process)
     createScriptRegistry(() => ({ release() {} })).register('return 1')

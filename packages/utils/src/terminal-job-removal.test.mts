@@ -59,6 +59,15 @@ describe('acquireTerminalJobRemoval', () => {
     }
   })
 
+  it('is one-shot: a second remove never reaches native removal', async () => {
+    const client = fake('failed', [1])
+    const removal = await acquireTerminalJobRemoval(client, 'ns:{q}', 'j1')
+    if (removal.state !== 'terminal') throw new Error('Expected a terminal job')
+    expect(await removal.remove()).toBe(true)
+    await expect(removal.remove()).rejects.toThrow('already used')
+    expect(client.removeJob).toHaveBeenCalledOnce()
+  })
+
   it('drops the WATCH and rethrows when reading the state fails', async () => {
     const failure = new Error('read failed')
     const client = fake('failed')

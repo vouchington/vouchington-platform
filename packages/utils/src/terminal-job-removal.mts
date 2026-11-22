@@ -42,7 +42,10 @@ export async function acquireTerminalJobRemoval(
     release,
     // The caller may preserve page checkpoints while this hash is still WATCHed.
     readData: () => client.hget(jobKey, 'data'),
+    /** One shot: the WATCH check covers a single call, so a second call throws. */
     async remove(): Promise<boolean> {
+      if (!watched) throw new Error('Terminal job removal handle was already used')
+      watched = false
       const result = await client.removeJob(
         [
           jobKey,
@@ -55,7 +58,6 @@ export async function acquireTerminalJobRemoval(
         ],
         [jobId],
       )
-      watched = false
       // A concurrent retry changes the watched hash, so null means no removal on this pass.
       // Native removal leaves cross-queue parent notifications in xq-pending for its scheduler.
       return result !== null && result[0] !== 0

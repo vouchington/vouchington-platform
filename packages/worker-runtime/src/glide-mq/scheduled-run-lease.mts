@@ -65,6 +65,7 @@ export function createScheduledRunLease(config: ScheduledRunLeaseConfig): Schedu
   const skippedField = config.skippedField ?? 'scheduledRunLeaseSkipped'
   const skippedMetric = config.skippedMetric ?? 'skipped_overlap'
   const deferredMetric = config.deferredMetric ?? 'deferred_admitted'
+  if (admittedField === skippedField) throw new Error('admittedField and skippedField must differ')
   const report = (error: unknown, fallback: string) => {
     try {
       config.onError?.(error instanceof Error ? error : new Error(String(error)))
@@ -101,7 +102,8 @@ export function createScheduledRunLease(config: ScheduledRunLeaseConfig): Schedu
       return member.opts.timeout || lockDuration * (maxStalled + 1)
     }
     const runtime = Math.max(runtimeOf(job), ...(batch ?? []).map(runtimeOf))
-    const ttl = Math.max(1, Math.min(runtime, interval ?? runtime))
+    // SET PX needs a positive integer; a fractional bound rounds up so the lease never shortens.
+    const ttl = Math.max(1, Math.ceil(Math.min(runtime, interval ?? runtime)))
 
     const completeAdmission = async () => {
       try {
@@ -109,7 +111,7 @@ export function createScheduledRunLease(config: ScheduledRunLeaseConfig): Schedu
         const previousJobId = previous === null ? null : decodeGlideString(previous)
         if (previousJobId !== null && previousJobId !== job.id)
           logger.warn('overlap_lease_expired', { queue, scheduler, jobId: job.id, previousJobId })
-        await client.set(previousKey, job.id, Math.max(ttl * 2, (interval ?? ttl) * 2))
+        await client.set(previousKey, job.id, Math.ceil(Math.max(ttl * 2, (interval ?? ttl) * 2)))
         return release
       } catch (err_) {
         try {

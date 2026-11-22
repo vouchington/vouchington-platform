@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { Job } from 'glide-mq'
+import { DelayedError, type Job } from 'glide-mq'
 import {
   createScheduledRunLease,
   type ScheduledRunLeaseClient,
@@ -42,6 +42,20 @@ describe('createScheduledRunLease', () => {
     const release = await lease('q', job({ schedulerName: undefined }), {})
     await release?.()
     expect(client.runScript).not.toHaveBeenCalled()
+  })
+
+  it('rejects identical admitted and skipped field names', () => {
+    const { config } = setup(1)
+    expect(() =>
+      createScheduledRunLease({ ...config, admittedField: 'state', skippedField: 'state' }),
+    ).toThrow('admittedField and skippedField must differ')
+  })
+
+  it('rounds a fractional runtime bound up to integer milliseconds', async () => {
+    const { client, lease } = setup(1)
+    await lease('q', job({ opts: { timeout: 1500.5 } }), {})
+    expect(client.runScript.mock.calls[0]![2][4]).toBe('1501')
+    expect(client.set).toHaveBeenCalledWith('glide:{q}:run-previous:nightly', 'j1', 3002)
   })
 
   it('sizes the lease from the longest timeout in the batch', async () => {
@@ -229,10 +243,11 @@ describe('createScheduledRunLease', () => {
 
   it('defers retained admitted work and counts it', async () => {
     const { client, lease, logger } = setup(3)
-    const moveToDelayed = vi.fn(async () => {})
+    const delayed = new DelayedError(1)
+    const moveToDelayed = vi.fn(async () => Promise.reject(delayed))
     const retained = job({ opts: { lockDuration: 5000 }, moveToDelayed })
     const before = Date.now()
-    expect(await lease('q', retained, {})).toBeNull()
+    await expect(lease('q', retained, {})).rejects.toBe(delayed)
     expect(client.hincrBy).toHaveBeenCalledWith('glide:{q}:run-metrics', 'deferred_admitted', 1)
     expect(logger.info).toHaveBeenCalledWith('deferred_admitted', expect.any(Object))
     const delayedTo = (moveToDelayed.mock.calls[0] as unknown as [number])[0]
@@ -246,8 +261,9 @@ describe('createScheduledRunLease', () => {
     onError.mockImplementation(() => {
       throw new Error('reporter')
     })
-    const moveToDelayed = vi.fn(async () => {})
-    expect(await lease('q', job({ moveToDelayed }), {})).toBeNull()
+    const delayed = new DelayedError(1)
+    const moveToDelayed = vi.fn(async () => Promise.reject(delayed))
+    await expect(lease('q', job({ moveToDelayed }), {})).rejects.toBe(delayed)
     expect(moveToDelayed).toHaveBeenCalledOnce()
     expect(logger.error).toHaveBeenCalledWith(
       'scheduled_overlap_metric_reporting_failed',

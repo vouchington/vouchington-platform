@@ -8,6 +8,7 @@ import {
   type Processor,
   type WorkerOptions,
 } from 'glide-mq'
+import { batchResults, selfAddError, toError } from './guarded-batch.mts'
 import type { ScheduledRunLease } from './scheduled-run-lease.mts'
 
 type ActiveJob = { queue: string; jobId: string; dedupId?: string | undefined }
@@ -53,7 +54,11 @@ export interface GuardedProcessors {
  * running jobs in `AsyncLocalStorage` so a processor cannot enqueue itself.
  */
 export function createGuardedProcessors(config: GuardedProcessorsConfig): GuardedProcessors {
-  const activeJobs = new AsyncLocalStorage<ActiveJob[]>()
+  const activeJobs = new AsyncLocalStorage<{ jobs: ActiveJob[]; active: boolean }>()
+  const current = () => {
+    const scope = activeJobs.getStore()
+    return scope?.active ? scope.jobs : undefined
+  }
   const logger = config.logger ?? console
   const report = (error: Error, fallback: string) => {
     try {
@@ -65,7 +70,7 @@ export function createGuardedProcessors(config: GuardedProcessorsConfig): Guarde
   }
 
   async function releaseAll(releases: Release[]): Promise<void> {
-    const results = await Promise.allSettled(releases.map((release) => release()))
+    const results = await Promise.allSettled(releases.map(async (release) => release()))
     for (const result of results) {
       if (result.status !== 'rejected') continue
       const reason: unknown = result.reason
@@ -87,13 +92,12 @@ export function createGuardedProcessors(config: GuardedProcessorsConfig): Guarde
       return async (job) => {
         const release = await config.lease(queue, job, options)
         if (!release) return undefined as never
+        const scope = { jobs: [activeJob(queue, job)], active: true }
         try {
-          const result = await activeJobs.run([activeJob(queue, job)], () => processor(job))
+          return await activeJobs.run(scope, () => processor(job))
+        } finally {
+          scope.active = false
           await releaseAll([release])
-          return result
-        } catch (err) {
-          await releaseAll([release])
-          throw err
         }
       }
     },
@@ -101,12 +105,20 @@ export function createGuardedProcessors(config: GuardedProcessorsConfig): Guarde
       return async (jobs) => {
         const releases: Release[] = []
         const runnable: Job<any, any>[] = []
-        const deferred = new Map<Job<any, any>, DelayedError>()
-        let result: unknown[]
+        // Fixed outcomes: a deferral, or the error of a failed admission (admitted jobs then never run).
+        const outcome = new Map<Job<any, any>, Error>()
+        let admissionError: Error | undefined
         let failure: Error | undefined
         let partial = false
+        let values: unknown[] = []
+        const scope = { jobs: [] as ActiveJob[], active: true }
+        let result: unknown[]
         try {
           for (const job of jobs) {
+            if (admissionError) {
+              outcome.set(job, admissionError)
+              continue
+            }
             try {
               // oxlint-disable-next-line no-await-in-loop -- preserve batch order when two jobs share a scheduler lease
               const release = await config.lease(queue, job, options, jobs)
@@ -116,17 +128,19 @@ export function createGuardedProcessors(config: GuardedProcessorsConfig): Guarde
               }
             } catch (err) {
               // The batch path ignores moveToDelayed, so a deferral must not abort the batch.
-              if (!(err instanceof DelayedError)) throw err
-              deferred.set(job, err)
+              if (err instanceof DelayedError) outcome.set(job, err)
+              else {
+                admissionError = toError(err)
+                outcome.set(job, admissionError)
+              }
             }
           }
-          let values: unknown[] = []
+          if (admissionError) for (const job of runnable.splice(0)) outcome.set(job, admissionError)
+          scope.jobs = runnable.map((job) => activeJob(queue, job))
           if (runnable.length) {
             try {
-              values = await activeJobs.run(
-                runnable.map((job) => activeJob(queue, job)),
-                () => processor(runnable),
-              )
+              // The processor may consume its input, so it gets a copy of the admission order.
+              values = await activeJobs.run(scope, () => processor([...runnable]))
               if (!Array.isArray(values) || values.length !== runnable.length) {
                 const count = Array.isArray(values) ? values.length : 'non-array'
                 throw new Error(
@@ -134,15 +148,15 @@ export function createGuardedProcessors(config: GuardedProcessorsConfig): Guarde
                 )
               }
             } catch (err) {
-              partial = err instanceof BatchError
-              if (partial) values = (err as BatchError).results
-              else failure = err instanceof Error ? err : new Error(String(err), { cause: err })
+              const partialResults = batchResults(err)
+              partial = partialResults !== null
+              if (partialResults) values = partialResults
+              else failure = toError(err)
             }
           }
           // Results are positional against the original batch, not the runnable subset.
           result = jobs.map((job) => {
-            const deferral = deferred.get(job)
-            if (deferral) return deferral
+            if (outcome.has(job)) return outcome.get(job)
             const index = runnable.indexOf(job)
             if (index < 0) return undefined
             if (failure) return failure
@@ -151,44 +165,33 @@ export function createGuardedProcessors(config: GuardedProcessorsConfig): Guarde
               : values[index]
           })
         } finally {
+          scope.active = false
           await releaseAll(releases)
         }
-        // With every job runnable, a processor-wide failure reaches the worker unchanged.
+        // When every job fails the same way, the original error reaches the worker unchanged.
         if (failure && runnable.length === jobs.length) throw failure
+        if (admissionError && jobs.every((job) => outcome.get(job) === admissionError))
+          throw admissionError
         // A deferred job reports its DelayedError as a per-job failure, so the worker retries it
         // through its normal attempts and backoff instead of resolving it as a success. Skipped
         // ticks stay successes because the worker reads results by original position.
-        if (partial || failure || deferred.size > 0) throw new BatchError(result)
+        if (partial || failure || outcome.size > 0) throw new BatchError(result)
         return result as never
       }
     },
     isActiveProcessorJob(queue, jobId) {
       if (!jobId) return false
-      return (
-        activeJobs.getStore()?.some((job) => job.queue === queue && job.jobId === jobId) ?? false
-      )
+      return current()?.some((job) => job.queue === queue && job.jobId === jobId) ?? false
     },
     rejectSelfAdd(queue, jobName, opts) {
-      const active = activeJobs
-        .getStore()
-        ?.find(
-          (job) =>
-            job.queue === queue &&
-            ((opts?.jobId && opts.jobId === job.jobId) ||
-              (opts?.deduplication?.id && opts.deduplication.id === job.dedupId)),
-        )
-      if (!active) return false
-      const error: Error & { extra?: Record<string, unknown> } = new Error(
-        `Job ${active.jobId} tried to add itself to queue ${queue}`,
+      const active = current()?.find(
+        (job) =>
+          job.queue === queue &&
+          ((opts?.jobId && opts.jobId === job.jobId) ||
+            (opts?.deduplication?.id && opts.deduplication.id === job.dedupId)),
       )
-      error.extra = {
-        queue,
-        jobName,
-        jobId: opts?.jobId ?? null,
-        dedupId: opts?.deduplication?.id ?? null,
-        activeJobId: active.jobId,
-        activeDedupId: active.dedupId ?? null,
-      }
+      if (!active) return false
+      const error = selfAddError(active, queue, jobName, opts)
       if (config.throwOnSelfAdd ?? true) throw error
       report(error, 'self_add_guard_reporting_failed')
       return true

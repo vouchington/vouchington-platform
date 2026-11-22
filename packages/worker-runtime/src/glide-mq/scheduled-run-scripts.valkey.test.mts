@@ -104,11 +104,15 @@ describe.skipIf(!url)('scheduled run Lua on a real Valkey', () => {
     })
     const holder = await lease(name, tick('holder2'), { lockDuration: 20_000 })
     await command('SET', `${base}:run-metrics`, 'wrong-type')
-    expect(await lease(name, tick('late'), { lockDuration: 20_000 })).toBeNull()
-    expect(reports.map((error) => error.message)).toEqual([
-      `Scheduled overlap metric increment failed for ${name}/repeat`,
-    ])
-    await holder?.()
+    try {
+      expect(await lease(name, tick('late'), { lockDuration: 20_000 })).toBeNull()
+      expect(reports.map((error) => error.message)).toEqual([
+        `Scheduled overlap metric increment failed for ${name}/repeat`,
+      ])
+    } finally {
+      await command('DEL', `${base}:run-metrics`)
+      await holder?.()
+    }
   })
 
   it('only releases a lease the caller holds', async () => {

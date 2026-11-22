@@ -22,6 +22,7 @@ local holder = redis.call('GET', KEYS[1])
 if holder then
   if holder == ARGV[1] then
     redis.call('HSET', KEYS[2], ARGV[3], ARGV[2])
+    redis.call('PEXPIRE', KEYS[1], ARGV[5]) -- a recovered admission gets its full budget back
     return 2 -- same job retrying its own lease
   end
   if redis.call('HGET', KEYS[2], ARGV[3]) == ARGV[2] then

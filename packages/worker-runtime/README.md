@@ -80,7 +80,9 @@ in `reportingErrors`, neither affecting the enqueue.
 ### Scheduler-overlap lease, guarded processors, and stall budget
 
 `createScheduledRunLease({ client, prefix, onError, logger, ... })` returns
-`(queue, job, workerOptions) => release | null`. A job with a `schedulerName` takes a per-scheduler
+`async (queue, job, workerOptions, batch?) => release | null`. Inside a batch wrapper call
+`await lease(queue, job, workerOptions, jobs)`: GlideMQ bounds a batch by its longest timeout, so
+the lease uses the longest runtime in `jobs`. A job with a `schedulerName` takes a per-scheduler
 lease sized from `job.opts.timeout` (or `lockDuration * (maxStalledCount + 1)`) and capped by the
 scheduler's interval. A tick that finds a live holder is skipped and counted, and an already
 admitted retained job is delayed instead. The decision is one atomic Lua call, so a lost reply
@@ -157,8 +159,8 @@ and `data` or `dataFactory`), an optional `registration: 'sequential'`, a nonemp
   `transformRepeat` replaces a cadence clamp; both are application policy.
 - `removeScheduledJobScheduler(queue, id)` reports the scheduler names before and after.
 - `toSchedulerTemplateOptions(opts)` drops `delay`, `deduplication`, `parent`, and `jobId`.
-- `clampScheduledJobRepeatToHourlyFloor(repeat)` from `@vouchington/utils/hourly-schedule-clamp` is a ready-made `transformRepeat` for low-traffic
-  environments that must wake at most once an hour: `every` rounds up to a top-of-hour cron
+- `clampScheduledJobRepeatToHourlyFloor(repeat)` from `@vouchington/utils/hourly-schedule-clamp` is the core of a `transformRepeat` for low-traffic
+  environments (adapt its result: `(repeat) => clampScheduledJobRepeatToHourlyFloor(repeat).repeat`) that must wake at most once an hour: `every` rounds up to a top-of-hour cron
   (`0 * * * *`, an hour-step cron that divides 24, then weekly, then monthly), and a cron keeps
   every field except its minute, which becomes `0`. It returns `{ repeat, clamped }` and rejects a
   malformed minute field. `alignedScheduleText(pattern)` renders an aligned pattern as `every Nh`.

@@ -133,6 +133,56 @@ describe('wrapBatchProcessor', () => {
     )
   })
 
+  it('keeps recorded skips successful when a later admission fails', async () => {
+    const { guarded, lease, release } = setup()
+    const down = new Error('lease down')
+    lease.mockImplementation(async (_queue: string, candidate: Job) => {
+      if (candidate.id === 'b') throw down
+      return candidate.id.startsWith('skip') ? null : release
+    })
+    const error = (await guarded
+      .wrapBatchProcessor(
+        async () => [],
+        'q',
+        {},
+      )([job('skip-a'), job('b'), job('c')])
+      .catch((e: unknown) => e)) as BatchError
+    expect(error.results).toEqual([undefined, down, down])
+    const admitted = (await guarded
+      .wrapBatchProcessor(
+        async () => [],
+        'q',
+        {},
+      )([job('a'), job('b')])
+      .catch((e: unknown) => e)) as Error
+    expect(admitted).toBe(down)
+    expect(release).toHaveBeenCalledOnce()
+  })
+
+  it('lets a processor consume its input and accepts a BatchError from another copy', async () => {
+    const { guarded } = setup()
+    const consumed = guarded.wrapBatchProcessor(
+      async (jobs) => {
+        const out: string[] = []
+        while (jobs.length) out.push(`done:${jobs.shift()!.id}`)
+        return out
+      },
+      'q',
+      {},
+    )
+    expect(await consumed([job('a'), job('b')])).toEqual(['done:a', 'done:b'])
+    const foreign = Object.assign(new Error('x'), {
+      name: 'BatchError',
+      results: ['ok', new Error('b')],
+    })
+    const run = guarded.wrapBatchProcessor(async () => Promise.reject(foreign), 'q', {})
+    const error = (await run([job('a'), job('b')]).catch((e: unknown) => e)) as BatchError
+    expect(error.results).toEqual(['ok', new Error('b')])
+    const broken = Object.assign(new Error('x'), { name: 'BatchError', results: 'nope' })
+    const plain = guarded.wrapBatchProcessor(async () => Promise.reject(broken), 'q', {})
+    await expect(plain([job('a')])).rejects.toBe(broken)
+  })
+
   it('reports a missing partial result as a failure', async () => {
     const { guarded } = setup()
     const run = guarded.wrapBatchProcessor(async () => Promise.reject(new BatchError([])), 'q', {})
@@ -182,6 +232,47 @@ describe('wrapBatchProcessor', () => {
       guarded.wrapBatchProcessor(async () => [], 'q', {})([job('a'), job('b')]),
     ).rejects.toThrow('lease down')
     expect(release).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('release and scope lifetime', () => {
+  it('releases every lease even when a release throws synchronously', async () => {
+    const { guarded, lease, onError } = setup()
+    const second = vi.fn(async () => {})
+    const throwing = (() => {
+      throw new Error('sync')
+    }) as never
+    lease.mockResolvedValueOnce(throwing).mockResolvedValueOnce(second)
+    await guarded.wrapBatchProcessor(
+      async (jobs) => jobs.map(() => 1),
+      'q',
+      {},
+    )([job('a'), job('b')])
+    expect(second).toHaveBeenCalledOnce()
+    expect(onError).toHaveBeenCalledWith(new Error('sync'))
+  })
+
+  it('stops treating a job as active once its processor settles', async () => {
+    const { guarded } = setup()
+    let later: (() => boolean) | undefined
+    await guarded.wrapSingleProcessor(
+      async () => {
+        later = () => guarded.isActiveProcessorJob('q', 'a')
+      },
+      'q',
+      {},
+    )(job('a'))
+    expect(later?.()).toBe(false)
+    let batchLater: (() => boolean) | undefined
+    await guarded.wrapBatchProcessor(
+      async (jobs) => {
+        batchLater = () => guarded.isActiveProcessorJob('q', 'a')
+        return jobs.map(() => 1)
+      },
+      'q',
+      {},
+    )([job('a')])
+    expect(batchLater?.()).toBe(false)
   })
 })
 
