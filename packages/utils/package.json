@@ -280,6 +280,21 @@
       "import": "./dist/utm.mjs",
       "default": "./dist/utm.mjs"
     },
+    "./turnstile-siteverify": {
+      "types": "./dist/turnstile-siteverify.d.mts",
+      "import": "./dist/turnstile-siteverify.mjs",
+      "default": "./dist/turnstile-siteverify.mjs"
+    },
+    "./recaptcha-enterprise": {
+      "types": "./dist/recaptcha-enterprise.d.mts",
+      "import": "./dist/recaptcha-enterprise.mjs",
+      "default": "./dist/recaptcha-enterprise.mjs"
+    },
+    "./web-risk": {
+      "types": "./dist/web-risk.d.mts",
+      "import": "./dist/web-risk.mjs",
+      "default": "./dist/web-risk.mjs"
+    },
     "./fetch-ports": {
       "types": "./dist/fetch-ports.d.mts",
       "import": "./dist/fetch-ports.mjs",
