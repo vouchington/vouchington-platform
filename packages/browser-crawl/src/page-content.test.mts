@@ -254,6 +254,12 @@ describe('measureAndSerializePage', () => {
   })
 
   it('returns an empty measurement without a document element', () => {
+    vi.stubGlobal('document', undefined)
+    expect(measureAndSerializePage({ maxHtmlBytes: 1, maxTitleBytes: 1 })).toEqual({
+      contentLength: 0,
+      html: undefined,
+      title: '',
+    })
     vi.stubGlobal('document', {})
     expect(measureAndSerializePage({ maxHtmlBytes: 1, maxTitleBytes: 1 })).toEqual({
       contentLength: 0,
@@ -265,7 +271,7 @@ describe('measureAndSerializePage', () => {
   it('counts escaped and multibyte serialized bytes exactly', () => {
     const build = () => {
       const root = element('HTML', [
-        text('&<>éह'),
+        text('&<>\u00a0éह'),
         { nodeType: 3, nodeValue: null, childNodes: [] },
         { nodeType: 8, nodeValue: null, childNodes: [] },
       ])
@@ -273,13 +279,15 @@ describe('measureAndSerializePage', () => {
       root.outerHTML = '<html></html>'
       return root
     }
-    // <HTML a="&amp;&quot;&lt;x"> is 30 bytes, the text 20, the empty comment 7 and </HTML> 7.
+    // <HTML a="&amp;&quot;<x"> is 24 bytes, &amp;&lt;&gt;&nbsp;éह 24, the empty comment 7 and
+    // </HTML> 7. An attribute's < counts as one byte: newer browsers escape it, and undercounting
+    // is safe because the final outerHTML length check decides.
     vi.stubGlobal('document', { documentElement: build() })
-    expect(measureAndSerializePage({ maxHtmlBytes: 64, maxTitleBytes: 1 }).html).toBe(
+    expect(measureAndSerializePage({ maxHtmlBytes: 62, maxTitleBytes: 1 }).html).toBe(
       '<html></html>',
     )
     vi.stubGlobal('document', { documentElement: build() })
-    expect(measureAndSerializePage({ maxHtmlBytes: 63, maxTitleBytes: 1 }).html).toBeUndefined()
+    expect(measureAndSerializePage({ maxHtmlBytes: 61, maxTitleBytes: 1 }).html).toBeUndefined()
   })
 
   it('counts script and style text as raw, unescaped bytes', () => {
@@ -295,6 +303,60 @@ describe('measureAndSerializePage', () => {
     )
     vi.stubGlobal('document', { documentElement: build() })
     expect(measureAndSerializePage({ maxHtmlBytes: 45, maxTitleBytes: 1 }).html).toBeUndefined()
+  })
+
+  it('reads DOM metadata through native getters that named controls cannot shadow', () => {
+    const native = Symbol('native')
+    type Fake = Record<PropertyKey, unknown>
+    const proto = (names: string[]) =>
+      Object.fromEntries(
+        names.map((name) => [
+          name,
+          {
+            get(this: Fake) {
+              return (this[native] as Fake)[name]
+            },
+          },
+        ]),
+      )
+    const define = (names: string[]) => ({ prototype: Object.defineProperties({}, proto(names)) })
+    const node = (fields: Fake): Fake => ({
+      [native]: fields,
+      tagName: {},
+      nodeType: {},
+      title: {},
+    })
+    const body = node({
+      nodeType: 1,
+      tagName: 'BODY',
+      attributes: [],
+      childNodes: [node({ nodeType: 3, nodeValue: 'hello', childNodes: [] })],
+      innerText: 'hello',
+    })
+    const template = node({
+      nodeType: 1,
+      tagName: 'template',
+      attributes: [],
+      content: { childNodes: [] },
+    })
+    const root = node({
+      nodeType: 1,
+      tagName: 'HTML',
+      attributes: [],
+      childNodes: [template, body],
+      outerHTML: '<html></html>',
+    })
+    vi.stubGlobal('Node', define(['nodeType', 'nodeValue', 'childNodes']))
+    vi.stubGlobal('Element', define(['tagName', 'attributes', 'outerHTML']))
+    vi.stubGlobal('HTMLElement', define(['innerText']))
+    vi.stubGlobal('HTMLTemplateElement', define(['content']))
+    vi.stubGlobal('Document', define(['documentElement', 'title']))
+    vi.stubGlobal('document', node({ documentElement: root, title: 'Title' }))
+    expect(measureAndSerializePage({ maxHtmlBytes: 1024, maxTitleBytes: 1024 })).toEqual({
+      contentLength: 5,
+      html: '<html></html>',
+      title: 'Title',
+    })
   })
 
   it('counts void elements without children or an end tag', () => {

@@ -31,8 +31,18 @@ export function measureAndSerializePage(limits: {
     maxTitleBytes,
     maxTraversalWork = Number.MAX_SAFE_INTEGER,
   } = limits
+  // Named form controls and named document items shadow DOM properties (LegacyOverrideBuiltIns),
+  // so read through the native prototype getters when they exist.
+  const scope = globalThis as unknown as Record<string, { prototype: object } | undefined>
+  const read = <T,>(target: object, type: string, name: string): T => {
+    const prototype = scope[type]?.prototype
+    // Reflect.get with a receiver runs the prototype's getter against the target.
+    return Reflect.get(prototype && name in prototype ? prototype : target, name, target) as T
+  }
+  const doc = (globalThis as unknown as { document?: PageDocument }).document
   const getBoundedTitle = (): string => {
-    const title = (globalThis as unknown as { document?: { title?: string } }).document?.title ?? ''
+    // Only called once documentElement was found, so the document exists.
+    const title = read<string | undefined>(doc!, 'Document', 'title') ?? ''
     const encoder = new TextEncoder()
     let bytes = 0
     let boundedTitle = ''
@@ -48,39 +58,13 @@ export function measureAndSerializePage(limits: {
   const TEXT_NODE = 3
   const COMMENT_NODE = 8
   // outerHTML writes no children or end tag for these elements.
-  const VOID_ELEMENTS = [
-    'AREA',
-    'BASE',
-    'BASEFONT',
-    'BGSOUND',
-    'BR',
-    'COL',
-    'EMBED',
-    'FRAME',
-    'HR',
-    'IMG',
-    'INPUT',
-    'KEYGEN',
-    'LINK',
-    'META',
-    'PARAM',
-    'SOURCE',
-    'TRACK',
-    'WBR',
-  ]
+  const VOID_ELEMENTS =
+    'AREA BASE BASEFONT BGSOUND BR COL EMBED FRAME HR IMG INPUT KEYGEN LINK META PARAM SOURCE TRACK WBR'.split(
+      ' ',
+    )
   // outerHTML writes these elements' text unescaped (the HTML fragment serialization algorithm).
-  const RAW_TEXT_PARENTS = [
-    'IFRAME',
-    'NOEMBED',
-    'NOFRAMES',
-    'NOSCRIPT',
-    'PLAINTEXT',
-    'SCRIPT',
-    'STYLE',
-    'XMP',
-  ]
-  const doc = (globalThis as unknown as { document?: PageDocument }).document
-  const root = doc?.documentElement
+  const RAW_TEXT_PARENTS = 'IFRAME NOEMBED NOFRAMES NOSCRIPT PLAINTEXT SCRIPT STYLE XMP'.split(' ')
+  const root = doc ? read<PageElement | undefined>(doc, 'Document', 'documentElement') : undefined
   if (!root) return { contentLength: 0, html: undefined, title: '' }
   let contentLength = 0
   let serializedBytes = 0
@@ -96,9 +80,11 @@ export function measureAndSerializePage(limits: {
         return
       }
       if (omitHtml) continue
-      if (escape === 'text' && (char === '&' || char === '<' || char === '>')) serializedBytes += 5
-      else if (escape === 'attribute' && (char === '&' || char === '"' || char === '<'))
-        serializedBytes += 6
+      // Entity lengths from the HTML serialization algorithm: &amp; &lt; &gt; &quot; &nbsp;.
+      if (escape !== 'none' && (char === '&' || char === '\u00a0'))
+        serializedBytes += char === '&' ? 5 : 6
+      else if (escape === 'text' && (char === '<' || char === '>')) serializedBytes += 4
+      else if (escape === 'attribute' && char === '"') serializedBytes += 6
       else {
         const codePoint = char.codePointAt(0)!
         serializedBytes +=
@@ -135,25 +121,25 @@ export function measureAndSerializePage(limits: {
       nodes.pop()
       continue
     }
-    if (node.nodeType === TEXT_NODE) {
-      add(node.nodeValue ?? '', current.rawText ? 'none' : 'text')
+    const nodeType = read<number>(node, 'Node', 'nodeType')
+    if (nodeType === TEXT_NODE || nodeType === COMMENT_NODE) {
+      const value = read<string | null>(node, 'Node', 'nodeValue') ?? ''
+      if (nodeType === TEXT_NODE) add(value, current.rawText ? 'none' : 'text')
+      else add(`<!--${value}-->`)
       nodes.pop()
       continue
     }
-    if (node.nodeType === COMMENT_NODE) {
-      add(`<!--${node.nodeValue ?? ''}-->`)
-      nodes.pop()
-      continue
-    }
-    if (node.nodeType !== ELEMENT_NODE) {
+    if (nodeType !== ELEMENT_NODE) {
       nodes.pop()
       continue
     }
     const element = node as PageElement
-    add(`<${element.tagName}`)
+    const elementTagName = read<string>(element, 'Element', 'tagName')
+    const attributes = read<PageElement['attributes']>(element, 'Element', 'attributes')
+    add(`<${elementTagName}`)
     let attributeIndex = 0
-    while (attributeIndex < element.attributes.length) {
-      const attribute = element.attributes[attributeIndex]!
+    while (attributeIndex < attributes.length) {
+      const attribute = attributes[attributeIndex]!
       attributeIndex += 1
       add(` ${attribute.name}="`)
       add(attribute.value, 'attribute')
@@ -161,24 +147,28 @@ export function measureAndSerializePage(limits: {
       if (traversalWork >= maxTraversalWork) break
     }
     add('>')
-    const tagName = element.tagName.toUpperCase()
+    const tagName = elementTagName.toUpperCase()
     if (tagName === 'BODY') body = element
     if (VOID_ELEMENTS.includes(tagName)) {
       nodes.pop()
       continue
     }
-    const children = element.content?.childNodes ?? element.childNodes
-    current.children = children
+    const content =
+      tagName === 'TEMPLATE'
+        ? read<PageElement['content']>(element, 'HTMLTemplateElement', 'content')
+        : undefined
+    current.children = content?.childNodes ?? read<ArrayLike<PageNode>>(node, 'Node', 'childNodes')
     current.index = 0
-    current.tagName = element.tagName
+    current.tagName = elementTagName
   }
   if (traversalWork < maxTraversalWork) {
-    contentLength = Math.min(maxContentLength, body?.innerText?.length ?? 0)
+    const innerText = body ? read<string | undefined>(body, 'HTMLElement', 'innerText') : undefined
+    contentLength = Math.min(maxContentLength, innerText?.length ?? 0)
   }
   if (omitHtml) return { contentLength, html: undefined, title: getBoundedTitle() }
   let html: string
   try {
-    html = root.outerHTML
+    html = read<string>(root, 'Element', 'outerHTML')
   } catch {
     return { contentLength, html: undefined, title: getBoundedTitle() }
   }
