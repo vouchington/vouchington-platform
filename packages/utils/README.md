@@ -154,6 +154,12 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
 - `utm`: `createUtmParser({ sourceAliases, fallbackSourceParam? })` lowercases and trims UTM fields
   and resolves `utm_source` through caller-owned aliases. The package has no default shortcode map.
 - `fetch-ports`: the Fetch standard forbidden-port list and membership predicates.
+- `turnstile-siteverify`, `recaptcha-enterprise`, and `web-risk`: provider clients for Cloudflare
+  Turnstile siteverify, Google reCAPTCHA Enterprise assessments, and Google Web Risk URI lookups.
+  Callers inject `fetch`, credentials, project/site IDs, timeout, and abort signal; each call returns
+  a discriminated result (success or threat, user-level rejection or invalid token, or `error` with a
+  `ProviderFailure` whose `retryable` flag and `retryAfterMs` drive caller policy). A caller abort is
+  rethrown. Thresholds, actions, lockouts, caching, and blocking stay with the application.
 - `api-errors`: the house JSON error envelope (`message`, optional `code`, `request_id`, `stack`),
   status/message/code extraction helpers, and `buildApiErrorEnvelope`, which redacts 5xx details
   unless the caller sets `exposeDetails`. Callers own serialization, logging, and environment policy.
