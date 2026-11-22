@@ -92,6 +92,8 @@ can override product-facing choices. Code with no third-party runtime dependenci
 `@vouchington/utils/<subpath>` export. Code requiring any third-party runtime dependency must be its
 own `@vouchington/<name>` package and declare that dependency there. Node built-ins do not count as
 third-party dependencies.
+Exception: reusable, standalone development tooling that consumers install as a devDependency, such
+as `@vouchington/explain-plan`, may be its own package even with no third-party runtime dependencies.
 
 Record the source SHA and path list in the commit body when copying from the product monorepo.
 
