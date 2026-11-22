@@ -1,0 +1,76 @@
+{
+  "name": "@vouchington/server-utils",
+  "version": "0.0.0",
+  "description": "Dependency-free server-only utilities for Node and Bun.",
+  "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/server-utils#readme",
+  "license": "MIT",
+  "author": "Jonathan Ong",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vouchington/vouchington-platform.git",
+    "directory": "packages/server-utils"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "exports": {
+    "./api-errors": {
+      "types": "./dist/api-errors.d.mts",
+      "import": "./dist/api-errors.mjs",
+      "default": "./dist/api-errors.mjs"
+    },
+    "./child-process": {
+      "types": "./dist/child-process.d.mts",
+      "import": "./dist/child-process.mjs",
+      "default": "./dist/child-process.mjs"
+    },
+    "./error-tree": {
+      "types": "./dist/error-tree.d.mts",
+      "import": "./dist/error-tree.mjs",
+      "default": "./dist/error-tree.mjs"
+    },
+    "./graceful-shutdown": {
+      "types": "./dist/graceful-shutdown.d.mts",
+      "import": "./dist/graceful-shutdown.mjs",
+      "default": "./dist/graceful-shutdown.mjs"
+    },
+    "./http-signatures": {
+      "types": "./dist/http-signatures.d.mts",
+      "import": "./dist/http-signatures.mjs",
+      "default": "./dist/http-signatures.mjs"
+    },
+    "./jsonl-partition-writer": {
+      "types": "./dist/jsonl-partition-writer.d.mts",
+      "import": "./dist/jsonl-partition-writer.mjs",
+      "default": "./dist/jsonl-partition-writer.mjs"
+    },
+    "./token-secrets": {
+      "types": "./dist/token-secrets.d.mts",
+      "import": "./dist/token-secrets.mjs",
+      "default": "./dist/token-secrets.mjs"
+    },
+    "./url-signing": {
+      "types": "./dist/url-signing.d.mts",
+      "import": "./dist/url-signing.mjs",
+      "default": "./dist/url-signing.mjs"
+    },
+    "./web-push-vapid": {
+      "types": "./dist/web-push-vapid.d.mts",
+      "import": "./dist/web-push-vapid.mjs",
+      "default": "./dist/web-push-vapid.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "prepack": "pnpm run build"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

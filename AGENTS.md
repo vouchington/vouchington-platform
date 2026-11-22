@@ -48,7 +48,8 @@ the migration advisory lock is per database, and `VITEST_MAX_WORKERS` overrides 
 
 - `@vouchington/auth` — injected WebAuthn passkey ceremony primitives
 - `@vouchington/postgres` — PostgreSQL runtime factory
-- `@vouchington/utils` — dependency-free explicit-subpath utilities
+- `@vouchington/utils` — dependency-free, runtime-portable explicit-subpath utilities; no source file imports a Node built-in
+- `@vouchington/server-utils` — dependency-free server-only explicit-subpath utilities for Node and Bun: `api-errors`, `child-process`, `error-tree`, `graceful-shutdown`, `http-signatures`, `jsonl-partition-writer` (buffered per-partition JSON Lines file appender with injected paths and error sink), `token-secrets`, `url-signing`, and `web-push-vapid`
 - `@vouchington/utils/sentry-envelope` and `/scopes` — injected envelope limits and scope catalogs
 - `@vouchington/utils/hourly-schedule-clamp` — hourly cron clamp for scheduler repeats
 - `@vouchington/utils/terminal-job-removal` — injected-client WATCH and atomic removal of terminal jobs
@@ -56,7 +57,6 @@ the migration advisory lock is per database, and `VITEST_MAX_WORKERS` overrides 
 - `@vouchington/utils/worker-concurrency` — env-driven worker concurrency resolution with injected variable names
 - `@vouchington/utils/service-worker-activation` — optional-timeout wait until a service worker registration is active
 - `@vouchington/utils/turnstile-siteverify`, `/recaptcha-enterprise`, and `/web-risk` — injected-fetch provider clients that classify success, user-level rejection, and retryable or terminal provider errors
-- `@vouchington/utils/jsonl-partition-writer` — buffered per-partition JSON Lines file appender with injected paths and error sink
 - `@vouchington/session-jwt` — portable RS512 JWT primitives
 - `@vouchington/pagination` — cursor codecs, guards, and configurable query parsing
 - `@vouchington/queue-errors` — GlideMQ retry classification and rate-limit helpers
@@ -108,8 +108,12 @@ work: retry loops, per-item transaction runners, middleware installers, idempote
 dependency-ordered appliers. An extraction must earn its place: it must reduce lines of code in its
 dependents without adding indirection to their business logic. Business workflows, domain state transitions, product identifiers,
 product defaults, policy, persistence, and authorization belong in application adapters. Packages may encode safe, reusable implementation defaults when callers
-can override product-facing choices. Code with no third-party runtime dependencies belongs in an explicit
-`@vouchington/utils/<subpath>` export. Code requiring any third-party runtime dependency must be its
+can override product-facing choices. Dependency-free code belongs in an explicit
+`@vouchington/utils/<subpath>` export only when it imports no Node built-ins (no `node:*` or bare
+built-in specifier, enforced by `test/utils-portability.test.mts` and dependency-cruiser).
+Dependency-free server-only code, which imports Node built-ins, belongs in an explicit
+`@vouchington/server-utils/<subpath>` export and must run on both Node and Bun (`pnpm run
+test:bun-bundles` covers every entry). Code requiring any third-party runtime dependency must be its
 own `@vouchington/<name>` package and declare that dependency there. Node built-ins do not count as
 third-party dependencies.
 Exception: reusable, standalone development tooling that consumers install as a devDependency, such
@@ -117,7 +121,7 @@ as `@vouchington/explain-plan`, may be its own package even with no third-party 
 
 Record the source SHA and path list in the commit body when copying from the product monorepo.
 
-`@vouchington/utils/http-signatures` is a Node-only Cavage-12 engine. Callers inject signed
+`@vouchington/server-utils/http-signatures` is a Node-and-Bun Cavage-12 engine. Callers inject signed
 headers, algorithms, and maxAge on both sign and verify. Applications own keyId URIs, PEM
 decrypt, persistence, and delivery.
 

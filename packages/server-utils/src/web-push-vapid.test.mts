@@ -9,7 +9,10 @@ import {
   isValidVapidSubject,
   vapidKeysMatch,
 } from './web-push-vapid.mts'
-import { decodeBase64Url, decodeVapidPublicKey, encodeBase64Url } from './web-push.mts'
+
+const decodeBase64Url = (value: string) => new Uint8Array(Buffer.from(value, 'base64url'))
+const encodeBase64Url = (bytes: Uint8Array) => Buffer.from(bytes).toString('base64url')
+const decodeVapidPublicKey = decodeBase64Url
 
 describe('VAPID keys', () => {
   it('generates matching keys of the right shape', () => {
@@ -24,6 +27,9 @@ describe('VAPID keys', () => {
     const b = generateVapidKeys()
     expect(vapidKeysMatch({ publicKey: a.publicKey, privateKey: b.privateKey })).toBe(false)
     expect(vapidKeysMatch({ publicKey: 'nope', privateKey: a.privateKey })).toBe(false)
+    for (const publicKey of ['bad!', 'a']) {
+      expect(vapidKeysMatch({ publicKey, privateKey: a.privateKey })).toBe(false)
+    }
   })
 })
 

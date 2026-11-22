@@ -193,7 +193,8 @@ describe('runCommand', () => {
     })
     const errors: Error[] = []
     pipeStdout(child, stdout, (err) => errors.push(err))
-    child.stdout?.destroy(
+    child.stdout?.emit(
+      'error',
       Object.assign(new Error('read failed'), { code: 'ERR_STREAM_PREMATURE_CLOSE' }),
     )
     await once(child, 'close')

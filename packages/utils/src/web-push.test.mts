@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import { generateVapidKeys } from './web-push-vapid.mts'
 import {
   buildWebPushPayload,
   decodeBase64Url,
@@ -12,7 +11,10 @@ import {
   parseWebPushSubscription,
 } from './web-push.mts'
 
-const p256dh = generateVapidKeys().publicKey
+const { publicKey } = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, [
+  'deriveBits',
+])
+const p256dh = encodeBase64Url(new Uint8Array(await crypto.subtle.exportKey('raw', publicKey)))
 const offCurve = encodeBase64Url(new Uint8Array([0x04, ...new Uint8Array(64).fill(7)]))
 const outOfRange = encodeBase64Url(new Uint8Array([0x04, ...new Uint8Array(64).fill(255)]))
 const auth = encodeBase64Url(new Uint8Array(16).fill(1))

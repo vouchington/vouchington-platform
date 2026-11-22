@@ -35,11 +35,6 @@
       "import": "./dist/bedrock-embeddings.mjs",
       "default": "./dist/bedrock-embeddings.mjs"
     },
-    "./api-errors": {
-      "types": "./dist/api-errors.d.mts",
-      "import": "./dist/api-errors.mjs",
-      "default": "./dist/api-errors.mjs"
-    },
     "./api-response-contract": {
       "types": "./dist/api-response-contract.d.mts",
       "import": "./dist/api-response-contract.mjs",
@@ -54,11 +49,6 @@
       "types": "./dist/web-push.d.mts",
       "import": "./dist/web-push.mjs",
       "default": "./dist/web-push.mjs"
-    },
-    "./web-push-vapid": {
-      "types": "./dist/web-push-vapid.d.mts",
-      "import": "./dist/web-push-vapid.mjs",
-      "default": "./dist/web-push-vapid.mjs"
     },
     "./web-push-binding": {
       "types": "./dist/web-push-binding.d.mts",
@@ -120,20 +110,10 @@
       "import": "./dist/scopes.mjs",
       "default": "./dist/scopes.mjs"
     },
-    "./token-secrets": {
-      "types": "./dist/token-secrets.d.mts",
-      "import": "./dist/token-secrets.mjs",
-      "default": "./dist/token-secrets.mjs"
-    },
     "./deploy-environment": {
       "types": "./dist/deploy-environment.d.mts",
       "import": "./dist/deploy-environment.mjs",
       "default": "./dist/deploy-environment.mjs"
-    },
-    "./url-signing": {
-      "types": "./dist/url-signing.d.mts",
-      "import": "./dist/url-signing.mjs",
-      "default": "./dist/url-signing.mjs"
     },
     "./request-client-info": {
       "types": "./dist/request-client-info.d.mts",
@@ -245,11 +225,6 @@
       "import": "./dist/async.mjs",
       "default": "./dist/async.mjs"
     },
-    "./jsonl-partition-writer": {
-      "types": "./dist/jsonl-partition-writer.d.mts",
-      "import": "./dist/jsonl-partition-writer.mjs",
-      "default": "./dist/jsonl-partition-writer.mjs"
-    },
     "./stable-json": {
       "types": "./dist/stable-json.d.mts",
       "import": "./dist/stable-json.mjs",
@@ -259,11 +234,6 @@
       "types": "./dist/observability.d.mts",
       "import": "./dist/observability.mjs",
       "default": "./dist/observability.mjs"
-    },
-    "./error-tree": {
-      "types": "./dist/error-tree.d.mts",
-      "import": "./dist/error-tree.mjs",
-      "default": "./dist/error-tree.mjs"
     },
     "./job-data-scrub": {
       "types": "./dist/job-data-scrub.d.mts",
@@ -329,21 +299,6 @@
       "types": "./dist/oidc-id-token.d.mts",
       "import": "./dist/oidc-id-token.mjs",
       "default": "./dist/oidc-id-token.mjs"
-    },
-    "./child-process": {
-      "types": "./dist/child-process.d.mts",
-      "import": "./dist/child-process.mjs",
-      "default": "./dist/child-process.mjs"
-    },
-    "./graceful-shutdown": {
-      "types": "./dist/graceful-shutdown.d.mts",
-      "import": "./dist/graceful-shutdown.mjs",
-      "default": "./dist/graceful-shutdown.mjs"
-    },
-    "./http-signatures": {
-      "types": "./dist/http-signatures.d.mts",
-      "import": "./dist/http-signatures.mjs",
-      "default": "./dist/http-signatures.mjs"
     }
   },
   "publishConfig": {
