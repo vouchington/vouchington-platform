@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/browser-crawl/package.json"],
+  "changedManifests": ["packages/utils/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "browser-crawl",
-      "fromVersion": "0.0.0",
-      "name": "@vouchington/browser-crawl",
-      "toVersion": "0.0.1"
+      "directory": "utils",
+      "fromVersion": "0.12.0",
+      "name": "@vouchington/utils",
+      "toVersion": "0.12.1"
     }
   ],
-  "selectedPackage": "@vouchington/browser-crawl"
+  "selectedPackage": "@vouchington/utils"
 }
