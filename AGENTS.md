@@ -37,6 +37,7 @@ the migration advisory lock is per database, and `VITEST_MAX_WORKERS` overrides 
 - `@vouchington/utils` — dependency-free explicit-subpath utilities
 - `@vouchington/utils/sentry-envelope` and `/scopes` — injected envelope limits and scope catalogs
 - `@vouchington/utils/service-worker-activation` — optional-timeout wait until a service worker registration is active
+- `@vouchington/utils/jsonl-partition-writer` — buffered per-partition JSON Lines file appender with injected paths and error sink
 - `@vouchington/session-jwt` — portable RS512 JWT primitives
 - `@vouchington/pagination` — cursor codecs, guards, and configurable query parsing
 - `@vouchington/queue-errors` — GlideMQ retry classification and rate-limit helpers

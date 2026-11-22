@@ -131,4 +131,14 @@ describe('createJsonlPartitionWriter', () => {
     await new Promise((resolve) => setTimeout(resolve, 20))
     expect(onError).toHaveBeenCalledTimes(1)
   })
+
+  it('drains records written while a flush is in progress', async () => {
+    const writer = createJsonlPartitionWriter<Rec>({ directory: dir, partition, onError: vi.fn() })
+    writer.write({ table: 'a', date: 'd', n: 1 })
+    const first = writer.flush()
+    writer.write({ table: 'a', date: 'd', n: 2 })
+    await first
+    await writer.flush()
+    expect((await read('a/d.jsonl')).trim().split('\n')).toHaveLength(2)
+  })
 })
