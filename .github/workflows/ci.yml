@@ -48,8 +48,9 @@ jobs:
       - name: Stage coverage blob
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.0
         with:
-          name: blob-unit-${{ github.run_id }}-${{ github.run_attempt }}
+          name: blob-unit-${{ github.run_id }}
           path: .vitest-reports/unit.json
+          overwrite: true
           if-no-files-found: error
           retention-days: 1
 
@@ -88,8 +89,9 @@ jobs:
       - name: Stage coverage blob
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.0
         with:
-          name: blob-postgres-${{ github.run_id }}-${{ github.run_attempt }}
+          name: blob-postgres-${{ github.run_id }}
           path: .vitest-reports/postgres.json
+          overwrite: true
           if-no-files-found: error
           retention-days: 1
 
@@ -125,8 +127,9 @@ jobs:
       - name: Stage coverage blob
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.0
         with:
-          name: blob-valkey-${{ github.run_id }}-${{ github.run_attempt }}
+          name: blob-valkey-${{ github.run_id }}
           path: .vitest-reports/valkey.json
+          overwrite: true
           if-no-files-found: error
           retention-days: 1
 
@@ -158,10 +161,12 @@ jobs:
           version: latest-12
           cache: true
       - run: pnpm install --frozen-lockfile
+      # Blob names omit the attempt so "Re-run failed jobs" keeps blobs from jobs
+      # that were not rerun and replaces the ones that were.
       - name: Download coverage blobs
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.0
         with:
-          pattern: blob-*-${{ github.run_id }}-${{ github.run_attempt }}
+          pattern: blob-*-${{ github.run_id }}
           path: .vitest-reports
           merge-multiple: true
       - run: pnpm run test:merge-coverage
