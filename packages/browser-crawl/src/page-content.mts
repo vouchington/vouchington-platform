@@ -122,14 +122,15 @@ export function measureAndSerializePage(limits: {
       continue
     }
     const nodeType = read<number>(node, 'Node', 'nodeType')
-    if (nodeType === TEXT_NODE || nodeType === COMMENT_NODE) {
+    if (nodeType !== ELEMENT_NODE) {
       const value = read<string | null>(node, 'Node', 'nodeValue') ?? ''
       if (nodeType === TEXT_NODE) add(value, current.rawText ? 'none' : 'text')
-      else add(`<!--${value}-->`)
-      nodes.pop()
-      continue
-    }
-    if (nodeType !== ELEMENT_NODE) {
+      else if (nodeType === COMMENT_NODE) add(`<!--${value}-->`)
+      // CDATA sections (4) and processing instructions (7) appear in XML and SVG documents.
+      else if (nodeType === 4) add(`<![CDATA[${value}]]>`)
+      else if (nodeType === 7) {
+        add(`<?${read<string>(node, 'ProcessingInstruction', 'target')} ${value}?>`)
+      }
       nodes.pop()
       continue
     }

@@ -305,6 +305,24 @@ describe('measureAndSerializePage', () => {
     expect(measureAndSerializePage({ maxHtmlBytes: 45, maxTitleBytes: 1 }).html).toBeUndefined()
   })
 
+  it('counts CDATA sections and processing instructions', () => {
+    const build = () => {
+      const root = element('svg', [
+        { nodeType: 4, nodeValue: 'abc', childNodes: [] },
+        Object.assign({ nodeType: 7, nodeValue: 'x', childNodes: [] }, { target: 'pi' }),
+        { nodeType: 4, nodeValue: null, childNodes: [] },
+        { nodeType: 10, nodeValue: null, childNodes: [] },
+      ])
+      root.outerHTML = '<svg></svg>'
+      return root
+    }
+    // <svg> 5, <![CDATA[abc]]> 15, <?pi x?> 8, <![CDATA[]]> 12, a doctype 0, </svg> 6: 46 bytes.
+    vi.stubGlobal('document', { documentElement: build() })
+    expect(measureAndSerializePage({ maxHtmlBytes: 46, maxTitleBytes: 1 }).html).toBe('<svg></svg>')
+    vi.stubGlobal('document', { documentElement: build() })
+    expect(measureAndSerializePage({ maxHtmlBytes: 45, maxTitleBytes: 1 }).html).toBeUndefined()
+  })
+
   it('applies void and raw-text rules only to HTML-namespace elements', () => {
     const svg = (tagName: string, children: ReturnType<typeof text>[]) =>
       Object.assign(element(tagName, children), { namespaceURI: 'http://www.w3.org/2000/svg' })
