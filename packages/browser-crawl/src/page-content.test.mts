@@ -282,6 +282,21 @@ describe('measureAndSerializePage', () => {
     expect(measureAndSerializePage({ maxHtmlBytes: 63, maxTitleBytes: 1 }).html).toBeUndefined()
   })
 
+  it('counts script and style text as raw, unescaped bytes', () => {
+    const build = () => {
+      const root = element('HTML', [element('script', [text('&&&&')]), element('P', [text('&')])])
+      root.outerHTML = '<html></html>'
+      return root
+    }
+    // <HTML> 6, <script>&&&&</script> 21, <P>&amp;</P> 12, </HTML> 7: 46 bytes.
+    vi.stubGlobal('document', { documentElement: build() })
+    expect(measureAndSerializePage({ maxHtmlBytes: 46, maxTitleBytes: 1 }).html).toBe(
+      '<html></html>',
+    )
+    vi.stubGlobal('document', { documentElement: build() })
+    expect(measureAndSerializePage({ maxHtmlBytes: 45, maxTitleBytes: 1 }).html).toBeUndefined()
+  })
+
   it('counts supplementary text and ignores unknown nodes', () => {
     const body = element('BODY', [
       text('a😊'),

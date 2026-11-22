@@ -47,6 +47,17 @@ export function measureAndSerializePage(limits: {
   const ELEMENT_NODE = 1
   const TEXT_NODE = 3
   const COMMENT_NODE = 8
+  // outerHTML writes these elements' text unescaped (the HTML fragment serialization algorithm).
+  const RAW_TEXT_PARENTS = [
+    'IFRAME',
+    'NOEMBED',
+    'NOFRAMES',
+    'NOSCRIPT',
+    'PLAINTEXT',
+    'SCRIPT',
+    'STYLE',
+    'XMP',
+  ]
   const doc = (globalThis as unknown as { document?: PageDocument }).document
   const root = doc?.documentElement
   if (!root) return { contentLength: 0, html: undefined, title: '' }
@@ -79,6 +90,7 @@ export function measureAndSerializePage(limits: {
     children?: ArrayLike<PageNode>
     index?: number
     node: PageNode
+    rawText?: boolean
     tagName?: string
   }> = [{ node: root }]
   while (nodes.length > 0) {
@@ -94,7 +106,8 @@ export function measureAndSerializePage(limits: {
       const index = current.index!
       if (index < current.children.length) {
         current.index = index + 1
-        nodes.push({ node: current.children[index]! })
+        const rawText = RAW_TEXT_PARENTS.includes(current.tagName!.toUpperCase())
+        nodes.push({ node: current.children[index]!, rawText })
         continue
       }
       add(`</${current.tagName}>`)
@@ -102,7 +115,7 @@ export function measureAndSerializePage(limits: {
       continue
     }
     if (node.nodeType === TEXT_NODE) {
-      add(node.nodeValue ?? '', 'text')
+      add(node.nodeValue ?? '', current.rawText ? 'none' : 'text')
       nodes.pop()
       continue
     }
