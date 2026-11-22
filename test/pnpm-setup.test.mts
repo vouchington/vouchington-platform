@@ -100,6 +100,9 @@ const setups = jobs.flatMap((job) =>
 describe('pnpm provisioning', () => {
   it('finds the jobs that set up pnpm', () => {
     expect(setups.map(({ location }) => location)).toEqual([
+      'ci.yml unit',
+      'ci.yml postgres',
+      'ci.yml valkey',
       'ci.yml test',
       'ci.yml actionlint',
       'release.yml release',
