@@ -91,7 +91,7 @@ The `client` is a small port (`hget`, `get`, `set(key, value, expiryMs)`, `hincr
 
 The Lua ships as the strings `ADMIT_SCHEDULED_RUN_LUA` and `RELEASE_SCHEDULED_RUN_LUA`. The
 application turns each into a native script once, for example with
-`createScriptRegistry((code) => new Script(code))` (scripts are released on process `exit`), and
+`createScriptRegistry((code) => new Script(code))` from `@vouchington/utils/script-registry` (scripts are released on process `exit`), and
 `runScript` invokes that script with the given keys and args. The unit tests drive the lease
 through a fake client; `scheduled-run-scripts.valkey.test.mts` runs the real Lua against Valkey
 when `VALKEY_URL=host:port` is set and skips otherwise, because CI starts no Valkey service.

@@ -107,6 +107,32 @@ describe('wrapBatchProcessor', () => {
     expect(release).toHaveBeenCalledTimes(2)
   })
 
+  it('keeps skipped ticks successful when the processor throws', async () => {
+    const { guarded, release } = setup()
+    const failure = new Error('batch failed')
+    const run = guarded.wrapBatchProcessor(async () => Promise.reject(failure), 'q', {})
+    const error = (await run([job('skip-a'), job('b')]).catch((e: unknown) => e)) as BatchError
+    expect(error).toBeInstanceOf(BatchError)
+    expect(error.results).toEqual([undefined, failure])
+    expect(release).toHaveBeenCalledOnce()
+    const plain = guarded.wrapBatchProcessor(async () => Promise.reject('plain'), 'q', {})
+    const wrapped = (await plain([job('skip-a'), job('b')]).catch((e: unknown) => e)) as BatchError
+    expect(wrapped.results).toEqual([undefined, new Error('plain')])
+  })
+
+  it('rejects a result count that does not match the runnable jobs', async () => {
+    const { guarded } = setup()
+    const short = guarded.wrapBatchProcessor(async () => ['only'], 'q', {})
+    await expect(short([job('a'), job('b')])).rejects.toThrow(
+      'Batch processor returned 1 results but batch had 2 jobs',
+    )
+    const notArray = guarded.wrapBatchProcessor(async () => 'x' as never, 'q', {})
+    const error = (await notArray([job('skip-a'), job('b')]).catch((e: unknown) => e)) as BatchError
+    expect(error.results[1]).toEqual(
+      new Error('Batch processor returned non-array results but batch had 1 jobs'),
+    )
+  })
+
   it('reports a missing partial result as a failure', async () => {
     const { guarded } = setup()
     const run = guarded.wrapBatchProcessor(async () => Promise.reject(new BatchError([])), 'q', {})

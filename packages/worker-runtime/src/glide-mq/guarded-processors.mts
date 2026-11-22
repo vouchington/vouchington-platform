@@ -103,6 +103,7 @@ export function createGuardedProcessors(config: GuardedProcessorsConfig): Guarde
         const runnable: Job<any, any>[] = []
         const deferred = new Map<Job<any, any>, DelayedError>()
         let result: unknown[]
+        let failure: Error | undefined
         let partial = false
         try {
           for (const job of jobs) {
@@ -114,7 +115,7 @@ export function createGuardedProcessors(config: GuardedProcessorsConfig): Guarde
                 runnable.push(job)
               }
             } catch (err) {
-              // GlideMQ's batch path ignores moveToDelayed, so a deferral must not abort the batch.
+              // The batch path ignores moveToDelayed, so a deferral must not abort the batch.
               if (!(err instanceof DelayedError)) throw err
               deferred.set(job, err)
             }
@@ -126,10 +127,16 @@ export function createGuardedProcessors(config: GuardedProcessorsConfig): Guarde
                 runnable.map((job) => activeJob(queue, job)),
                 () => processor(runnable),
               )
+              if (!Array.isArray(values) || values.length !== runnable.length) {
+                const count = Array.isArray(values) ? values.length : 'non-array'
+                throw new Error(
+                  `Batch processor returned ${count} results but batch had ${runnable.length} jobs`,
+                )
+              }
             } catch (err) {
-              if (!(err instanceof BatchError)) throw err
-              partial = true
-              values = err.results
+              partial = err instanceof BatchError
+              if (partial) values = (err as BatchError).results
+              else failure = err instanceof Error ? err : new Error(String(err), { cause: err })
             }
           }
           // Results are positional against the original batch, not the runnable subset.
@@ -138,6 +145,7 @@ export function createGuardedProcessors(config: GuardedProcessorsConfig): Guarde
             if (deferral) return deferral
             const index = runnable.indexOf(job)
             if (index < 0) return undefined
+            if (failure) return failure
             return partial && index >= values.length
               ? new Error('No result in BatchError')
               : values[index]
@@ -145,9 +153,12 @@ export function createGuardedProcessors(config: GuardedProcessorsConfig): Guarde
         } finally {
           await releaseAll(releases)
         }
+        // With every job runnable, a processor-wide failure reaches the worker unchanged.
+        if (failure && runnable.length === jobs.length) throw failure
         // A deferred job reports its DelayedError as a per-job failure, so the worker retries it
-        // through its normal attempts and backoff instead of resolving it as a success.
-        if (partial || deferred.size > 0) throw new BatchError(result)
+        // through its normal attempts and backoff instead of resolving it as a success. Skipped
+        // ticks stay successes because the worker reads results by original position.
+        if (partial || failure || deferred.size > 0) throw new BatchError(result)
         return result as never
       }
     },

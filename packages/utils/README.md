@@ -36,6 +36,8 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
   request/acknowledge round trip with an injected message type and acceptance check, and a named
   Web Lock wrapper. Request actions, expected state transitions, and the bind/clear/reconcile
   sequence stay in the application.
+- `script-registry`: `createScriptRegistry(createScript, processLike?)` tracks native script handles
+  built by an injected factory and releases them once at process `exit`.
 - `worker-concurrency`: `getWorkerConcurrency(name, { baseline, max, ignoreScale, env, envPrefix,
   scaleEnv, maxEnv })` resolves a worker's concurrency from a `<prefix><NAME>` override, else
   `baseline` times a scale variable, clamped to `[1, max]` (default max 25). Variable names default

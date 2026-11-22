@@ -1,7 +1,7 @@
 /**
  * Lua for the scheduled-run lease. The source ships as strings so the package needs no native
- * dependency: the application loads each one through its own script registry (see
- * `createScriptRegistry`) and runs it with `ScheduledRunLeaseClient.runScript`.
+ * dependency: the application loads each one through its own script registry (for
+ * example `createScriptRegistry` from `@vouchington/utils/script-registry`) and runs it with `ScheduledRunLeaseClient.runScript`.
  */
 
 /**

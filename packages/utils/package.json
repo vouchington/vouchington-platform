@@ -65,6 +65,11 @@
       "import": "./dist/web-push-binding.mjs",
       "default": "./dist/web-push-binding.mjs"
     },
+    "./script-registry": {
+      "types": "./dist/script-registry.d.mts",
+      "import": "./dist/script-registry.mjs",
+      "default": "./dist/script-registry.mjs"
+    },
     "./worker-concurrency": {
       "types": "./dist/worker-concurrency.d.mts",
       "import": "./dist/worker-concurrency.mjs",
