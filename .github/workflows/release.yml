@@ -12,6 +12,7 @@ on:
           - '@vouchington/auth'
           - '@vouchington/postgres'
           - '@vouchington/utils'
+          - '@vouchington/server-utils'
           - '@vouchington/session-jwt'
           - '@vouchington/queue-errors'
           - '@vouchington/worker-runtime'

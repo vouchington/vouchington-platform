@@ -1,7 +1,5 @@
 import { createPrivateKey, createPublicKey, generateKeyPairSync, sign, verify } from 'node:crypto'
 
-import { decodeBase64Url, decodeVapidPublicKey, encodeBase64Url } from './web-push.mts'
-
 export interface VapidKeyPair {
   /** Uncompressed P-256 point, base64url (the browser `applicationServerKey`). */
   publicKey: string
@@ -19,6 +17,30 @@ export interface VapidJwtInput {
   now?: number
   /** Lifetime in seconds; RFC 8292 caps it at 24 hours. */
   expiresInSeconds?: number
+}
+
+function decodeBase64Url(value: string): Uint8Array {
+  if (!/^[A-Za-z0-9_-]*={0,2}$/.test(value)) throw new TypeError('Invalid base64url string')
+  const base64 = value.replace(/=+$/, '').replaceAll('-', '+').replaceAll('_', '/')
+  if (base64.length % 4 === 1) throw new TypeError('Invalid base64url string')
+  return Uint8Array.from(atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')), (c) =>
+    c.charCodeAt(0),
+  )
+}
+
+function encodeBase64Url(bytes: Uint8Array): string {
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '')
+}
+
+/** Validates a VAPID public key (uncompressed P-256 point shape) and returns its bytes. */
+function decodeVapidPublicKey(key: string): Uint8Array {
+  const bytes = decodeBase64Url(key)
+  if (bytes.length !== 65 || bytes[0] !== 0x04) {
+    throw new TypeError('VAPID public key must be an uncompressed P-256 point')
+  }
+  return bytes
 }
 
 const MAX_VAPID_LIFETIME_SECONDS = 24 * 60 * 60

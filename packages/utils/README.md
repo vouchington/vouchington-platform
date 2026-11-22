@@ -1,13 +1,14 @@
 # @vouchington/utils
 
-Dependency-free utilities for Node.js 24 applications. This package deliberately has no root
-export: import the capability you use from an explicit subpath.
+Dependency-free, runtime-portable utilities. No source file imports a Node built-in (enforced by
+`test/utils-portability.test.mts` and the `utils-no-node-builtins` dependency-cruiser rule), so
+subpaths load in browsers, edge workers, Bun, and Node. Server-only code lives in
+`@vouchington/server-utils`. This package deliberately has no root export: import the capability
+you use from an explicit subpath.
 
 ```ts
-import { createTokenSecrets } from '@vouchington/utils/token-secrets'
 import { createMoneyCatalog } from '@vouchington/utils/money'
 import { parseCookies, serializeCookie } from '@vouchington/utils/cookies'
-import { buildSignatureHeaders, verifySignature } from '@vouchington/utils/http-signatures'
 import { bestAcceptLanguageMatch } from '@vouchington/utils/language-tags'
 import { createMessageTranslator } from '@vouchington/utils/message-catalog'
 import { createReportInputParser } from '@vouchington/utils/moderation'
@@ -30,8 +31,6 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
   caller-supplied growth reasons. Applications own every table name and reason.
 - `web-push`: push-subscription JSON validation with an injected endpoint policy, base64url and
   VAPID public-key decoding, and bounded payload build/parse helpers. No sending or storage.
-- `web-push-vapid` (Node): VAPID key generation/matching and ES256 JWT/`Authorization` builders.
-  Applications own key storage, subject, and delivery.
 - `web-push-binding` (browser): service-worker binding-state guards, one MessageChannel
   request/acknowledge round trip with an injected message type and acceptance check, and a named
   Web Lock wrapper. Request actions, expected state transitions, and the bind/clear/reconcile
@@ -63,17 +62,8 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
   Callers choose the byte and type-list limits; DSN, tunnel, request, and logging policy stay local.
 - `scopes`: caller-owned scope catalog validation, prerequisite expansion, audience and surface
   filtering, and explicit coverage graph calculation. No default catalog or legacy grants are built in.
-- `token-secrets`: Node-only (`node:crypto`) purpose-bound HMAC and AES-256-GCM encryption.
-  `createTokenSecrets({ hashSecret, encryptionKeys })` throws for invalid keys or ciphertext.
 - `deploy-environment`: `getDeployEnvironment(source)` classifies explicit environment inputs without
   throwing.
-- `url-signing`: Node-only HMAC SHA-256 path signing (`signPathWithKey`, `signPath`,
-  `verifyPathSignature` with rotation, `signExpiringPath`/`verifyExpiringPath` with an injectable
-  clock), `parseSigningKeys`, `buildSignedProxyUrl` (caller-owned origin, route prefix, query, and
-  skip predicate), and `createProtectedHostPolicy` (Unicode bare hosts are
-  canonicalized to punycode), and `matchRouteSegment`.
-  Prefixes, hosts, and keys are injected; verification fails closed with no keys unless
-  `allowUnsignedWhenNoKeys` is set.
 - `request-client-info`: `createClientInfoParser(config)` validates caller-selected headers,
   families, platforms, compatibility, and versions.
 - `money`: `createMoneyCatalog(currencies, scale)` supplies exact integer parsing and validation for
@@ -87,27 +77,11 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
   `parseCookies(header)` splits a `Cookie` request header into a name/value `Map`.
 - `content-identity-cache`: `ContentAndIdentityCache` memoizes by object identity (WeakMap fast
   path) with a content-key fallback; the content key is a thunk and entries are never evicted.
-- `http-signatures`: Node-only (`node:crypto`) Cavage-12 HTTP Signatures. Callers pass signed
-  headers, allowed algorithms, and `maxAgeSeconds` on both sign and verify. The package has no
-  default header set or product keyId policy.
-- `child-process`: Node-only (`node:child_process`) `runCommand({ command, args, stdin, stdout, signal,
-  timeoutMs, stderrCapBytes, env })` spawns an explicit argv with no shell, streams stdin and stdout,
-  keeps stderr up to a byte cap, and SIGKILLs on abort or timeout. By default the child sees only
-  `PATH`, `TMPDIR`, and `LC_ALL=C`; `env` replaces that. Non-zero exit, signal, abort, and timeout
-  reject with `CommandFailedError` (`reason`, `exitCode`, `signal`, `stderr`).
-- `graceful-shutdown`: Node-only. `createGracefulShutdown({ gracePeriodMs, onError, closeResources, flush,
-  log, logError, process, forceExit })` runs callbacks, then drain callbacks, then `closeResources`,
-  then `flush`, once, with an unref'd force-exit fallback (code 0 after success, 1 on timeout);
-  `installSignalHandlers()` wires SIGTERM and SIGINT. `createShutdownRegistry()` is a late-binding
-  `register(name, shutdown)` / `close({ shutdowns, log })` registry that returns failures instead of
-  throwing, and `shutdownForOneOffCommand({ gracePeriodMs, close })` bounds a short-lived command's
-  close and throws an `AggregateError`. The grace period, resource names, error reporting, and
-  signal-registration policy are all injected.
 - `oauth-pkce`: WebCrypto `generateCodeVerifier`, `generateState`, and S256 `generateCodeChallenge`.
 - `oauth-popup` (browser): `openOAuthPopup`, `buildAuthorizationUrl`, `runPopupOAuthLogin`, and
   `OAuthCancelledError`. The flow takes an injectable `window`; callers keep their own in-flight
   guard and map the code, PKCE verifier, and redirect URI to their token shape.
-- `oidc-id-token`: Node-only (`node:crypto`) RS256 ID-token verifier with an injected `fetch`, JWKS
+- `oidc-id-token`: Web Crypto RS256 ID-token verifier with an injected `fetch`, JWKS
   URI, issuers, and audiences. It caches the JWKS with a TTL, refreshes once on a `kid` miss, checks
   `iat` skew and an optional (hashed) nonce, and throws `OidcVerificationError` with a `code`.
   `googleProfileFromClaims`, `appleProfileFromClaims`, and `microsoftProfileFromClaims` map claims to a profile; account policy
@@ -126,10 +100,6 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
   mapping stay in the application.
 - `collections`, `async`, and `stable-json`: collection deduplication/merging, bounded async mapping,
   and deterministic JSON serialization.
-- `jsonl-partition-writer`: `createJsonlPartitionWriter({ directory, partition, onError })` buffers
-  records and appends them to per-partition JSON Lines files on count, size, or time (defaults 500
-  records, 4 MiB, 1 s). `partition(record)` returns the relative file path, which must stay inside
-  `directory`; background failures go to `onError`, explicit `flush()` rejects with the first one.
 - `feature-flags`: base64 JSON feature-flag cookie parsing and serialization with caller-injected
   codecs, cookie names, and size policy.
 - `dates`, `format`, `strings`, and `text-metrics`: UTC-day, duration, weighted-average and display
@@ -160,9 +130,6 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
   a discriminated result (success or threat, user-level rejection or invalid token, or `error` with a
   `ProviderFailure` whose `retryable` flag and `retryAfterMs` drive caller policy). A caller abort is
   rethrown. Thresholds, actions, lockouts, caching, and blocking stay with the application.
-- `api-errors`: the house JSON error envelope (`message`, optional `code`, `request_id`, `stack`),
-  status/message/code extraction helpers, and `buildApiErrorEnvelope`, which redacts 5xx details
-  unless the caller sets `exposeDetails`. Callers own serialization, logging, and environment policy.
 - `api-response-contract`: identity markers (`apiResponse`, `apiRequest`, `apiQuery`, ...) and
   response-variant types read by a static contract extractor; no runtime effect.
 - `http-body`: bounded Fetch response-body reads with abort propagation and typed missing/oversize
@@ -197,9 +164,6 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
   Errors, and other class instances are left as-is. `scrubDeep(value, options?)`, `redactText`, and
   `scrubBreadcrumb(breadcrumb, options)` are exported for direct use.
 
-- `error-tree`: `formatErrorTree(error, { maxDepth?, maxNested? })` renders an error with its
-  `errors[]` and `cause` chain, marks circular references, and reports how many nested errors the
-  depth and count limits omitted (defaults 5 and 20).
 - `job-data-scrub`: `scrubJobData(data, options?)`, a safe-scalar allowlist scrubber for queue job
   payloads. Only booleans, numbers, UUID/ULID ids, and short slug-like strings survive; sensitive
   keys redact regardless of value. The redaction marker (default `'[Filtered]'`), key substring and

@@ -1,7 +1,6 @@
-import { createHash, createPublicKey, createVerify } from 'node:crypto'
 import type { OAuthFetch } from './oauth-types.mts'
 import type { OidcClaims } from './oidc-id-token-profiles.mts'
-import { abortable } from './oidc-id-token-util.mts'
+import { abortable, base64UrlToBytes, sha256Hex, verifyRs256 } from './oidc-id-token-util.mts'
 
 export {
   appleProfileFromClaims,
@@ -67,7 +66,7 @@ interface Jwk {
 
 function decodePart(part: string): Record<string, unknown> {
   try {
-    const value: unknown = JSON.parse(Buffer.from(part, 'base64url').toString('utf8'))
+    const value: unknown = JSON.parse(new TextDecoder().decode(base64UrlToBytes(part)))
     if (value && typeof value === 'object' && !Array.isArray(value)) {
       return value as Record<string, unknown>
     }
@@ -123,23 +122,21 @@ export function createOidcIdTokenVerifier(options: OidcIdTokenVerifierOptions) {
     return refreshed
   }
 
-  function checkSignature(signed: string, signature: string, key: Jwk): void {
+  async function checkSignature(signed: string, signature: string, key: Jwk): Promise<void> {
     let valid = false
     try {
-      const publicKey = createPublicKey({
-        key: { kty: key.kty, n: key.n, e: key.e },
-        format: 'jwk',
-      })
-      valid = createVerify('SHA256')
-        .update(signed)
-        .verify(publicKey, Buffer.from(signature, 'base64url'))
+      valid = await verifyRs256(key, signed, base64UrlToBytes(signature))
     } catch {
       // An unusable key is reported as an invalid signature.
     }
     if (!valid) throw new OidcVerificationError('signature', 'ID token signature is invalid')
   }
 
-  function checkClaims(claims: OidcClaims, verify: OidcVerifyOptions, key: Jwk): void {
+  async function checkClaims(
+    claims: OidcClaims,
+    verify: OidcVerifyOptions,
+    key: Jwk,
+  ): Promise<void> {
     if (typeof claims.exp !== 'number' || typeof claims.iat !== 'number') {
       throw new OidcVerificationError('format', 'ID token is missing exp or iat')
     }
@@ -168,9 +165,7 @@ export function createOidcIdTokenVerifier(options: OidcIdTokenVerifierOptions) {
     if (verify.nonce === undefined) return
     if (!claims.nonce) throw new OidcVerificationError('nonce_missing', 'ID token has no nonce')
     const expected =
-      verify.nonceHash === 'sha256-hex'
-        ? createHash('sha256').update(verify.nonce).digest('hex')
-        : verify.nonce
+      verify.nonceHash === 'sha256-hex' ? await sha256Hex(verify.nonce) : verify.nonce
     if (claims.nonce !== expected) {
       throw new OidcVerificationError('nonce', 'ID token nonce is invalid')
     }
@@ -185,9 +180,9 @@ export function createOidcIdTokenVerifier(options: OidcIdTokenVerifierOptions) {
       const { alg, kid } = decodePart(header)
       if (alg !== 'RS256') throw new OidcVerificationError('alg', 'Unsupported ID token algorithm')
       const key = await findKey(kid, verify.signal)
-      checkSignature(`${header}.${payload}`, signature, key)
+      await checkSignature(`${header}.${payload}`, signature, key)
       const claims = decodePart(payload) as OidcClaims
-      checkClaims(claims, verify, key)
+      await checkClaims(claims, verify, key)
       return claims
     },
   }

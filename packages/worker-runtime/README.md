@@ -206,7 +206,7 @@ injected.
 `onError` runs. Job data is attached only when a `scrubJobData` hook is supplied (for example
 `@vouchington/utils/job-data-scrub`), so raw payloads never reach error context by default.
 `isExpectedError` suppresses console output for expected failures, and `formatError` (for example
-`@vouchington/utils/error-tree`) controls the printed failure text.
+`@vouchington/server-utils/error-tree`) controls the printed failure text.
 
 `WorkerLogger` is a dev-only one-line-per-job logger with timing colors. `enabled` is a required
 injected boolean; `level` (`'error'` or `'info'`), timing thresholds, and the `write` sink are

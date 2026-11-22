@@ -8,36 +8,49 @@ import { beforeAll, describe, expect, it } from 'vitest'
 const cruise = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
 const fixture = 'test/fixtures/dependency-cruiser'
 
+const packages = ['utils', 'server-utils']
+
 describe('utils dependency boundary', () => {
   beforeAll(() => {
-    rmSync('packages/utils/dist', { recursive: true, force: true })
+    for (const name of packages) rmSync(`packages/${name}/dist`, { recursive: true, force: true })
     execFileSync(cruise, ['run', 'build'], { encoding: 'utf8' })
   })
 
-  it('publishes every explicit subpath and no root export', () => {
-    const manifest = JSON.parse(readFileSync('packages/utils/package.json', 'utf8')) as {
+  it.each(packages)('publishes every explicit subpath and no root export for %s', (name) => {
+    const manifest = JSON.parse(readFileSync(`packages/${name}/package.json`, 'utf8')) as {
       exports: Record<string, unknown>
     }
     for (const subpath of Object.keys(manifest.exports)) {
       expect(subpath).not.toBe('.')
       const entry = subpath.replace(/^\.\//, '')
-      expect(existsSync(`packages/utils/dist/${entry}.mjs`)).toBe(true)
-      expect(existsSync(`packages/utils/dist/${entry}.d.mts`)).toBe(true)
-      importBuiltModule(`packages/utils/dist/${entry}.mjs`)
+      expect(existsSync(`packages/${name}/dist/${entry}.mjs`)).toBe(true)
+      expect(existsSync(`packages/${name}/dist/${entry}.d.mts`)).toBe(true)
+      importBuiltModule(`packages/${name}/dist/${entry}.mjs`)
     }
-    expect(existsSync('packages/utils/dist/index.mjs')).toBe(false)
+    expect(existsSync(`packages/${name}/dist/index.mjs`)).toBe(false)
   })
 
-  it('rejects third-party imports and allows Node plus local imports', () => {
+  it('rejects third-party imports and allows local imports', () => {
     const forbidden = run('utils-forbidden-import.mjs')
     expect(forbidden).toContain('utils-no-third-party-runtime-dependencies')
-    const allowed = run('utils-node-and-local-import.mjs')
-    expect(allowed).toContain('no dependency violations found')
+    expect(run('utils-local-import.mjs')).toContain('no dependency violations found')
     expect(run('packages/utils/dist')).toContain('no dependency violations found')
   })
 
-  it('has no third-party runtime dependency declarations', () => {
-    const manifest = JSON.parse(readFileSync('packages/utils/package.json', 'utf8')) as Record<
+  it.each(['utils-forbidden-node-import.mjs', 'utils-forbidden-bare-node-import.mjs'])(
+    'rejects the Node built-in import in %s',
+    (file) => {
+      expect(run(file)).toContain('utils-no-node-builtins')
+    },
+  )
+
+  it('allows Node built-ins in server-utils', () => {
+    expect(run('server-utils-node-import.mjs')).toContain('no dependency violations found')
+    expect(run('packages/server-utils/dist')).toContain('no dependency violations found')
+  })
+
+  it.each(packages)('has no runtime dependency declarations for %s', (name) => {
+    const manifest = JSON.parse(readFileSync(`packages/${name}/package.json`, 'utf8')) as Record<
       string,
       unknown
     >
