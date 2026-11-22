@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/explain-plan",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Injected-client EXPLAIN ANALYZE capture, plan-node statistics, and plan warnings for PostgreSQL.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/explain-plan#readme",
   "bugs": {

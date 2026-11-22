@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/worker-runtime/package.json"],
+  "changedManifests": ["packages/explain-plan/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "worker-runtime",
-      "fromVersion": "0.3.1",
-      "name": "@vouchington/worker-runtime",
-      "toVersion": "0.3.2"
+      "directory": "explain-plan",
+      "fromVersion": "0.0.0",
+      "name": "@vouchington/explain-plan",
+      "toVersion": "0.0.1"
     }
   ],
-  "selectedPackage": "@vouchington/worker-runtime"
+  "selectedPackage": "@vouchington/explain-plan"
 }
