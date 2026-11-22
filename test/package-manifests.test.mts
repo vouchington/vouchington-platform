@@ -28,6 +28,7 @@ const packages = [
   'oauth-server',
   'email',
   'stripe',
+  'explain-plan',
 ]
 
 describe('runtime package manifests', () => {
