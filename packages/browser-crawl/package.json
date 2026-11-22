@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/browser-crawl",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Injectable Playwright browser crawling primitives.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/browser-crawl#readme",
   "bugs": {

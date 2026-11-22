@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/postgres/package.json"],
+  "changedManifests": ["packages/browser-crawl/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "postgres",
-      "fromVersion": "0.6.1",
-      "name": "@vouchington/postgres",
-      "toVersion": "0.6.2"
+      "directory": "browser-crawl",
+      "fromVersion": "0.0.0",
+      "name": "@vouchington/browser-crawl",
+      "toVersion": "0.0.1"
     }
   ],
-  "selectedPackage": "@vouchington/postgres"
+  "selectedPackage": "@vouchington/browser-crawl"
 }
