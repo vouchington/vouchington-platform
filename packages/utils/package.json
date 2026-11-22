@@ -295,6 +295,11 @@
       "import": "./dist/oidc-id-token.mjs",
       "default": "./dist/oidc-id-token.mjs"
     },
+    "./child-process": {
+      "types": "./dist/child-process.d.mts",
+      "import": "./dist/child-process.mjs",
+      "default": "./dist/child-process.mjs"
+    },
     "./http-signatures": {
       "types": "./dist/http-signatures.d.mts",
       "import": "./dist/http-signatures.mjs",

@@ -37,6 +37,7 @@
         "src/error-tree.mts!",
         "src/job-data-scrub.mts!",
         "src/http-signatures.mts!",
+        "src/child-process.mts!",
         "src/cache-tags.mts!",
         "src/sentry-envelope.mts!",
         "src/scopes.mts!",

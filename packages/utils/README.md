@@ -79,6 +79,11 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
 - `http-signatures`: Node-only (`node:crypto`) Cavage-12 HTTP Signatures. Callers pass signed
   headers, allowed algorithms, and `maxAgeSeconds` on both sign and verify. The package has no
   default header set or product keyId policy.
+- `child-process`: Node-only (`node:child_process`) `runCommand({ command, args, stdin, stdout, signal,
+  timeoutMs, stderrCapBytes, env })` spawns an explicit argv with no shell, streams stdin and stdout,
+  keeps stderr up to a byte cap, and SIGKILLs on abort or timeout. By default the child sees only
+  `PATH`, `TMPDIR`, and `LC_ALL=C`; `env` replaces that. Non-zero exit, signal, abort, and timeout
+  reject with `CommandFailedError` (`reason`, `exitCode`, `signal`, `stderr`).
 - `oauth-pkce`: WebCrypto `generateCodeVerifier`, `generateState`, and S256 `generateCodeChallenge`.
 - `oauth-popup` (browser): `openOAuthPopup`, `buildAuthorizationUrl`, `runPopupOAuthLogin`, and
   `OAuthCancelledError`. The flow takes an injectable `window`; callers keep their own in-flight
