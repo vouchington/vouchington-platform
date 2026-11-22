@@ -47,6 +47,27 @@ export function measureAndSerializePage(limits: {
   const ELEMENT_NODE = 1
   const TEXT_NODE = 3
   const COMMENT_NODE = 8
+  // outerHTML writes no children or end tag for these elements.
+  const VOID_ELEMENTS = [
+    'AREA',
+    'BASE',
+    'BASEFONT',
+    'BGSOUND',
+    'BR',
+    'COL',
+    'EMBED',
+    'FRAME',
+    'HR',
+    'IMG',
+    'INPUT',
+    'KEYGEN',
+    'LINK',
+    'META',
+    'PARAM',
+    'SOURCE',
+    'TRACK',
+    'WBR',
+  ]
   // outerHTML writes these elements' text unescaped (the HTML fragment serialization algorithm).
   const RAW_TEXT_PARENTS = [
     'IFRAME',
@@ -142,6 +163,10 @@ export function measureAndSerializePage(limits: {
     add('>')
     const tagName = element.tagName.toUpperCase()
     if (tagName === 'BODY') body = element
+    if (VOID_ELEMENTS.includes(tagName)) {
+      nodes.pop()
+      continue
+    }
     const children = element.content?.childNodes ?? element.childNodes
     current.children = children
     current.index = 0

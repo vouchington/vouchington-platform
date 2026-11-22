@@ -297,6 +297,21 @@ describe('measureAndSerializePage', () => {
     expect(measureAndSerializePage({ maxHtmlBytes: 45, maxTitleBytes: 1 }).html).toBeUndefined()
   })
 
+  it('counts void elements without children or an end tag', () => {
+    const build = () => {
+      const root = element('HTML', [element('br', [text('ignored')]), element('IMG')])
+      root.outerHTML = '<html></html>'
+      return root
+    }
+    // <HTML> 6, <br> 4, <IMG> 5, </HTML> 7: 22 bytes.
+    vi.stubGlobal('document', { documentElement: build() })
+    expect(measureAndSerializePage({ maxHtmlBytes: 22, maxTitleBytes: 1 }).html).toBe(
+      '<html></html>',
+    )
+    vi.stubGlobal('document', { documentElement: build() })
+    expect(measureAndSerializePage({ maxHtmlBytes: 21, maxTitleBytes: 1 }).html).toBeUndefined()
+  })
+
   it('counts supplementary text and ignores unknown nodes', () => {
     const body = element('BODY', [
       text('a😊'),
