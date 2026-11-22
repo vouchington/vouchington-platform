@@ -1,5 +1,5 @@
 import { createReadStream } from 'node:fs'
-import { EventEmitter, PassThrough } from 'node:stream'
+import { EventEmitter, PassThrough, Writable } from 'node:stream'
 import type { ChildProcess } from 'node:child_process'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { runCommand } from './child-process-run.mts'
@@ -114,6 +114,22 @@ describe('runCommand edges', () => {
     ).rejects.toThrow('ENOENT')
     await new Promise((resolve) => setTimeout(resolve, 50))
     expect(stdout.destroyed).toBe(true)
+  })
+
+  it('does not wait for a slow stdout destination to finish cleanup after a timeout', async () => {
+    const stdout = new Writable({
+      write: (_chunk, _encoding, callback) => callback(),
+      destroy: (error, callback) => void setTimeout(() => callback(error), 1_500),
+    })
+    const started = Date.now()
+    const err = await runCommand({
+      command: process.execPath,
+      args: ['-e', 'setInterval(() => {}, 1000)'],
+      stdout,
+      timeoutMs: 150,
+    }).catch((error: unknown) => error)
+    expect(err).toMatchObject({ reason: 'timeout' })
+    expect(Date.now() - started).toBeLessThan(1_200)
   })
 
   it('times out even when a grandchild keeps the inherited pipes open', async () => {

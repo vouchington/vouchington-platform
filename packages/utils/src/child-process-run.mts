@@ -135,30 +135,22 @@ async function settleStdout(
   cancellation: AbortSignal,
   onError: (err: Error) => void,
 ): Promise<void> {
-  if (!stdout) return
-  try {
-    if (isSharedOutput(stdout)) {
-      await flushSharedOutput(stdout, cancellation)
-    } else {
-      await finished(stdout, { readable: false })
-    }
-  } catch (err) {
-    onError(err as Error)
-  }
-}
-
-async function flushSharedOutput(stdout: Writable, cancellation: AbortSignal): Promise<void> {
-  if (cancellation.aborted) return
-  const flushed = new Promise<void>((resolve, reject) => {
-    stdout.write('', (err) => (err ? reject(err) : resolve()))
-  })
+  if (!stdout || cancellation.aborted) return
+  const settled = isSharedOutput(stdout)
+    ? new Promise<void>((resolve, reject) => {
+        stdout.write('', (err) => (err ? reject(err) : resolve()))
+      })
+    : finished(stdout, { readable: false })
   let onCancel!: () => void
   const cancelled = new Promise<void>((resolve) => {
     onCancel = resolve
     cancellation.addEventListener('abort', onCancel, { once: true })
   })
   try {
-    await Promise.race([flushed, cancelled])
+    // Cancellation wins so a destination with slow cleanup cannot outlive the timeout.
+    await Promise.race([settled, cancelled])
+  } catch (err) {
+    onError(err as Error)
   } finally {
     cancellation.removeEventListener('abort', onCancel)
   }

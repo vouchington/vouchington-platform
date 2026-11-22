@@ -70,8 +70,9 @@ describe('runCommand', () => {
         args: ['-e', 'setInterval(() => {}, 1000)'],
         timeoutMs: 200,
       })
+      const outcome = rejectionOf(pending)
       await vi.advanceTimersByTimeAsync(200)
-      const err = await rejectionOf(pending)
+      const err = await outcome
       expect(err).toBeInstanceOf(CommandFailedError)
       expect(err).toMatchObject({ reason: 'timeout' })
     } finally {
