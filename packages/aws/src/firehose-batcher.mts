@@ -124,7 +124,8 @@ export function createFirehoseBatcher(options: FirehoseBatcherOptions): Firehose
     buffer.push({ streamName, data })
     bufferedBytes += data.byteLength
     if (buffer.length >= FIREHOSE_FLUSH_RECORDS || bufferedBytes >= FIREHOSE_FLUSH_BYTES) {
-      flushInBackground()
+      // A running drain re-flushes when it settles, so it also takes this record.
+      if (!active) flushInBackground()
       return
     }
     if (timer !== undefined) return

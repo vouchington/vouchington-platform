@@ -103,4 +103,32 @@ describe('createJsonlPartitionWriter', () => {
     writer.write({ table: 'blocked', date: 'd', n: 1 })
     await vi.waitFor(() => expect(onError).toHaveBeenCalledWith(expect.any(Error)))
   })
+
+  it('rejects unserializable records without buffering them', async () => {
+    const writer = createJsonlPartitionWriter<unknown>({
+      directory: dir,
+      partition: () => 'x.jsonl',
+      onError: vi.fn(),
+    })
+    writer.write({ ok: 1 })
+    expect(() => writer.write(undefined)).toThrow(TypeError)
+    writer.write({ ok: 2 })
+    await writer.flush()
+    expect(await read('x.jsonl')).toBe('{"ok":1}\n{"ok":2}\n')
+  })
+
+  it('reports one error per failed drain, not one per queued write', async () => {
+    await writeFile(join(dir, 'blocked'), 'file')
+    const onError = vi.fn()
+    const writer = createJsonlPartitionWriter<Rec>({
+      directory: dir,
+      partition,
+      onError,
+      maxRecords: 1,
+    })
+    for (let n = 0; n < 5; n++) writer.write({ table: 'blocked', date: 'd', n })
+    await vi.waitFor(() => expect(onError).toHaveBeenCalled())
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(onError).toHaveBeenCalledTimes(1)
+  })
 })

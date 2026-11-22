@@ -95,11 +95,13 @@ export function createJsonlPartitionWriter<T>(
   }
 
   function write(record: T): void {
-    const line = JSON.stringify(record)
+    const line = JSON.stringify(record) as string | undefined
+    if (line === undefined) throw new TypeError('Record is not JSON serializable')
     buffer.push({ file: resolvePath(partition(record)), line })
     bufferedBytes += Buffer.byteLength(line) + 1
     if (buffer.length >= maxRecords || bufferedBytes >= maxBytes) {
-      flushInBackground()
+      // A running drain keeps going until the buffer is empty, so it also takes this record.
+      if (!active) flushInBackground()
       return
     }
     if (timer !== undefined) return

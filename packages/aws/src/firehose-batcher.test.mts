@@ -151,4 +151,12 @@ describe('createFirehoseBatcher', () => {
     for (let i = 0; i < 500; i++) batcher.write('s', Buffer.from('x'))
     await vi.waitFor(() => expect(onError).toHaveBeenCalledWith(new Error('handler failed')))
   })
+
+  it('lets a running flush take records written past the threshold', async () => {
+    const { batcher, calls, onError } = setup()
+    for (let i = 0; i < 1000; i++) batcher.write('a', Buffer.from('x'))
+    await batcher.flush()
+    expect(calls.flatMap((c) => c.records)).toHaveLength(1000)
+    expect(onError).not.toHaveBeenCalled()
+  })
 })
