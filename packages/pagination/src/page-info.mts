@@ -7,6 +7,14 @@ export type PageInfo = {
   readonly endCursor: string | null
 }
 
+/** Splits a limit-plus-one keyset query result into the consumed window and a has-more flag. */
+export function sliceRawKeysetPage<T>(
+  rows: readonly T[],
+  limit: number,
+): { window: T[]; hasMore: boolean } {
+  return { window: rows.slice(0, limit), hasMore: rows.length > limit }
+}
+
 export function buildPageInfo<T>(
   items: readonly T[],
   options: { readonly hasNextPage: boolean; readonly getCursor: (item: T) => Cursor },
