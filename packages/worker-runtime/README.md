@@ -77,6 +77,41 @@ fences or recovery. `onEnqueueAdmission(listener)` observes each admission with 
 promise; a throwing listener is recorded in `observerErrors` and reported, and a throwing reporter
 in `reportingErrors`, neither affecting the enqueue.
 
+### Scheduler-overlap lease, guarded processors, and stall budget
+
+`createScheduledRunLease({ client, prefix, onError, logger, ... })` returns
+`(queue, job, workerOptions) => release | null`. A job with a `schedulerName` takes a per-scheduler
+lease sized from `job.opts.timeout` (or `lockDuration * (maxStalledCount + 1)`) and capped by the
+scheduler's interval. A tick that finds a live holder is skipped and counted, and an already
+admitted retained job is delayed instead. The decision is one atomic Lua call, so a lost reply
+never double-counts or runs a tick known to overlap. Field and metric names
+(`admittedField`, `skippedField`, `skippedMetric`, `deferredMetric`) and the log sink are inputs.
+The `client` is a small port (`hget`, `get`, `set(key, value, expiryMs)`, `hincrBy`, and
+`runScript(lua, keys, args)`), so the package carries no native dependency.
+
+The Lua ships as the strings `ADMIT_SCHEDULED_RUN_LUA` and `RELEASE_SCHEDULED_RUN_LUA`. The
+application turns each into a native script once, for example with
+`createScriptRegistry((code) => new Script(code))` (scripts are released on process `exit`), and
+`runScript` invokes that script with the given keys and args. The unit tests drive the lease
+through a fake client; `scheduled-run-scripts.valkey.test.mts` runs the real Lua against Valkey
+when `VALKEY_URL=host:port` is set and skips otherwise, because CI starts no Valkey service.
+
+`createGuardedProcessors({ lease, onError, throwOnSelfAdd })` returns `wrapSingleProcessor` and
+`wrapBatchProcessor` (argument order matches the runtime's `wrapProcessor` hooks; they release the
+lease after success or failure and resolve `undefined` for a skipped tick), plus
+`isActiveProcessorJob(queue, jobId)` and `rejectSelfAdd(queue, jobName, opts)`, which detect a
+processor enqueueing the job it is running. Call `rejectSelfAdd` from `guardAdd`.
+
+`withStallBudget(queue, processor, { hget, prefix, maxStalledCount, exempt })` fails a job whose
+stored `stalledCount` exceeds the budget (default `DEFAULT_MAX_STALLED_COUNT`, 2) before its
+handler runs, so a worker with a high native stall limit does not give ordinary handlers extra
+runs. `exempt(job)` names the jobs that keep the native limit.
+
+`acquireTerminalJobRemoval(client, namespace, jobId)` WATCHes one job hash on a dedicated
+connection and reports `missing`, `live`, or `terminal`; a terminal job exposes `readData()` and
+`remove()`, which runs the native `glidemq_removeJob` transaction through the injected
+`client.removeJob(keys, args)` and resolves false when a concurrent retry changed the hash.
+
 `getQueueStats(queue, name)`, `getAllQueueStats(queues)` (sorted by name), and
 `aggregateQueueStats(stats)` read job counts and paused state from plain GlideMQ queues.
 
@@ -119,6 +154,20 @@ and `data` or `dataFactory`), an optional `registration: 'sequential'`, a nonemp
   `transformRepeat` replaces a cadence clamp; both are application policy.
 - `removeScheduledJobScheduler(queue, id)` reports the scheduler names before and after.
 - `toSchedulerTemplateOptions(opts)` drops `delay`, `deduplication`, `parent`, and `jobId`.
+- `clampScheduledJobRepeatToHourlyFloor(repeat)` is a ready-made `transformRepeat` for low-traffic
+  environments that must wake at most once an hour: `every` rounds up to a top-of-hour cron
+  (`0 * * * *`, an hour-step cron that divides 24, then weekly, then monthly), and a cron keeps
+  every field except its minute, which becomes `0`. It returns `{ repeat, clamped }` and rejects a
+  malformed minute field. `alignedScheduleText(pattern)` renders an aligned pattern as `every Nh`.
+
+## Worker concurrency
+
+`getWorkerConcurrency(name, { baseline, max, ignoreScale, env, envPrefix, scaleEnv, maxEnv })`
+resolves a worker's concurrency: a `<prefix><NAME>` override, else `baseline` times the scale
+variable, clamped to `[1, max]` (a max variable overrides `max`; default 25). The prefix defaults
+to `WORKER_CONCURRENCY_` (scale `_SCALE`, max `_MAX`) and every variable name can be replaced;
+names normalize to `SCREAMING_SNAKE_CASE`. `parseEnvPositiveInt(name, default, env)` reads one
+positive integer and throws on a malformed value.
 
 ## Lifecycle, serve, and queue classes
 
