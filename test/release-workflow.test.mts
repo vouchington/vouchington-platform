@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
@@ -68,8 +68,20 @@ describe('release workflow', () => {
     expect(authenticatedRemote).toBeGreaterThan(tests)
   })
 
-  it('can publish request contract validation', () => {
-    expect(workflow).toContain("'@vouchington/request-contract-validation'")
+  it('offers every published workspace package as a release choice', () => {
+    const published = readdirSync('packages')
+      .map(
+        (directory) =>
+          JSON.parse(readFileSync(`packages/${directory}/package.json`, 'utf8')) as {
+            name: string
+            private?: boolean
+          },
+      )
+      .filter((manifest) => manifest.private !== true)
+      .map((manifest) => manifest.name)
+    const choices = new Set(workflow.match(/(?<=^ {10}- ')@vouchington\/[a-z0-9-]+(?=')/gmu))
+    expect(published.filter((name) => !choices.has(name))).toEqual([])
+    expect(choices.size).toBe(published.length)
   })
 
   it('does not retain the single-package inline release implementation', () => {
