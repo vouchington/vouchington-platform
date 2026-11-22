@@ -39,6 +39,13 @@ import {
   `warnIfProductionValueInvalid`, `warnIfAssetOriginInvalid`, `warnIfDsnInvalid`, `isProductionMode`.
 - Client info and cookies: `applyClientInfoHeaders` with injected header names, `replaceCookies`,
   `stripCookies`. Cookie parsing comes from `@vouchington/utils/cookies`.
+- Geo blocking: `parseBlockedCountries` turns a comma-separated list into a set (null disables), and
+  `isGeoBlocked(headers, blocked, names?)` fails closed when the edge-presence header is set but the
+  country header is missing. Header names default to `cf-ray` and `cf-ipcountry`.
+- Bot tiers: `createBotTierClassifier({ isBot, knownUserAgentSubstrings, knownTier, unknownTier })`
+  returns the known tier only for a detected bot that matches a substring and carries a verified
+  flag (`isVerifiedBotRequest` reads Cloudflare's), the unknown tier for other bots, and null for
+  humans. The detector (for example `isbot`), substrings, and tier values are injected.
 - Sentry tunnel: `createSentryTunnel` forwards envelopes only to injected trusted DSNs, caps the body,
   and logs bounded diagnostics via `@vouchington/utils/sentry-envelope`.
 
