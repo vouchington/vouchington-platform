@@ -1,3 +1,4 @@
+import type { NodeStats } from './node-stats.mts'
 import type { ExplainResult } from './types.mts'
 import { analyzeResult, functionCallReports, type AnalyzeOptions } from './warnings.mts'
 
@@ -10,6 +11,7 @@ export interface ReportOptions extends AnalyzeOptions {
   columns?: readonly { header: string; value: (result: ExplainResult) => string }[]
 }
 
+const pressureLabel = (n: NodeStats) => `${n.nodeType} on ${n.relationName ?? 'unnamed'}`
 const ms = (value: number) => value.toFixed(1)
 
 /** Renders a markdown summary table and warning details; slowest queries first. */
@@ -39,6 +41,8 @@ export function formatMarkdownReport(
       )
     if (w.highPlanningRatio)
       parts.push(`High plan ratio: ${ms(r.planning_time_ms)}ms/${ms(r.execution_time_ms)}ms`)
+    if (w.resourcePressure.length > 0)
+      parts.push(`Resource pressure: ${w.resourcePressure.map(pressureLabel).join(', ')}`)
     const buffers = w.highSharedBuffers[0]
     if (buffers)
       parts.push(
@@ -65,7 +69,8 @@ export function formatMarkdownReport(
     ({ w }) =>
       w.seqScans.length + w.estimateMismatches.length + w.appendOverhead.length > 0 ||
       w.highPlanningRatio ||
-      w.highSharedBuffers.length > 0,
+      w.highSharedBuffers.length > 0 ||
+      w.resourcePressure.length > 0,
   )
   if (flagged.length > 0) {
     lines.push('', '### Warnings', '')
@@ -87,6 +92,10 @@ export function formatMarkdownReport(
       if (w.highPlanningRatio)
         lines.push(
           `- High planning:execution ratio: ${ms(r.planning_time_ms)}ms planning vs ${ms(r.execution_time_ms)}ms execution`,
+        )
+      for (const n of w.resourcePressure)
+        lines.push(
+          `- Resource pressure: ${pressureLabel(n)} (${n.tempReadBlocks} temp blocks read, ${n.tempWrittenBlocks} written, ${n.walBytes} WAL bytes${n.diskSpill ? ', disk sort' : ''}${n.hashBatches > 1 ? `, ${n.hashBatches} hash batches` : ''})`,
         )
       for (const b of w.highSharedBuffers)
         lines.push(

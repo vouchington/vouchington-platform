@@ -68,6 +68,25 @@ describe('formatMarkdownReport', () => {
     expect(text.endsWith('*3 queries analyzed from results.json*')).toBe(true)
   })
 
+  it('reports resource pressure in the table and details', () => {
+    const plan = {
+      Plan: {
+        'Node Type': 'Sort',
+        'Sort Space Type': 'Disk',
+        'Temp Written Blocks': 4,
+        Plans: [{ 'Node Type': 'Hash', 'Relation Name': 'x', 'Hash Batches': 2 }],
+      },
+    }
+    const text = formatMarkdownReport([result(plan)], { largeTables: new Set() })
+    expect(text).toContain('Resource pressure: Sort on unnamed, Hash on x')
+    expect(text).toContain(
+      '- Resource pressure: Sort on unnamed (0 temp blocks read, 4 written, 0 WAL bytes, disk sort)',
+    )
+    expect(text).toContain(
+      '- Resource pressure: Hash on x (0 temp blocks read, 0 written, 0 WAL bytes, 2 hash batches)',
+    )
+  })
+
   it('renders a clean report without optional sections', () => {
     const text = formatMarkdownReport([result({ 'Node Type': 'Result' })], {
       largeTables: new Set(),
