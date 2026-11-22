@@ -19,10 +19,21 @@ Each client package is an optional peer; install only the services you use. S3 s
 - `/cloudwatch`: `chunkMetricData`, `buildPutMetricDataCommand`.
 - `/request-handler`: `createAwsRequestHandler` (default connection and socket deadlines,
   timeout constants, `AWS_DUALSTACK_CLIENT_CONFIG`.
-- `/errors`: `isAwsThrottlingError` (a type guard to `AwsErrorShape`) and `getAwsErrorStatus`.
-  `isAwsThrottlingError` also matches SES's HTTP 400 "Maximum sending rate exceeded" message, so
-  callers that treat other 4xx errors as permanent still retry it. Pass `getAwsErrorStatus` as
-  `getStatus` to `@vouchington/queue-errors` helpers; this package does not duplicate them.
+- `/errors`: `isAwsThrottlingError` and `getAwsErrorStatus`. `isAwsThrottlingError` also matches
+  SES's HTTP 400 "Maximum sending rate exceeded" message. Pass `getAwsErrorStatus` as `getStatus`
+  to `@vouchington/queue-errors` helpers; this package does not duplicate them. `wrapHttpForRetry`
+  treats that SES 400 as terminal, so check `isAwsThrottlingError` first and rethrow a match
+  unchanged to keep the queue's normal retry policy:
+
+  ```ts
+  import { getAwsErrorStatus, isAwsThrottlingError } from '@vouchington/aws/errors'
+  import { wrapHttpForRetry } from '@vouchington/queue-errors'
+
+  await sendEmail().catch((error: unknown) => {
+    if (isAwsThrottlingError(error)) throw error
+    wrapHttpForRetry(error, { getStatus: getAwsErrorStatus })
+  })
+  ```
 
 ## Example
 

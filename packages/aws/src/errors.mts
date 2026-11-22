@@ -18,7 +18,7 @@ const THROTTLING_NAMES = new Set([
 // SES reports a sending-rate throttle as HTTP 400, sometimes with only this message to identify it.
 const SES_SENDING_RATE_EXCEEDED = /maximum sending rate exceeded/i
 
-export interface AwsErrorShape {
+interface AwsErrorShape {
   name?: unknown
   Code?: unknown
   code?: unknown
@@ -38,7 +38,9 @@ export function getAwsErrorStatus(error: unknown): number | undefined {
 }
 
 // Detects rate-limit style failures across SES, SQS, Firehose, and CloudWatch error shapes.
-export function isAwsThrottlingError(error: unknown): error is AwsErrorShape {
+// Returns a boolean, not a type guard: every Error fits the optional fields it checks, so a guard
+// would narrow a non-throttling Error to `never`.
+export function isAwsThrottlingError(error: unknown): boolean {
   const shape = asShape(error)
   if (!shape) return false
   if (shape.$retryable?.throttling === true) return true
