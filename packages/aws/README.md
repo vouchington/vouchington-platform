@@ -59,8 +59,8 @@ await ses.send(buildEmailCommand({ source, to, subject, text }))
 
 Starts the AWS Emulator from a pinned, digest-verified package and
 provides seeding and inspection helpers. It runs natively on Linux and in a Docker container
-elsewhere. The S3, IAM, SQS and Firehose client packages it uses are optional peers needed only by
-this subpath; no other subpath imports them. Image tags, version pins, bucket, queue and stream
+elsewhere. It imports the S3, IAM, SQS and Firehose client packages, so install all four to use
+this subpath; they stay optional peers, so consumers of the other subpaths never need S3 or IAM. Image tags, version pins, bucket, queue and stream
 names, cache paths, and environment variable names are all inputs.
 
 ```ts
