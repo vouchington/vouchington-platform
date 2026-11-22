@@ -78,6 +78,18 @@
       "entry": ["src/index.mts!"],
       "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
     },
+    "packages/aws": {
+      "entry": [
+        "src/ses.mts!",
+        "src/sqs.mts!",
+        "src/firehose.mts!",
+        "src/cloudwatch.mts!",
+        "src/request-handler.mts!",
+        "src/errors.mts!",
+        "src/testing/index.mts!",
+      ],
+      "project": ["src/**/*.mts!", "!src/**/*.test.mts!"],
+    },
     "packages/worker-runtime": {
       "entry": [
         "src/index.mts!",

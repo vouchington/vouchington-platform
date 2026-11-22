@@ -49,6 +49,11 @@
       "types": "./dist/errors.d.mts",
       "import": "./dist/errors.mjs",
       "default": "./dist/errors.mjs"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.mts",
+      "import": "./dist/testing/index.mjs",
+      "default": "./dist/testing/index.mjs"
     }
   },
   "publishConfig": {
@@ -61,6 +66,8 @@
   "devDependencies": {
     "@aws-sdk/client-cloudwatch": "^3.1165.0",
     "@aws-sdk/client-firehose": "^3.1165.0",
+    "@aws-sdk/client-iam": "^3.1175.0",
+    "@aws-sdk/client-s3": "^3.1175.0",
     "@aws-sdk/client-ses": "^3.1165.0",
     "@aws-sdk/client-sqs": "^3.1165.0",
     "@smithy/node-http-handler": "^4.14.2"
@@ -68,6 +75,8 @@
   "peerDependencies": {
     "@aws-sdk/client-cloudwatch": "^3.1165.0",
     "@aws-sdk/client-firehose": "^3.1165.0",
+    "@aws-sdk/client-iam": "^3.1175.0",
+    "@aws-sdk/client-s3": "^3.1175.0",
     "@aws-sdk/client-ses": "^3.1165.0",
     "@aws-sdk/client-sqs": "^3.1165.0",
     "@smithy/node-http-handler": "^4.14.2"
@@ -77,6 +86,12 @@
       "optional": true
     },
     "@aws-sdk/client-firehose": {
+      "optional": true
+    },
+    "@aws-sdk/client-iam": {
+      "optional": true
+    },
+    "@aws-sdk/client-s3": {
       "optional": true
     },
     "@aws-sdk/client-ses": {
