@@ -157,6 +157,18 @@ describe('createPostCommitActions', () => {
     })
   })
 
+  it('does not let an independent nested transaction register on the outer owner', async () => {
+    await setup(async ({ actions, begin, nested }) => {
+      const action = vi.fn(noop)
+      await using transaction = await begin()
+      await nested({ client: transaction.client }, async () => {
+        await nested({}, async (independent) => {
+          expect(() => actions.register(independent, action)).toThrow('owned transaction')
+        })
+      })
+    })
+  })
+
   it('wraps an application-decorated transaction and keeps it as the owner', async () => {
     await withPsql(async (psql) => {
       const actions = createPostCommitActions({ reportError: vi.fn() })

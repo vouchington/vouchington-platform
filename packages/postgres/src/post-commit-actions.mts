@@ -151,7 +151,8 @@ export function createPostCommitActions(options: PostCommitActionsOptions): Post
       : undefined
     const result = await run(queryOptions, async (nested) => {
       const scoped = owners.has(nested) ? nested : wrapQuery(nested)
-      return scope ? scopes.run(scope, () => handler(scoped)) : handler(scoped)
+      // An unowned transaction must not inherit an outer scope's registrations.
+      return scope ? scopes.run(scope, () => handler(scoped)) : scopes.exit(() => handler(scoped))
     })
     if (scope) {
       const actions = scope.parent?.actions ?? pending.get(scope.owner) ?? []

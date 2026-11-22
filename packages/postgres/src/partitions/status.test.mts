@@ -11,7 +11,9 @@ async function withPartitions<Result>(
     await using transaction = await psql.beginTransaction()
     await transaction(`/* createSchema */ CREATE SCHEMA ${schema}`)
     await transaction(`/* setPath */ SET LOCAL search_path = ${schema}`)
-    await transaction(`/* createParent */ CREATE TABLE events (id int) PARTITION BY RANGE (id)`)
+    await transaction(
+      `/* createParent */ CREATE TABLE events (id int PRIMARY KEY) PARTITION BY RANGE (id)`,
+    )
     await transaction(
       `/* createA */ CREATE TABLE events_a PARTITION OF events FOR VALUES FROM (0) TO (10)`,
     )

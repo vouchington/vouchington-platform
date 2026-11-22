@@ -50,6 +50,7 @@ export async function listPartitionStatusRows(query: QueryExecutor): Promise<Par
       JOIN pg_class AS child ON pg_inherits.inhrelid = child.oid
       JOIN pg_namespace AS ns ON parent.relnamespace = ns.oid
       WHERE ns.nspname = current_schema()
+        AND parent.relkind = 'p'
       ORDER BY parent.relname, child.relname`,
   )
   return rows
