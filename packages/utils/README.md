@@ -84,6 +84,14 @@ import { createScopeCatalog } from '@vouchington/utils/scopes'
   keeps stderr up to a byte cap, and SIGKILLs on abort or timeout. By default the child sees only
   `PATH`, `TMPDIR`, and `LC_ALL=C`; `env` replaces that. Non-zero exit, signal, abort, and timeout
   reject with `CommandFailedError` (`reason`, `exitCode`, `signal`, `stderr`).
+- `graceful-shutdown`: Node-only. `createGracefulShutdown({ gracePeriodMs, onError, closeResources, flush,
+  log, logError, process, forceExit })` runs callbacks, then drain callbacks, then `closeResources`,
+  then `flush`, once, with an unref'd force-exit fallback (code 0 after success, 1 on timeout);
+  `installSignalHandlers()` wires SIGTERM and SIGINT. `createShutdownRegistry()` is a late-binding
+  `register(name, shutdown)` / `close({ shutdowns, log })` registry that returns failures instead of
+  throwing, and `shutdownForOneOffCommand({ gracePeriodMs, close })` bounds a short-lived command's
+  close and throws an `AggregateError`. The grace period, resource names, error reporting, and
+  signal-registration policy are all injected.
 - `oauth-pkce`: WebCrypto `generateCodeVerifier`, `generateState`, and S256 `generateCodeChallenge`.
 - `oauth-popup` (browser): `openOAuthPopup`, `buildAuthorizationUrl`, `runPopupOAuthLogin`, and
   `OAuthCancelledError`. The flow takes an injectable `window`; callers keep their own in-flight
