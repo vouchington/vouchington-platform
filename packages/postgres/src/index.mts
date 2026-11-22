@@ -27,6 +27,21 @@ export type { BoundedTransactionOptions } from './bounded-transaction.mts'
 export { createTransactionLockOnce } from './transaction-lock-once.mts'
 export type { TransactionLockOnce, TransactionLockOnceOptions } from './transaction-lock-once.mts'
 export { Cursor } from './cursor-support.mts'
+export { isUniqueViolation } from './unique-violation.mts'
+export { createPostCommitActions } from './post-commit-actions.mts'
+export type {
+  OwnableTransaction,
+  PostCommitAction,
+  PostCommitActions,
+  PostCommitActionsOptions,
+  RunTransactionOptions,
+} from './post-commit-actions.mts'
+export { runConfigDriven, type RunConfigDrivenOptions } from './migration-runner/config-driven.mts'
+export {
+  runConfigDrivenStatementsInTransaction,
+  type ConfigDrivenStatementsOptions,
+  type ConfigDrivenTarget,
+} from './migration-runner/config-driven-statements.mts'
 export { MigrationFileMissingError } from './migration-runner/migration-file-missing.mts'
 export {
   MigrationChecksumMissingError,

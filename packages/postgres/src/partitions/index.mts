@@ -35,3 +35,11 @@ export type {
   PartitionRetirementTransaction,
   RetireMonthlyPartitionsOptions,
 } from './retire.mts'
+export { getPartitionStatus, listPartitionStatusRows } from './status.mts'
+export type {
+  GetPartitionStatusOptions,
+  PartitionStatus,
+  PartitionStatusPartition,
+  PartitionStatusRow,
+  PartitionStatusTable,
+} from './status.mts'

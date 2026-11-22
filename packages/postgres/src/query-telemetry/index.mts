@@ -33,3 +33,11 @@ export type {
   SharedDbScopeObserver,
   SharedDbScopeObserverOptions,
 } from './scope-observer.mts'
+export { createPoolStatsSampler } from './pool-stats-sampler.mts'
+export type {
+  PoolStats,
+  PoolStatsSampler,
+  PoolStatsSamplerOptions,
+  PoolStatsTimer,
+  SampledPool,
+} from './pool-stats-sampler.mts'
