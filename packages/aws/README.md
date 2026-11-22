@@ -38,6 +38,7 @@ Each client package is an optional peer; install only the services you use. S3 s
     wrapHttpForRetry(error, { getStatus: getAwsErrorStatus })
   })
   ```
+
 - `/testing`: AWS Emulator harness for Vitest or any test runner; see below.
 
 ## Example
