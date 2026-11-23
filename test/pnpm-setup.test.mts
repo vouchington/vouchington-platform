@@ -16,6 +16,7 @@ const runsPnpm = /(?:^|[\s;&|(])pnpm\s/mu
 interface Step {
   readonly uses: string | undefined
   readonly inputs: ReadonlyMap<string, string>
+  readonly env: ReadonlyMap<string, string>
   readonly runsPnpm: boolean
 }
 
@@ -54,24 +55,30 @@ function stepBlocks(text: string): { job: string; steps: string[][] }[] {
   return jobs
 }
 
+function mapping(code: readonly string[], header: string): Map<string, string> {
+  const entries = new Map<string, string>()
+  const index = code.indexOf(header)
+  if (index < 0) return entries
+  for (const line of code.slice(index + 1)) {
+    const entry = /^ {10}([\w-]+): (.+)$/u.exec(line)
+    if (!entry) break
+    entries.set(entry[1]!, entry[2]!)
+  }
+  return entries
+}
+
 function parseStep(lines: readonly string[]): Step {
   const code = lines.filter((line) => !line.trimStart().startsWith('#'))
   const uses = code
     .map((line) => /^ {6}- uses: (.+)$|^ {8}uses: (.+)$/u.exec(line))
     .find((match) => match !== null)
-  const inputs = new Map<string, string>()
-  const withIndex = code.indexOf('        with:')
-  if (withIndex >= 0) {
-    for (const line of code.slice(withIndex + 1)) {
-      const input = /^ {10}([\w-]+): (.+)$/u.exec(line)
-      if (!input) break
-      inputs.set(input[1]!, input[2]!)
-    }
-  }
+  const inputs = mapping(code, '        with:')
+  const env = mapping(code, '        env:')
   const run = code.findIndex((line) => /^ {6}- run: |^ {8}run: /u.test(line))
   return {
     uses: uses ? (uses[1] ?? uses[2]) : undefined,
     inputs,
+    env,
     runsPnpm:
       run >= 0 &&
       runsPnpm.test(
@@ -129,6 +136,17 @@ describe('pnpm provisioning', () => {
       majors.add(major![1]!)
     }
     expect([...majors]).toHaveLength(1)
+  })
+
+  it('holds the self-updated pnpm to the workspace minimum release age', () => {
+    // pnpm/action-setup runs `pnpm self-update` outside this workspace, so
+    // pnpm-workspace.yaml does not reach it; the env variable must match.
+    const workspace = readFileSync('pnpm-workspace.yaml', 'utf8')
+    const minutes = /^minimumReleaseAge: (\d+)$/mu.exec(workspace)?.[1]
+    expect(Number(minutes)).toBeGreaterThanOrEqual(10080)
+    for (const { location, step } of setups) {
+      expect(step.env.get('PNPM_CONFIG_MINIMUM_RELEASE_AGE'), location).toBe(`'${minutes}'`)
+    }
   })
 
   it('sets up Node before pnpm, and pnpm before every step that runs it', () => {
