@@ -1,47 +1,13 @@
 {
-  "changedManifests": [
-    "packages/edge/package.json",
-    "packages/oauth-server/package.json",
-    "packages/sentry/package.json",
-    "packages/typed-entities/package.json",
-    "packages/utils/package.json"
-  ],
+  "changedManifests": ["packages/server-utils/package.json"],
   "releases": [
     {
-      "bump": "minor",
-      "directory": "utils",
-      "fromVersion": "0.12.1",
-      "name": "@vouchington/utils",
-      "toVersion": "0.13.0"
-    },
-    {
-      "bump": "minor",
-      "directory": "edge",
-      "fromVersion": "0.8.1",
-      "name": "@vouchington/edge",
-      "toVersion": "0.9.0"
-    },
-    {
-      "bump": "minor",
-      "directory": "oauth-server",
-      "fromVersion": "0.8.0",
-      "name": "@vouchington/oauth-server",
-      "toVersion": "0.9.0"
-    },
-    {
-      "bump": "minor",
-      "directory": "sentry",
-      "fromVersion": "0.6.0",
-      "name": "@vouchington/sentry",
-      "toVersion": "0.7.0"
-    },
-    {
-      "bump": "minor",
-      "directory": "typed-entities",
-      "fromVersion": "0.8.0",
-      "name": "@vouchington/typed-entities",
-      "toVersion": "0.9.0"
+      "bump": "patch",
+      "directory": "server-utils",
+      "fromVersion": "0.0.0",
+      "name": "@vouchington/server-utils",
+      "toVersion": "0.0.1"
     }
   ],
-  "selectedPackage": "@vouchington/utils"
+  "selectedPackage": "@vouchington/server-utils"
 }

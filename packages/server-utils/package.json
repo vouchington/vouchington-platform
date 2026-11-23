@@ -1,6 +1,6 @@
 {
   "name": "@vouchington/server-utils",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Dependency-free server-only utilities for Node and Bun.",
   "homepage": "https://github.com/vouchington/vouchington-platform/tree/main/packages/server-utils#readme",
   "license": "MIT",
