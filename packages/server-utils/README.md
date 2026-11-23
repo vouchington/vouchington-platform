@@ -23,7 +23,10 @@ import { runCommand } from '@vouchington/server-utils/child-process'
   timeoutMs, stderrCapBytes, env })` spawns an explicit argv with no shell, streams stdin and stdout,
   keeps stderr up to a byte cap, and SIGKILLs on abort or timeout. By default the child sees only
   `PATH`, `TMPDIR`, and `LC_ALL=C`; `env` replaces that. Non-zero exit, signal, abort, and timeout
-  reject with `CommandFailedError` (`reason`, `exitCode`, `signal`, `stderr`).
+  reject with `CommandFailedError` (`command`, `reason`, `exitCode`, `signal`, `stderr`, and
+  `timeoutMs` when `reason` is `'timeout'`). The message includes at most the last 1 KiB of stderr;
+  `.stderr` keeps the full captured buffer. Invalid arguments throw a `RangeError` or `TypeError`
+  with a `command` attribute.
 - `error-tree`: `formatErrorTree(error, { maxDepth?, maxNested? })` renders an error with its
   `errors[]` and `cause` chain, marks circular references, and reports how many nested errors the
   depth and count limits omitted (defaults 5 and 20).
@@ -33,8 +36,14 @@ import { runCommand } from '@vouchington/server-utils/child-process'
   `installSignalHandlers()` wires SIGTERM and SIGINT. `createShutdownRegistry()` is a late-binding
   `register(name, shutdown)` / `close({ shutdowns, log })` registry that returns failures instead of
   throwing, and `shutdownForOneOffCommand({ gracePeriodMs, close })` bounds a short-lived command's
-  close and throws an `AggregateError`. The grace period, resource names, error reporting, and
-  signal-registration policy are all injected.
+  close and throws an `AggregateError` whose message lists the failed resources. The grace period,
+  resource names, error reporting, and signal-registration policy are all injected.
+  Failures are `ShutdownError`s with fixed messages and attributes to filter on: `resource` and
+  `cause` from the registry (`cause` is the original thrown value, including non-Errors), and
+  `phase` (`'callbacks' | 'drain' | 'closeResources' | 'flush'`), `signal`, and `cause` from
+  `onError`. `logError(message, context)` receives `{ errorCount, signal, phases, resources }` once
+  when shutdown finished with failures, and `{ phase, signal, gracePeriodMs, exitCode }` when the
+  force-exit timer fires (`phase` is `'completed'` if the steps had already finished).
 - `http-signatures`: Cavage-12 HTTP Signatures. Callers pass signed
   headers, allowed algorithms, and `maxAgeSeconds` on both sign and verify. The package has no
   default header set or product keyId policy.

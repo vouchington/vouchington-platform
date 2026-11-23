@@ -4,6 +4,7 @@ import {
   createShutdownRegistry,
   shutdownForOneOffCommand,
   type GracefulShutdownProcess,
+  type ShutdownError,
 } from './graceful-shutdown.mts'
 
 function fakeProcess() {
@@ -46,7 +47,7 @@ describe('createShutdownRegistry', () => {
     await expect(createShutdownRegistry().close()).resolves.toEqual([])
   })
 
-  it('collects failures, normalizes non-errors, and still closes the rest', async () => {
+  it('collects failures as ShutdownErrors and still closes the rest', async () => {
     const log = vi.fn<(...args: unknown[]) => void>()
     const failure = new Error('db down')
     const registry = createShutdownRegistry({ log, successMessage: (name) => `closed ${name}` })
@@ -59,8 +60,8 @@ describe('createShutdownRegistry', () => {
     const errors = await registry.close()
 
     expect(errors).toHaveLength(2)
-    expect(errors[0]).toBe(failure)
-    expect(errors[1]).toEqual(new Error('plain string'))
+    expect(errors[0]?.cause).toBe(failure)
+    expect(errors[1]?.cause).toBe('plain string')
     expect(log.mock.calls).toEqual([['closed cache']])
   })
 
@@ -112,7 +113,7 @@ describe('createGracefulShutdown', () => {
 
   it('reports callback failures through onError and keeps going', async () => {
     const { proc } = fakeProcess()
-    const onError = vi.fn<(error: Error) => void>()
+    const onError = vi.fn<(error: ShutdownError) => void>()
     const shutdown = createGracefulShutdown({ gracePeriodMs: 1_000, onError, process: proc })
     const failure = new Error('callback failed')
     shutdown.addCallback(() => Promise.reject(failure))
@@ -125,14 +126,13 @@ describe('createGracefulShutdown', () => {
     await shutdown.shutdown('SIGINT')
 
     expect(onError.mock.calls).toHaveLength(2)
-    expect(onError).toHaveBeenCalledWith(failure)
-    expect(onError).toHaveBeenCalledWith(new Error('sync failure'))
+    expect(onError.mock.calls.map(([error]) => error.cause)).toEqual(['sync failure', failure])
     expect(drained).toHaveBeenCalledOnce()
   })
 
   it('reports a failing closeResources or flush, still flushes, and exits with code 1', async () => {
     const { proc, exit } = fakeProcess()
-    const onError = vi.fn<(error: Error) => void>()
+    const onError = vi.fn<(error: ShutdownError) => void>()
     const flush = vi.fn<() => Promise<void>>().mockRejectedValue('flush failed')
     const failure = new Error('close failed')
     const shutdown = createGracefulShutdown({
@@ -146,7 +146,7 @@ describe('createGracefulShutdown', () => {
     await expect(shutdown.shutdown('SIGTERM')).resolves.toBeUndefined()
 
     expect(flush).toHaveBeenCalledOnce()
-    expect(onError.mock.calls).toEqual([[failure], [new Error('flush failed')]])
+    expect(onError.mock.calls.map(([error]) => error.cause)).toEqual([failure, 'flush failed'])
     await vi.advanceTimersByTimeAsync(100)
     expect(exit).toHaveBeenCalledExactlyOnceWith(1)
   })
@@ -249,6 +249,7 @@ describe('shutdownForOneOffCommand', () => {
     }).catch((error: unknown) => error)
     expect(err).toBeInstanceOf(AggregateError)
     expect((err as AggregateError).errors).toEqual([first, second])
+    expect((err as AggregateError).message).toBe('One-off shutdown failed')
   })
 
   it('force-exits and logs when close never settles', async () => {

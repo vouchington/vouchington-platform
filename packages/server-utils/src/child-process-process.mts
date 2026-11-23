@@ -125,6 +125,7 @@ export function waitForChild(child: ChildProcess): Promise<ChildOutcome> {
 
 export function classifyFailure(input: {
   command: string
+  timeoutMs: number
   aborted: boolean
   timedOut: boolean
   stdinError: Error | undefined
@@ -139,7 +140,8 @@ export function classifyFailure(input: {
     stderr: input.stderr,
   }
   if (input.aborted) return failure(input.command, 'abort', details)
-  if (input.timedOut) return failure(input.command, 'timeout', details)
+  if (input.timedOut)
+    return failure(input.command, 'timeout', { ...details, timeoutMs: input.timeoutMs })
   if (input.stdoutError) return input.stdoutError
   if (input.stdinError) return input.stdinError
   if (input.signal) return failure(input.command, 'signal', details)
@@ -150,7 +152,12 @@ export function classifyFailure(input: {
 function failure(
   command: string,
   reason: CommandFailureReason,
-  details: { exitCode: number | null; signal: NodeJS.Signals | null; stderr: Buffer },
+  details: {
+    exitCode: number | null
+    signal: NodeJS.Signals | null
+    stderr: Buffer
+    timeoutMs?: number
+  },
 ): CommandFailedError {
   return new CommandFailedError(command, { reason, ...details })
 }

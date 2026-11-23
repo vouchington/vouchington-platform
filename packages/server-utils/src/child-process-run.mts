@@ -37,10 +37,7 @@ type ReadableStreamInput = import('node:stream').Readable | Uint8Array | string
 // PATH, TMPDIR, and `LC_ALL=C` only. Abort and the timeout both SIGKILL the child;
 // a non-zero exit or a signal rejects.
 export async function runCommand(options: RunCommandOptions): Promise<{ stderr: Buffer }> {
-  if (options.command.length === 0) throw new Error('command must not be empty')
-  if (!Number.isFinite(options.timeoutMs) || options.timeoutMs <= 0) {
-    throw new Error('timeoutMs must be a positive finite number')
-  }
+  validateOptions(options)
   if (options.signal?.aborted) {
     throw new CommandFailedError(options.command, {
       reason: 'abort',
@@ -106,6 +103,7 @@ export async function runCommand(options: RunCommandOptions): Promise<{ stderr: 
     })
     const failure = classifyFailure({
       command: options.command,
+      timeoutMs: options.timeoutMs,
       aborted,
       timedOut,
       stdinError,
@@ -121,6 +119,22 @@ export async function runCommand(options: RunCommandOptions): Promise<{ stderr: 
     releaseStdout()
     options.signal?.removeEventListener('abort', onAbort)
   }
+}
+
+function argumentError<E extends Error>(error: E, command: unknown): E & { command: string } {
+  return Object.assign(error, { command: String(command) })
+}
+
+function validateOptions(options: RunCommandOptions): void {
+  const { command, timeoutMs } = options
+  if (typeof command !== 'string')
+    throw argumentError(new TypeError('command must be a string'), command)
+  if (command.length === 0)
+    throw argumentError(new RangeError('command must not be empty'), command)
+  if (typeof timeoutMs !== 'number')
+    throw argumentError(new TypeError('timeoutMs must be a number'), command)
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0)
+    throw argumentError(new RangeError('timeoutMs must be a positive finite number'), command)
 }
 
 function childEnvironment(): NodeJS.ProcessEnv {
