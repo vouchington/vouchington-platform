@@ -162,7 +162,7 @@ jobs:
 
       # setup-node must precede pnpm/action-setup: the action bootstraps pnpm
       # with the Node on PATH. main does not pin pnpm and gets the newest pnpm 12
-      # that clears pnpm's default one-day minimumReleaseAge. A legacy line's
+      # that clears the 7-day minimum release age set in env. A legacy line's
       # source pins pnpm in package.json#packageManager, so it passes no version
       # and the action installs that pin (an explicit version would conflict).
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -172,6 +172,10 @@ jobs:
           package-manager-cache: false
 
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        env:
+          # pnpm self-update runs outside this workspace, so it does not read
+          # pnpm-workspace.yaml. Keep this equal to its minimumReleaseAge.
+          PNPM_CONFIG_MINIMUM_RELEASE_AGE: '10080'
         with:
           version: ${{ inputs.release_line == 'main' && 'latest-12' || '' }}
 
