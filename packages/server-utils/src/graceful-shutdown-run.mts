@@ -1,3 +1,5 @@
+import { ShutdownError, resourcesOf, type ShutdownPhase } from './graceful-shutdown-error.mts'
+
 export interface GracefulShutdownProcess {
   on: (signal: NodeJS.Signals, listener: () => void) => unknown
   exit: (code?: number) => unknown
@@ -6,14 +8,21 @@ export interface GracefulShutdownProcess {
 export interface GracefulShutdownOptions {
   /** Grace period before the force-exit fallback fires. */
   gracePeriodMs: number
-  /** Receives callback failures; one failing callback never skips the others. */
-  onError: (error: Error) => void
+  /**
+   * Receives each failure as a `ShutdownError` (`phase`, `signal`, and the original `cause`); one
+   * failing step never skips the others.
+   */
+  onError: (error: ShutdownError) => void
   /** Final phase after callbacks and drain callbacks, e.g. closing shared connections. */
   closeResources?: () => Promise<unknown>
   /** Runs after `closeResources`, e.g. flushing buffered error reports. */
   flush?: () => Promise<unknown>
   log?: (...args: unknown[]) => void
-  /** Called with the failure text when the fallback fires before shutdown finished. */
+  /**
+   * Called with a fixed message and a context object when shutdown finished with failures
+   * (`errorCount`, `signal`, `phases`, `resources`) or when the force-exit fallback fires (`phase`
+   * still running, or `'completed'` after failures, plus `signal`, `gracePeriodMs`, `exitCode`).
+   */
   logError?: (...args: unknown[]) => void
   /** Defaults to the global `process`. */
   process?: GracefulShutdownProcess
@@ -35,25 +44,51 @@ export interface GracefulShutdown {
 export function createGracefulShutdown(options: GracefulShutdownOptions): GracefulShutdown {
   const callbacks: (() => Promise<void>)[] = []
   const drainCallbacks: (() => Promise<void>)[] = []
+  const failures: ShutdownError[] = []
   const proc = options.process ?? process
   let shuttingDown = false
+  let phase: ShutdownPhase | 'completed' = 'callbacks'
+  let signalName = ''
 
-  const runAll = (list: readonly (() => Promise<void>)[]) =>
+  const report = (failedPhase: ShutdownPhase, cause: unknown) => {
+    const error = new ShutdownError(`Graceful Shutdown: ${failedPhase} failed`, {
+      cause,
+      phase: failedPhase,
+      signal: signalName,
+    })
+    failures.push(error)
+    options.onError(error)
+  }
+
+  const runAll = (failedPhase: ShutdownPhase, list: readonly (() => Promise<void>)[]) =>
     Promise.all(
       list.map((callback) =>
         // The then-wrapper routes a synchronous throw from `callback` into the catch handler.
         // oxlint-disable-next-line promise/no-callback-in-promise
         Promise.resolve()
           .then(callback)
-          .catch((error: unknown) => {
-            options.onError(error instanceof Error ? error : new Error(String(error)))
-          }),
+          .catch((error: unknown) => report(failedPhase, error)),
       ),
     )
+
+  async function attempt(
+    step: ShutdownPhase,
+    run: (() => Promise<unknown>) | undefined,
+  ): Promise<boolean> {
+    phase = step
+    try {
+      await run?.()
+      return true
+    } catch (error) {
+      report(step, error)
+      return false
+    }
+  }
 
   async function shutdown(signal: string): Promise<void> {
     if (shuttingDown) return
     shuttingDown = true
+    signalName = signal
     options.log?.(`Graceful Shutdown: received ${signal} signal, shutting down...`)
 
     let succeeded = false
@@ -61,32 +96,39 @@ export function createGracefulShutdown(options: GracefulShutdownOptions): Gracef
     // wins; exit code 0 when shutdown succeeded, 1 when the grace period ran out.
     if (options.forceExit !== false) {
       setTimeout(() => {
-        if (!succeeded)
-          options.logError?.('Graceful Shutdown: could not close in time, forcing exit...')
-        proc.exit(succeeded ? 0 : 1)
+        const exitCode = succeeded ? 0 : 1
+        if (!succeeded) {
+          options.logError?.('Graceful Shutdown: could not close in time, forcing exit...', {
+            phase,
+            signal,
+            gracePeriodMs: options.gracePeriodMs,
+            exitCode,
+          })
+        }
+        proc.exit(exitCode)
       }, options.gracePeriodMs).unref()
     }
 
-    await runAll(callbacks)
+    await runAll('callbacks', callbacks)
     options.log?.('Graceful Shutdown: all callbacks completed.')
-    await runAll(drainCallbacks)
+    phase = 'drain'
+    await runAll('drain', drainCallbacks)
     options.log?.('Graceful Shutdown: drain phase completed.')
     // A failing close is reported and must not skip the final flush.
-    const closed = await attempt(options.closeResources)
-    const flushed = await attempt(options.flush)
+    const closed = await attempt('closeResources', options.closeResources)
+    const flushed = await attempt('flush', options.flush)
+    phase = 'completed'
+    if (failures.length > 0) {
+      options.logError?.('Graceful Shutdown: finished with failures.', {
+        errorCount: failures.length,
+        signal,
+        phases: [...new Set(failures.map((failure) => failure.phase))],
+        resources: [...new Set(failures.flatMap(resourcesOf))],
+      })
+    }
     if (!closed || !flushed) return
     options.log?.('Graceful Shutdown: all connections closed.')
     succeeded = true
-  }
-
-  async function attempt(step: (() => Promise<unknown>) | undefined): Promise<boolean> {
-    try {
-      await step?.()
-      return true
-    } catch (error) {
-      options.onError(error instanceof Error ? error : new Error(String(error)))
-      return false
-    }
   }
 
   return {

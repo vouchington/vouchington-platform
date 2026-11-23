@@ -9,6 +9,11 @@ export {
   type OneOffShutdownOptions,
 } from './graceful-shutdown-one-off.mts'
 export {
+  ShutdownError,
+  type ShutdownErrorDetails,
+  type ShutdownPhase,
+} from './graceful-shutdown-error.mts'
+export {
   createShutdownRegistry,
   type CloseOverrides,
   type ResourceShutdown,

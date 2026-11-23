@@ -1,3 +1,5 @@
+import { ShutdownError } from './graceful-shutdown-error.mts'
+
 export type ResourceShutdown = () => Promise<void>
 
 export interface ShutdownRegistryOptions {
@@ -19,13 +21,11 @@ export interface ShutdownRegistry {
   register: (name: string, shutdown: ResourceShutdown) => void
   /**
    * Runs every registered shutdown (plus overrides) concurrently, so one failure never skips the
-   * others. Returns the failures instead of throwing.
+   * others. Returns the failures instead of throwing, each a `ShutdownError` whose `resource` is
+   * the registered name and whose `cause` is the original thrown value.
    */
-  close: (overrides?: CloseOverrides) => Promise<Error[]>
+  close: (overrides?: CloseOverrides) => Promise<ShutdownError[]>
 }
-
-const toError = (reason: unknown): Error =>
-  reason instanceof Error ? reason : new Error(String(reason))
 
 /**
  * A late-binding registry for resources (connections, pools) whose owners register a shutdown at
@@ -48,10 +48,17 @@ export function createShutdownRegistry(options: ShutdownRegistryOptions = {}): S
       const results = await Promise.allSettled(
         names.map((name) => Promise.resolve().then(shutdowns.get(name))),
       )
-      const errors: Error[] = []
+      const errors: ShutdownError[] = []
       results.forEach((result, index) => {
-        if (result.status === 'rejected') errors.push(toError(result.reason))
-        else log?.(successMessage(names[index] as string))
+        const name = names[index] as string
+        if (result.status === 'rejected') {
+          errors.push(
+            new ShutdownError('Graceful Shutdown: resource failed to close', {
+              cause: result.reason,
+              resource: name,
+            }),
+          )
+        } else log?.(successMessage(name))
       })
       return errors
     },
