@@ -95,22 +95,22 @@ importers:
     devDependencies:
       '@aws-sdk/client-cloudwatch':
         specifier: ^3.1165.0
-        version: 3.1169.0
+        version: 3.1170.0
       '@aws-sdk/client-firehose':
         specifier: ^3.1165.0
-        version: 3.1169.0
+        version: 3.1170.0
       '@aws-sdk/client-iam':
         specifier: ^3.1165.0
-        version: 3.1169.0
+        version: 3.1170.0
       '@aws-sdk/client-s3':
         specifier: ^3.1165.0
-        version: 3.1169.0
+        version: 3.1170.0
       '@aws-sdk/client-ses':
         specifier: ^3.1165.0
-        version: 3.1169.0
+        version: 3.1170.0
       '@aws-sdk/client-sqs':
         specifier: ^3.1165.0
-        version: 3.1169.0
+        version: 3.1170.0
       '@smithy/node-http-handler':
         specifier: ^4.14.2
         version: 4.14.2
@@ -289,10 +289,10 @@ importers:
     dependencies:
       '@aws-sdk/client-s3':
         specifier: ^3.1165.0
-        version: 3.1169.0
+        version: 3.1170.0
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.1165.0
-        version: 3.1169.0
+        version: 3.1170.0
 
   packages/memberships: {}
 
@@ -494,7 +494,7 @@ importers:
     devDependencies:
       '@aws-sdk/client-sqs':
         specifier: ^3.1165.0
-        version: 3.1169.0
+        version: 3.1170.0
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@7.2.0))
@@ -609,28 +609,28 @@ packages:
     resolution: {integrity: sha512-OHlfkNzDFjYnwNPABhwAkDTUi0HPjfsKUHJDR0bSMORpCXNzRpInPCNCIT08xKDhjaPlcLJ+2Av+Sk7hHnuC8A==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-cloudwatch@3.1169.0':
-    resolution: {integrity: sha512-ZLZqG4BC3zbGvgqC8uIUvSf2n3CMu711blIOTtiRoQj9kZMXml/pW9ZyWh/ru1xqLS4fxhkvw+tgc5VavjWoDw==}
+  '@aws-sdk/client-cloudwatch@3.1170.0':
+    resolution: {integrity: sha512-TGYKxa0bFR1yDYm3WSFpDLx2CG6NNnjDarS5JQZB41aw/Qpj0tQp2tCoL/+v6bAGoj4VLXj6EFg72Ot7gb9RSA==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-firehose@3.1169.0':
-    resolution: {integrity: sha512-58Wriva9lhMOzL9HZu5XToLZxfO65bUlf0nNttdbVrmQzcyZRkMQfHUhUxpsLT/x4Lt3amNaYFBI2VF6spmicw==}
+  '@aws-sdk/client-firehose@3.1170.0':
+    resolution: {integrity: sha512-5+ma41/OunOwPkm/se5yaP3CbUduEa+lkgXG0dVsXKKLALgj4ODlIvTM3sLe5khJA00APfTRyZfdnm6ZbFBgLg==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-iam@3.1169.0':
-    resolution: {integrity: sha512-JcGWDLOKnPw9F8eCJBk9SutgXGev9vljIUIISa52Qkw3B7o2Z6QzP/nLtqtQ3yXpSvgDxsdF2WeSUf6UeQHeVQ==}
+  '@aws-sdk/client-iam@3.1170.0':
+    resolution: {integrity: sha512-SlmTPjr/HuTCo5t4tdC/HaDXOZeULJhzhrqbo7Q5hJiChr845cEiuG9ZAWA3YsWq4EXpwhJyeD7TJ3XEwvqnFg==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-s3@3.1169.0':
-    resolution: {integrity: sha512-5IjQ2R1TM5lMuUvCvCfGNG9q6g3nxdputC9FY7YQJf1ygVUwsOruEYxQqpjik1nZdl8mNvV57Mhivtp2JbgBtg==}
+  '@aws-sdk/client-s3@3.1170.0':
+    resolution: {integrity: sha512-Cl/cbJdfduZKSHKn7zegpIIhWKHWJKirhVX5HtcLesM6oGfTLLDszaFPW1gWprNoUSXnYvIO7kcSyVNBgFLphA==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-ses@3.1169.0':
-    resolution: {integrity: sha512-akY4NjxmPvYbjcu5gk1aTYbySEyqakGXvGJLtGUwMWLKZMoxew4fo4ZCzYKGIE12XaLzwlO13qib+3bvPo1fZA==}
+  '@aws-sdk/client-ses@3.1170.0':
+    resolution: {integrity: sha512-ozKO6RzCP47v+E6mVX1gSBl7RlCYqlWTy54D12neZ8dSKE+n4IeBqLEkTbZnDMvzQ5U8s4Qub7rULBF1PUgIJA==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-sqs@3.1169.0':
-    resolution: {integrity: sha512-7bX9EB7CH/L/CuYv/4l3/LlBofBfyjZqFHbsLHJ/Wki08fMsq6g/RCsCKU29UmCINLdX13Un9YtWu5Gv8pHxCA==}
+  '@aws-sdk/client-sqs@3.1170.0':
+    resolution: {integrity: sha512-cXrfvqgqqvTZJVkwF0doUMsQTp5GEuItbDWmZOndQTNQeIpEyCxDWhphS5FffAF42eHMSHoNsFpN5v+bQqmq7A==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/core@3.981.0':
@@ -681,8 +681,8 @@ packages:
     resolution: {integrity: sha512-acHTTzMB13CU6dU4sxABYExMI3PQM2zStWH2MiUwJp/7QKTrLg2f7mbzSXoegW2kYOk2tdqQYagsZrWB8Xv7eA==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/s3-request-presigner@3.1169.0':
-    resolution: {integrity: sha512-ydc+uJnL8s1rMyPgEWjjiV6C/UFqrQhsAHOhEW5GerQtB0zpgpENupEY3AeeXunWxdQakdDLrNJetimZ0wbhRw==}
+  '@aws-sdk/s3-request-presigner@3.1170.0':
+    resolution: {integrity: sha512-2Z4NMad8DSqUdIEnc7/XzMvWY7aJJnqqRepm1gGaOy0Kl8+IZ3p/QxuYwNjFwdZvzLdo3s5ZsXvEB++YMecXNw==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/signature-v4-multi-region@3.996.52':
@@ -4216,7 +4216,7 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-cloudwatch@3.1169.0':
+  '@aws-sdk/client-cloudwatch@3.1170.0':
     dependencies:
       '@aws-sdk/core': 3.981.0
       '@aws-sdk/credential-provider-node': 3.972.97
@@ -4228,7 +4228,7 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-firehose@3.1169.0':
+  '@aws-sdk/client-firehose@3.1170.0':
     dependencies:
       '@aws-sdk/core': 3.981.0
       '@aws-sdk/credential-provider-node': 3.972.97
@@ -4239,7 +4239,7 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-iam@3.1169.0':
+  '@aws-sdk/client-iam@3.1170.0':
     dependencies:
       '@aws-sdk/core': 3.981.0
       '@aws-sdk/credential-provider-node': 3.972.97
@@ -4250,7 +4250,7 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-s3@3.1169.0':
+  '@aws-sdk/client-s3@3.1170.0':
     dependencies:
       '@aws-sdk/checksums': 3.1002.5
       '@aws-sdk/core': 3.981.0
@@ -4264,7 +4264,7 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-ses@3.1169.0':
+  '@aws-sdk/client-ses@3.1170.0':
     dependencies:
       '@aws-sdk/core': 3.981.0
       '@aws-sdk/credential-provider-node': 3.972.97
@@ -4275,7 +4275,7 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-sqs@3.1169.0':
+  '@aws-sdk/client-sqs@3.1170.0':
     dependencies:
       '@aws-sdk/core': 3.981.0
       '@aws-sdk/credential-provider-node': 3.972.97
@@ -4409,7 +4409,7 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.8.1
 
-  '@aws-sdk/s3-request-presigner@3.1169.0':
+  '@aws-sdk/s3-request-presigner@3.1170.0':
     dependencies:
       '@aws-sdk/core': 3.981.0
       '@aws-sdk/signature-v4-multi-region': 3.996.52
