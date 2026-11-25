@@ -35,7 +35,7 @@ describe('localization CLI', () => {
     written.length = 0
     await runLocalizationCli(['csv-export', '--source', source], (value) => written.push(value))
     expect(written.join('')).toContain('nav.home')
-    const csvPath = join(root, 'catalog.csv')
+    const csvPath = join(root, 'nested', 'catalog.csv')
     await runLocalizationCli(['csv-export', '--source', source, '--output', csvPath], (value) =>
       written.push(value),
     )

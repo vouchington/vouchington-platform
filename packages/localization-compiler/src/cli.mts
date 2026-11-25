@@ -1,14 +1,11 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
-import {
-  serializeCatalogTable,
-  serializeLocalizationBatch,
-  type LocalizationConsumer,
-} from '@vouchington/localization'
+import { dirname, resolve } from 'node:path'
+import { serializeLocalizationBatch, type LocalizationConsumer } from '@vouchington/localization'
 import { compileLocalizationSqlite } from './compile.mts'
 import { exportCatalogCsv, importCatalogCsv } from './catalog-csv.mts'
 import { checkCatalogDirectory } from './catalog-format.mts'
+import { writeCatalogTablesAtomically } from './catalog-tables-io.mts'
 import { loadCatalogDirectory } from './load.mts'
 import { openLocalizationDatabase, type LocalizationDatabase } from './open.mts'
 import { explainLocalizationPlan, resolveLocalizationBatch } from './resolve.mts'
@@ -64,29 +61,19 @@ export async function runLocalizationCli(
     const csv = exportCatalogCsv((await loadCatalogDirectory(required(rest, '--source'))).catalog)
     const output = optional(rest, '--output')
     if (output === undefined) write(csv)
-    else writeFileSync(output, csv)
+    else {
+      mkdirSync(dirname(output), { recursive: true })
+      writeFileSync(output, csv)
+    }
     return
   }
   if (command === 'csv-import') {
     const output = required(rest, '--output')
-    mkdirSync(output, { recursive: true })
     const catalog = importCatalogCsv(await readFile(required(rest, '--input'), 'utf8'))
-    writeCatalogSource(output, catalog)
+    await writeCatalogTablesAtomically(resolve(output), catalog)
     return
   }
   throw new TypeError(usage())
-}
-
-function writeCatalogSource(
-  output: string,
-  catalog: import('@vouchington/localization').LocalizationCatalog,
-): void {
-  writeFileSync(resolve(output, 'copies.json'), serializeCatalogTable(catalog.copies))
-  writeFileSync(resolve(output, 'aliases.json'), serializeCatalogTable(catalog.aliases))
-  const translations = resolve(output, 'translations')
-  mkdirSync(translations, { recursive: true })
-  for (const [locale, rows] of Object.entries(catalog.translations))
-    writeFileSync(resolve(translations, `${locale}.json`), serializeCatalogTable(rows))
 }
 
 function withDatabase(path: string, run: (database: LocalizationDatabase) => void): void {

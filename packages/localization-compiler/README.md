@@ -62,5 +62,18 @@ canonical table, ready to stage. A conflicted table must not be compiled.
 CSV import/export is interchange only: never source of truth and never compiled directly to
 SQLite. It covers only the three authoring tables (copies, aliases, translations); generated
 route membership/selectors and editorial tags are excluded, so regenerate them from
-routes.json and tags.json instead of round-tripping them through CSV. Native resource helpers emit strings, RESX, and typed key/descriptor files from the
-same resolved catalog without product path assumptions.
+routes.json and tags.json instead of round-tripping them through CSV. `writeCatalogTablesAtomically`
+(and the CLI `csv-import` command) stages and validates the three tables in a sibling directory
+before replacing them atomically with rollback, leaving `routes.json` and `tags.json` intact.
+
+`compileLocalizationSqlite` stages its temporary SQLite file beside the target output path so
+atomic replacement works across filesystems without overriding `TMPDIR`.
+`catalogDirectoryDigest` and `ensureCompiledLocalizationCatalog` cache the compiled SQLite artifact
+against a SHA-256 digest of the catalog directory and any caller-supplied manifest files.
+
+Native resource helpers emit strings, RESX, and typed key/descriptor files (`nativeKeyIdentifier`,
+`nativeLeafVariants`, `renderSwiftStrings`, `renderResx`, `renderSwiftKeys`, `renderDotnetKeys`,
+`renderSwiftDescriptors`, `renderDotnetDescriptors` with optional headers, .NET namespaces,
+`includeAll`, and `kindEnum`), sync or verify generated outputs (`syncGeneratedNativeFiles`), and
+mask Swift/C# comments and string literals (`stripCodeCommentsAndStrings`) without product path
+assumptions.

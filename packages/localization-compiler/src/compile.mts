@@ -1,6 +1,5 @@
 import { mkdirSync, mkdtempSync, renameSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import {
   canonicalJson,
@@ -26,8 +25,10 @@ export function compileLocalizationSqlite(
   if (!isCatalog(source)) validateCatalogMessages(source)
   const normalized = sortedCatalog(catalog)
   const revision = catalogRevision(normalized)
-  mkdirSync(dirname(outputPath), { recursive: true })
-  const temporaryDirectory = mkdtempSync(join(tmpdir(), 'localization-'))
+  const resolvedOutput = resolve(outputPath)
+  const outputDirectory = dirname(resolvedOutput)
+  mkdirSync(outputDirectory, { recursive: true })
+  const temporaryDirectory = mkdtempSync(join(outputDirectory, '.localization-'))
   const temporary = join(temporaryDirectory, 'catalog.sqlite')
   const database = new DatabaseSync(temporary)
   try {
@@ -47,7 +48,7 @@ export function compileLocalizationSqlite(
     } finally {
       database.close()
     }
-    renameSync(temporary, outputPath)
+    renameSync(temporary, resolvedOutput)
     return revision
   } finally {
     rmSync(temporaryDirectory, { recursive: true, force: true })
