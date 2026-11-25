@@ -92,4 +92,35 @@ describe('createOriginGuardrailInterceptor', () => {
       ['blocked.example', {}],
     ])
   })
+
+  it('shares host deduplication across distinct composed dispatchers when reused', async () => {
+    const onDisallowedOrigin = vi.fn()
+    const egressGuard = createOriginGuardrailInterceptor({
+      isAllowedHost: () => false,
+      onDisallowedOrigin,
+    })
+
+    const routineMock = new MockAgent()
+    const longRunningMock = new MockAgent()
+    routineMock.disableNetConnect()
+    longRunningMock.disableNetConnect()
+    routineMock.get('https://shared.example').intercept({ path: '/a' }).reply(200, 'a')
+    longRunningMock.get('https://shared.example').intercept({ path: '/b' }).reply(200, 'b')
+
+    try {
+      await undiciFetch('https://shared.example/a', {
+        dispatcher: routineMock.compose(egressGuard),
+      })
+      await undiciFetch('https://shared.example/b', {
+        dispatcher: longRunningMock.compose(egressGuard),
+      })
+      expect(onDisallowedOrigin).toHaveBeenCalledTimes(1)
+      expect(onDisallowedOrigin).toHaveBeenCalledWith('shared.example', {
+        path: '/a',
+        method: 'GET',
+      })
+    } finally {
+      await Promise.all([routineMock.close(), longRunningMock.close()])
+    }
+  })
 })

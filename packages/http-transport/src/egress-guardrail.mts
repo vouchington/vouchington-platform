@@ -37,6 +37,10 @@ export function classifyOriginHost(
 /**
  * Builds a non-blocking Undici compose interceptor that reports requests targeting disallowed
  * origins, stripping query strings from the path before calling `onDisallowedOrigin`.
+ *
+ * Host deduplication is scoped per interceptor instance; create a single instance and reuse it
+ * across dispatchers (for example outside `createHttpDispatchers`'s `interceptors` callback) to
+ * share deduplication state across routine, long-running, and caller-supplied dispatchers.
  */
 export function createOriginGuardrailInterceptor(
   options: OriginGuardrailOptions,

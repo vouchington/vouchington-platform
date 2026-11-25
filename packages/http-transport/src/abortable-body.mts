@@ -1,10 +1,15 @@
+import type { Response as UndiciResponse } from 'undici'
+
 export interface AbortableBodyOptions {
   /** Receives non-fatal cancellation errors; defaults to a no-op. */
   onError?: (error: unknown) => void
 }
 
-export type ResponseWithBody = Pick<Response, 'body'> &
-  Partial<Pick<Response, 'status' | 'statusText' | 'headers'>>
+export type ResponseWithBody = (Pick<Response, 'body'> | Pick<UndiciResponse, 'body'>) & {
+  readonly status?: number
+  readonly statusText?: string
+  readonly headers?: Response['headers'] | UndiciResponse['headers']
+}
 
 /**
  * Wraps a global or Undici response so its body stream cancels when `signal` aborts, while
@@ -20,7 +25,9 @@ export function withAbortableBody(
   const init: ResponseInit = {
     ...(response.status === undefined ? {} : { status: response.status }),
     ...(response.statusText === undefined ? {} : { statusText: response.statusText }),
-    ...(response.headers === undefined ? {} : { headers: response.headers }),
+    ...(response.headers === undefined
+      ? {}
+      : { headers: response.headers as NonNullable<ResponseInit['headers']> }),
   }
   if (!response.body) {
     return response instanceof Response ? response : new Response(null, init)
@@ -29,6 +36,7 @@ export function withAbortableBody(
   const onError = options.onError ?? noop
   const reader = response.body.getReader()
   let released = false
+  let cancelPromise: Promise<void> | undefined
   let abortListener: (() => void) | undefined
 
   function release(): void {
@@ -39,7 +47,9 @@ export function withAbortableBody(
   }
 
   function cancel(reason: unknown): Promise<void> {
-    return reader.cancel(reason).catch(onError).finally(release)
+    if (released) return Promise.resolve()
+    cancelPromise ??= reader.cancel(reason).catch(onError).finally(release)
+    return cancelPromise
   }
 
   if (signal) {
@@ -53,6 +63,10 @@ export function withAbortableBody(
   return new Response(
     new ReadableStream<Uint8Array>({
       async pull(controller) {
+        if (released || cancelPromise) {
+          controller.close()
+          return
+        }
         try {
           const result = await reader.read()
           if (result.done) {

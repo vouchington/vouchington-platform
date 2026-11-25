@@ -55,12 +55,10 @@ import {
   createProxyRoutedDispatchers,
 } from '@vouchington/http-transport/dispatchers'
 
+const egressGuard = createOriginGuardrailInterceptor({ isAllowedHost, onDisallowedOrigin })
 const dispatchers = createHttpDispatchers({
   onError: reportError,
-  interceptors: () =>
-    egressGuardEnabled
-      ? [createOriginGuardrailInterceptor({ isAllowedHost, onDisallowedOrigin })]
-      : [],
+  interceptors: () => (egressGuardEnabled ? [egressGuard] : []),
 })
 const routed = createProxyRoutedDispatchers({
   direct: dispatchers,
@@ -81,7 +79,9 @@ and `Symbol.asyncDispose`. Nothing happens at import time.
 direct dispatcher owner and evaluates routing per request so runtime changes take effect without
 recreating SDK clients. `createOriginGuardrailInterceptor` and `classifyOriginHost` observe
 outbound origins against caller-supplied allowlist predicates and strip query strings before
-reporting.
+reporting. Reuse a single `createOriginGuardrailInterceptor` instance across dispatchers (outside
+the `interceptors` callback) so per-host deduplication is shared across routine, long-running, and
+caller-supplied dispatchers.
 
 Defaults: 60 s headers (300 s long-running), 300 s body gap, 4 s keep-alive up to 600 s, 10 s
 connect, 5 connections, and a pinned cache of 100. Override any of them with the `*TimeoutMs`,

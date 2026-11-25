@@ -14,7 +14,7 @@ describe('withAbortableBody', () => {
     expect(withAbortableBody(nativeEmpty, controller.signal)).toBe(nativeEmpty)
 
     const undiciEmpty = new UndiciResponse(null, { status: 204, statusText: 'No Content' })
-    const wrappedEmpty = withAbortableBody(undiciEmpty as unknown as Response)
+    const wrappedEmpty = withAbortableBody(undiciEmpty)
     expect(wrappedEmpty).toBeInstanceOf(Response)
     expect(wrappedEmpty.status).toBe(204)
     expect(wrappedEmpty.statusText).toBe('No Content')
@@ -31,7 +31,7 @@ describe('withAbortableBody', () => {
       statusText: 'Created',
       headers: { 'content-type': 'text/plain' },
     })
-    const wrapped = withAbortableBody(undiciResponse as unknown as Response)
+    const wrapped = withAbortableBody(undiciResponse)
     expect(wrapped).toBeInstanceOf(Response)
     expect(wrapped.status).toBe(201)
     expect(wrapped.statusText).toBe('Created')
@@ -58,6 +58,8 @@ describe('withAbortableBody', () => {
 
     const wrapped = withAbortableBody(source, controller.signal, { onError })
     const reading = wrapped.text()
+    // Let pull() enter reader.read() before aborting so both pull and cancel settle cleanly.
+    await Promise.resolve()
     controller.abort(abortReason)
 
     await expect(reading).resolves.toBe('')
@@ -122,5 +124,94 @@ describe('withAbortableBody', () => {
     await wrapped.body?.cancel('done')
     expect(consumerCancelReason).toBe('done')
     expect(cancellable.body?.locked).toBe(false)
+  })
+
+  it('guards pull and consumer cancel after an abort releases a buffered stream reader', async () => {
+    const encoder = new TextEncoder()
+    const onError = vi.fn()
+    const abortController = new AbortController()
+    const bufferedRead = new Response(
+      new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(encoder.encode('first-chunk'))
+        },
+      }),
+    )
+
+    const wrappedRead = withAbortableBody(bufferedRead, abortController.signal, { onError })
+    // Let the outer ReadableStream pull the initial chunk into its internal queue, leaving pull idle.
+    await Promise.resolve()
+    await Promise.resolve()
+    abortController.abort(new Error('timeout'))
+    await vi.waitFor(() => expect(bufferedRead.body?.locked).toBe(false))
+
+    await expect(wrappedRead.text()).resolves.toBe('first-chunk')
+    expect(onError).not.toHaveBeenCalled()
+
+    const cancelController = new AbortController()
+    const bufferedCancel = new Response(
+      new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(encoder.encode('buffered'))
+        },
+      }),
+    )
+    const wrappedCancel = withAbortableBody(bufferedCancel, cancelController.signal, { onError })
+    // Let the initial chunk buffer so wrappedCancel remains open when the signal aborts.
+    await Promise.resolve()
+    await Promise.resolve()
+    cancelController.abort(new Error('timeout'))
+    await vi.waitFor(() => expect(bufferedCancel.body?.locked).toBe(false))
+
+    await expect(wrappedCancel.body?.cancel('consumer-cancel')).resolves.toBeUndefined()
+    expect(onError).not.toHaveBeenCalled()
+  })
+
+  it('deduplicates concurrent cancellation and closes pull while cancel is in flight', async () => {
+    let resolveCancel!: () => void
+    let cancelCalls = 0
+    const onError = vi.fn()
+    const controller = new AbortController()
+    const source = new Response(
+      new ReadableStream<Uint8Array>({
+        cancel() {
+          cancelCalls += 1
+          return new Promise<void>((resolve) => {
+            resolveCancel = resolve
+          })
+        },
+      }),
+    )
+
+    const wrapped = withAbortableBody(source, controller.signal, { onError })
+    // Abort starts cancellation, keeping cancelPromise pending (released is still false).
+    controller.abort(new Error('in-flight'))
+    const textPromise = wrapped.text()
+    resolveCancel()
+    await expect(textPromise).resolves.toBe('')
+    expect(cancelCalls).toBe(1)
+    expect(onError).not.toHaveBeenCalled()
+
+    let resolveSecondCancel!: () => void
+    let secondCancelCalls = 0
+    const secondController = new AbortController()
+    const secondSource = new Response(
+      new ReadableStream<Uint8Array>({
+        cancel() {
+          secondCancelCalls += 1
+          return new Promise<void>((resolve) => {
+            resolveSecondCancel = resolve
+          })
+        },
+      }),
+    )
+
+    const wrappedSecond = withAbortableBody(secondSource, secondController.signal, { onError })
+    secondController.abort(new Error('first'))
+    const consumerCancel = wrappedSecond.body?.cancel('second')
+    resolveSecondCancel()
+    await expect(consumerCancel).resolves.toBeUndefined()
+    expect(secondCancelCalls).toBe(1)
+    expect(onError).not.toHaveBeenCalled()
   })
 })
