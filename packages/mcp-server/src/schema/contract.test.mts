@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { assertLocalSchemaRefs, readFixture } from '../test-helpers.mts'
+import { readFixture } from '../test-helpers.mts'
+import { assertLocalSchemaRefs } from './local-refs.mts'
 import { closeDeclaredInputObjects, factorToolSchema } from './contract.mts'
 import { findSchemaViolation } from './validator.mts'
 

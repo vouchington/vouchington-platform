@@ -364,6 +364,41 @@ describe('handleStatelessMcpRequest', () => {
       ).toBe(true)
     })
 
+    it('uses the default isDispatchedToolCall when omitted', async () => {
+      const spy = hooks()
+      const request = new Request('http://localhost/mcp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json, text/event-stream',
+        },
+        body: JSON.stringify(call(7)),
+      })
+
+      const response = await handleStatelessMcpRequest({
+        serverInfo: { name: 'test-mcp', version: '1.0.0' },
+        request,
+        parsedBody: call(7),
+        listTools: () => [],
+        callTool: async (_req, controls) => {
+          controls.onInvoked(2)
+          return ok('default-dispatch')
+        },
+        rateLimitedCalls: new Map(),
+        buildRateLimitedResult: () => ({ isError: true, content: [] }),
+        hooks: spy,
+      })
+
+      expect((await json(Promise.resolve(response))).result.content[0].text).toBe(
+        'default-dispatch',
+      )
+      expect(spy.onToolCallSettled).toHaveBeenCalledWith(0, {
+        durationMs: 2,
+        toolError: false,
+        rateLimited: false,
+      })
+    })
+
     it('ignores hooks for a call it never indexed', async () => {
       const spy = hooks()
       const callTool: StatelessMcpRequest['callTool'] = async (_request, controls) => {

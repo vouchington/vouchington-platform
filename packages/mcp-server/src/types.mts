@@ -8,6 +8,11 @@ export type ToolOutputSchema = { type: 'object'; [keyword: string]: unknown }
 export type ToolApiEndpoint = {
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   path: string
+  /**
+   * Runtime-only number of REST write units this selected route represents. Static `meta.api`
+   * omits it; batch selectors set it from validated arguments in `selectApi`.
+   */
+  weight?: number
 }
 
 /**

@@ -8,6 +8,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js'
 
 import { restoreIds, withUniqueIds } from './batch-ids.mts'
+import { isDispatchedToolCall as defaultIsDispatchedToolCall } from './tool-call-shape.mts'
 import { validateToolsRequest } from './validate-request.mts'
 
 /** What became of one dispatched `tools/call`. */
@@ -43,8 +44,11 @@ export type StatelessMcpRequest = {
     call: { name: string; arguments: Record<string, unknown> },
     controls: ToolCallControls,
   ) => Promise<CallToolResult>
-  /** Whether a JSON-RPC message is a `tools/call` that will run, and so has a request id. */
-  isDispatchedToolCall: (message: unknown) => message is { id: string | number }
+  /**
+   * Whether a JSON-RPC message is a `tools/call` that will run, and so has a request id. Defaults
+   * to `isDispatchedToolCall`.
+   */
+  isDispatchedToolCall?: (message: unknown) => message is { id: string | number }
   /** Defaults to `validateToolsRequest`. Return a response to short-circuit before the transport. */
   validateRequest?: (parsedBody: unknown) => Response | null
   /** The refusal of each `tools/call`, by message position, whose rate-limit bucket was spent. */
@@ -82,10 +86,11 @@ export async function handleStatelessMcpRequest(options: StatelessMcpRequest): P
 
   // The SDK dispatches batches in source order. Positions distinguish duplicate ids whose calls
   // can have different route-limit or in-tool outcomes.
+  const isDispatched = options.isDispatchedToolCall ?? defaultIsDispatchedToolCall
   const callIndexesById = new Map<string | number, number[]>()
   const messages = Array.isArray(parsedBody) ? parsedBody : [parsedBody]
   messages.forEach((message, index) => {
-    if (!options.isDispatchedToolCall(message)) return
+    if (!isDispatched(message)) return
     const indexes = callIndexesById.get(message.id) ?? []
     indexes.push(index)
     callIndexesById.set(message.id, indexes)

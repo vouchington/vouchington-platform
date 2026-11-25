@@ -3,6 +3,15 @@ import type { FormatDefinition, ValidateFunction } from 'ajv'
 import * as AddFormatsModule from 'ajv-formats'
 import type { FormatsPlugin } from 'ajv-formats'
 
+import type { JsonSchema } from '../types.mts'
+import { closeDeclaredInputObjects } from './contract.mts'
+
+const NO_PARAMETERS: JsonSchema = {
+  type: 'object',
+  properties: {},
+  additionalProperties: false,
+}
+
 // One Ajv setup for everything the MCP surface validates: tool arguments on the way in and
 // declared output schemas on the way out. Validators are cached per schema object identity.
 const validators = new WeakMap<object, ValidateFunction>()
@@ -27,6 +36,14 @@ export function findSchemaViolation(schema: object, value: unknown): string | nu
   const error = validate.errors?.[0]
   /* v8 ignore next -- Ajv reports at least one error for an invalid value */
   return `${error?.instancePath || '/'} ${error?.message ?? 'is invalid'}`
+}
+
+/**
+ * Validates MCP tool arguments against a tool's `parameters` schema, closing declared input
+ * objects and refusing unknown properties when `schema` is `null`.
+ */
+export function validateToolArguments(schema: JsonSchema | null, args: unknown): string | null {
+  return findSchemaViolation(closeDeclaredInputObjects(schema ?? NO_PARAMETERS), args)
 }
 
 // A failing oneOf can report another option's discriminator first. Preserve the selected source's

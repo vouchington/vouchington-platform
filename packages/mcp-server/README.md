@@ -36,18 +36,26 @@ const violation = findSchemaViolation(schema, args) // string | null, never cont
 - `findSchemaViolation(schema, value)`: Ajv with a per-schema cache and full `date-time` validation,
   including UTC month-end leap-second placement. The message names the path and rule, never the
   value, so it is safe to log.
+- `validateToolArguments(schema, args)`: closes declared input objects (or defaults `null` to an
+  empty closed object) and validates `args` with `findSchemaViolation`.
 - `mapSchema` and `visitSchema`: traverse every schema position.
 - `closeDeclaredInputObjects`: set `additionalProperties: false` on objects that declare
   properties; free-form maps stay open.
 - `factorToolSchema`: hoist repeated nodes into `$defs` named `S1`, `S2`, ... only when the
   serialized schema shrinks.
+- `assertLocalSchemaRefs(schema)`: asserts every `$ref` in schema positions resolves inside the
+  schema's own root `$defs`.
 - `pruneToSchema`: reduce a value to the properties a schema declares.
 - `objectSchema`, `successSchema`, `oneOfSchema`, `outcomeSchema`, `nullable`: output shape helpers.
+- `pickSchemaProperties(schema, keys, contractName?)` and `omitSchemaProperties(schema, omitted)`:
+  select or exclude declared object properties from a non-recursive schema.
 - `validateOptionOutputPointers` and `getOptionOutputSchema`: validate and resolve the local
   pointers that map each merged-tool option to its output branch.
-- `resolveRouteResponse(endpoint, responses, components, { missingContractHint? })`,
-  `inlineSchemaReferences`, `routePropertySchema`, and `successResultSchema`: derive a
-  self-contained output schema from `#/components/schemas/*` contracts the application injects.
+- `resolveRouteResponse(endpoint, responses, components, options?)`, `resolveComponentSchema`,
+  `ensureObjectRootSchema`, `inlineSchemaReferences`, `routePropertySchema`, and
+  `successResultSchema`: derive a self-contained output schema from `#/components/schemas/*`
+  contracts the application injects. Supports optional `#projection` lookup, a `fallbackResponses`
+  table, `{param}` to `:param` path normalization, and object-root `anyOf`/`oneOf`/`allOf` schemas.
   A self-referencing component stays a `$ref` into a root `$defs`.
 
 ## Tools
@@ -64,6 +72,9 @@ const violation = findSchemaViolation(schema, args) // string | null, never cont
   `ManageEntityInputError` carrying status `422`.
 - `selectApiByArgument(argument, endpoints)`: builds `meta.selectApi` so a call names only the REST
   route its argument exercises.
+- `toRouteKey(endpoint)` and `toolRouteCharges(meta, args)`: normalize `:param` and `{param}` route
+  keys and group a tool call's selected REST endpoints into unweighted (weight 1) and per-route
+  weighted charges.
 
 ## Results
 
@@ -88,11 +99,16 @@ private fields that never leave the server.
 - `wrapUntrustedOutput(value, { untrusted, private, wrap? })`: removes private fields, serializes
   dates, and wraps each untrusted field. The default `wrap` is `wrapWithVurstPrompt`, which uses
   `@jongleberry/vurst-prompt`; pass your own `(text, field) => unknown` to replace it.
+- `wrapExternalText(text, source, contentType)`: sanitizes and fences a single free-text value,
+  returning `null` for `null` or whitespace-only text.
+- `sanitizeTitle(text)`: sanitizes a title or name without external-content fencing.
 
 ## HTTP
 
 `handleStatelessMcpRequest` handles one Streamable HTTP request with a fresh server and transport
-in JSON-response mode, and needs `@modelcontextprotocol/sdk` as a peer.
+in JSON-response mode, and needs `@modelcontextprotocol/sdk` as a peer. `isDispatchedToolCall` and
+`isNotificationShapedToolCall` classify `tools/call` requests vs id-less notifications;
+`handleStatelessMcpRequest` defaults `isDispatchedToolCall` to `isDispatchedToolCall`.
 
 ```ts
 import { handleStatelessMcpRequest } from '@vouchington/mcp-server/http'

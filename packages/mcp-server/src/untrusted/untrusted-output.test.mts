@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   adminOutputSchema,
   filterPrivateOutputFields,
+  sanitizeTitle,
+  wrapExternalText,
   wrapUntrustedOutput,
   wrapWithVurstPrompt,
 } from './untrusted-output.mts'
@@ -100,6 +102,25 @@ describe('wrapWithVurstPrompt', () => {
 
     expect(wrapped).toEqual(expect.stringContaining('<external-content'))
     expect(wrapped).toEqual(expect.stringContaining('hello'))
+  })
+})
+
+describe('wrapExternalText and sanitizeTitle', () => {
+  it('returns null for null or blank text and fences non-empty text with source and contentType', async () => {
+    expect(await wrapExternalText(null, 'post', 'body')).toBeNull()
+    expect(await wrapExternalText('', 'post', 'body')).toBeNull()
+    expect(await wrapExternalText('  \n\t ', 'post', 'body')).toBeNull()
+
+    const wrapped = await wrapExternalText('Hello world', 'post', 'body')
+    expect(wrapped).toEqual(expect.stringContaining('<external-content'))
+    expect(wrapped).toEqual(expect.stringContaining('Hello world'))
+  })
+
+  it('sanitizes titles without adding external-content fencing', async () => {
+    const clean = await sanitizeTitle('Normal Title')
+
+    expect(clean).toBe('Normal Title')
+    expect(clean).not.toContain('<external-content')
   })
 })
 
