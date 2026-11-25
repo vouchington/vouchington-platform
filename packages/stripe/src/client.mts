@@ -72,7 +72,9 @@ export async function cancelStripeSubscription(
     return await stripe.subscriptions.cancel(subscriptionId)
   } catch (err) {
     try {
-      const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+      const subscription = await (options !== undefined
+        ? stripe.subscriptions.retrieve(subscriptionId, undefined, options)
+        : stripe.subscriptions.retrieve(subscriptionId))
       if (subscription.status === 'canceled') return subscription
     } catch {
       // Preserve the original DELETE failure; retrieval is only a convergence check.

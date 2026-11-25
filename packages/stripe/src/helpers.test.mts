@@ -84,6 +84,34 @@ describe('cancelStripeSubscription', () => {
     expect(retrieve).toHaveBeenCalledWith('sub_canceled')
   })
 
+  it('forwards request options to retrieve so a connected-account cancel converges', async () => {
+    const cancelError = new Error('DELETE reply lost')
+    const canceled = { id: 'sub_connected', status: 'canceled' }
+    const requestOptions = { stripeAccount: 'acct_connected' }
+    const cancel = vi.fn().mockRejectedValue(cancelError)
+    const retrieve = vi
+      .fn()
+      .mockImplementation(
+        async (_id: string, _params?: unknown, opts?: { stripeAccount?: string }) => {
+          if (opts?.stripeAccount !== 'acct_connected') {
+            throw new Error('No such subscription on platform account')
+          }
+          return canceled
+        },
+      )
+
+    await expect(
+      cancelStripeSubscription(
+        makeStripe(cancel, retrieve),
+        'sub_connected',
+        undefined,
+        requestOptions,
+      ),
+    ).resolves.toBe(canceled)
+    expect(cancel).toHaveBeenCalledWith('sub_connected', undefined, requestOptions)
+    expect(retrieve).toHaveBeenCalledWith('sub_connected', undefined, requestOptions)
+  })
+
   it('rethrows the original error when subscription is still active or retrieve fails', async () => {
     const activeError = new Error('DELETE forbidden')
     const activeStripe = makeStripe(
