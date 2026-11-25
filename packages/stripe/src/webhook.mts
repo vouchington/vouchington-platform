@@ -51,3 +51,30 @@ export function assertStripeEventType<T extends Stripe.Event['type']>(
     throw new Error(`Expected Stripe event ${types.join(' | ')}, received ${event.type}`)
   return event
 }
+
+/**
+ * Unwraps a Stripe event delivered inside an AWS EventBridge PutEvents JSON envelope.
+ * Throws `SyntaxError` on invalid JSON and `Error` when `detail` is missing or not a Stripe event.
+ */
+export function parseStripeEventBridgeEvent(body: string): Stripe.Event {
+  const envelope: unknown = JSON.parse(body)
+  if (envelope === null || typeof envelope !== 'object' || Array.isArray(envelope))
+    throw new Error('EventBridge envelope missing detail')
+  const detail = (envelope as { detail?: unknown }).detail
+  if (
+    detail === null ||
+    detail === undefined ||
+    typeof detail !== 'object' ||
+    Array.isArray(detail)
+  )
+    throw new Error('EventBridge envelope missing detail')
+  const record = detail as Record<string, unknown>
+  if (
+    typeof record.id !== 'string' ||
+    record.id.length === 0 ||
+    typeof record.type !== 'string' ||
+    record.type.length === 0
+  )
+    throw new Error('EventBridge envelope detail is not a Stripe event')
+  return detail as Stripe.Event
+}

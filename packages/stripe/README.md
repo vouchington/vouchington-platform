@@ -26,8 +26,19 @@ const params = buildSubscriptionCheckoutParams({
 const session = await stripe.checkout.sessions.create(params, idempotencyOptions(key))
 ```
 
-Pagination: `parseStripePage` validates one list response and returns a safe cursor; the caller
-owns the loop and its page limit. Catalog: `buildRecurringCatalogPriceParams`,
-`pickCatalogPrice`, and `validateRecurringCatalogPrice` take a caller-supplied descriptor
-(currency, product metadata); the caller owns lookup, create, and race handling
-(`isStripeResourceExistsError`).
+Pagination: `parseStripePage` validates one list response and returns a safe cursor;
+`collectStripePages` runs a caller-bounded pagination loop over `fetchPage` with a required
+`maxPages` cap. Catalog: `buildRecurringCatalogPriceParams`, `pickCatalogPrice`, and
+`validateRecurringCatalogPrice` take a caller-supplied descriptor (currency, product metadata); the
+caller owns lookup, create, and race handling (`isStripeResourceExistsError`).
+
+Other primitives:
+
+- Environment detection: `getStripeKeyEnvironment`, `getStripeProviderEnvironment`.
+- EventBridge delivery: `parseStripeEventBridgeEvent`.
+- Cross-version field readers: `getStripeObjectTimestamp`, `getStripeInvoiceSubscriptionId`,
+  `getStripeSubscriptionPeriod`, `parseStripeInvoicePaymentTarget`.
+- Disputes: `classifyStripeDisputeStatus`, `summarizeStripeDisputes`.
+- Pre-execution error tracking: `classifyStripeRequestError`, `trackStripeRequestRejection`,
+  `getStripeRequestRejection`.
+- Convergent subscription cancel: `cancelStripeSubscription`.
