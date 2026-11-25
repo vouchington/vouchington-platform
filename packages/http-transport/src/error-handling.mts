@@ -19,6 +19,44 @@ export function isRetryableError(error: unknown, status?: number): boolean {
   return isNetworkError(error)
 }
 
+/**
+ * True when the error or its cause chain represents a DNS lookup failure (`ENOTFOUND`,
+ * `DNS_NULL_ROUTE`, or a cause/leaf message referencing `enotfound` / `getaddrinfo`).
+ */
+export function isDnsLookupError(error: unknown): boolean {
+  let current: unknown = error
+  const visited = new Set<unknown>()
+  while (current instanceof Error && !visited.has(current)) {
+    visited.add(current)
+    const code = (current as Error & { code?: unknown }).code
+    if (code === 'DNS_NULL_ROUTE' || code === 'ENOTFOUND') return true
+    const nextCause = (current as Error & { cause?: unknown }).cause
+    if (current !== error || !(nextCause instanceof Error)) {
+      const message = typeof current.message === 'string' ? current.message.toLowerCase() : ''
+      if (message.includes('enotfound') || message.includes('getaddrinfo')) return true
+    }
+    current = nextCause
+  }
+  return false
+}
+
+/**
+ * True when the error or its cause chain represents a TLS certificate hostname mismatch
+ * (`ERR_TLS_CERT_ALTNAME_INVALID`).
+ */
+export function isTlsHostnameMismatchError(error: unknown): boolean {
+  let current: unknown = error
+  const visited = new Set<unknown>()
+  while (current instanceof Error && !visited.has(current)) {
+    visited.add(current)
+    if ((current as Error & { code?: unknown }).code === 'ERR_TLS_CERT_ALTNAME_INVALID') {
+      return true
+    }
+    current = (current as Error & { cause?: unknown }).cause
+  }
+  return false
+}
+
 /** Best-effort body cleanup. A failed cancellation is reported, never thrown. */
 export function cancelResponseBody(
   response: { body?: { cancel(): Promise<void> } | null },

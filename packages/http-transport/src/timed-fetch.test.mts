@@ -83,6 +83,29 @@ describe('timed fetch', () => {
     await expect(fetchWithTimeout({ ...base, signal: aborted })).rejects.toThrow('already')
   })
 
+  it('forwards optional method and body with manual redirects', async () => {
+    agent
+      .get(origin)
+      .intercept({
+        path: '/inbox',
+        method: 'POST',
+        body: '{"type":"Create"}',
+        headers: { 'content-type': 'application/json' },
+      })
+      .reply(202, 'accepted')
+    const { response } = await fetchWithTimeout({
+      ...base,
+      url: `${origin}/inbox`,
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{"type":"Create"}',
+      resolvedAddresses: addresses,
+    })
+    expect(response.status).toBe(202)
+    expect(await response.text()).toBe('accepted')
+    expect(getPinnedRequestDispatcher).toHaveBeenCalledWith(addresses)
+  })
+
   it('fetchWithTimeoutSimple applies one timeout on the supplied dispatcher', async () => {
     agent.get(origin).intercept({ path: '/a' }).reply(200, 'robots')
     const response = await fetchWithTimeoutSimple(`${origin}/a`, 1000, agent)

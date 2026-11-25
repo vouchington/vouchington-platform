@@ -4,9 +4,11 @@ import {
   handleHttpErrors,
   HttpRateLimitError,
   HttpServerError,
+  isDnsLookupError,
   isNetworkError,
   isRetryableError,
   isTimeoutError,
+  isTlsHostnameMismatchError,
 } from './fetch.mts'
 
 function namedError(name: string, code?: string): Error {
@@ -37,6 +39,58 @@ describe('predicates', () => {
     expect(isRetryableError(undefined, 600)).toBe(false)
     expect(isRetryableError(namedError('TimeoutError'), 404)).toBe(true)
     expect(isRetryableError(new Error('boom'))).toBe(false)
+  })
+
+  it('classifies DNS lookup failures across cause chains and handles cycles', () => {
+    const nullRoute = Object.assign(new Error('resolved to ::'), { code: 'DNS_NULL_ROUTE' })
+    expect(isDnsLookupError(new Error('outer', { cause: nullRoute }))).toBe(true)
+
+    const enotfound = Object.assign(new Error('lookup failed'), { code: 'ENOTFOUND' })
+    expect(isDnsLookupError(enotfound)).toBe(true)
+    expect(isDnsLookupError(new TypeError('fetch failed', { cause: enotfound }))).toBe(true)
+
+    expect(isDnsLookupError(new Error('getaddrinfo EAI_FAIL example.test'))).toBe(true)
+    expect(
+      isDnsLookupError(new Error('outer', { cause: new Error('ENOTFOUND example.test') })),
+    ).toBe(true)
+
+    // A wrapper message containing a hostname does not override a non-DNS cause.
+    expect(
+      isDnsLookupError(
+        new Error('failed fetching https://enotfound.example', {
+          cause: new Error('connect ECONNRESET'),
+        }),
+      ),
+    ).toBe(false)
+
+    const missingMessage = new Error('placeholder')
+    Object.defineProperty(missingMessage, 'message', { value: undefined })
+    expect(isDnsLookupError(new Error('outer', { cause: missingMessage }))).toBe(false)
+
+    const circular: Error & { cause?: unknown } = new Error('circular')
+    circular.cause = circular
+    expect(isDnsLookupError(circular)).toBe(false)
+    expect(isDnsLookupError('not an error')).toBe(false)
+  })
+
+  it('classifies TLS hostname mismatches across cause chains and handles cycles', () => {
+    const mismatch = Object.assign(new Error('altname mismatch'), {
+      code: 'ERR_TLS_CERT_ALTNAME_INVALID',
+    })
+    expect(isTlsHostnameMismatchError(mismatch)).toBe(true)
+    expect(isTlsHostnameMismatchError(new TypeError('fetch failed', { cause: mismatch }))).toBe(
+      true,
+    )
+
+    const expired = Object.assign(new Error('expired'), { code: 'CERT_HAS_EXPIRED' })
+    expect(isTlsHostnameMismatchError(new TypeError('fetch failed', { cause: expired }))).toBe(
+      false,
+    )
+
+    const circular: Error & { cause?: unknown } = new Error('circular')
+    circular.cause = circular
+    expect(isTlsHostnameMismatchError(circular)).toBe(false)
+    expect(isTlsHostnameMismatchError(null)).toBe(false)
   })
 })
 

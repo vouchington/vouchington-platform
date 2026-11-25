@@ -4,6 +4,10 @@ import type { ResolvedSafeAddress } from 'ssrf-guard'
 export interface FetchWithTimeoutOptions {
   url: string
   headers: Record<string, string>
+  /** HTTP method. Defaults to GET when omitted. */
+  method?: string
+  /** Optional request body for non-GET/HEAD requests. */
+  body?: RequestInit['body']
   /** Bounds DNS, connect, request send and response headers. Cleared once `fetch` settles. */
   requestTimeoutMs: number
   /** Bounds the body download. The clock starts when headers arrive. */
@@ -48,12 +52,19 @@ export async function fetchWithTimeout(
     const requestSignal = signal
       ? AbortSignal.any([requestController.signal, signal])
       : requestController.signal
-    const response = await undiciFetch(url, {
+    const init: NonNullable<Parameters<typeof undiciFetch>[1]> = {
       dispatcher,
       headers,
       signal: requestSignal,
       redirect: 'manual',
-    })
+    }
+    if (options.method !== undefined) init.method = options.method
+    if (options.body !== undefined) {
+      init.body = options.body as NonNullable<
+        NonNullable<Parameters<typeof undiciFetch>[1]>['body']
+      > | null
+    }
+    const response = await undiciFetch(url, init)
     const timeoutSignal = AbortSignal.timeout(responseTimeoutMs)
     const responseSignal = signal ? AbortSignal.any([timeoutSignal, signal]) : timeoutSignal
     // Undici's Response and the ambient Response are the same runtime object with skewed types.
