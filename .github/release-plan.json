@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/server-utils/package.json"],
+  "changedManifests": ["packages/mcp-server/package.json"],
   "releases": [
     {
-      "bump": "minor",
-      "directory": "server-utils",
-      "fromVersion": "0.0.1",
-      "name": "@vouchington/server-utils",
-      "toVersion": "0.1.0"
+      "bump": "patch",
+      "directory": "mcp-server",
+      "fromVersion": "0.2.0",
+      "name": "@vouchington/mcp-server",
+      "toVersion": "0.2.1"
     }
   ],
-  "selectedPackage": "@vouchington/server-utils"
+  "selectedPackage": "@vouchington/mcp-server"
 }
