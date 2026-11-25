@@ -144,4 +144,40 @@ describe('native resource renderers', () => {
     expect(dotnetDescriptors).toContain('UiMessageDescriptorKind.Plural')
     expect(dotnetDescriptors).toContain('UiMessageDescriptorKind.SelectPlural')
   })
+
+  it('renders Swift and .NET descriptors directly from LocalizationLeaf descriptors', () => {
+    const entries = [
+      [
+        'settings.count',
+        {
+          kind: 'plural' as const,
+          valueParameter: 'count',
+          numberParameters: ['count'],
+          forms: { one: '{count} item', other: '{count} items' },
+        },
+      ],
+      [
+        'settings.ago',
+        {
+          kind: 'select-plural' as const,
+          valueParameter: 'value',
+          selectParameter: 'unit',
+          cases: {
+            hour: { one: '1h', other: '{value}h' },
+            day: { one: '1d', other: '{value}d' },
+          },
+        },
+      ],
+    ] as const
+
+    const swift = renderSwiftDescriptors(entries, (id) => nativeKeyIdentifier(id, 'swift'))
+    expect(swift).toContain('.settingsCount: UiMessageDescriptor(kind: .plural')
+    expect(swift).toContain('cases: ["day","hour"]')
+
+    const dotnet = renderDotnetDescriptors(entries, (id) => nativeKeyIdentifier(id, 'dotnet'), {
+      kindEnum: true,
+    })
+    expect(dotnet).toContain('[UiMessageKey.SettingsCount] = new(UiMessageDescriptorKind.Plural')
+    expect(dotnet).toContain('["day", "hour"]')
+  })
 })

@@ -8,6 +8,7 @@ import {
 export type NativeIdentifier = (id: string) => string
 export type NativeResourceEntry = readonly [string, string]
 export type NativeKeyConsumer = 'swift' | 'dotnet'
+export type NativeDescriptor = MessageDescriptor | Exclude<LocalizationLeaf, string>
 
 export type SwiftRenderOptions = Readonly<{
   headerComment?: string
@@ -107,7 +108,7 @@ export function renderDotnetKeys(
 }
 
 export function renderSwiftDescriptors(
-  entries: ReadonlyArray<readonly [string, MessageDescriptor]>,
+  entries: ReadonlyArray<readonly [string, NativeDescriptor]>,
   identifier: NativeIdentifier,
   options: SwiftRenderOptions = {},
 ): string {
@@ -117,7 +118,7 @@ export function renderSwiftDescriptors(
 }
 
 export function renderDotnetDescriptors(
-  entries: ReadonlyArray<readonly [string, MessageDescriptor]>,
+  entries: ReadonlyArray<readonly [string, NativeDescriptor]>,
   identifier: NativeIdentifier,
   options: DotnetDescriptorsRenderOptions = {},
 ): string {
@@ -133,22 +134,25 @@ export function renderDotnetDescriptors(
   return `${header}\n#nullable enable\nnamespace ${namespace};\n\n${typeHeader}\n\npublic static class UiMessageDescriptors\n{\n    public static IReadOnlyDictionary<UiMessageKey, UiMessageDescriptor> All { get; } =\n        new Dictionary<UiMessageKey, UiMessageDescriptor>\n        {\n${values.join(',\n')}\n        };\n}\n`
 }
 
+function descriptorCases(descriptor: NativeDescriptor): string[] {
+  if (descriptor.kind !== 'select-plural') return []
+  const names = Array.isArray(descriptor.cases) ? descriptor.cases : Object.keys(descriptor.cases)
+  return [...names].toSorted(compareCodePoints)
+}
+
 function swiftDescriptorLine(
   id: string,
-  descriptor: MessageDescriptor,
+  descriptor: NativeDescriptor,
   identifier: NativeIdentifier,
 ): string {
   const select = descriptor.kind === 'select-plural' ? `"${descriptor.selectParameter}"` : 'nil'
-  const cases =
-    descriptor.kind === 'select-plural'
-      ? JSON.stringify([...descriptor.cases].toSorted(compareCodePoints))
-      : '[]'
+  const cases = JSON.stringify(descriptorCases(descriptor))
   return `    .${identifier(id)}: UiMessageDescriptor(kind: .${identifier(descriptor.kind)}, valueParameter: "${descriptor.valueParameter}", selectParameter: ${select}, numberParameters: ${JSON.stringify(descriptor.numberParameters ?? [])}, cases: ${cases})`
 }
 
 function dotnetDescriptorLine(
   id: string,
-  descriptor: MessageDescriptor,
+  descriptor: NativeDescriptor,
   identifier: NativeIdentifier,
   kindEnum: boolean,
 ): string {
@@ -156,8 +160,7 @@ function dotnetDescriptorLine(
     ? `UiMessageDescriptorKind.${identifier(descriptor.kind)}`
     : `"${descriptor.kind}"`
   const select = descriptor.kind === 'select-plural' ? `"${descriptor.selectParameter}"` : 'null'
-  const cases =
-    descriptor.kind === 'select-plural' ? [...descriptor.cases].toSorted(compareCodePoints) : []
+  const cases = descriptorCases(descriptor)
   return `        [UiMessageKey.${identifier(id)}] = new(${kind}, "${descriptor.valueParameter}", ${select}, [${(descriptor.numberParameters ?? []).map((value) => `"${value}"`).join(', ')}], [${cases.map((value) => `"${value}"`).join(', ')}])`
 }
 

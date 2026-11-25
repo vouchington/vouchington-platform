@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -43,6 +44,25 @@ describe('catalogDirectoryDigest and ensureCompiledLocalizationCatalog', () => {
 
     writeFileSync(manifest, '{"version":"1.0.1"}\n')
     expect(catalogDirectoryDigest(source, [manifest])).not.toBe(withManifest)
+  })
+
+  it('sorts catalog files by normalized POSIX relative path', () => {
+    const { source } = makeCatalogFixture()
+    writeFileSync(join(source, 'translations2.json'), '[]\n')
+
+    const expected = createHash('sha256')
+    for (const rel of [
+      'aliases.json',
+      'copies.json',
+      'translations/en-US.json',
+      'translations2.json',
+    ]) {
+      expected.update(rel)
+      expected.update('\0')
+      expected.update(readFileSync(join(source, rel)))
+      expected.update('\0')
+    }
+    expect(catalogDirectoryDigest(source)).toBe(expected.digest('hex'))
   })
 
   it('compiles once, skips when up to date, and recompiles when inputs change', async () => {

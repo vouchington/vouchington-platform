@@ -20,14 +20,19 @@ export type EnsureCompiledCatalogOptions = Readonly<{
   extraHashFiles?: readonly string[]
 }>
 
-function walkFiles(directory: string): string[] {
-  return readdirSync(directory, { withFileTypes: true })
-    .flatMap((entry) => {
-      const path = join(directory, entry.name)
-      if (entry.isDirectory()) return walkFiles(path)
-      return entry.isFile() ? [path] : []
-    })
-    .toSorted(compareCodePoints)
+type CatalogFileEntry = Readonly<{
+  file: string
+  relativePath: string
+}>
+
+function walkFiles(directory: string, root: string): CatalogFileEntry[] {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const file = join(directory, entry.name)
+    if (entry.isDirectory()) return walkFiles(file, root)
+    return entry.isFile()
+      ? [{ file, relativePath: relative(root, file).replaceAll('\\', '/') }]
+      : []
+  })
 }
 
 /**
@@ -41,8 +46,11 @@ export function catalogDirectoryDigest(source: string, extraFiles: readonly stri
     hash.update(readFileSync(file))
     hash.update('\0')
   }
-  for (const file of walkFiles(root)) {
-    hash.update(relative(root, file).replaceAll('\\', '/'))
+  const files = walkFiles(root, root).toSorted((left, right) =>
+    compareCodePoints(left.relativePath, right.relativePath),
+  )
+  for (const { file, relativePath } of files) {
+    hash.update(relativePath)
     hash.update('\0')
     hash.update(readFileSync(file))
     hash.update('\0')

@@ -21,6 +21,7 @@ export {
   renderSwiftStrings,
   type DotnetDescriptorsRenderOptions,
   type DotnetKeysRenderOptions,
+  type NativeDescriptor,
   type NativeIdentifier,
   type NativeKeyConsumer,
   type NativeResourceEntry,
