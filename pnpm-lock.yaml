@@ -335,7 +335,7 @@ importers:
     dependencies:
       phone:
         specifier: ^3.1.73
-        version: 3.1.73
+        version: 3.1.74
 
   packages/postgres:
     dependencies:
@@ -3431,8 +3431,8 @@ packages:
     resolution: {integrity: sha512-POqnLYO9ZwdvUS/jsqDbOpaWAt1VfpKsoiZM7LHPB3RjSrVPEJYICL5pNju5GRhWZHKzNbQyjF1PyC21zi3gnA==}
     engines: {node: '>=22'}
 
-  phone@3.1.73:
-    resolution: {integrity: sha512-K3NYsML7jJlx4u2u40RI2w67qnuyWsBPAHldsL5L+gMIWRBsqRq17qLqKFvBJ6n6nJv/op+6y+B0RCbKMLJNMA==}
+  phone@3.1.74:
+    resolution: {integrity: sha512-4ci2fAh+G4k0akxd4t9EDCzUtzBhsMFZ84c2xXRc+sE3MlZyFop5FQ8hIxNAvnKzRdTLl07QMmO/JoQyCcbcEw==}
     engines: {node: '>=12'}
 
   picocolors@1.1.1:
@@ -6750,7 +6750,7 @@ snapshots:
 
   pgvector@0.3.1: {}
 
-  phone@3.1.73: {}
+  phone@3.1.74: {}
 
   picocolors@1.1.1: {}
 
