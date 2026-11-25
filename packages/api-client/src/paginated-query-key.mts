@@ -19,6 +19,11 @@ export type PaginatedData = {
   page_info: { has_next_page: boolean; end_cursor: string | null }
 }
 
+/** Whether a cursor page advertises another window with a non-empty continuation cursor. */
+export function pageHasContinuation(pageInfo: PaginatedData['page_info']): boolean {
+  return Boolean(pageInfo.has_next_page && pageInfo.end_cursor)
+}
+
 /** Fingerprint of a page's query and cursor state, used to detect query changes. */
 export function pageInfoKey(
   data: PaginatedData,
