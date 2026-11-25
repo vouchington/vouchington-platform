@@ -1,3 +1,5 @@
+export * from './abortable-body.mts'
 export * from './error-handling.mts'
 export * from './errors.mts'
+export * from './operation-timeout.mts'
 export * from './timed-fetch.mts'

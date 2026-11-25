@@ -31,25 +31,44 @@ const { response, responseSignal } = await fetchWithTimeout({
 handleHttpErrors({ response, url, onError }) // throws on 429 and 5xx
 ```
 
-- `fetchWithTimeout` uses `redirect: 'manual'` and two independent timers. Pass `responseSignal`
-  to whatever reads the body.
+- `fetchWithTimeout` uses `redirect: 'manual'` and two independent timers, with optional `method`
+  and `body`. Pass `responseSignal` to whatever reads the body, or wrap the response with
+  `withAbortableBody(response, responseSignal, { onError })` for consumers that read the body
+  themselves.
 - `fetchWithTimeoutSimple(url, timeoutMs, dispatcher)` applies one timeout to a small fetch.
 - `handleHttpErrors` throws `HttpRateLimitError` (with the parsed `Retry-After` delay in
   `retryAfterMs`) or `HttpServerError`. Pass `createRateLimitError` / `createServerError` to throw
   your own classes instead.
-- `isTimeoutError` (`AbortError` or `TimeoutError`), `isNetworkError`, `isRetryableError(error,
-  status?)` and `cancelResponseBody(response, onError)` are exported too.
+- `isTimeoutError` (`AbortError` or `TimeoutError`), `isTransportTimeoutError` (adds `ETIMEDOUT`
+  and `UND_ERR_*_TIMEOUT`), `isNetworkError`, `isDnsLookupError`, `isTlsHostnameMismatchError`,
+  `isRetryableError(error, status?)`, `cancelResponseBody(response, onError)`,
+  `createOperationTimeoutSignal`, `raceWithAbortSignal`, and `withOperationTimeout` are exported
+  too.
 - Retry and billing policy, such as which statuses may have been billed, stays with the caller.
 
 ## Dispatchers: `@vouchington/http-transport/dispatchers`
 
 ```ts
-import { createHttpDispatchers } from '@vouchington/http-transport/dispatchers'
+import {
+  createHttpDispatchers,
+  createOriginGuardrailInterceptor,
+  createProxyRoutedDispatchers,
+} from '@vouchington/http-transport/dispatchers'
 
 const dispatchers = createHttpDispatchers({
   onError: reportError,
-  interceptors: () => (egressGuardEnabled ? [egressGuard] : []),
+  interceptors: () =>
+    egressGuardEnabled
+      ? [createOriginGuardrailInterceptor({ isAllowedHost, onDisallowedOrigin })]
+      : [],
 })
+const routed = createProxyRoutedDispatchers({
+  direct: dispatchers,
+  getProxyUrl,
+  isProxyEnabled,
+  onError: reportError,
+})
+onShutdown(routed.closeProxyDispatchers)
 onShutdown(dispatchers.closeHttpDispatchers) // the package registers nothing itself
 ```
 
@@ -57,6 +76,12 @@ onShutdown(dispatchers.closeHttpDispatchers) // the package registers nothing it
 `getLongRunningExternalRequestDispatcher`, `getPinnedRequestDispatcher(addresses)`, the stable SDK
 fetches `getExternalFetch` and `getLongRunningExternalFetch`, an idempotent `closeHttpDispatchers`,
 and `Symbol.asyncDispose`. Nothing happens at import time.
+
+`createProxyRoutedDispatchers` layers lazy `routine` and `long-running` `ProxyAgent` pools over a
+direct dispatcher owner and evaluates routing per request so runtime changes take effect without
+recreating SDK clients. `createOriginGuardrailInterceptor` and `classifyOriginHost` observe
+outbound origins against caller-supplied allowlist predicates and strip query strings before
+reporting.
 
 Defaults: 60 s headers (300 s long-running), 300 s body gap, 4 s keep-alive up to 600 s, 10 s
 connect, 5 connections, and a pinned cache of 100. Override any of them with the `*TimeoutMs`,
