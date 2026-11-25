@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/stripe/package.json"],
+  "changedManifests": ["packages/localization-compiler/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "stripe",
-      "fromVersion": "0.2.0",
-      "name": "@vouchington/stripe",
-      "toVersion": "0.2.1"
+      "directory": "localization-compiler",
+      "fromVersion": "0.3.0",
+      "name": "@vouchington/localization-compiler",
+      "toVersion": "0.3.1"
     }
   ],
-  "selectedPackage": "@vouchington/stripe"
+  "selectedPackage": "@vouchington/localization-compiler"
 }
