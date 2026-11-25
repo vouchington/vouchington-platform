@@ -1,13 +1,13 @@
 {
-  "changedManifests": ["packages/mcp-server/package.json"],
+  "changedManifests": ["packages/api-client/package.json"],
   "releases": [
     {
       "bump": "patch",
-      "directory": "mcp-server",
-      "fromVersion": "0.2.0",
-      "name": "@vouchington/mcp-server",
-      "toVersion": "0.2.1"
+      "directory": "api-client",
+      "fromVersion": "0.3.0",
+      "name": "@vouchington/api-client",
+      "toVersion": "0.3.1"
     }
   ],
-  "selectedPackage": "@vouchington/mcp-server"
+  "selectedPackage": "@vouchington/api-client"
 }
