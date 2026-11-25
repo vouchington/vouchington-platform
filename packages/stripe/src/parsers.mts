@@ -1,4 +1,5 @@
 import type Stripe from 'stripe'
+import { getStripeObjectId } from './event-utils.mts'
 
 export type StripePage<T> = {
   items: T[]
@@ -8,8 +9,7 @@ export type StripePage<T> = {
 
 /**
  * Converts a Stripe list response into a page with a validated cursor. Throws when Stripe
- * reports more data without a cursor, or a cursor that does not advance. The caller owns
- * the paging loop and its page limit.
+ * reports more data without a cursor, or a cursor that does not advance.
  */
 export function parseStripePage<T extends { id: string }>(
   page: Pick<Stripe.ApiList<T>, 'data' | 'has_more'>,
@@ -22,6 +22,60 @@ export function parseStripePage<T extends { id: string }>(
   if (last.id === startingAfter)
     throw new Error(`Stripe returned has_more without advancing the ${label} cursor`)
   return { items: page.data, hasMore: true, nextCursor: last.id }
+}
+
+export type CollectStripePagesOptions<T extends { id: string }> = {
+  fetchPage: (
+    startingAfter: string | undefined,
+  ) => Promise<Pick<Stripe.ApiList<T>, 'data' | 'has_more'>>
+  maxPages: number
+  label?: string
+}
+
+/**
+ * Collects every page from a cursor-paginated Stripe list up to `maxPages`.
+ * Validates each page with `parseStripePage` and throws when the page limit is exceeded.
+ */
+export async function collectStripePages<T extends { id: string }>(
+  options: CollectStripePagesOptions<T>,
+): Promise<T[]> {
+  if (!(Number.isInteger(options.maxPages) && options.maxPages > 0))
+    throw new RangeError('maxPages must be a positive integer')
+  const label = options.label ?? 'item'
+  const collected: T[] = []
+  let startingAfter: string | undefined
+  for (let pageCount = 0; pageCount < options.maxPages; pageCount++) {
+    const page = await options.fetchPage(startingAfter)
+    const parsed = parseStripePage(page, startingAfter, label)
+    collected.push(...parsed.items)
+    if (!parsed.hasMore) return collected
+    startingAfter = parsed.nextCursor
+  }
+  throw new Error(`Stripe ${label} listing exceeded the page limit (${options.maxPages})`)
+}
+
+export type StripeInvoicePaymentLike = {
+  type?: string | null | undefined
+  charge?: string | { id: string } | null | undefined
+  payment_intent?: string | { id: string } | null | undefined
+}
+
+export type StripeInvoicePaymentTarget = {
+  type: string
+  chargeId: string | null
+  paymentIntentId: string | null
+}
+
+/** Extracts the payment type and charge or payment-intent id from an InvoicePayment's `payment` field. */
+export function parseStripeInvoicePaymentTarget(
+  payment: StripeInvoicePaymentLike | null | undefined,
+): StripeInvoicePaymentTarget {
+  const type = payment?.type ?? ''
+  return {
+    type,
+    chargeId: type === 'charge' ? getStripeObjectId(payment?.charge) : null,
+    paymentIntentId: type === 'payment_intent' ? getStripeObjectId(payment?.payment_intent) : null,
+  }
 }
 
 export type VerificationResult =
