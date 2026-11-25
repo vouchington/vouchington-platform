@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { assertLocalSchemaRefs } from '../test-helpers.mts'
+import { assertLocalSchemaRefs } from './local-refs.mts'
 import {
+  ensureObjectRootSchema,
   inlineSchemaReferences,
+  resolveComponentSchema,
   resolveRouteResponse,
   routePropertySchema,
   successResultSchema,
@@ -108,6 +110,94 @@ describe('resolveRouteResponse', () => {
         components,
       ),
     ).toThrow('is not an object')
+  })
+
+  it('supports projections, fallback response tables, path normalization, and union object roots', () => {
+    const unionBody = {
+      anyOf: [
+        { type: 'object', properties: { results: { type: 'array' } } },
+        { type: 'object', properties: { item: { type: 'string' } } },
+      ],
+    }
+    const responses = {
+      'GET:/things/:id#staff': ref('Page'),
+    }
+    const fallbackResponses = {
+      'GET:/things/:id': unionBody,
+    }
+
+    expect(
+      resolveRouteResponse({ method: 'GET', path: '/things/{id}' }, responses, components, {
+        projection: 'staff',
+        fallbackResponses,
+        normalizePathParams: true,
+      }),
+    ).toEqual({ type: 'object', properties: { total: { type: 'number' } } })
+
+    expect(
+      resolveRouteResponse({ method: 'GET', path: '/things/{id}' }, responses, components, {
+        fallbackResponses,
+        normalizePathParams: true,
+      }),
+    ).toEqual({ ...unionBody, type: 'object' })
+
+    expect(() =>
+      resolveRouteResponse({ method: 'GET', path: '/missing/{id}' }, responses, components, {
+        fallbackResponses,
+        normalizePathParams: true,
+      }),
+    ).toThrow('No checked-in response contract for GET:/missing/:id.')
+  })
+})
+
+describe('ensureObjectRootSchema', () => {
+  it('accepts direct object, all-object anyOf/oneOf, and allOf with an object branch', () => {
+    expect(ensureObjectRootSchema({ type: 'object', properties: {} })).toEqual({
+      type: 'object',
+      properties: {},
+    })
+    expect(
+      ensureObjectRootSchema({
+        oneOf: [{ type: 'object', properties: { a: { type: 'string' } } }, { type: 'object' }],
+      }),
+    ).toMatchObject({ type: 'object' })
+    expect(
+      ensureObjectRootSchema({
+        allOf: [{ description: 'extra' }, { type: 'object', properties: {} }],
+      }),
+    ).toMatchObject({ type: 'object' })
+  })
+
+  it('rejects non-object roots and mixed or empty unions', () => {
+    expect(() => ensureObjectRootSchema({ type: 'string' })).toThrow('Schema must be an object')
+    expect(() => ensureObjectRootSchema({ anyOf: [] }, 'Response GET:/x')).toThrow(
+      'Response GET:/x must be an object',
+    )
+    expect(() =>
+      ensureObjectRootSchema({ anyOf: [{ type: 'object' }, { type: 'array' }] }, 'Response'),
+    ).toThrow('Response must be an object')
+    expect(() => ensureObjectRootSchema({ allOf: [{ type: 'string' }] })).toThrow(
+      'Schema must be an object',
+    )
+    expect(() => ensureObjectRootSchema({ oneOf: [null] })).toThrow('Schema must be an object')
+  })
+})
+
+describe('resolveComponentSchema', () => {
+  it('inlines a named component and rejects recursive ones', () => {
+    const components = {
+      Id: { type: 'string' },
+      Widget: { type: 'object', properties: { id: ref('Id') } },
+      Node: { type: 'object', properties: { next: ref('Node') } },
+    }
+
+    expect(resolveComponentSchema('Widget', components)).toEqual({
+      type: 'object',
+      properties: { id: { type: 'string' } },
+    })
+    expect(() => resolveComponentSchema('Node', components)).toThrow(
+      'A recursive response contract cannot be nested.',
+    )
   })
 })
 

@@ -18,6 +18,24 @@ export const wrapWithVurstPrompt: WrapUntrusted = async (text, field) =>
     contentType: field,
   })
 
+/**
+ * Free text from an untrusted source, sanitized and fenced as external content. Missing or
+ * whitespace-only text returns `null`, so callers never receive an empty fence as content.
+ */
+export async function wrapExternalText(
+  text: string | null,
+  source: string,
+  contentType: string,
+): Promise<string | null> {
+  if (text === null || text.trim() === '') return null
+  return wrapExternalContent(await sanitizePromptInjection(text), { source, contentType })
+}
+
+/** A name, title, or username: sanitized as a title without external-content fencing. */
+export function sanitizeTitle(text: string): Promise<string> {
+  return sanitizePromptInjection(text, { isTitle: true })
+}
+
 /** The schema of an untrusted field once wrapped: text, or null when the field was absent. */
 const untrustedText = () => ({ anyOf: [{ type: 'string' }, { type: 'null' }] })
 

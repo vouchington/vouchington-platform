@@ -6,7 +6,8 @@ import {
   validateOptionOutputPointers,
 } from '../schema/index.mts'
 import type { McpToolMeta } from '../types.mts'
-import { assertLocalSchemaRefs, readFixture } from '../test-helpers.mts'
+import { assertLocalSchemaRefs } from '../schema/index.mts'
+import { readFixture } from '../test-helpers.mts'
 import { createMergedTool, type MergedToolSource } from './create-merged-tool.mts'
 
 const routeA = { method: 'GET' as const, path: '/examples/:id' }

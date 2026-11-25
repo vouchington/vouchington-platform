@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { dateTimeCases } from '../test-helpers.mts'
-import { findSchemaViolation } from './validator.mts'
+import { findSchemaViolation, validateToolArguments } from './validator.mts'
 
 const SCHEMA = {
   type: 'object',
@@ -185,6 +185,24 @@ describe('date-time contract', () => {
     expect(findSchemaViolation(nested, { timestamp: '1990-12-31T23:59:60Z' })).toBeNull()
     expect(findSchemaViolation(nested, { timestamp: '2026-10-09T23:59:60Z' })).toBe(
       '/timestamp must match format "date-time"',
+    )
+  })
+})
+
+describe('validateToolArguments', () => {
+  it('rejects extra arguments when parameters are null or declare open properties', () => {
+    expect(validateToolArguments(null, {})).toBeNull()
+    expect(validateToolArguments(null, { unexpected: true })).toBe(
+      '/ must NOT have additional properties',
+    )
+    const openSchema = {
+      type: 'object',
+      properties: { id: { type: 'string' } },
+      required: ['id'],
+    }
+    expect(validateToolArguments(openSchema, { id: 'abc' })).toBeNull()
+    expect(validateToolArguments(openSchema, { id: 'abc', extra: 1 })).toBe(
+      '/ must NOT have additional properties',
     )
   })
 })

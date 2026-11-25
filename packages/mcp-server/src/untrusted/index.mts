@@ -1,6 +1,8 @@
 export {
   adminOutputSchema,
   filterPrivateOutputFields,
+  sanitizeTitle,
+  wrapExternalText,
   wrapUntrustedOutput,
   wrapWithVurstPrompt,
   type UntrustedFieldSets,

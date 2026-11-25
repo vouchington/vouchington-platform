@@ -38,30 +38,3 @@ export const dateTimeCases = [
 export function readFixture(name: string): unknown {
   return JSON.parse(readFileSync(new URL(`../test-fixtures/${name}`, import.meta.url), 'utf8'))
 }
-
-/** Assert that a standalone schema resolves every reference within its own `$defs`. */
-export function assertLocalSchemaRefs(schema: unknown): void {
-  if (!schema || typeof schema !== 'object' || Array.isArray(schema))
-    throw new Error('Expected an object schema')
-  const defs = (schema as Record<string, unknown>)['$defs']
-  const definitions =
-    defs && typeof defs === 'object' && !Array.isArray(defs)
-      ? (defs as Record<string, unknown>)
-      : {}
-  const visit = (value: unknown): void => {
-    if (!value || typeof value !== 'object') return
-    if (Array.isArray(value)) {
-      value.forEach(visit)
-      return
-    }
-    const node = value as Record<string, unknown>
-    const ref = node['$ref']
-    if (typeof ref === 'string') {
-      if (!/^#\/\$defs\/[^/]+$/.test(ref)) throw new Error(`Non-local schema reference: ${ref}`)
-      if (!(ref.slice('#/$defs/'.length) in definitions))
-        throw new Error(`Dangling schema reference: ${ref}`)
-    }
-    for (const child of Object.values(node)) visit(child)
-  }
-  visit(schema)
-}
