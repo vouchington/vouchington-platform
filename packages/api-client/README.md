@@ -33,8 +33,12 @@ const server = new ServerRequest({
   unchanged; 429 (and the injected 409 codes) add `retry_after` from the `Retry-After` header (delay-seconds or HTTP-date).
   `ServerRequest` adds an `Origin` header to non-GET requests that carry a `Cookie` header.
 - Error helpers: `getApiErrorMessage`, `hasErrorCode`, `createErrorCodeChecker(catalog)`,
-  `parseErrorDigest(digest, copyByStatus, fallback)`, `isExpectedApiError`, and the bounded
-  `parseErrorResponseBody`.
+  `parseErrorDigest(digest, copyByStatus, fallback)`, `isExpectedApiError`, `isRateLimitError`,
+  `getRetryAfterSeconds`, `getRetryAfterMs`, `returnNullForMissingEntity(request, options?)`, and
+  the bounded `parseErrorResponseBody`.
+- Path-segment and pagination helpers: `assertPathIdentifier`,
+  `assertEncodablePathSegmentIdentifier`, `buildQueryString`, `getPaginatedQueryKey`,
+  `pageInfoKey`, and `pageHasContinuation`.
 - `AdmissionIdempotency` pairs each distinct intent with one idempotency key so retries, including
   across reloads, reuse it. Durable persistence needs an `actorId`, `localStorage`, and Web Locks;
   anonymous intents stay in memory. Options inject `namespace` (storage-key and lock-name prefix),
@@ -42,7 +46,9 @@ const server = new ServerRequest({
   and `onError`. `pause`, `resume`, `drain`, and `setActor` support logout flows.
 - `@vouchington/api-client/paginated-list` exports `usePaginatedList(initial, endpoint, params,
   { fetchPage | loadPage })` for cursor-page accumulation with stale-request protection, plus
-  `getPaginatedQueryKey`. The application supplies the page fetcher, and `initialData` must keep a stable identity across renders.
+  `getPaginatedQueryKey`, `pageHasContinuation`, and `useQueryScopedRemovals(queryKey)`. The
+  application supplies the page fetcher, and `initialData` must keep a stable identity across
+  renders.
   The hook also returns `replaceFirstPage`, `resetToFirstPage`, and `refreshLoadedPages(fetchFirstPage)`,
   which re-reads every loaded page from the first (following cursors) and swaps the result in at
   once. Pages a concurrent `loadMore` appended before the commit are refetched from the refreshed

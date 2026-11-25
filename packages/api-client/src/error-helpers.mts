@@ -52,3 +52,58 @@ export function createErrorCodeChecker<Catalog extends Readonly<Record<string, s
 ): (error: unknown, name: keyof Catalog) => boolean {
   return (error, name) => hasErrorCode(error, catalog[name]!)
 }
+
+/** Whether an error is an HTTP 429 rate-limit `ApiError`. */
+export function isRateLimitError(error: unknown): error is ApiError {
+  return error instanceof ApiError && error.status === 429
+}
+
+function readRateLimitRetryAfterSeconds(error: unknown): number | null {
+  if (!isRateLimitError(error)) return null
+  const data = error.data
+  if (data === null || typeof data !== 'object' || Array.isArray(data)) return null
+  const retryAfter = (data as { retry_after?: unknown }).retry_after
+  return typeof retryAfter === 'number' && Number.isFinite(retryAfter) && retryAfter > 0
+    ? retryAfter
+    : null
+}
+
+/**
+ * Whole seconds to wait from a 429 `ApiError`'s `data.retry_after` field (rounded up), or `0`
+ * when absent, non-positive, or not a rate-limit error.
+ */
+export function getRetryAfterSeconds(error: unknown): number {
+  const seconds = readRateLimitRetryAfterSeconds(error)
+  return seconds === null ? 0 : Math.ceil(seconds)
+}
+
+/**
+ * Milliseconds to wait from a 429 `ApiError`'s `data.retry_after` field, or `null` when absent,
+ * non-positive, or not a rate-limit error.
+ */
+export function getRetryAfterMs(error: unknown): number | null {
+  const seconds = readRateLimitRetryAfterSeconds(error)
+  return seconds === null ? null : seconds * 1000
+}
+
+export type ReturnNullForMissingEntityOptions = {
+  /** HTTP statuses mapped to `null`. Defaults to `[404]`. */
+  nullStatusCodes?: readonly number[]
+}
+
+/**
+ * Awaits a request and returns `null` when it rejects with an `ApiError` matching one of
+ * `nullStatusCodes` (default `[404]`). All other errors propagate unchanged.
+ */
+export async function returnNullForMissingEntity<T>(
+  request: Promise<T>,
+  options: ReturnNullForMissingEntityOptions = {},
+): Promise<T | null> {
+  const nullStatusCodes = options.nullStatusCodes ?? [404]
+  try {
+    return await request
+  } catch (err) {
+    if (err instanceof ApiError && nullStatusCodes.includes(err.status)) return null
+    throw err
+  }
+}

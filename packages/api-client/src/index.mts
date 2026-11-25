@@ -7,11 +7,17 @@ export {
 export {
   createErrorCodeChecker,
   getApiErrorMessage,
+  getRetryAfterMs,
+  getRetryAfterSeconds,
   hasErrorCode,
+  isRateLimitError,
   parseErrorDigest,
+  returnNullForMissingEntity,
   type ErrorDigestCopy,
   type ParsedErrorDigest,
+  type ReturnNullForMissingEntityOptions,
 } from './error-helpers.mts'
+export { assertEncodablePathSegmentIdentifier, assertPathIdentifier } from './path-identifiers.mts'
 export { buildQueryString, type QueryParams } from './query-string.mts'
 export type { GetOptions, HttpMethod, RequestBehavior, RequestOptions } from './request-core.mts'
 export { ClientRequest, type ClientRequestConfig } from './client-request.mts'
@@ -27,6 +33,7 @@ export type { AdmissionStorage } from './admission-storage.mts'
 export { settleWithin } from './admission-settle.mts'
 export {
   getPaginatedQueryKey,
+  pageHasContinuation,
   pageInfoKey,
   type PaginatedData,
   type PaginatedListParams,

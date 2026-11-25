@@ -10,13 +10,14 @@ import {
 } from './paginated-list-utils.mts'
 import { freshState, type ListState } from './paginated-list-state.mts'
 import {
-  getPaginatedQueryKey,
   pageInfoKey,
   type PaginatedData,
   type PaginatedListParams,
 } from './paginated-query-key.mts'
 
-export { appendPaginatedPage, PaginatedRequestLifecycle, getPaginatedQueryKey }
+export { appendPaginatedPage, PaginatedRequestLifecycle }
+export { getPaginatedQueryKey, pageHasContinuation } from './paginated-query-key.mts'
+export { useQueryScopedRemovals } from './query-scoped-removals.mts'
 export type { PaginatedData, PaginatedListParams }
 
 export type PaginatedPageFetcher<T> = (endpoint: string, params: PaginatedListParams) => Promise<T>
